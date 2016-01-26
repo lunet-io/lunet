@@ -1,0 +1,14 @@
+﻿{
+  "runtimes": {
+    "win": {}
+  },
+  "frameworks": {
+    "net46": {}
+  },
+  "dependencies": {
+    "Microsoft.Extensions.Logging": "1.0.0-rc3-20541",
+    "System.IO.Compression": "4.1.0-rc3-24013-00",
+    "System.Net.Http": "4.0.1-rc3-24013-00",
+    "System.Buffers":  "4.0.0-rc2-23931"
+  }
+}

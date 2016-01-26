@@ -1,0 +1,12 @@
+﻿{
+  "runtimes": {
+    "win": {}
+  },
+  "frameworks": {
+    "net46": {}
+  },
+  "dependencies": {
+    "Microsoft.Extensions.Logging": "1.0.0-rc3-20541",
+    "Microsoft.Extensions.Logging.Console": "1.0.0-rc3-20541",
+  }
+}

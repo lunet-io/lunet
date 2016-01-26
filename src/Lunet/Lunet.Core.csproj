@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3E82658E-3E57-4B3D-8093-1AFDD658A2DE}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Lunet</RootNamespace>
+    <AssemblyName>Lunet.Core</AssemblyName>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+    <!-- A reference to the entire .NET Framework is automatically included -->
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Helpers\StringBuilderCache.cs" />
+    <Compile Include="Helpers\ZipUtil.cs" />
+    <Compile Include="Runtime\ISiteable.cs" />
+    <Compile Include="Runtime\ManagerBase.cs" />
+    <Compile Include="Runtime\MetaManager.cs" />
+    <Compile Include="Layouts\LayoutProcessor.cs" />
+    <Compile Include="Plugins\Markdig\MarkdigPlugin.cs" />
+    <Compile Include="Plugins\PageProcessResult.cs" />
+    <Compile Include="Plugins\PluginManager.cs" />
+    <Compile Include="Plugins\SitePlugin.cs" />
+    <Compile Include="Scripts\ScriptManager.cs" />
+    <Compile Include="Runtime\SiteGenerator.cs" />
+    <Compile Include="Themes\DefaultThemeProvider.cs" />
+    <Compile Include="Themes\IThemeProvider.cs" />
+    <Compile Include="Themes\ThemeDescription.cs" />
+    <Compile Include="Themes\ThemeManager.cs" />
+    <Compile Include="Plugins\SitePluginAttribute.cs" />
+    <Compile Include="Runtime\SiteVariables.cs" />
+    <Compile Include="Helpers\PathUtil.cs" />
+    <Compile Include="Helpers\OrderedList.cs" />
+    <Compile Include="Plugins\ISitePluginCore.cs" />
+    <Compile Include="Plugins\ISitePlugin.cs" />
+    <Compile Include="Plugins\ISiteProcessor.cs" />
+    <Compile Include="Plugins\IPageProcessor.cs" />
+    <Compile Include="Runtime\LunetException.cs" />
+    <Compile Include="Runtime\LunetObject.cs" />
+    <Compile Include="Runtime\PageVariables.cs" />
+    <Compile Include="Runtime\ContentObject.cs" />
+    <Compile Include="Plugins\PageProcessorBase.cs" />
+    <Compile Include="Plugins\ProcessorBase.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SiteObject.cs" />
+    <Compile Include="Runtime\SiteObjectExtensions.cs" />
+    <Compile Include="Themes\ThemeObject.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="Textamina.Scriban">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Textamina\scriban\artifacts\bin\Textamina.Scriban\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Textamina.Scriban.dll</HintPath>
+    </Reference>
+    <Reference Include="Textamina.Markdig">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Textamina\markdig\artifacts\bin\Textamina.Markdig\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Textamina.Markdig.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
