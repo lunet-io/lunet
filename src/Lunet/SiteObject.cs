@@ -15,7 +15,6 @@ namespace Lunet
     public class SiteObject : LunetObject
     {
         internal const string DefaultConfigFileName1 = "config.sban";
-        internal const string DefaultConfigFileName2 = "config.scriban";
 
         private const string SiteDirectoryName = "_site";
         private const string DefaultPageExtensionValue = ".html";
@@ -199,8 +198,8 @@ namespace Lunet
             var directory = new DirectoryInfo(directoryPath);
             while (directory != null)
             {
-                var site = TryFromFile(Path.Combine(directory.FullName, DefaultConfigFileName1), loggerFactory) ??
-                           TryFromFile(Path.Combine(directory.FullName, DefaultConfigFileName2), loggerFactory);
+                var site = TryFromFile(Path.Combine(directory.FullName, DefaultConfigFileName1), loggerFactory);
+                           
                 if (site != null)
                 {
                     return site;
@@ -209,7 +208,7 @@ namespace Lunet
                 directory = directory.Parent;
             }
 
-            throw new FileNotFoundException($"The config file [{DefaultConfigFileName1} / {DefaultConfigFileName2}] was not found from the directory path and up [{directoryPath}]");
+            throw new FileNotFoundException($"The config file [{DefaultConfigFileName1}] was not found from the directory path and up [{directoryPath}]");
         }
 
         private void LoadPage(DirectoryInfo rootDirectory, FileInfo file, out ContentObject page)
@@ -287,7 +286,7 @@ namespace Lunet
             ContentObject indexPage = null;
             foreach (var entry in directory.EnumerateFileSystemInfos())
             {
-                if (entry.Name == SiteObject.DefaultConfigFileName1 || entry.Name == SiteObject.DefaultConfigFileName2)
+                if (entry.Name == DefaultConfigFileName1)
                 {
                     continue;
                 }

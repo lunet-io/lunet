@@ -71,7 +71,7 @@ namespace Lunet.Plugins
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Unable to instantiate the plugin [{pluginType}]. Reason: {ex.Message}");
+                    Site.Error($"Unable to instantiate the plugin [{pluginType}]. Reason:{ex.GetReason()}");
                     continue;
                 }
 
@@ -189,7 +189,7 @@ namespace Lunet.Plugins
                         }
                         catch (Exception ex)
                         {
-                            Site.Error($"Error while initializing [{extension.Name}] from the type [{extension.GetType()}]. Reason: {ex.Message}");
+                            Site.Error($"Error while initializing [{extension.Name}] from the type [{extension.GetType()}]. Reason:{ex.GetReason()}");
                             continue;
                         }
                         initializedExtensions.Add(extension);

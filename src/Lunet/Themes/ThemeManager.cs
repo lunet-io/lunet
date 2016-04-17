@@ -68,16 +68,29 @@ namespace Lunet.Themes
         {
             if (theme == null) throw new ArgumentNullException(nameof(theme));
 
+            var themePrivatePath = Path.Combine(PrivateThemeDirectory, theme);
+            var themePublicPath = Path.Combine(ThemeDirectory, theme);
+            string themePath = null;
+            if (Directory.Exists(themePublicPath))
+            {
+                themePath = themePublicPath;
+            }
+            else if (Directory.Exists(themePrivatePath))
+            {
+                themePath = themePrivatePath;
+            }
+
+            if (themePath != null)
+            {
+                return new ThemeObject(Site, new ThemeDescription(theme, null, null, null), themePath);
+            }
+
+            themePath = isPrivate ? themePrivatePath : themePublicPath;
+
             if (Providers.Count == 0)
             {
                 Site.Log.LogError($"Unable to find the theme [{theme}]. No provider list installed.");
                 return null;
-            }
-
-            var themePath = Path.Combine(isPrivate ? PrivateThemeDirectory : ThemeDirectory, theme);
-            if (Directory.Exists(themePath))
-            {
-                return new ThemeObject(Site, new ThemeDescription(theme, null, null, null), themePath);
             }
 
             foreach (var themeDesc in FindAll())
@@ -92,36 +105,62 @@ namespace Lunet.Themes
                 }
             }
 
-            Site.Log.LogError($"Unable to find the theme [{theme}] from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
+            Site.Log.LogError($"Unable to find the theme [{theme}] locally from [{Site.GetRelativePath(themePublicPath)}] or [{Site.GetRelativePath(themePrivatePath)}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
             return null;
         }
 
         public override void InitializeAfterConfig()
         {
             var theme = Site.GetSafe<string>(SiteVariables.Theme);
+            var defaultTheme = theme;
 
-            if (theme != null)
+            var themeLoaded = new HashSet<string>();
+            var themeText = "theme";
+            while (theme != null)
             {
-                string themePath = null;
+                themeLoaded.Add(theme);
 
-                themePath = Path.Combine(ThemeDirectory, theme);
-                if (!Directory.Exists(themePath))
+                var themeObject = TryInstall(theme);
+                if (themeObject == null)
                 {
-                    themePath = Path.Combine(PrivateThemeDirectory, theme);
-                    if (!Directory.Exists(themePath))
-                    {
-                        themePath = null;
-                    }
+                    break;
                 }
 
-                if (themePath == null)
+                if (Site.CanInfo())
                 {
-                    var installedTheme = TryInstall(theme, true);
-                    if (installedTheme != null)
+                    Site.Info($"Using {themeText} [{theme}] from [{themeObject.Path}]");
+                }
+
+                var configPath = Path.Combine(themeObject.Directory, SiteObject.DefaultConfigFileName1);
+                if (Site.Scripts.TryImportScriptFromFile(configPath, Site))
+                {
+                    // Retrieve the theme from the page
+                    // If we have a new theme proceed to inherited theme
+                    var nextTheme = Site.GetSafe<string>(SiteVariables.Theme);
+                    theme = nextTheme != theme ? nextTheme : null;
+
+                    if (theme != null)
                     {
-                        CurrentList.Add(installedTheme);
+                        if (themeLoaded.Contains(theme))
+                        {
+                            Site.Error($"Invalid recursive theme [{theme}] loaded from [{Site.GetRelativePath(configPath)}");
+                            break;
+                        }
+                        themeText = "inherited theme";
                     }
                 }
+                else
+                {
+                    theme = null;
+                }
+
+                CurrentList.Add(themeObject);
+            }
+
+            // Restore the value of the theme
+            if (defaultTheme != null)
+            {
+                Site.SetValue(SiteVariables.Theme, defaultTheme, false);
             }
         }
     }

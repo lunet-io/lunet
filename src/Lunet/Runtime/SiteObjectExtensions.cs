@@ -55,6 +55,11 @@ namespace Lunet.Runtime
             return site.Log.IsEnabled(LogLevel.Debug);
         }
 
+        public static bool CanInfo(this SiteObject site)
+        {
+            return site.Log.IsEnabled(LogLevel.Information);
+        }
+
         public static void Info(this SiteObject site, string message, params object[] args)
         {
             site.Log.LogInformation(message, args);

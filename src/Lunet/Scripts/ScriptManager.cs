@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Lunet.Helpers;
 using Lunet.Runtime;
 using Textamina.Scriban;
 using Textamina.Scriban.Parsing;
@@ -14,9 +15,16 @@ namespace Lunet.Scripts
 {
     public class ScriptManager : ManagerBase
     {
+        private readonly ITemplateLoader unauthorizedTemplateLoader;
+        private readonly ITemplateLoader templateLoaderFromIncludes;
+
+        private const string IncludesDirectoryName = "includes";
+
         internal ScriptManager(SiteObject site) : base(site)
         {
             Context = new TemplateContext();
+            unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
+            templateLoaderFromIncludes = new TemplateLoaderFromIncludes(Site);
         }
 
         public TemplateContext Context { get; }
@@ -67,7 +75,7 @@ namespace Lunet.Scripts
             {
                 Context.PushGlobal(scriptObject);
                 Context.PushSourceFile(scriptPath);
-                Context.Options.TemplateLoader = allowInclude ? /*TODO*/ null : new TemplateLoaderUnauthorized(Site);
+                Context.Options.TemplateLoader = allowInclude ? templateLoaderFromIncludes : unauthorizedTemplateLoader;
 
                 try
                 {
@@ -125,12 +133,14 @@ namespace Lunet.Scripts
                 return false;
             }
 
-            var context = Context;
-            context.PushGlobal(obj);
+            Context.PushGlobal(obj);
             try
             {
+                Context.Options.Parser.Mode = ParsingMode.FrontMatter;
+                Context.Options.TemplateLoader = templateLoaderFromIncludes;
+
                 Site.SetValue(PageVariables.Site, this, true);
-                script.FrontMatter.Evaluate(context);
+                script.FrontMatter.Evaluate(Context);
             }
             catch (ScriptRuntimeException exception)
             {
@@ -139,8 +149,11 @@ namespace Lunet.Scripts
             }
             finally
             {
-                context.PopGlobal();
-                context.Output.Clear();
+                Context.PopGlobal();
+
+                Context.Output.Clear();
+                Context.Options.TemplateLoader = unauthorizedTemplateLoader;
+
                 // We don't keep the site variable after this initialization
                 Site.Remove(PageVariables.Site);
             }
@@ -157,23 +170,25 @@ namespace Lunet.Scripts
             if (script == null) throw new ArgumentNullException(nameof(script));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             
-            var context = Context;
             if (obj != null)
             {
-                context.PushGlobal(obj);
+                Context.PushGlobal(obj);
             }
-            context.PushSourceFile(scriptPath);
-            context.Output.Clear();
+            Context.PushSourceFile(scriptPath);
+            Context.Output.Clear();
 
-            var currentScriptObject = context.CurrentGlobal;
+            var currentScriptObject = Context.CurrentGlobal;
 
             try
             {
+                Context.Options.Parser.Mode = ParsingMode.Default;
+                Context.Options.TemplateLoader = templateLoaderFromIncludes;
+
                 currentScriptObject.SetValue(PageVariables.Site, Site, true);
                 currentScriptObject.SetValue(PageVariables.Page, page, true);
 
                 // TODO: setup include paths for script
-                script.Evaluate(context);
+                script.Evaluate(Context);
             }
             catch (ScriptRuntimeException exception)
             {
@@ -184,10 +199,12 @@ namespace Lunet.Scripts
             {
                 if (obj != null)
                 {
-                    context.PopGlobal();
+                    Context.PopGlobal();
                 }
-                context.PopSourceFile();
-                page.Content = context.Output.ToString();
+                Context.PopSourceFile();
+                page.Content = Context.Output.ToString();
+
+                Context.Options.TemplateLoader = unauthorizedTemplateLoader;
 
                 // We don't keep the site variable after this initialization
                 currentScriptObject.Remove(PageVariables.Site);
@@ -198,7 +215,7 @@ namespace Lunet.Scripts
 
         private void LogException(ScriptRuntimeException exception)
         {
-            Site.Error(exception.Span, exception.Message);
+            Site.Error(exception.Span, exception.GetReason());
 
             var parserException = exception as ScriptParserRuntimeException;
             if (parserException != null)
@@ -227,7 +244,6 @@ namespace Lunet.Scripts
             }
         }
 
-
         private class TemplateLoaderUnauthorized : ITemplateLoader
         {
             private readonly SiteObject site;
@@ -244,5 +260,38 @@ namespace Lunet.Scripts
                 return null;
             }
         }
+
+        private class TemplateLoaderFromIncludes : ITemplateLoader
+        {
+            private readonly SiteObject site;
+
+            public TemplateLoaderFromIncludes(SiteObject site)
+            {
+                this.site = site;
+            }
+
+            public string Load(TemplateContext context, SourceSpan callerSpan, string templateName, out string templateFilePath)
+            {
+                templateFilePath = null;
+                if (templateName.Contains("..") || templateName.Contains("/") || templateName.Contains("\\"))
+                {
+                    site.Error(callerSpan, $"The include [{templateName}] cannot contain '..' or '/' or '\\'");
+                    return null;
+                }
+
+                foreach (var directory in site.Meta.Directories)
+                {
+                    var includePath = Path.Combine(directory.FullName, IncludesDirectoryName, templateName);
+                    if (File.Exists(includePath))
+                    {
+                        templateFilePath = includePath;
+                        return File.ReadAllText(includePath);
+                    }
+                }
+
+                return null;
+            }
+        }
+
     }
 }

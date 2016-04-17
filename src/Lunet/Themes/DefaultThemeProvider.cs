@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Textamina.Scriban.Runtime;
 using Lunet.Helpers;
@@ -16,7 +17,7 @@ namespace Lunet.Themes
     {
         public DefaultThemeProvider()
         {
-            RegistryUrl = "https://raw.githubusercontent.com/lunet-io/lunet-registry/master/themes.sban";
+            RegistryUrl = "https://raw.githubusercontent2.com/lunet-io/lunet-registry/master/themes.sban";
         }
 
         public string Name => "lunet-registry/themes";
@@ -42,7 +43,7 @@ namespace Lunet.Themes
             }
             catch (Exception ex)
             {
-                site.Error($"Unable to load theme registry from Url [{RegistryUrl}]. Reason: {ex.Message}");
+                site.Error($"Unable to load theme registry from Url [{RegistryUrl}]. Reason:{ex.GetReason()}");
                 yield break;
             }
 
@@ -70,7 +71,10 @@ namespace Lunet.Themes
 
         public bool TryInstall(SiteObject site, string theme, string outputPath)
         {
-            site.Info($"Installing theme [{theme}] to [{site.GetRelativePath(outputPath)}]");
+            if (site.CanTrace())
+            {
+                site.Trace($"Checking remove registry [{RegistryUrl}] for available themes  Installing theme [{theme}] to [{site.GetRelativePath(outputPath)}]");
+            }
 
             foreach (var themeDesc in FindAll(site))
             {
@@ -78,6 +82,11 @@ namespace Lunet.Themes
                 {
                     try
                     {
+                        if (site.CanTrace())
+                        {
+                            site.Trace($"Downloading theme Installing theme [{theme}] to [{site.GetRelativePath(outputPath)}]");
+                        }
+
                         using (HttpClient client = new HttpClient())
                         {
                             using (var stream = client.GetStreamAsync(themeDesc.Url).Result)
@@ -92,7 +101,7 @@ namespace Lunet.Themes
                     }
                     catch (Exception ex)
                     {
-                        site.Error($"Unable to load theme registry from Url [{RegistryUrl}]. Reason: {ex.Message}");
+                        site.Error($"Unable to load theme registry from Url [{RegistryUrl}]. Reason:{ex.GetReason()}");
                         break;
                     }
                 }

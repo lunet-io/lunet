@@ -183,9 +183,12 @@ namespace Lunet.Layouts
                             break;
                         }
                     }
-
-                    layouts.Add(layoutKey, layoutPage);
+                    if (layoutPage != null)
+                    {
+                        break;
+                    }
                 }
+                layouts.Add(layoutKey, layoutPage);
             }
 
             return layoutPage;

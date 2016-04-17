@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Lunet.Helpers;
 using Lunet.Scripts;
 
 namespace Lunet.Runtime
@@ -60,7 +61,7 @@ namespace Lunet.Runtime
             }
             catch (Exception ex) // wide catch
             {
-                Site.Error($"Unable to create directory [{outputDir.FullName}]. Reason: {ex.Message}");
+                Site.Error($"Unable to create directory [{outputDir.FullName}]. Reason:{ex.GetReason()}");
                 return false;
             }
 
@@ -91,7 +92,7 @@ namespace Lunet.Runtime
             }
             catch (Exception ex)
             {
-                Site.Error($"Unable to copy file [{fromFile.SourceFileInfo.FullName}] to [{outputFile}]. Reason: {ex.Message}");
+                Site.Error($"Unable to copy file [{fromFile.SourceFileInfo.FullName}] to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
             }
 
@@ -178,7 +179,7 @@ namespace Lunet.Runtime
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Unable to create [{directory}] directory. Reason: {ex.Message}");
+                    Site.Error($"Unable to create [{directory}] directory. Reason:{ex.GetReason()}");
                 }
             }
         }
