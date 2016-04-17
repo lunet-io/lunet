@@ -208,7 +208,7 @@ namespace Lunet
                 directory = directory.Parent;
             }
 
-            throw new FileNotFoundException($"The config file [{DefaultConfigFileName1}] was not found from the directory path and up [{directoryPath}]");
+            return null;
         }
 
         private void LoadPage(DirectoryInfo rootDirectory, FileInfo file, out ContentObject page)
