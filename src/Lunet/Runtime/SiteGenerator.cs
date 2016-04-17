@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
 using Lunet.Scripts;
+using Lunet.Statistics;
 
 namespace Lunet.Runtime
 {
@@ -14,7 +16,10 @@ namespace Lunet.Runtime
     {
         private readonly HashSet<string> previousOutputDirectories;
         private readonly HashSet<string> previousOutputFiles;
+        private readonly Dictionary<string, ContentObject> filesWritten;
         private bool isInitialized;
+        private readonly Stopwatch clock;
+        private readonly Stopwatch totalDuration;
 
         internal SiteGenerator(SiteObject site)
         {
@@ -22,6 +27,9 @@ namespace Lunet.Runtime
             previousOutputDirectories = new HashSet<string>();
             previousOutputFiles = new HashSet<string>();
             Scripts = Site.Scripts;
+            filesWritten = new Dictionary<string, ContentObject>();
+            clock = new Stopwatch();
+            totalDuration = new Stopwatch();
         }
 
         private ScriptManager Scripts { get; }
@@ -35,10 +43,22 @@ namespace Lunet.Runtime
             var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, relativePath)).FullName;
             var outputDir = new DirectoryInfo(Path.GetDirectoryName(outputFile));
 
+            ContentObject previousContent;
+            var stat = Site.Statistics.GetContentStat(fromFile);
+
+            if (filesWritten.TryGetValue(relativePath, out previousContent))
+            {
+                Site.Error($"The content [{previousContent.Path}] and [{fromFile.Path}] have the same Url output [{relativePath}]");
+            }
+            else
+            {
+                filesWritten.Add(relativePath, fromFile);
+            }
+
             // If the directory is used for a new file, remove it from the list of previous directories
             // Note that we remove even if things are not working after, so that previous files are kept 
             // in case of an error
-            var previousDir = outputDir;
+                var previousDir = outputDir;
             while (previousDir != null)
             {
                 previousOutputDirectories.Remove(previousDir.FullName);
@@ -65,11 +85,13 @@ namespace Lunet.Runtime
                 return false;
             }
 
+            clock.Restart();
             try
             {
                 // If the source file is not newer than the destination file, don't overwrite it
                 if (fromFile.Content != null)
                 {
+
                     if (Site.CanTrace())
                     {
                         Site.Trace($"Write file [{Site.GetRelativePath(outputFile)}]");
@@ -78,9 +100,15 @@ namespace Lunet.Runtime
                     using (var writer = new StreamWriter(outputFile))
                     {
                         writer.Write(fromFile.Content);
+                        writer.Flush();
+
+                        // Update statistics
+                        stat.Static = false;
+                        stat.OutputBytes += writer.BaseStream.Length;
                     }
                 }
-                else if (!directoryAlreadyExist || !File.Exists(outputFile) || (fromFile.ModifiedTime > File.GetLastWriteTime(outputFile)))
+                else if (!directoryAlreadyExist || !File.Exists(outputFile) ||
+                         (fromFile.ModifiedTime > File.GetLastWriteTime(outputFile)))
                 {
                     if (Site.CanTrace())
                     {
@@ -88,6 +116,10 @@ namespace Lunet.Runtime
                     }
 
                     fromFile.SourceFileInfo.CopyTo(outputFile, true);
+
+                    // Update statistics
+                    stat.Static = true;
+                    stat.OutputBytes += fromFile.Length;
                 }
             }
             catch (Exception ex)
@@ -95,12 +127,20 @@ namespace Lunet.Runtime
                 Site.Error($"Unable to copy file [{fromFile.SourceFileInfo.FullName}] to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
             }
+            finally
+            {
+                stat.OutputDuration += clock.Elapsed;
+            }
 
             return true;
         }
 
         public void Initialize()
         {
+            totalDuration.Restart();
+            filesWritten.Clear();
+            Site.Statistics.Reset();
+
             if (isInitialized)
             {
                 return;
@@ -167,6 +207,10 @@ namespace Lunet.Runtime
 
             // Remove output files
             CleanupOutputFiles();
+
+            // Update statistics
+            totalDuration.Stop();
+            Site.Statistics.TotalDuration = totalDuration.Elapsed;
         }
 
         public void CreateDirectory(DirectoryInfo directory)

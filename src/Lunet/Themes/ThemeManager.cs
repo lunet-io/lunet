@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using Lunet.Helpers;
 using Lunet.Runtime;
-using Microsoft.Extensions.Logging;
 
 namespace Lunet.Themes
 {
@@ -89,7 +88,7 @@ namespace Lunet.Themes
 
             if (Providers.Count == 0)
             {
-                Site.Log.LogError($"Unable to find the theme [{theme}]. No provider list installed.");
+                Site.Error($"Unable to find the theme [{theme}]. No provider list installed.");
                 return null;
             }
 
@@ -105,7 +104,7 @@ namespace Lunet.Themes
                 }
             }
 
-            Site.Log.LogError($"Unable to find the theme [{theme}] locally from [{Site.GetRelativePath(themePublicPath)}] or [{Site.GetRelativePath(themePrivatePath)}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
+            Site.Error($"Unable to find the theme [{theme}] locally from [{Site.GetRelativePath(themePublicPath)}] or [{Site.GetRelativePath(themePrivatePath)}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
             return null;
         }
 
@@ -126,9 +125,9 @@ namespace Lunet.Themes
                     break;
                 }
 
-                if (Site.CanInfo())
+                if (Site.CanTrace())
                 {
-                    Site.Info($"Using {themeText} [{theme}] from [{themeObject.Path}]");
+                    Site.Trace($"Using {themeText} [{theme}] from [{themeObject.Path}]");
                 }
 
                 var configPath = Path.Combine(themeObject.Directory, SiteObject.DefaultConfigFileName1);

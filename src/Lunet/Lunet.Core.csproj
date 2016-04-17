@@ -42,6 +42,7 @@
     <Compile Include="Helpers\ExceptionUtil.cs" />
     <Compile Include="Helpers\StringBuilderCache.cs" />
     <Compile Include="Helpers\ZipUtil.cs" />
+    <Compile Include="Statistics\ContentStat.cs" />
     <Compile Include="Runtime\ISiteable.cs" />
     <Compile Include="Runtime\ManagerBase.cs" />
     <Compile Include="Runtime\MetaManager.cs" />
@@ -50,6 +51,8 @@
     <Compile Include="Plugins\PageProcessResult.cs" />
     <Compile Include="Plugins\PluginManager.cs" />
     <Compile Include="Plugins\SitePlugin.cs" />
+    <Compile Include="Statistics\PluginStat.cs" />
+    <Compile Include="Statistics\SiteStatistics.cs" />
     <Compile Include="Scripts\ScriptManager.cs" />
     <Compile Include="Runtime\SiteGenerator.cs" />
     <Compile Include="Themes\DefaultThemeProvider.cs" />

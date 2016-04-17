@@ -26,6 +26,8 @@ namespace Lunet.Layouts
             layouts = new Dictionary<string, Template>();
         }
 
+        public override string Name => "layout";
+
         public override PageProcessResult TryProcess(ContentObject page)
         {
             if (page.Script == null || page.ScriptObject == null)
@@ -33,7 +35,7 @@ namespace Lunet.Layouts
                 return PageProcessResult.None;
             }
 
-            var layoutName = page.Layout ?? page.DefaultLayout;
+            var layoutName = page.Layout ?? page.Section;
             layoutName = NormalizeLayoutName(layoutName);
 
             var layoutNames = new HashSet<string>() {layoutName};
@@ -105,32 +107,6 @@ namespace Lunet.Layouts
             return result;
         }
 
-        private string NormalizeLayoutName(string layoutName)
-        {
-            if (string.IsNullOrEmpty(layoutName))
-            {
-                return DefaultLayoutName;
-            }
-            layoutName = layoutName.Trim();
-            layoutName = layoutName.Replace('\\', '/');
-            var index = layoutName.IndexOf('/');
-            if (index > 0)
-            {
-                layoutName = layoutName.Substring(0, index);
-            }
-            else if (index == 0)
-            {
-                layoutName = null;
-            }
-
-            if (string.IsNullOrEmpty(layoutName))
-            {
-                return DefaultLayoutName;
-            }
-            
-            return layoutName;
-        }
-
         private Template GetLayout(string layoutName, string layoutType, string layoutExtension)
         {
             Template layoutPage = null;
@@ -192,6 +168,32 @@ namespace Lunet.Layouts
             }
 
             return layoutPage;
+        }
+
+        private string NormalizeLayoutName(string layoutName)
+        {
+            if (string.IsNullOrEmpty(layoutName))
+            {
+                return DefaultLayoutName;
+            }
+            layoutName = layoutName.Trim();
+            layoutName = layoutName.Replace('\\', '/');
+            var index = layoutName.IndexOf('/');
+            if (index > 0)
+            {
+                layoutName = layoutName.Substring(0, index);
+            }
+            else if (index == 0)
+            {
+                layoutName = null;
+            }
+
+            if (string.IsNullOrEmpty(layoutName))
+            {
+                return DefaultLayoutName;
+            }
+
+            return layoutName;
         }
     }
 }

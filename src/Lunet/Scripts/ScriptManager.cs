@@ -273,9 +273,10 @@ namespace Lunet.Scripts
             public string Load(TemplateContext context, SourceSpan callerSpan, string templateName, out string templateFilePath)
             {
                 templateFilePath = null;
-                if (templateName.Contains("..") || templateName.Contains("/") || templateName.Contains("\\"))
+                templateName = templateName.Trim();
+                if (templateName.Contains("..") || templateName.StartsWith("/") || templateName.StartsWith("\\"))
                 {
-                    site.Error(callerSpan, $"The include [{templateName}] cannot contain '..' or '/' or '\\'");
+                    site.Error(callerSpan, $"The include [{templateName}] cannot contain '..' or start with '/' or '\\'");
                     return null;
                 }
 
@@ -292,6 +293,5 @@ namespace Lunet.Scripts
                 return null;
             }
         }
-
     }
 }

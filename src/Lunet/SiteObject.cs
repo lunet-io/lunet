@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
-using Lunet.Layouts;
 using Lunet.Plugins;
 using Lunet.Runtime;
 using Lunet.Scripts;
+using Lunet.Statistics;
 using Lunet.Themes;
 using Microsoft.Extensions.Logging;
 using Textamina.Scriban.Parsing;
@@ -18,6 +19,7 @@ namespace Lunet
 
         private const string SiteDirectoryName = "_site";
         private const string DefaultPageExtensionValue = ".html";
+        private readonly Stopwatch clock;
 
         private SiteObject(string configFilePathArg, ILoggerFactory loggerFactory)
         {
@@ -32,6 +34,8 @@ namespace Lunet
             }
             this.BaseDirectoryInfo = new DirectoryInfo(baseDirectoryFullpath);
             BaseDirectory = this.BaseDirectoryInfo.FullName;
+
+            clock = new Stopwatch();
 
             StaticFiles = new List<ContentObject>();
             Pages = new List<ContentObject>();
@@ -56,6 +60,8 @@ namespace Lunet
             DefaultPageExtension = DefaultPageExtensionValue;
 
             Scripts = new ScriptManager(this);
+
+            Statistics = new SiteStatistics();
 
             // Must be last
             Generator = new SiteGenerator(this);
@@ -96,6 +102,8 @@ namespace Lunet
         public SiteGenerator Generator { get; }
 
         public ScriptManager Scripts { get; }
+
+        public SiteStatistics Statistics { get; }
 
         public bool UrlAsFile
         {
@@ -302,9 +310,14 @@ namespace Lunet
                     loaded.Add(relativePath);
 
                     ContentObject page;
+                    clock.Restart();
                     LoadPage(rootDirectory, (FileInfo)entry, out page);
+                    clock.Stop();
                     if (page != null)
                     {
+                        // Update statistics
+                        Statistics.GetContentStat(page).LoadingParsingDuration += clock.Elapsed;
+
                         if (page.SourceFileInfo.Name.StartsWith("index.") && indexPage == null)
                         {
                             indexPage = page;
@@ -324,18 +337,28 @@ namespace Lunet
             // Process all pages before the index
             foreach (var page in pages)
             {
+                clock.Restart();
                 if (Scripts.TryRunFrontMatter(page.Script, page))
                 {
+                    clock.Stop();
                     Pages.Add(page);
+
+                    // Update statistics
+                    Statistics.GetContentStat(page).EvaluateDuration += clock.Elapsed;
                 }
             }
 
             // Process the index
             if (indexPage != null)
             {
+                clock.Restart();
                 if (Scripts.TryRunFrontMatter(indexPage.Script, indexPage))
                 {
+                    clock.Stop();
                     Pages.Add(indexPage);
+
+                    // Update statistics
+                    Statistics.GetContentStat(indexPage).EvaluateDuration += clock.Elapsed;
                 }
             }
         }

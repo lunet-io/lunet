@@ -32,14 +32,14 @@ namespace Lunet.Runtime
             if (sectionIndex >= 0)
             {
                 Layout = Path.Substring(0, sectionIndex);
-                PathLayout = Path.Substring(sectionIndex + 1);
+                PathInSection = Path.Substring(sectionIndex + 1);
             }
             else
             {
                 Layout = string.Empty;
-                PathLayout = Path;
+                PathInSection = Path;
             }
-            DefaultLayout = Layout;
+            Section = Layout;
 
             // Extract the default Url of this content
             Url = Path.Substring(0, Path.Length - Extension.Length);
@@ -55,8 +55,8 @@ namespace Lunet.Runtime
             SetValue(FileVariables.Path, Path, true);
             SetValue(FileVariables.Extension, Extension, true);
 
-            SetValue(PageVariables.DefaultLayout, Layout, true);
-            SetValue(PageVariables.PathLayout, PathLayout, true);
+            SetValue(PageVariables.Section, Layout, true);
+            SetValue(PageVariables.PathInSection, PathInSection, true);
         }
 
         public DirectoryInfo RootDirectoryInfo { get; }
@@ -77,9 +77,9 @@ namespace Lunet.Runtime
 
         public string Extension { get; }
 
-        public string DefaultLayout { get; }
+        public string Section { get; }
 
-        public string PathLayout { get; }
+        public string PathInSection { get; }
 
 
         public bool Discard

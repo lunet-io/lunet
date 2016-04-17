@@ -36,8 +36,8 @@ namespace Lunet.Runtime
 
         public const string LayoutType = "layout_type";
 
-        public const string DefaultLayout = "default_layout";
+        public const string Section = "section";
 
-        public const string PathLayout = "path_layout";
+        public const string PathInSection = "path_in_section";
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Lunet.Helpers;
@@ -20,6 +21,7 @@ namespace Lunet.Plugins
     public sealed class PluginManager : ManagerBase
     {
         private readonly HashSet<object> initializedExtensions;
+        private readonly Stopwatch clock;
 
         internal PluginManager(SiteObject site) : base(site)
         {
@@ -30,6 +32,7 @@ namespace Lunet.Plugins
             };
             initializedExtensions = new HashSet<object>();
             Site.SetValue(SiteVariables.Plugins, this, true);
+            clock = new Stopwatch();
         }
 
         public OrderedList<ISitePlugin> List { get; }
@@ -79,19 +82,30 @@ namespace Lunet.Plugins
             }
         }
 
-
         public void BeginProcess()
         {
+            var statistics = Site.Statistics;
+
             // Callback plugins once files have been initialized but not yet processed
-            foreach (var processors in Processors)
+            for (int i = 0; i < Processors.Count; i++)
             {
-                processors.BeginProcess();
+                var processor = Processors[i];
+                var stat = statistics.GetPluginStat(processor);
+                stat.Order = i;
+
+                clock.Restart();
+                processor.BeginProcess();
+                clock.Stop();
+                stat.BeginDuration = clock.Elapsed;
             }
         }
 
         public void ProcessPages(List<ContentObject> pages)
         {
             if (pages == null) throw new ArgumentNullException(nameof(pages));
+
+            var statistics = Site.Statistics;
+
             // Process pages
             var pageProcessors = Processors.OfType<IPageProcessor>().ToList();
             var pendingPageProcessors = new List<IPageProcessor>();
@@ -124,9 +138,17 @@ namespace Lunet.Plugins
 
                         // Note that page.ContentExtension can be changed by a processor 
                         // while processing a page
+                        clock.Restart();
                         var result = processor.TryProcess(page);
+                        clock.Stop();
+
                         if (result != PageProcessResult.None)
                         {
+                            // Update statistics per plugin
+                            var stat = statistics.GetPluginStat(processor);
+                            stat.PageCount++;
+                            stat.PageDuration += clock.Elapsed;
+
                             hasBeenProcessed = true;
                             pendingPageProcessors.RemoveAt(i);
                             breakProcessing = result == PageProcessResult.Break;
@@ -146,10 +168,18 @@ namespace Lunet.Plugins
 
         public void EndProcess()
         {
+            var statistics = Site.Statistics;
+
             // Callback plugins once files have been initialized but not yet processed
             foreach (var plugin in Processors)
             {
-                plugin.EndProcess();
+                clock.Restart();
+
+                plugin.BeginProcess();
+
+                // Update statistics
+                clock.Stop();
+                statistics.GetPluginStat(plugin).EndDuration += clock.Elapsed;
             }
         }
 
@@ -160,7 +190,17 @@ namespace Lunet.Plugins
                 page.ScriptObject = new ScriptObject();
             }
 
-            return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObject);
+
+            clock.Reset();
+            try
+            {
+                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObject);
+            }
+            finally
+            {
+                clock.Stop();
+                Site.Statistics.GetContentStat(page).EvaluateDuration += clock.Elapsed;
+            }
         }
 
         private void InitializePendingPluginsAndProcessors()
@@ -185,7 +225,12 @@ namespace Lunet.Plugins
                         hasInitialized = true;
                         try
                         {
+                            clock.Start();
                             extension.Initialize(Site);
+                            clock.Stop();
+
+                            // Update statistics
+                            Site.Statistics.GetPluginStat(extension).InitDuration = clock.Elapsed;
                         }
                         catch (Exception ex)
                         {
