@@ -111,8 +111,20 @@ namespace Lunet.Plugins
             var pendingPageProcessors = new List<IPageProcessor>();
             foreach (var page in pages)
             {
+                // If page is discarded, skip it
+                if (page.Discard)
+                {
+                    continue;
+                }
+
                 // If there is a script on this page, and it didn't run well, proceed to next page
                 if (page.Script != null && !TryEvaluate(page))
+                {
+                    continue;
+                }
+
+                // If page is discarded, skip it
+                if (page.Discard)
                 {
                     continue;
                 }
@@ -129,7 +141,7 @@ namespace Lunet.Plugins
                 // that could then be processed by another IPageProcessor
                 // But we make sure that a processor cannot process a page more than one time
                 // to avoid an infinite loop
-                while (hasBeenProcessed && !breakProcessing)
+                while (hasBeenProcessed && !breakProcessing && !page.Discard)
                 {
                     hasBeenProcessed = false;
                     for (int i = pendingPageProcessors.Count - 1; i >= 0; i--)
