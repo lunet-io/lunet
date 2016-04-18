@@ -14,8 +14,7 @@ namespace Lunet
 
             var site = SiteFactory.FromFile(Path.Combine(Environment.CurrentDirectory, args[0]), loggerFactory);
             //site.Initialize();
-
-            site.Generator.Run();
+            site.Generate();
 
             site.Statistics.Dump((s => site.Info(s)));
         }
