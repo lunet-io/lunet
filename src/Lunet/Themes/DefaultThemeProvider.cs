@@ -47,7 +47,7 @@ namespace Lunet.Themes
                 yield break;
             }
 
-            var themes = new ScriptObject();
+            var themes = new DynamicObject();
             if (site.Scripts.TryImportScript(themeRegistryStr, Name, themes))
             {
                 var themeList = themes["themes"] as ScriptArray;

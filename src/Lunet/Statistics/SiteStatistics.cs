@@ -53,6 +53,8 @@ namespace Lunet.Statistics
         {
             if (log == null) throw new ArgumentNullException(nameof(log));
 
+            log($"Total time: {TotalTime.TotalSeconds:0.###}s");
+
             // TODO: Add report
         }
 

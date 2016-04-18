@@ -1,21 +1,5 @@
 namespace Lunet.Runtime
 {
-    public class FileVariables
-    {
-        protected FileVariables() { }
-
-        public const string Length = "length";
-
-        public const string ModifiedTime = "modified_time";
-
-        public const string Path = "path";
-
-        public const string Extension = "ext";
-
-        public const string Discard = "discard";
-    }
-
-
     public class PageVariables : FileVariables
     {
         private PageVariables() {}

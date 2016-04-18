@@ -50,13 +50,13 @@ namespace Lunet.Runtime
             }
 
             // Replicate readonly values to the Scripting object
-            SetValue(FileVariables.Length, Length, true);
-            SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
-            SetValue(FileVariables.Path, Path, true);
-            SetValue(FileVariables.Extension, Extension, true);
+            DynamicObject.SetValue(FileVariables.Length, Length, true);
+            DynamicObject.SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
+            DynamicObject.SetValue(FileVariables.Path, Path, true);
+            DynamicObject.SetValue(FileVariables.Extension, Extension, true);
 
-            SetValue(PageVariables.Section, Layout, true);
-            SetValue(PageVariables.PathInSection, PathInSection, true);
+            DynamicObject.SetValue(PageVariables.Section, Layout, true);
+            DynamicObject.SetValue(PageVariables.PathInSection, PathInSection, true);
         }
 
         public DirectoryInfo RootDirectoryInfo { get; }
@@ -84,8 +84,8 @@ namespace Lunet.Runtime
 
         public bool Discard
         {
-            get { return GetSafe<bool>(FileVariables.Discard); }
-            set { this[FileVariables.Discard] = value; }
+            get { return DynamicObject.GetSafeValue<bool>(FileVariables.Discard); }
+            set { DynamicObject[FileVariables.Discard] = value; }
         }
        
 
@@ -94,8 +94,7 @@ namespace Lunet.Runtime
         /// </summary>
         public ScriptPage Script { get; set; }
 
-
-        public ScriptObject ScriptObject { get; set; }
+        public ScriptObject ScriptObjectLocal { get; set; }
 
         public bool HasFrontMatter => Script?.FrontMatter != null;
 
@@ -104,8 +103,8 @@ namespace Lunet.Runtime
         /// </summary>
         public string Content
         {
-            get { return GetSafe<string>(PageVariables.Content); }
-            set { this[PageVariables.Content] = value; }
+            get { return DynamicObject.GetSafeValue<string>(PageVariables.Content); }
+            set { DynamicObject[PageVariables.Content] = value; }
         }
 
         /// <summary>
@@ -113,27 +112,27 @@ namespace Lunet.Runtime
         /// </summary>
         public string ContentExtension
         {
-            get { return GetSafe<string>(PageVariables.ContentExtension); }
-            set { this[PageVariables.ContentExtension] = value; }
+            get { return DynamicObject.GetSafeValue<string>(PageVariables.ContentExtension); }
+            set { DynamicObject[PageVariables.ContentExtension] = value; }
         }
 
         public string Url
         {
-            get { return GetSafe<string>(PageVariables.Url); }
-            set { this[PageVariables.Url] = value; }
+            get { return DynamicObject.GetSafeValue<string>(PageVariables.Url); }
+            set { DynamicObject[PageVariables.Url] = value; }
         }
 
         public bool UrlExplicit
         {
-            get { return GetSafe<bool>(PageVariables.UrlExplicit); }
-            set { this[PageVariables.UrlExplicit] = value; }
+            get { return DynamicObject.GetSafeValue<bool>(PageVariables.UrlExplicit); }
+            set { DynamicObject[PageVariables.UrlExplicit] = value; }
         }
 
 
         public string Layout
         {
-            get { return GetSafe<string>(PageVariables.Layout); }
-            set { this[PageVariables.Layout] = value; }
+            get { return DynamicObject.GetSafeValue<string>(PageVariables.Layout); }
+            set { DynamicObject[PageVariables.Layout] = value; }
         }
 
         public string GetDestinationPath()

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license. 
+// See the license.txt file in the project root for more information.
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -104,14 +107,14 @@ namespace Lunet.Runtime
 
         public bool UrlAsFile
         {
-            get { return GetSafe<bool>(SiteVariables.UrlAsFile); }
-            set { this[SiteVariables.UrlAsFile] = value; }
+            get { return DynamicObject.GetSafeValue<bool>(SiteVariables.UrlAsFile); }
+            set { DynamicObject[SiteVariables.UrlAsFile] = value; }
         }
 
         public string DefaultPageExtension
         {
-            get { return GetSafe<string>(SiteVariables.DefaultPageExtension); }
-            set { this[SiteVariables.DefaultPageExtension] = value; }
+            get { return DynamicObject.GetSafeValue<string>(SiteVariables.DefaultPageExtension); }
+            set { DynamicObject[SiteVariables.DefaultPageExtension] = value; }
         }
 
         public IEnumerable<DirectoryInfo> ContentDirectories
@@ -236,7 +239,7 @@ namespace Lunet.Runtime
             ContentObject indexPage = null;
             foreach (var entry in directory.EnumerateFileSystemInfos())
             {
-                if (entry.Name == SiteFactory.DefaultConfigFileName1)
+                if (entry.Name == SiteFactory.DefaultConfigFilename)
                 {
                     continue;
                 }
@@ -280,7 +283,7 @@ namespace Lunet.Runtime
             foreach (var page in pages)
             {
                 clock.Restart();
-                if (Scripts.TryRunFrontMatter(page.Script, page))
+                if (Scripts.TryRunFrontMatter(page.Script, page.DynamicObject))
                 {
                     clock.Stop();
                     Pages.Add(page);
@@ -294,7 +297,7 @@ namespace Lunet.Runtime
             if (indexPage != null)
             {
                 clock.Restart();
-                if (Scripts.TryRunFrontMatter(indexPage.Script, indexPage))
+                if (Scripts.TryRunFrontMatter(indexPage.Script, indexPage.DynamicObject))
                 {
                     clock.Stop();
                     Pages.Add(indexPage);

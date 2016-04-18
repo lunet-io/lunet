@@ -9,9 +9,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Lunet
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public static class SiteFactory
     {
-        internal const string DefaultConfigFileName1 = "config.sban";
+        /// <summary>
+        /// The default configuration filename config.sban
+        /// </summary>
+        public const string DefaultConfigFilename = "config.sban";
 
         /// <summary>
         /// Gets the <see cref="SiteObject"/> from the specified configuration file path.
@@ -55,7 +61,7 @@ namespace Lunet
             var directory = new DirectoryInfo(directoryPath);
             while (directory != null)
             {
-                var site = TryFromFile(Path.Combine(directory.FullName, SiteFactory.DefaultConfigFileName1), loggerFactory);
+                var site = TryFromFile(Path.Combine(directory.FullName, SiteFactory.DefaultConfigFilename), loggerFactory);
 
                 if (site != null)
                 {

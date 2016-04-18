@@ -64,7 +64,7 @@ namespace Lunet.Scripts
             return template;
         }
 
-        public bool TryImportScript(string scriptText, string scriptPath, ScriptObject scriptObject, bool allowInclude = false)
+        public bool TryImportScript(string scriptText, string scriptPath, IDynamicObject scriptObject, bool allowInclude = false)
         {
             if (scriptText == null) throw new ArgumentNullException(nameof(scriptText));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
@@ -73,7 +73,7 @@ namespace Lunet.Scripts
             var scriptConfig = ParseScript(scriptText, scriptPath, ParsingMode.ScriptOnly);
             if (!scriptConfig.HasErrors)
             {
-                Context.PushGlobal(scriptObject);
+                Context.PushGlobal((ScriptObject)scriptObject);
                 Context.PushSourceFile(scriptPath);
                 Context.Options.TemplateLoader = allowInclude ? templateLoaderFromIncludes : unauthorizedTemplateLoader;
 
@@ -97,7 +97,7 @@ namespace Lunet.Scripts
             return false;
         }
 
-        public bool TryImportScriptFromFile(string scriptPath, ScriptObject scriptObject, bool expectScript = false, bool allowInclude = false)
+        public bool TryImportScriptFromFile(string scriptPath, IDynamicObject scriptObject, bool expectScript = false, bool allowInclude = false)
         {
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
@@ -123,7 +123,7 @@ namespace Lunet.Scripts
         /// <summary>
         /// Initializes this instance.
         /// </summary>
-        public bool TryRunFrontMatter(ScriptPage script, ScriptObject obj)
+        public bool TryRunFrontMatter(ScriptPage script, IDynamicObject obj)
         {
             if (script == null) throw new ArgumentNullException(nameof(script));
             if (obj == null) throw new ArgumentNullException(nameof(obj));
@@ -133,13 +133,13 @@ namespace Lunet.Scripts
                 return false;
             }
 
-            Context.PushGlobal(obj);
+            Context.PushGlobal((ScriptObject)obj);
             try
             {
                 Context.Options.Parser.Mode = ParsingMode.FrontMatter;
                 Context.Options.TemplateLoader = templateLoaderFromIncludes;
 
-                Site.SetValue(PageVariables.Site, this, true);
+                Site.DynamicObject.SetValue(PageVariables.Site, this.DynamicObject, true);
                 script.FrontMatter.Evaluate(Context);
             }
             catch (ScriptRuntimeException exception)
@@ -155,7 +155,7 @@ namespace Lunet.Scripts
                 Context.Options.TemplateLoader = unauthorizedTemplateLoader;
 
                 // We don't keep the site variable after this initialization
-                Site.Remove(PageVariables.Site);
+                Site.DynamicObject.Remove(PageVariables.Site);
             }
             return true;
         }
@@ -184,8 +184,8 @@ namespace Lunet.Scripts
                 Context.Options.Parser.Mode = ParsingMode.Default;
                 Context.Options.TemplateLoader = templateLoaderFromIncludes;
 
-                currentScriptObject.SetValue(PageVariables.Site, Site, true);
-                currentScriptObject.SetValue(PageVariables.Page, page, true);
+                currentScriptObject.SetValue(PageVariables.Site, Site.DynamicObject, true);
+                currentScriptObject.SetValue(PageVariables.Page, page.DynamicObject, true);
 
                 // TODO: setup include paths for script
                 script.Evaluate(Context);

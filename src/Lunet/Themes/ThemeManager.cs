@@ -110,7 +110,7 @@ namespace Lunet.Themes
 
         public override void InitializeAfterConfig()
         {
-            var theme = Site.GetSafe<string>(SiteVariables.Theme);
+            var theme = Site.DynamicObject.GetSafeValue<string>(SiteVariables.Theme);
             var defaultTheme = theme;
 
             var themeLoaded = new HashSet<string>();
@@ -130,12 +130,12 @@ namespace Lunet.Themes
                     Site.Trace($"Using {themeText} [{theme}] from [{themeObject.Path}]");
                 }
 
-                var configPath = Path.Combine(themeObject.Directory, SiteFactory.DefaultConfigFileName1);
-                if (Site.Scripts.TryImportScriptFromFile(configPath, Site))
+                var configPath = Path.Combine(themeObject.Directory, SiteFactory.DefaultConfigFilename);
+                if (Site.Scripts.TryImportScriptFromFile(configPath, Site.DynamicObject))
                 {
                     // Retrieve the theme from the page
                     // If we have a new theme proceed to inherited theme
-                    var nextTheme = Site.GetSafe<string>(SiteVariables.Theme);
+                    var nextTheme = Site.DynamicObject.GetSafeValue<string>(SiteVariables.Theme);
                     theme = nextTheme != theme ? nextTheme : null;
 
                     if (theme != null)
@@ -159,7 +159,7 @@ namespace Lunet.Themes
             // Restore the value of the theme
             if (defaultTheme != null)
             {
-                Site.SetValue(SiteVariables.Theme, defaultTheme, false);
+                Site.DynamicObject.SetValue(SiteVariables.Theme, defaultTheme, false);
             }
         }
     }

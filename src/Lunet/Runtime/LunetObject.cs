@@ -1,24 +1,25 @@
-using Scriban.Runtime;
-
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license. 
+// See the license.txt file in the project root for more information.
 namespace Lunet.Runtime
 {
-    public abstract class LunetObject : ScriptObject
+    /// <summary>
+    /// Base class for an lunet object that provides a dynamic object
+    /// accessible from scripts.
+    /// </summary>
+    public abstract class LunetObject
     {
-        public T GetSafe<T>(string name)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LunetObject"/> class.
+        /// </summary>
+        protected LunetObject()
         {
-            var obj = this[name];
-            // If value is null, the property does no exist, 
-            // so we can safely return immediately with the default value
-            if (obj == null)
-            {
-                return default(T);
-            }
-            if (!(obj is T))
-            {
-                obj = default(T);
-                this[name] = obj;
-            }
-            return (T)obj;
+            DynamicObject = new DynamicObject();
         }
+
+        /// <summary>
+        /// Gets the dynamic object attached to this instance.
+        /// </summary>
+        public IDynamicObject DynamicObject { get; }
     }
 }

@@ -10,7 +10,7 @@ namespace Lunet.Runtime
     /// Base class for a Manager.
     /// </summary>
     /// <seealso cref="LunetObject" />
-    public abstract class ManagerBase : LunetObject, ISiteable
+    public abstract class ManagerBase : LunetObject
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ManagerBase"/> class.

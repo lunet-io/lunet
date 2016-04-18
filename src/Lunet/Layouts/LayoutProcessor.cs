@@ -13,7 +13,7 @@ using Scriban.Runtime;
 
 namespace Lunet.Layouts
 {
-    public class LayoutProcessor : PageProcessorBase
+    public class LayoutProcessor : ContentProcessor
     {
         private readonly Dictionary<string, Template> layouts;
 
@@ -28,11 +28,11 @@ namespace Lunet.Layouts
 
         public override string Name => "layout";
 
-        public override PageProcessResult TryProcess(ContentObject page)
+        public override ContentResult TryProcess(ContentObject page)
         {
-            if (page.Script == null || page.ScriptObject == null)
+            if (page.Script == null || page.ScriptObjectLocal == null)
             {
-                return PageProcessResult.None;
+                return ContentResult.None;
             }
 
             var layoutName = page.Layout ?? page.Section;
@@ -40,53 +40,53 @@ namespace Lunet.Layouts
 
             var layoutNames = new HashSet<string>() {layoutName};
 
-            var result = PageProcessResult.Continue;
+            var result = ContentResult.Continue;
 
             bool continueLayout;
             do
             {
                 continueLayout = false;
                 var layoutExtension = page.ContentExtension ?? Site.GetSafeDefaultPageExtension();
-                var scriptTemplate = GetLayout(layoutName, page.GetSafe<string>(PageVariables.LayoutType), layoutExtension);
+                var layoutScript = GetLayout(layoutName, page.ScriptObjectLocal.GetSafeValue<string>(PageVariables.LayoutType), layoutExtension);
 
                 // If we haven't found any layout, this is not an error, so we let the 
                 // content as-is
-                if (scriptTemplate == null)
+                if (layoutScript == null)
                 {
                     break;
                 }
 
                 // If we had any errors, the page is invalid, so we can't process it
-                if (scriptTemplate.HasErrors)
+                if (layoutScript.HasErrors)
                 {
-                    result = PageProcessResult.Break;
+                    result = ContentResult.Break;
                     break;
                 }
 
                 // We run first the front matter on the page
-                if (!Site.Scripts.TryRunFrontMatter(scriptTemplate.Page, page))
+                if (!Site.Scripts.TryRunFrontMatter(layoutScript.Page, page.DynamicObject))
                 {
-                    result = PageProcessResult.Break;
+                    result = ContentResult.Break;
                     break;
                 }
 
-                page.ScriptObject.SetValue(PageVariables.Page, page, true);
+                page.ScriptObjectLocal.SetValue(PageVariables.Page, page.DynamicObject, true);
 
                 // We manage global locally here as we need to push the local variable ScriptVariable.BlockDelegate
-                Site.Scripts.Context.PushGlobal(page.ScriptObject);
+                Site.Scripts.Context.PushGlobal(page.ScriptObjectLocal);
                 try
                 {
                     Site.Scripts.Context.SetValue(ScriptVariable.BlockDelegate, page.Content);
 
-                    if (Site.Scripts.TryEvaluate(page, scriptTemplate.Page, scriptTemplate.SourceFilePath))
+                    if (Site.Scripts.TryEvaluate(page, layoutScript.Page, layoutScript.SourceFilePath))
                     {
                         var nextLayout = NormalizeLayoutName(page.Layout);
                         if (nextLayout != layoutName)
                         {
                             if (layoutNames.Contains(nextLayout))
                             {
-                                Site.Error($"Invalid recursive layout [{nextLayout}] from script [{Site.GetRelativePath(scriptTemplate.SourceFilePath)}");
-                                result = PageProcessResult.Break;
+                                Site.Error($"Invalid recursive layout [{nextLayout}] from script [{Site.GetRelativePath(layoutScript.SourceFilePath)}");
+                                result = ContentResult.Break;
                                 break;
                             }
                             layoutNames.Add(nextLayout);

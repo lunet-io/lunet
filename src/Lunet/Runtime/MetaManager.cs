@@ -38,7 +38,6 @@ namespace Lunet.Runtime
 
         public string PrivateDirectory { get; }
 
-
         public IEnumerable<DirectoryInfo> Directories
         {
             get

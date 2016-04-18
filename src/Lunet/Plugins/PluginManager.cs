@@ -31,7 +31,7 @@ namespace Lunet.Plugins
                 new LayoutProcessor() // Default processor
             };
             initializedExtensions = new HashSet<object>();
-            Site.SetValue(SiteVariables.Plugins, this, true);
+            Site.DynamicObject.SetValue(SiteVariables.Plugins, DynamicObject, true);
             clock = new Stopwatch();
         }
 
@@ -107,8 +107,8 @@ namespace Lunet.Plugins
             var statistics = Site.Statistics;
 
             // Process pages
-            var pageProcessors = Processors.OfType<IPageProcessor>().ToList();
-            var pendingPageProcessors = new List<IPageProcessor>();
+            var pageProcessors = Processors.OfType<IContentProcessor>().ToList();
+            var pendingPageProcessors = new List<IContentProcessor>();
             foreach (var page in pages)
             {
                 // If page is discarded, skip it
@@ -135,10 +135,10 @@ namespace Lunet.Plugins
                 bool hasBeenProcessed = true;
                 bool breakProcessing = false;
 
-                // We process the page going through all IPageProcessor from the end of the list
+                // We process the page going through all IContentProcessor from the end of the list
                 // (more priority) to the begining of the list (less priority).
-                // An IPageProcessor can transform the page to another type of content
-                // that could then be processed by another IPageProcessor
+                // An IContentProcessor can transform the page to another type of content
+                // that could then be processed by another IContentProcessor
                 // But we make sure that a processor cannot process a page more than one time
                 // to avoid an infinite loop
                 while (hasBeenProcessed && !breakProcessing && !page.Discard)
@@ -154,7 +154,7 @@ namespace Lunet.Plugins
                         var result = processor.TryProcess(page);
                         clock.Stop();
 
-                        if (result != PageProcessResult.None)
+                        if (result != ContentResult.None)
                         {
                             // Update statistics per plugin
                             var stat = statistics.GetPluginStat(processor);
@@ -163,7 +163,7 @@ namespace Lunet.Plugins
 
                             hasBeenProcessed = true;
                             pendingPageProcessors.RemoveAt(i);
-                            breakProcessing = result == PageProcessResult.Break;
+                            breakProcessing = result == ContentResult.Break;
                             break;
                         }
                     }
@@ -197,16 +197,15 @@ namespace Lunet.Plugins
 
         private bool TryEvaluate(ContentObject page)
         {
-            if (page.ScriptObject == null)
+            if (page.ScriptObjectLocal == null)
             {
-                page.ScriptObject = new ScriptObject();
+                page.ScriptObjectLocal = new ScriptObject();
             }
-
 
             clock.Reset();
             try
             {
-                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObject);
+                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObjectLocal);
             }
             finally
             {

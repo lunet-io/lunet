@@ -8,7 +8,7 @@ using Lunet.Runtime;
 
 namespace Lunet.Themes
 {
-    public sealed class ThemeObject : LunetObject, ISiteable
+    public sealed class ThemeObject : LunetObject
     {
         internal ThemeObject(SiteObject site, ThemeDescription desc, string directory)
         {
@@ -22,10 +22,10 @@ namespace Lunet.Themes
             Directory = DirectoryInfo.FullName;
             Path = site.GetRelativePath(directory, true);
 
-            SetValue("name", Name, true);
-            SetValue("description", Description, true);
-            SetValue("url", Url, true);
-            SetValue("path", Path, true);
+            DynamicObject.SetValue("name", Name, true);
+            DynamicObject.SetValue("description", Description, true);
+            DynamicObject.SetValue("url", Url, true);
+            DynamicObject.SetValue("path", Path, true);
         }
         public SiteObject Site { get; }
 

@@ -159,7 +159,7 @@ namespace Lunet.Runtime
             }
 
             // We then actually load the config
-            Scripts.TryImportScriptFromFile(Site.ConfigFile, Site, true);
+            Scripts.TryImportScriptFromFile(Site.ConfigFile, Site.DynamicObject, true);
 
             // If we have any errors, early exit
             if (Site.HasErrors)

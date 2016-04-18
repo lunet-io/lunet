@@ -13,7 +13,7 @@ using Scriban.Runtime;
 
 namespace Lunet.Plugins.Markdig
 {
-    public class MarkdigPlugin : PageProcessorBase, ISitePlugin
+    public class MarkdigPlugin : ContentProcessor, ISitePlugin
     {
         private const string PluginName = "markdig";
 
@@ -29,17 +29,17 @@ namespace Lunet.Plugins.Markdig
         protected override void InitializeCore()
         {
             Site.Plugins.Processors.AddIfNotAlready(this);
-            Site.Plugins.SetValue(PluginName, markdigOptions, true);
+            Site.Plugins.DynamicObject.SetValue(PluginName, markdigOptions, true);
         }
 
-        public override PageProcessResult TryProcess(ContentObject page)
+        public override ContentResult TryProcess(ContentObject page)
         {
             var extension = page.ContentExtension;
 
             // This plugin is only working on files with a frontmatter and the markdown extension
             if (!(page.HasFrontMatter && (extension == ".md" || extension == ".markdown")))
             {
-                return PageProcessResult.None;
+                return ContentResult.None;
             }
 
             var pipeline = new MarkdownPipeline();
@@ -58,7 +58,7 @@ namespace Lunet.Plugins.Markdig
             page.ContentExtension = Site.GetSafeDefaultPageExtension();
 
             // Allow further processing of this page
-            return PageProcessResult.Continue;
+            return ContentResult.Continue;
         }
     }
 }
