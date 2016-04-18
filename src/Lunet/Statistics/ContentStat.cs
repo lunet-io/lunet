@@ -17,10 +17,10 @@ namespace Lunet.Statistics
 
         public long OutputBytes { get; set; }
 
-        public TimeSpan LoadingParsingDuration { get; set; }
+        public TimeSpan LoadingParsingTime { get; set; }
 
-        public TimeSpan EvaluateDuration { get; set; }
+        public TimeSpan EvaluateTime { get; set; }
 
-        public TimeSpan OutputDuration { get; set; }
+        public TimeSpan OutputTime { get; set; }
     }
 }

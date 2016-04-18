@@ -258,7 +258,7 @@ namespace Lunet.Runtime
                     if (page != null)
                     {
                         // Update statistics
-                        Statistics.GetContentStat(page).LoadingParsingDuration += clock.Elapsed;
+                        Statistics.GetContentStat(page).LoadingParsingTime += clock.Elapsed;
 
                         if (page.SourceFileInfo.Name.StartsWith("index.") && indexPage == null)
                         {
@@ -286,7 +286,7 @@ namespace Lunet.Runtime
                     Pages.Add(page);
 
                     // Update statistics
-                    Statistics.GetContentStat(page).EvaluateDuration += clock.Elapsed;
+                    Statistics.GetContentStat(page).EvaluateTime += clock.Elapsed;
                 }
             }
 
@@ -300,7 +300,7 @@ namespace Lunet.Runtime
                     Pages.Add(indexPage);
 
                     // Update statistics
-                    Statistics.GetContentStat(indexPage).EvaluateDuration += clock.Elapsed;
+                    Statistics.GetContentStat(indexPage).EvaluateTime += clock.Elapsed;
                 }
             }
         }

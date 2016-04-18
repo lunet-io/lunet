@@ -129,7 +129,7 @@ namespace Lunet.Runtime
             }
             finally
             {
-                stat.OutputDuration += clock.Elapsed;
+                stat.OutputTime += clock.Elapsed;
             }
 
             return true;
@@ -210,7 +210,7 @@ namespace Lunet.Runtime
 
             // Update statistics
             totalDuration.Stop();
-            Site.Statistics.TotalDuration = totalDuration.Elapsed;
+            Site.Statistics.TotalTime = totalDuration.Elapsed;
         }
 
         public void CreateDirectory(DirectoryInfo directory)

@@ -96,7 +96,7 @@ namespace Lunet.Plugins
                 clock.Restart();
                 processor.BeginProcess();
                 clock.Stop();
-                stat.BeginDuration = clock.Elapsed;
+                stat.BeginProcessTime = clock.Elapsed;
             }
         }
 
@@ -159,7 +159,7 @@ namespace Lunet.Plugins
                             // Update statistics per plugin
                             var stat = statistics.GetPluginStat(processor);
                             stat.PageCount++;
-                            stat.PageDuration += clock.Elapsed;
+                            stat.ProcessTime += clock.Elapsed;
 
                             hasBeenProcessed = true;
                             pendingPageProcessors.RemoveAt(i);
@@ -191,7 +191,7 @@ namespace Lunet.Plugins
 
                 // Update statistics
                 clock.Stop();
-                statistics.GetPluginStat(plugin).EndDuration += clock.Elapsed;
+                statistics.GetPluginStat(plugin).EndProcessTime += clock.Elapsed;
             }
         }
 
@@ -211,7 +211,7 @@ namespace Lunet.Plugins
             finally
             {
                 clock.Stop();
-                Site.Statistics.GetContentStat(page).EvaluateDuration += clock.Elapsed;
+                Site.Statistics.GetContentStat(page).EvaluateTime += clock.Elapsed;
             }
         }
 
@@ -242,7 +242,7 @@ namespace Lunet.Plugins
                             clock.Stop();
 
                             // Update statistics
-                            Site.Statistics.GetPluginStat(extension).InitDuration = clock.Elapsed;
+                            Site.Statistics.GetPluginStat(extension).InitializeTime = clock.Elapsed;
                         }
                         catch (Exception ex)
                         {

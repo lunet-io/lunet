@@ -21,7 +21,7 @@ namespace Lunet.Statistics
 
         public Dictionary<ISitePluginCore, PluginStat> Plugins { get; }
 
-        public TimeSpan TotalDuration { get; set; }
+        public TimeSpan TotalTime { get; set; }
 
         public ContentStat GetContentStat(ContentObject page)
         {
@@ -60,7 +60,7 @@ namespace Lunet.Statistics
         {
             Plugins.Clear();
             Content.Clear();
-            TotalDuration = new TimeSpan(0);
+            TotalTime = new TimeSpan(0);
         }
     }
 }

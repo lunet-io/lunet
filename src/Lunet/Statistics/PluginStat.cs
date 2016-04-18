@@ -17,12 +17,12 @@ namespace Lunet.Statistics
 
         public int PageCount { get; set; }
 
-        public TimeSpan InitDuration { get; set; }
+        public TimeSpan InitializeTime { get; set; }
 
-        public TimeSpan BeginDuration { get; set; }
+        public TimeSpan BeginProcessTime { get; set; }
 
-        public TimeSpan PageDuration { get; set; }
+        public TimeSpan ProcessTime { get; set; }
 
-        public TimeSpan EndDuration { get; set; }
+        public TimeSpan EndProcessTime { get; set; }
     }
 }
