@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Text;
@@ -91,6 +92,8 @@ namespace Lunet.Themes
                         {
                             using (var stream = client.GetStreamAsync(themeDesc.Url).Result)
                             {
+                                site.Generator.CreateDirectory(new DirectoryInfo(outputPath));
+
                                 using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
                                 {
                                     zip.ExtractToDirectory(outputPath, themeDesc.Directory);
