@@ -5,8 +5,8 @@
 using Lunet.Plugins;
 using Lunet.Plugins.Markdig;
 using Lunet.Runtime;
-using Textamina.Markdig;
-using Textamina.Scriban.Runtime;
+using Markdig;
+using Scriban.Runtime;
 
 // Register this plugin
 [assembly: SitePlugin(typeof(MarkdigPlugin))]

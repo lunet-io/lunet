@@ -7,9 +7,9 @@ using System.Collections.Generic;
 using System.IO;
 using Lunet.Plugins;
 using Lunet.Runtime;
-using Textamina.Scriban;
-using Textamina.Scriban.Parsing;
-using Textamina.Scriban.Runtime;
+using Scriban;
+using Scriban.Parsing;
+using Scriban.Runtime;
 
 namespace Lunet.Layouts
 {

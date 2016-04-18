@@ -10,7 +10,7 @@ using System.Reflection;
 using Lunet.Helpers;
 using Lunet.Layouts;
 using Lunet.Runtime;
-using Textamina.Scriban.Runtime;
+using Scriban.Runtime;
 
 namespace Lunet.Plugins
 {

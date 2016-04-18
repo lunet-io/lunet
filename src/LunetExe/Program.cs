@@ -11,7 +11,7 @@ namespace Lunet
         {
             var loggerFactory = new LoggerFactory().AddConsole(LogLevel.Trace);
 
-            var site = SiteObject.FromFile(Path.Combine(Environment.CurrentDirectory, args[0]), loggerFactory);
+            var site = SiteFactory.FromFile(Path.Combine(Environment.CurrentDirectory, args[0]), loggerFactory);
             //site.Initialize();
 
 

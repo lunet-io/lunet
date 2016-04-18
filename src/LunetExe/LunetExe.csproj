@@ -52,10 +52,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Textamina.Scriban">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Textamina\scriban\artifacts\bin\Textamina.Scriban\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Textamina.Scriban.dll</HintPath>
-    </Reference>
     <ProjectReference Include="..\Lunet\Lunet.Core.csproj">
       <Project>{3e82658e-3e57-4b3d-8093-1afdd658a2de}</Project>
       <Name>Lunet.Core</Name>

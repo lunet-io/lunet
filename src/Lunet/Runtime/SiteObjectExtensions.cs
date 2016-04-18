@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
-using Textamina.Scriban.Parsing;
+using Scriban.Parsing;
 
 namespace Lunet.Runtime
 {

@@ -2,8 +2,8 @@
 using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
-using Textamina.Scriban.Helpers;
-using Textamina.Scriban.Runtime;
+using Scriban.Helpers;
+using Scriban.Runtime;
 
 namespace Lunet.Runtime
 {

@@ -7,7 +7,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using Textamina.Scriban.Runtime;
+using Scriban.Runtime;
 using Lunet.Helpers;
 using Lunet.Runtime;
 

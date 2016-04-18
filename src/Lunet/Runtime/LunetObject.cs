@@ -1,4 +1,4 @@
-using Textamina.Scriban.Runtime;
+using Scriban.Runtime;
 
 namespace Lunet.Runtime
 {

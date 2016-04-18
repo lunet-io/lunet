@@ -130,7 +130,7 @@ namespace Lunet.Themes
                     Site.Trace($"Using {themeText} [{theme}] from [{themeObject.Path}]");
                 }
 
-                var configPath = Path.Combine(themeObject.Directory, SiteObject.DefaultConfigFileName1);
+                var configPath = Path.Combine(themeObject.Directory, SiteFactory.DefaultConfigFileName1);
                 if (Site.Scripts.TryImportScriptFromFile(configPath, Site))
                 {
                     // Retrieve the theme from the page

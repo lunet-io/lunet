@@ -1,3 +1,5 @@
+using Lunet.Runtime;
+
 namespace Lunet.Plugins
 {
     public interface ISitePluginCore

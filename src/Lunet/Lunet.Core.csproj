@@ -42,6 +42,7 @@
     <Compile Include="Helpers\ExceptionUtil.cs" />
     <Compile Include="Helpers\StringBuilderCache.cs" />
     <Compile Include="Helpers\ZipUtil.cs" />
+    <Compile Include="SiteFactory.cs" />
     <Compile Include="Statistics\ContentStat.cs" />
     <Compile Include="Runtime\ISiteable.cs" />
     <Compile Include="Runtime\ManagerBase.cs" />
@@ -74,19 +75,19 @@
     <Compile Include="Plugins\PageProcessorBase.cs" />
     <Compile Include="Plugins\ProcessorBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SiteObject.cs" />
+    <Compile Include="Runtime\SiteObject.cs" />
     <Compile Include="Runtime\SiteObjectExtensions.cs" />
     <Compile Include="Themes\ThemeObject.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="Textamina.Scriban">
+    <Reference Include="Scriban">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Textamina\scriban\artifacts\bin\Textamina.Scriban\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Textamina.Scriban.dll</HintPath>
+      <HintPath>..\..\..\scriban\artifacts\bin\Scriban\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Scriban.dll</HintPath>
     </Reference>
-    <Reference Include="Textamina.Markdig">
+    <Reference Include="Markdig">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\Textamina\markdig\artifacts\bin\Textamina.Markdig\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Textamina.Markdig.dll</HintPath>
+      <HintPath>..\..\..\markdig\artifacts\bin\Markdig\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Markdig.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup />
