@@ -142,6 +142,11 @@ namespace Lunet.Runtime
             return DefaultPageExtensionValue;
         }
 
+        public void Generate()
+        {
+            Generator.Run();
+        }
+
         public void Load()
         {
             StaticFiles.Clear();
