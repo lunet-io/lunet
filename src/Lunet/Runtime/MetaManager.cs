@@ -50,11 +50,5 @@ namespace Lunet.Runtime
                 }
             }
         }
-
-        public override void InitializeBeforeConfig()
-        {
-            Site.Generator.CreateDirectory(DirectoryInfo);
-            Site.Generator.CreateDirectory(PrivateDirectoryInfo);
-        }
     }
 }
