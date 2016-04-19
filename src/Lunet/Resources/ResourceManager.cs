@@ -20,6 +20,9 @@ namespace Lunet.Resources
     {
         private const string ResourceDirectoryName = "resources";
 
+        private delegate object ResourceFunctionDelegate(object o);
+
+
         public ResourceManager(SiteObject site) : base(site)
         {
             ResourceDirectory = Path.Combine(Site.Meta.Directory, ResourceDirectoryName);
@@ -30,8 +33,7 @@ namespace Lunet.Resources
             };
 
             site.DynamicObject.SetValue(SiteVariables.Resources, this, true);
-
-            site.Scripts.Context.CurrentGlobal.ImportMember(this, "Resolve", "resource");
+            site.Scripts.GlobalObject.Import("resource", (ResourceFunctionDelegate)ResourceFunction);
         }
 
         public FolderInfo ResourceDirectory { get; }
@@ -40,7 +42,7 @@ namespace Lunet.Resources
 
         public OrderedList<ResourceProvider> Providers { get; }
 
-        public IDynamicObject Resolve(object query)
+        private object ResourceFunction(object query)
         {
             var packageFullName = query as string;
 
