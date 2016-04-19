@@ -72,7 +72,7 @@ namespace Lunet.Core
                 {
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Create directory [{Site.GetRelativePath(outputDir.FullName)}]");
+                        Site.Trace($"Create directory [{Site.GetRelativePath(outputDir.FullName, PathFlags.Directory)}]");
                     }
                     outputDir.Create();
                     directoryAlreadyExist = false;
@@ -80,7 +80,7 @@ namespace Lunet.Core
             }
             catch (Exception ex) // wide catch
             {
-                Site.Error($"Unable to create directory [{outputDir.FullName}]. Reason:{ex.GetReason()}");
+                Site.Error($"Unable to create directory [{Site.GetRelativePath(outputDir.FullName, PathFlags.Directory)}]. Reason:{ex.GetReason()}");
                 return false;
             }
 
@@ -93,7 +93,7 @@ namespace Lunet.Core
 
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile)}]");
+                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile, PathFlags.File)}]");
                     }
 
                     using (var writer = new StreamWriter(outputFile))
@@ -111,7 +111,7 @@ namespace Lunet.Core
                 {
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile)}]");
+                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile, PathFlags.File)}]");
                     }
 
                     fromFile.SourceFileInfo.CopyTo(outputFile, true);
@@ -123,7 +123,7 @@ namespace Lunet.Core
             }
             catch (Exception ex)
             {
-                Site.Error($"Unable to copy file [{fromFile.SourceFileInfo.FullName}] to [{outputFile}]. Reason:{ex.GetReason()}");
+                Site.Error($"Unable to copy file [{Site.GetRelativePath(fromFile.SourceFileInfo.FullName, PathFlags.File)}] to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
             }
             finally
@@ -238,7 +238,7 @@ namespace Lunet.Core
                     {
                         if (Site.CanTrace())
                         {
-                            Site.Trace($"Delete file [{Site.GetRelativePath(outputFile)}]");
+                            Site.Trace($"Delete file [{Site.GetRelativePath(outputFile, PathFlags.File)}]");
                         }
                         File.Delete(outputFile);
                     }
@@ -256,7 +256,7 @@ namespace Lunet.Core
                     {
                         if (Site.CanTrace())
                         {
-                            Site.Trace($"Delete directory [{Site.GetRelativePath(outputDirectory)}]");
+                            Site.Trace($"Delete directory [{Site.GetRelativePath(outputDirectory, PathFlags.Directory)}]");
                         }
                         Directory.Delete(outputDirectory);
                     }

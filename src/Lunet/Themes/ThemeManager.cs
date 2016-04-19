@@ -97,7 +97,7 @@ namespace Lunet.Themes
                 }
             }
 
-            Site.Error($"Unable to find the theme [{theme}] locally from [{Site.GetRelativePath(themePublicPath)}] or [{Site.GetRelativePath(themePrivatePath)}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
+            Site.Error($"Unable to find the theme [{theme}] locally from [{Site.GetRelativePath(themePublicPath, PathFlags.File)}] or [{Site.GetRelativePath(themePrivatePath, PathFlags.File)}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
             return null;
         }
 
@@ -135,7 +135,7 @@ namespace Lunet.Themes
                     {
                         if (themeLoaded.Contains(theme))
                         {
-                            Site.Error($"Invalid recursive theme [{theme}] loaded from [{Site.GetRelativePath(configPath)}");
+                            Site.Error($"Invalid recursive theme [{theme}] loaded from [{Site.GetRelativePath(configPath, PathFlags.File)}");
                             break;
                         }
                         themeText = "inherited theme";

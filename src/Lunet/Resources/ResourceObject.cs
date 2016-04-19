@@ -12,21 +12,21 @@ namespace Lunet.Resources
     /// <seealso cref="LunetObject" />
     public class ResourceObject : LunetObject
     {
-        public ResourceObject(ResourceProvider provider, string name, string version, string absolutePath)
+        public ResourceObject(ResourceProvider provider, string name, string version, string absoluteDirectory)
         {
             if (provider == null) throw new ArgumentNullException(nameof(provider));
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (version == null) throw new ArgumentNullException(nameof(version));
-            if (absolutePath == null) throw new ArgumentNullException(nameof(absolutePath));
+            if (absoluteDirectory == null) throw new ArgumentNullException(nameof(absoluteDirectory));
 
             Name = name;
             Version = version;
-            AbsolutePath = absolutePath;
+            AbsoluteDirectory = absoluteDirectory;
             Provider = provider;
-            Path = provider.Manager.Site.GetRelativePath(AbsolutePath);
+            Directory = provider.Manager.Site.GetRelativePath(AbsoluteDirectory, PathFlags.Directory|PathFlags.Normalize);
 
             DynamicObject.SetValue("provider", Provider.Name, true);
-            DynamicObject.SetValue("path", Path, true);
+            DynamicObject.SetValue("path", Directory, true);
         }
 
         public string Name { get; }
@@ -35,8 +35,8 @@ namespace Lunet.Resources
 
         public ResourceProvider Provider { get; }
 
-        public string Path { get; }
+        public string Directory { get; }
 
-        public string AbsolutePath { get;  }
+        public string AbsoluteDirectory { get;  }
     }
 }

@@ -19,7 +19,7 @@ namespace Lunet.Core
             SourceFile = sourceFileInfo.FullName;
             Site = site;
 
-            Path = RootDirectory.GetRelativePath(SourceFile, true);
+            Path = RootDirectory.GetRelativePath(SourceFile, PathFlags.Normalize);
             Length = SourceFileInfo.Length;
             Extension = SourceFileInfo.Extension.ToLowerInvariant();
             ModifiedTime = SourceFileInfo.LastWriteTime;

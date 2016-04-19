@@ -42,6 +42,42 @@ namespace Lunet.Resources
 
         public OrderedList<ResourceProvider> Providers { get; }
 
+        public ResourceObject LoadResource(string resourceQuery, ResourceInstallFlags flags = 0)
+        {
+            if (resourceQuery == null) throw new ArgumentNullException(nameof(resourceQuery));
+
+            var queryParts = resourceQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (queryParts.Length < 2 || queryParts.Length > 3)
+            {
+                throw new LunetException($"Invalid resource name to load [{resourceQuery}]. Expecting a `providerName/packageName[/packageVersion]` (e.g: \"npm/jquery\")");
+            }
+
+            var providerName = queryParts[0];
+            var packageName = queryParts[1];
+
+            foreach (var provider in Providers)
+            {
+                if (provider.Name == providerName)
+                {
+                    var packageVersion = "latest";
+                    if (queryParts.Length == 3)
+                    {
+                        packageVersion = queryParts[2];
+                    }
+                    var resource = provider.GetOrInstall(packageName, packageVersion, flags);
+                    return resource;
+                }
+            }
+
+            throw new LunetException($"Unsupported provider [{providerName}] for resource \"{resourceQuery}\"");
+        }
+
+        /// <summary>
+        /// The `resource` function accessible from scripts.
+        /// </summary>
+        /// <param name="query">The query.</param>
+        /// <returns>A ScriptObject </returns>
+        /// <exception cref="LunetException">Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \providerName/packageName[/packageVersion]\ }</exception>
         private object ResourceFunction(object query)
         {
             var packageFullName = query as string;
@@ -64,29 +100,8 @@ namespace Lunet.Resources
 
             if (packageFullName != null)
             {
-                var names = packageFullName.Split(new [] {'/'}, StringSplitOptions.RemoveEmptyEntries);
-                if (names.Length < 2 || names.Length > 3)
-                {
-                    throw new LunetException($"Invalid resource name to load [{packageFullName}]. Expecting a `providerName/packageName[/packageVersion]` (e.g: \"npm/jquery\")");
-                }
-
-                var providerName = names[0];
-                var packageName = names[1];
-
-                foreach (var provider in Providers)
-                {
-                    if (provider.Name == providerName)
-                    {
-                        var packageVersion = "latest";
-                        if (names.Length == 3)
-                        {
-                            packageVersion = names[2];
-                        }
-                        var resource = provider.GetOrInstall(packageName, packageVersion, flags);
-                        return resource?.DynamicObject;
-                    }
-                }
-                throw new LunetException($"Unsupported provider [{providerName}] for resource \"{packageFullName}\"");
+                var resource = LoadResource(packageFullName, flags);
+                return resource?.DynamicObject;
             }
 
             throw new LunetException("Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \"providerName/packageName[/packageVersion]\" }");

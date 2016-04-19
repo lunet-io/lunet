@@ -52,13 +52,13 @@ namespace Lunet.Core
         /// Gets a relative path to this site base directory from the specified absolute path.
         /// </summary>
         /// <param name="fullFilePath">The full file path.</param>
-        /// <param name="normalized"><c>true</c> to return a normalize path using only '/' for directory separators</param>
+        /// <param name="flags"></param>
         /// <returns>
         /// A relative path
         /// </returns>
         /// <exception cref="System.ArgumentNullException"></exception>
         /// <exception cref="LunetException"></exception>
-        public string GetRelativePath(string fullFilePath, bool normalized = false)
+        public string GetRelativePath(string fullFilePath, PathFlags flags)
         {
             if (fullFilePath == null) throw new ArgumentNullException(nameof(fullFilePath));
             var fullPath = Path.GetFullPath(fullFilePath);
@@ -68,7 +68,7 @@ namespace Lunet.Core
             }
 
             var path = fullPath.Substring(FullPath.Length + 1);
-            return normalized ? PathUtil.NormalizePath(path) : path;
+            return flags.Normalize() ? PathUtil.NormalizePath(path, flags.IsDirectory()) : path;
         }
 
         public static implicit operator FolderInfo(string folderPath)

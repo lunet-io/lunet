@@ -85,7 +85,7 @@ namespace Lunet.Layouts
                         {
                             if (layoutNames.Contains(nextLayout))
                             {
-                                Site.Error($"Invalid recursive layout [{nextLayout}] from script [{Site.GetRelativePath(layoutScript.SourceFilePath)}");
+                                Site.Error($"Invalid recursive layout [{nextLayout}] from script [{Site.GetRelativePath(layoutScript.SourceFilePath, PathFlags.File)}");
                                 result = ContentResult.Break;
                                 break;
                             }

@@ -30,7 +30,7 @@ namespace Lunet.Resources
             if (!File.Exists(packageJson))
             {
                 Manager.Site.Error(
-                    $"The [{Name}] package doesn't contain the file package.json at [{Manager.Site.GetRelativePath(directory)}/package.json]");
+                    $"The [{Name}] package doesn't contain the file package.json at [{Manager.Site.GetRelativePath(directory, PathFlags.Directory)}package.json]");
                 return null;
             }
 

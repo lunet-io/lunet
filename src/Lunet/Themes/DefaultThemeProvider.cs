@@ -74,7 +74,7 @@ namespace Lunet.Themes
         {
             if (site.CanTrace())
             {
-                site.Trace($"Checking remove registry [{RegistryUrl}] for available themes  Installing theme [{theme}] to [{site.GetRelativePath(outputPath)}]");
+                site.Trace($"Checking remove registry [{RegistryUrl}] for available themes  Installing theme [{theme}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
             }
 
             foreach (var themeDesc in FindAll(site))
@@ -85,7 +85,7 @@ namespace Lunet.Themes
                     {
                         if (site.CanTrace())
                         {
-                            site.Trace($"Downloading theme Installing theme [{theme}] to [{site.GetRelativePath(outputPath)}]");
+                            site.Trace($"Downloading theme Installing theme [{theme}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
                         }
 
                         using (HttpClient client = new HttpClient())

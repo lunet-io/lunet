@@ -17,13 +17,15 @@ namespace Lunet.Core
         /// </summary>
         /// <param name="site">The site.</param>
         /// <param name="fullFilePath">The full file path.</param>
-        /// <param name="normalized"><c>true</c> to return a normalize path using only '/' for directory separators</param>
-        /// <returns>A relative path</returns>
+        /// <param name="flags">The path flags.</param>
+        /// <returns>
+        /// A relative path
+        /// </returns>
         /// <exception cref="System.ArgumentNullException"></exception>
         /// <exception cref="LunetException"></exception>
-        public static string GetRelativePath(this SiteObject site, string fullFilePath, bool normalized = false)
+        public static string GetRelativePath(this SiteObject site, string fullFilePath, PathFlags flags)
         {
-            return site.BaseDirectory.GetRelativePath(fullFilePath, normalized);
+            return site.BaseDirectory.GetRelativePath(fullFilePath, flags);
         }
 
         public static bool CanTrace(this SiteObject site)
@@ -104,7 +106,7 @@ namespace Lunet.Core
         private static string GetSpanMessage(SiteObject site, SourceSpan span, string message)
         {
             var fileRelative = span.FileName != null
-                ? site.GetRelativePath(span.FileName)
+                ? site.GetRelativePath(span.FileName, PathFlags.File)
                 : string.Empty;
             return $"In {fileRelative}({span.Start.ToStringSimple()}): {message}";
         }

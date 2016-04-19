@@ -262,7 +262,7 @@ namespace Lunet.Core
                 if (entry is FileInfo)
                 {
                     // If the relative path is already registered, we won't process this file
-                    var relativePath = rootDirectory.GetRelativePath(entry.FullName, true);
+                    var relativePath = rootDirectory.GetRelativePath(entry.FullName, PathFlags.Normalize);
                     if (loaded.Contains(relativePath))
                     {
                         continue;
