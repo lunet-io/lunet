@@ -25,9 +25,12 @@ namespace Lunet.Scripts
             Context = new TemplateContext();
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
             templateLoaderFromIncludes = new TemplateLoaderFromIncludes(Site);
+            GlobalObject = Context.CurrentGlobal;
         }
 
         public TemplateContext Context { get; }
+
+        public ScriptObject GlobalObject { get; }
 
         /// <summary>
         /// Parses a script with the specified content and path.
