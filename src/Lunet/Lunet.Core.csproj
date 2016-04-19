@@ -53,6 +53,7 @@
     <Compile Include="Core\FileVariables.cs" />
     <Compile Include="Core\FolderInfo.cs" />
     <Compile Include="Core\IDynamicObject.cs" />
+    <Compile Include="Scripts\ScriptIo.cs" />
     <Compile Include="SiteFactory.cs" />
     <Compile Include="Statistics\ContentStat.cs" />
     <Compile Include="Core\ManagerBase.cs" />

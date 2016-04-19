@@ -14,7 +14,7 @@ namespace Lunet.Core
         /// </summary>
         protected LunetObject()
         {
-            DynamicObject = new DynamicObject();
+            DynamicObject = new DynamicObject(this);
         }
 
         /// <summary>

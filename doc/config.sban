@@ -2,4 +2,7 @@ title = "Test site"
 theme = "gold"
 
 jquery = resource "npm/jquery"
+io.copy jquery "dist/jquery.min.js" "js/"
 
+# log.fatal "plugin: " + jquery.name + " path: " + jquery.path
+log.info jquery

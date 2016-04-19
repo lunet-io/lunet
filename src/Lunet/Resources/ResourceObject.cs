@@ -37,6 +37,6 @@ namespace Lunet.Resources
 
         public string Directory { get; }
 
-        public string AbsoluteDirectory { get;  }
+        public FolderInfo AbsoluteDirectory { get;  }
     }
 }

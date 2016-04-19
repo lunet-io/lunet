@@ -68,7 +68,7 @@ namespace Lunet.Core
             }
 
             var path = fullPath.Substring(FullPath.Length + 1);
-            return flags.Normalize() ? PathUtil.NormalizePath(path, flags.IsDirectory()) : path;
+            return flags.Normalize() ? PathUtil.NormalizeRelativePath(path, flags.IsDirectory()) : path;
         }
 
         public static implicit operator FolderInfo(string folderPath)

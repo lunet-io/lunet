@@ -6,8 +6,13 @@ namespace Lunet.Helpers
 {
     internal static class PathUtil
     {
-        public static string NormalizePath(string filePath, bool isDirectory)
+        private static readonly char[] TrimCharStart = new[] {'/'};
+
+        public static string NormalizeRelativePath(string filePath, bool isDirectory)
         {
+            if (filePath == null) throw new ArgumentNullException(nameof(filePath));
+            filePath = filePath.Trim();
+
             StringBuilder builder = null;
             int index = -1;
             int previousOffset = 0;
@@ -22,11 +27,20 @@ namespace Lunet.Helpers
                 {
                     builder.Append(filePath, previousOffset, length);
                 }
-                builder.Append('/');
+                if (index > 0)
+                {
+                    builder.Append('/');
+                }
                 previousOffset = index + 1;
             }
             if (builder == null)
             {
+                // Remove leading /
+                if (filePath.StartsWith("/"))
+                {
+                    filePath = filePath.TrimStart(TrimCharStart);
+                }
+
                 // Append '/' if it is a directory
                 if (isDirectory && !string.IsNullOrWhiteSpace(filePath) && !filePath.EndsWith("/"))
                 {
@@ -46,6 +60,11 @@ namespace Lunet.Helpers
             }
 
             var str = builder.ToString();
+
+            if (str.StartsWith("/"))
+            {
+                str = filePath.TrimStart(TrimCharStart);
+            }
             builder.Length = 0;
             return str;
         }

@@ -29,6 +29,7 @@ namespace Lunet.Scripts
             templateLoaderFromIncludes = new TemplateLoaderFromIncludes(Site);
             GlobalObject = Context.CurrentGlobal;
             InitializeScriptBuiltins();
+            Io = new ScriptIo(this);
         }
 
         private void InitializeScriptBuiltins()
@@ -47,6 +48,8 @@ namespace Lunet.Scripts
         public TemplateContext Context { get; }
 
         public ScriptObject GlobalObject { get; }
+
+        public ScriptIo Io { get; }
 
         /// <summary>
         /// Parses a script with the specified content and path.
