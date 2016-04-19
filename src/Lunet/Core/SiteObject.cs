@@ -230,7 +230,7 @@ namespace Lunet.Core
                     stream = null;
 
                     // Parse the page, using front-matter mode
-                    var scriptPage = Scripts.ParseScript(content, file.FullName, ParsingMode.FrontMatter);
+                    var scriptPage = Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatter);
                     if (!scriptPage.HasErrors)
                     {
                         page = new ContentObject(rootDirectory, file, this) { Script = scriptPage.Page };

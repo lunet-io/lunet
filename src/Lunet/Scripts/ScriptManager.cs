@@ -38,24 +38,23 @@ namespace Lunet.Scripts
         /// <param name="scriptContent">Content of the script.</param>
         /// <param name="scriptPath">The script path.</param>
         /// <param name="parsingMode">The parsing mode.</param>
-        /// <returns>The parsed script or null of an error occured</returns>
-        /// <exception cref="System.ArgumentNullException">if <paramref name="scriptContent"/> or <paramref name="scriptPath"/> is null</exception>
+        /// <returns>
+        /// The parsed script or null of an error occured
+        /// </returns>
+        /// <exception cref="System.ArgumentNullException">if <paramref name="scriptContent" /> or <paramref name="scriptPath" /> is null</exception>
         /// <remarks>
-        /// If there are any parsing errors, the errors will be logged to the <see cref="Log"/> and <see cref="HasErrors"/> will be set to <c>true</c>.
+        /// If there are any parsing errors, the errors will be logged to the <see cref="Log" /> and <see cref="HasErrors" /> will be set to <c>true</c>.
         /// </remarks>
-        public Template ParseScript(string scriptContent, string scriptPath, ParsingMode parsingMode)
+        public Template ParseScript(string scriptContent, string scriptPath, ScriptMode parsingMode)
         {
             if (scriptContent == null) throw new ArgumentNullException(nameof(scriptContent));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
             // Load parse the template
             var template = Template.Parse(scriptContent, scriptPath,
-                new TemplateOptions()
+                new ParserOptions()
                 {
-                    Parser =
-                    {
-                        Mode = parsingMode
-                    }
+                    Mode = parsingMode
                 });
 
             // If we have any errors, log them and set the errors flag on this instance
@@ -73,12 +72,13 @@ namespace Lunet.Scripts
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
-            var scriptConfig = ParseScript(scriptText, scriptPath, ParsingMode.ScriptOnly);
+            var scriptConfig = ParseScript(scriptText, scriptPath, ScriptMode.ScriptOnly);
             if (!scriptConfig.HasErrors)
             {
                 Context.PushGlobal((ScriptObject)scriptObject);
                 Context.PushSourceFile(scriptPath);
-                Context.Options.TemplateLoader = allowInclude ? templateLoaderFromIncludes : unauthorizedTemplateLoader;
+                Context.EnableOutput = false;
+                Context.TemplateLoader = allowInclude ? templateLoaderFromIncludes : unauthorizedTemplateLoader;
 
                 try
                 {
@@ -139,8 +139,8 @@ namespace Lunet.Scripts
             Context.PushGlobal((ScriptObject)obj);
             try
             {
-                Context.Options.Parser.Mode = ParsingMode.FrontMatter;
-                Context.Options.TemplateLoader = templateLoaderFromIncludes;
+                Context.EnableOutput = false;
+                Context.TemplateLoader = templateLoaderFromIncludes;
 
                 Site.DynamicObject.SetValue(PageVariables.Site, this.DynamicObject, true);
                 script.FrontMatter.Evaluate(Context);
@@ -153,9 +153,6 @@ namespace Lunet.Scripts
             finally
             {
                 Context.PopGlobal();
-
-                Context.Output.Clear();
-                Context.Options.TemplateLoader = unauthorizedTemplateLoader;
 
                 // We don't keep the site variable after this initialization
                 Site.DynamicObject.Remove(PageVariables.Site);
@@ -184,8 +181,8 @@ namespace Lunet.Scripts
 
             try
             {
-                Context.Options.Parser.Mode = ParsingMode.Default;
-                Context.Options.TemplateLoader = templateLoaderFromIncludes;
+                Context.EnableOutput = true;
+                Context.TemplateLoader = templateLoaderFromIncludes;
 
                 currentScriptObject.SetValue(PageVariables.Site, Site.DynamicObject, true);
                 currentScriptObject.SetValue(PageVariables.Page, page.DynamicObject, true);
@@ -206,8 +203,6 @@ namespace Lunet.Scripts
                 }
                 Context.PopSourceFile();
                 page.Content = Context.Output.ToString();
-
-                Context.Options.TemplateLoader = unauthorizedTemplateLoader;
 
                 // We don't keep the site variable after this initialization
                 currentScriptObject.Remove(PageVariables.Site);
