@@ -1,5 +1,5 @@
 title = "Test site"
+theme = "gold"
 
-theme = "default-blog"
-
+jquery = resource "npm/jquery"
 
