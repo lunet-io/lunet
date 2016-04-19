@@ -6,9 +6,11 @@
     "net46": {}
   },
   "dependencies": {
-    "Microsoft.Extensions.Logging": "1.0.0-rc3-20541",
-    "System.IO.Compression": "4.1.0-rc3-24013-00",
-    "System.Net.Http": "4.0.1-rc3-24013-00",
-    "System.Buffers":  "4.0.0-rc2-23931"
+    "Microsoft.Extensions.Logging": "1.0.0-rc3-20605",
+    "Newtonsoft.Json": "8.0.3",
+    "NuGet.Versioning": "3.5.0-beta-1178",
+    "System.Buffers": "4.0.0-rc3-24015-00",
+    "System.IO.Compression": "4.1.0-rc3-24015-00",
+    "System.Net.Http": "4.0.0"
   }
 }

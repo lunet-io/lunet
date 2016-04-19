@@ -41,7 +41,13 @@
   <ItemGroup>
     <Compile Include="Helpers\ExceptionUtil.cs" />
     <Compile Include="Helpers\StringBuilderCache.cs" />
+    <Compile Include="Helpers\TarUtil.cs" />
     <Compile Include="Helpers\ZipUtil.cs" />
+    <Compile Include="Resources\ResourceInstallFlags.cs" />
+    <Compile Include="Resources\ResourceProvider.cs" />
+    <Compile Include="Resources\NpmResourceProvider.cs" />
+    <Compile Include="Resources\ResourceManager.cs" />
+    <Compile Include="Resources\ResourceObject.cs" />
     <Compile Include="Runtime\DynamicObject.cs" />
     <Compile Include="Runtime\FileVariables.cs" />
     <Compile Include="Runtime\IDynamicObject.cs" />

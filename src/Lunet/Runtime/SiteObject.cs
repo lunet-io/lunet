@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
 using Lunet.Plugins;
+using Lunet.Resources;
 using Lunet.Scripts;
 using Lunet.Statistics;
 using Lunet.Themes;
@@ -42,14 +43,6 @@ namespace Lunet.Runtime
 
             // Plugins
 
-            // LoadConfig the plugins after they have been loaded/modified from the config
-            Managers = new OrderedList<ManagerBase>()
-            {
-                (Meta = new MetaManager(this)),
-                (Themes = new ThemeManager(this)),
-                (Plugins = new PluginManager(this))
-            };
-
             // Create the logger
             LoggerFactory = loggerFactory ?? new LoggerFactory();
             LoggerFactory.AddProvider(new LoggerProviderIntercept(this));
@@ -59,7 +52,15 @@ namespace Lunet.Runtime
 
             DefaultPageExtension = DefaultPageExtensionValue;
 
-            Scripts = new ScriptManager(this);
+            // LoadConfig the plugins after they have been loaded/modified from the config
+            Managers = new OrderedList<ManagerBase>()
+            {
+                (Meta = new MetaManager(this)),
+                (Scripts = new ScriptManager(this)),
+                (Themes = new ThemeManager(this)),
+                (Plugins = new PluginManager(this)),
+                (Resources = new ResourceManager(this)),
+            };
 
             Statistics = new SiteStatistics();
 
@@ -103,6 +104,8 @@ namespace Lunet.Runtime
 
         public ScriptManager Scripts { get; }
 
+        public ResourceManager Resources { get; }
+
         public SiteStatistics Statistics { get; }
 
         public bool UrlAsFile
@@ -140,6 +143,11 @@ namespace Lunet.Runtime
             this.Warning($"Invalid [site.{SiteVariables.DefaultPageExtension} = \"{extension}\"]. Expecting only .html or htm. Reset to [{DefaultPageExtensionValue}]");
             DefaultPageExtension = DefaultPageExtensionValue;
             return DefaultPageExtensionValue;
+        }
+
+        public void Initialize()
+        {
+            Generator.Initialize();
         }
 
         public void Generate()
