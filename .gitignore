@@ -12,6 +12,7 @@
 
 # Lunet private directory
 .lunet/
+_site/
 
 # Build results
 [Dd]ebug/
