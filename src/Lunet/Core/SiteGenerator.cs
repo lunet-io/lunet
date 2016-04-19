@@ -8,9 +8,8 @@ using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
 using Lunet.Scripts;
-using Lunet.Statistics;
 
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     public class SiteGenerator
     {

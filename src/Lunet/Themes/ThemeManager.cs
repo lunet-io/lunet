@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Lunet.Core;
 using Lunet.Helpers;
-using Lunet.Runtime;
 
 namespace Lunet.Themes
 {
@@ -23,11 +23,8 @@ namespace Lunet.Themes
         {
             Providers = new OrderedList<IThemeProvider>();
 
-            ThemeDirectoryInfo = new DirectoryInfo(Path.Combine(Site.Meta.Directory, ThemesDirectoryName));
-            ThemeDirectory = ThemeDirectoryInfo.FullName;
-
-            PrivateThemeDirectoryInfo = new DirectoryInfo(Path.Combine(Site.Meta.PrivateDirectory, ThemesDirectoryName));
-            PrivateThemeDirectory = PrivateThemeDirectoryInfo.FullName;
+            ThemeDirectory = Path.Combine(Site.Meta.Directory, ThemesDirectoryName);
+            PrivateThemeDirectory = Path.Combine(Site.Meta.PrivateDirectory, ThemesDirectoryName);
             CurrentList = new List<ThemeObject>();
             Providers = new OrderedList<IThemeProvider>()
             {
@@ -35,13 +32,9 @@ namespace Lunet.Themes
             };
         }
 
-        public DirectoryInfo ThemeDirectoryInfo { get; }
+        public FolderInfo ThemeDirectory { get; }
 
-        public string ThemeDirectory { get; }
-
-        public DirectoryInfo PrivateThemeDirectoryInfo { get; }
-
-        public string PrivateThemeDirectory { get; }
+        public FolderInfo PrivateThemeDirectory { get; }
 
         public OrderedList<IThemeProvider> Providers { get; }
 

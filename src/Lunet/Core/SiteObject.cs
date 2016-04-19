@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,11 +15,12 @@ using Lunet.Themes;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
 
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     public class SiteObject : LunetObject
     {
         private const string SiteDirectoryName = "_site";
+        private const string PrivateDirectoryName = ".lunet";
         private const string DefaultPageExtensionValue = ".html";
         private readonly Stopwatch clock;
 
@@ -33,8 +35,8 @@ namespace Lunet.Runtime
             {
                 throw new ArgumentException($"Cannot find parent directory of config file [{ConfigFile}]");
             }
-            this.BaseDirectoryInfo = new DirectoryInfo(baseDirectoryFullpath);
-            BaseDirectory = this.BaseDirectoryInfo.FullName;
+            BaseDirectory = baseDirectoryFullpath;
+            PrivateBaseDirectory = Path.Combine(baseDirectoryFullpath, PrivateDirectoryName);
 
             clock = new Stopwatch();
 
@@ -48,7 +50,7 @@ namespace Lunet.Runtime
             LoggerFactory.AddProvider(new LoggerProviderIntercept(this));
             Log = LoggerFactory.CreateLogger("lunet");
 
-            OutputDirectory = this.GetSubDirectory(SiteDirectoryName).FullName;
+            OutputDirectory = BaseDirectory.GetSubFolder(SiteDirectoryName);
 
             DefaultPageExtension = DefaultPageExtensionValue;
 
@@ -70,11 +72,11 @@ namespace Lunet.Runtime
 
         public string ConfigFile { get; }
 
-        public DirectoryInfo BaseDirectoryInfo { get; }
+        public FolderInfo BaseDirectory { get; }
 
-        public string BaseDirectory { get; }
+        public FolderInfo PrivateBaseDirectory { get; }
 
-        public string OutputDirectory { get; set; }
+        public FolderInfo OutputDirectory { get; set; }
 
         /// <summary>
         /// Gets the logger factory that was used to create the site logger <see cref="Log"/>.
@@ -120,15 +122,15 @@ namespace Lunet.Runtime
             set { DynamicObject[SiteVariables.DefaultPageExtension] = value; }
         }
 
-        public IEnumerable<DirectoryInfo> ContentDirectories
+        public IEnumerable<FolderInfo> ContentDirectories
         {
             get
             {
-                yield return BaseDirectoryInfo;
+                yield return BaseDirectory;
 
                 foreach (var theme in Themes.CurrentList)
                 {
-                    yield return theme.DirectoryInfo;
+                    yield return theme.Directory;
                 }
             }
         }
@@ -161,7 +163,7 @@ namespace Lunet.Runtime
             Pages.Clear();
 
             // Get the list of root directories from themes
-            var rootDirectories = new List<DirectoryInfo>(ContentDirectories);
+            var rootDirectories = new List<FolderInfo>(ContentDirectories);
 
             // Compute the list of files that we will actually process
             var filesLoaded = new HashSet<string>();
@@ -246,7 +248,7 @@ namespace Lunet.Runtime
             }
         }
 
-        private void LoadDirectory(DirectoryInfo rootDirectory, DirectoryInfo directory, Queue<DirectoryInfo> directoryQueue, HashSet<string> loaded)
+        private void LoadDirectory(FolderInfo rootDirectory, DirectoryInfo directory, Queue<DirectoryInfo> directoryQueue, HashSet<string> loaded)
         {
             var pages = new List<ContentObject>();
             ContentObject indexPage = null;
@@ -260,7 +262,7 @@ namespace Lunet.Runtime
                 if (entry is FileInfo)
                 {
                     // If the relative path is already registered, we won't process this file
-                    var relativePath = PathUtil.GetRelativePath(rootDirectory.FullName, entry.FullName, true);
+                    var relativePath = rootDirectory.GetRelativePath(entry.FullName, true);
                     if (loaded.Contains(relativePath))
                     {
                         continue;

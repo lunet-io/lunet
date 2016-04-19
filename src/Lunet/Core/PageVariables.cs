@@ -1,4 +1,4 @@
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     public class PageVariables : FileVariables
     {

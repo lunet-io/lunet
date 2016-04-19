@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Lunet.Core;
 using Lunet.Plugins;
-using Lunet.Runtime;
 using Scriban;
 using Scriban.Parsing;
 using Scriban.Runtime;
@@ -123,30 +123,30 @@ namespace Lunet.Layouts
                     // try: _meta/layouts/{layoutName}/{layoutType}.{layoutExtension}
                     if (!string.IsNullOrEmpty(layoutType))
                     {
-                        layoutPaths.Add(Path.Combine(metaDir.FullName, LayoutDirectoryName, layoutName, layoutType + layoutExtension));
+                        layoutPaths.Add(Path.Combine(metaDir, LayoutDirectoryName, layoutName, layoutType + layoutExtension));
                     }
 
                     // try: _meta/layouts/{layoutName}/single.{layoutExtension}
-                    layoutPaths.Add(Path.Combine(metaDir.FullName, LayoutDirectoryName, layoutName, "single" + layoutExtension));
+                    layoutPaths.Add(Path.Combine(metaDir, LayoutDirectoryName, layoutName, "single" + layoutExtension));
 
                     // try: _meta/layouts/{layoutName}.{layoutExtension}
-                    layoutPaths.Add(Path.Combine(metaDir.FullName, LayoutDirectoryName, layoutName + layoutExtension));
+                    layoutPaths.Add(Path.Combine(metaDir, LayoutDirectoryName, layoutName + layoutExtension));
 
                     if (layoutName != DefaultLayoutName)
                     {
                         // try: _meta/layouts/_default/{layoutType}.{layoutExtension}
                         if (!string.IsNullOrEmpty(layoutType))
                         {
-                            layoutPaths.Add(Path.Combine(metaDir.FullName, LayoutDirectoryName, DefaultLayoutName,
+                            layoutPaths.Add(Path.Combine(metaDir, LayoutDirectoryName, DefaultLayoutName,
                                 layoutType + layoutExtension));
                         }
 
                         // try: _meta/layouts/_default/single.{layoutExtension}
-                        layoutPaths.Add(Path.Combine(metaDir.FullName, LayoutDirectoryName, DefaultLayoutName,
+                        layoutPaths.Add(Path.Combine(metaDir, LayoutDirectoryName, DefaultLayoutName,
                             "single" + layoutExtension));
 
                         // try: _meta/layouts/_default.{layoutExtension}
-                        layoutPaths.Add(Path.Combine(metaDir.FullName, LayoutDirectoryName,
+                        layoutPaths.Add(Path.Combine(metaDir, LayoutDirectoryName,
                             DefaultLayoutName + layoutExtension));
                     }
 

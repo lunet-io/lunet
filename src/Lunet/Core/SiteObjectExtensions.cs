@@ -2,35 +2,16 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using System;
-using System.IO;
-using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
 
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     /// <summary>
     /// Extensions for <see cref="SiteObject"/>
     /// </summary>
     public static class SiteObjectExtensions
     {
-        /// <summary>
-        /// Gets a directory relative to the base directory of this site.
-        /// </summary>
-        /// <param name="site">The site.</param>
-        /// <param name="subDirectoryPath">The sub directory path.</param>
-        /// <returns>
-        /// The relative directory
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException">if <paramref name="subDirectoryPath" /> is null</exception>
-        /// <exception cref="LunetException">If <paramref name="subDirectoryPath" /> is using `..` and going above the base directory.</exception>
-        public static DirectoryInfo GetSubDirectory(this SiteObject site, string subDirectoryPath)
-        {
-            if (subDirectoryPath == null) throw new ArgumentNullException(nameof(subDirectoryPath));
-            return PathUtil.GetSubDirectory(site.BaseDirectory, subDirectoryPath);
-        }
-
         /// <summary>
         /// Gets a relative path to the site base directory from the specified absolute path.
         /// </summary>
@@ -42,7 +23,7 @@ namespace Lunet.Runtime
         /// <exception cref="LunetException"></exception>
         public static string GetRelativePath(this SiteObject site, string fullFilePath, bool normalized = false)
         {
-            return PathUtil.GetRelativePath(site.BaseDirectory, fullFilePath, normalized);
+            return site.BaseDirectory.GetRelativePath(fullFilePath, normalized);
         }
 
         public static bool CanTrace(this SiteObject site)

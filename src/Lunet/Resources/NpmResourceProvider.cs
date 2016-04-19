@@ -7,8 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using Lunet.Core;
 using Lunet.Helpers;
-using Lunet.Runtime;
 using Newtonsoft.Json.Linq;
 using NuGet.Versioning;
 

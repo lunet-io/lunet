@@ -1,4 +1,4 @@
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     public static class SiteVariables
     {

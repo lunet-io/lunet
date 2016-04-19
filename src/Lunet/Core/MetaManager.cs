@@ -3,10 +3,8 @@
 // See the license.txt file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
-using Lunet.Helpers;
 
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     /// <summary>
     /// Manages the meta information associated to a site (from the `_meta` directory and `.lunet` directory)
@@ -15,7 +13,6 @@ namespace Lunet.Runtime
     public class MetaManager : ManagerBase
     {
         public const string MetaDirectoryName = "_meta";
-        private const string PrivateDirectoryName = ".lunet";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MetaManager"/> class.
@@ -23,30 +20,23 @@ namespace Lunet.Runtime
         /// <param name="site">The site.</param>
         public MetaManager(SiteObject site) : base(site)
         {
-            DirectoryInfo = Site.GetSubDirectory(MetaDirectoryName);
-            Directory = DirectoryInfo.FullName;
-
-            PrivateDirectoryInfo = Site.GetSubDirectory(PrivateDirectoryName);
-            PrivateDirectory = PrivateDirectoryInfo.FullName;
+            Directory = Site.BaseDirectory.GetSubFolder(MetaDirectoryName); 
+            PrivateDirectory = Site.PrivateBaseDirectory.GetSubFolder(MetaDirectoryName);
         }
 
-        public DirectoryInfo DirectoryInfo { get; }
+        public FolderInfo Directory { get; }
 
-        public string Directory { get; }
+        public FolderInfo PrivateDirectory { get; }
 
-        public DirectoryInfo PrivateDirectoryInfo { get; }
-
-        public string PrivateDirectory { get; }
-
-        public IEnumerable<DirectoryInfo> Directories
+        public IEnumerable<FolderInfo> Directories
         {
             get
             {
-                yield return DirectoryInfo;
+                yield return Directory;
 
                 foreach (var theme in Site.Themes.CurrentList)
                 {
-                    yield return PathUtil.GetSubDirectory(theme.Directory, MetaDirectoryName);
+                    yield return theme.Directory.GetSubFolder(MetaDirectoryName);
                 }
             }
         }

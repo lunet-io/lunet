@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Lunet.Core;
 using Lunet.Helpers;
-using Lunet.Runtime;
 using Scriban;
 using Scriban.Parsing;
 using Scriban.Runtime;
@@ -282,7 +282,7 @@ namespace Lunet.Scripts
 
                 foreach (var directory in site.Meta.Directories)
                 {
-                    var includePath = Path.Combine(directory.FullName, IncludesDirectoryName, templateName);
+                    var includePath = Path.Combine(directory, IncludesDirectoryName, templateName);
                     if (File.Exists(includePath))
                     {
                         templateFilePath = includePath;

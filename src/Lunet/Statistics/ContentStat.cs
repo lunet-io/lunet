@@ -1,5 +1,5 @@
 ﻿using System;
-using Lunet.Runtime;
+using Lunet.Core;
 
 namespace Lunet.Statistics
 {

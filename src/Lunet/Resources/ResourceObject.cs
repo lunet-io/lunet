@@ -2,14 +2,14 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 using System;
-using Lunet.Runtime;
+using Lunet.Core;
 
 namespace Lunet.Resources
 {
     /// <summary>
     /// An object associated to a resource, accessible at runtime.
     /// </summary>
-    /// <seealso cref="Lunet.Runtime.LunetObject" />
+    /// <seealso cref="LunetObject" />
     public class ResourceObject : LunetObject
     {
         public ResourceObject(ResourceProvider provider, string name, string version, string absolutePath)

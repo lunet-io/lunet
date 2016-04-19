@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Lunet.Core;
 using Lunet.Helpers;
-using Lunet.Runtime;
 using Scriban.Runtime;
 
 namespace Lunet.Resources
@@ -22,11 +22,8 @@ namespace Lunet.Resources
 
         public ResourceManager(SiteObject site) : base(site)
         {
-            ResourceDirectoryInfo = new DirectoryInfo(Path.Combine(Site.Meta.Directory, ResourceDirectoryName));
-            ResourceDirectory = ResourceDirectoryInfo.FullName;
-
-            PrivateResourceDirectoryInfo = new DirectoryInfo(Path.Combine(Site.Meta.PrivateDirectory, ResourceDirectoryName));
-            PrivateResourceDirectory = PrivateResourceDirectoryInfo.FullName;
+            ResourceDirectory = Path.Combine(Site.Meta.Directory, ResourceDirectoryName);
+            PrivateResourceDirectory = Path.Combine(Site.Meta.PrivateDirectory, ResourceDirectoryName);
             Providers = new OrderedList<ResourceProvider>()
             {
                 new NpmResourceProvider(this)
@@ -37,13 +34,9 @@ namespace Lunet.Resources
             site.Scripts.Context.CurrentGlobal.ImportMember(this, "Resolve", "resource");
         }
 
-        public DirectoryInfo ResourceDirectoryInfo { get; }
+        public FolderInfo ResourceDirectory { get; }
 
-        public string ResourceDirectory { get; }
-
-        public DirectoryInfo PrivateResourceDirectoryInfo { get; }
-
-        public string PrivateResourceDirectory { get; }
+        public FolderInfo PrivateResourceDirectory { get; }
 
         public OrderedList<ResourceProvider> Providers { get; }
 
@@ -51,7 +44,21 @@ namespace Lunet.Resources
         {
             var packageFullName = query as string;
 
+            var resourceObj = query as ScriptObject;
             var flags = ResourceInstallFlags.Private;
+            if (resourceObj != null)
+            {
+                packageFullName = resourceObj.GetSafeValue<string>("name");
+
+                if (resourceObj.GetSafeValue<bool>("public"))
+                {
+                    flags = 0;
+                }
+                if (resourceObj.GetSafeValue<bool>("pre_release"))
+                {
+                    flags |= ResourceInstallFlags.PreRelease;
+                }
+            }
 
             if (packageFullName != null)
             {
@@ -60,11 +67,14 @@ namespace Lunet.Resources
                 {
                     throw new LunetException($"Invalid resource name to load [{packageFullName}]. Expecting a `providerName/packageName[/packageVersion]` (e.g: \"npm/jquery\")");
                 }
+
+                var providerName = names[0];
+                var packageName = names[1];
+
                 foreach (var provider in Providers)
                 {
-                    if (provider.Name == names[0])
+                    if (provider.Name == providerName)
                     {
-                        var packageName = names[1];
                         var packageVersion = "latest";
                         if (names.Length == 3)
                         {
@@ -74,6 +84,7 @@ namespace Lunet.Resources
                         return resource?.DynamicObject;
                     }
                 }
+                throw new LunetException($"Unsupported provider [{providerName}] for resource \"{packageFullName}\"");
             }
 
             throw new LunetException("Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \"providerName/packageName[/packageVersion]\" }");

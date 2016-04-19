@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using Lunet.Helpers;
 using Scriban.Helpers;
 using Scriban.Runtime;
 
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     [DebuggerDisplay("Content: {Path}")]
     public class ContentObject : LunetObject
@@ -15,13 +14,12 @@ namespace Lunet.Runtime
             if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
             if (sourceFileInfo == null) throw new ArgumentNullException(nameof(sourceFileInfo));
             if (site == null) throw new ArgumentNullException(nameof(site));
-            RootDirectoryInfo = rootDirectoryInfo;
-            RootDirectory = RootDirectoryInfo.FullName;
+            RootDirectory = rootDirectoryInfo;
             SourceFileInfo = sourceFileInfo;
             SourceFile = sourceFileInfo.FullName;
             Site = site;
 
-            Path = PathUtil.GetRelativePath(RootDirectory, SourceFile, true);
+            Path = RootDirectory.GetRelativePath(SourceFile, true);
             Length = SourceFileInfo.Length;
             Extension = SourceFileInfo.Extension.ToLowerInvariant();
             ModifiedTime = SourceFileInfo.LastWriteTime;
@@ -59,9 +57,7 @@ namespace Lunet.Runtime
             DynamicObject.SetValue(PageVariables.PathInSection, PathInSection, true);
         }
 
-        public DirectoryInfo RootDirectoryInfo { get; }
-
-        public string RootDirectory { get; }
+        public FolderInfo RootDirectory { get; }
 
         public SiteObject Site { get; }
 

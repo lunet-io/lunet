@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     /// <summary>
     /// Exception used to log unrecoverable errors.

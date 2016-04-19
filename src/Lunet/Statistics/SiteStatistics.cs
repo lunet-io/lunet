@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using Lunet.Core;
 using Lunet.Plugins;
-using Lunet.Runtime;
 
 namespace Lunet.Statistics
 {

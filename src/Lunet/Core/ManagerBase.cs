@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Lunet.Runtime
+namespace Lunet.Core
 {
     /// <summary>
     /// Base class for a Manager.

@@ -3,8 +3,8 @@
 // See the license.txt file in the project root for more information.
 using System;
 using System.IO;
+using Lunet.Core;
 using Lunet.Helpers;
-using Lunet.Runtime;
 
 namespace Lunet.Themes
 {
@@ -18,8 +18,7 @@ namespace Lunet.Themes
             Name = desc.Name;
             Description = desc.Description;
             Url = desc.Url;
-            DirectoryInfo = new DirectoryInfo(directory);
-            Directory = DirectoryInfo.FullName;
+            Directory = directory;
             Path = site.GetRelativePath(directory, true);
 
             DynamicObject.SetValue("name", Name, true);
@@ -29,9 +28,7 @@ namespace Lunet.Themes
         }
         public SiteObject Site { get; }
 
-        public DirectoryInfo DirectoryInfo { get; }
-
-        public string Directory { get; }
+        public FolderInfo Directory { get; }
 
         public string Name { get; }
 
@@ -51,7 +48,7 @@ namespace Lunet.Themes
         /// <exception cref="LunetException"></exception>
         public string GetRelativePath(string fullFilePath, bool normalized = false)
         {
-            return PathUtil.GetRelativePath(Directory, fullFilePath, normalized);
+            return Directory.GetRelativePath(fullFilePath, normalized);
         }
     }
 }
