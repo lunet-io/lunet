@@ -11,6 +11,7 @@ using Lunet.Core;
 using Lunet.Helpers;
 using Newtonsoft.Json.Linq;
 using NuGet.Versioning;
+using Scriban.Runtime;
 
 namespace Lunet.Resources
 {
@@ -36,6 +37,13 @@ namespace Lunet.Resources
 
             var resource = new ResourceObject(this, resourceName, resourceVersion, directory);
             Manager.Site.Scripts.TryImportScriptFromFile(packageJson, resource.DynamicObject, true);
+            var result = Manager.Site.Scripts.Context.Result as ScriptObject;
+            if (result != null)
+            {
+                var dynamicObject = (DynamicObject) resource.DynamicObject;
+                dynamicObject.Import(result);
+            }
+
             return resource;
         }
 

@@ -20,12 +20,28 @@ namespace Lunet.Scripts
 
         private const string IncludesDirectoryName = "includes";
 
+        private delegate void LogDelegate(string message);
+
         internal ScriptManager(SiteObject site) : base(site)
         {
             Context = new TemplateContext();
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
             templateLoaderFromIncludes = new TemplateLoaderFromIncludes(Site);
             GlobalObject = Context.CurrentGlobal;
+            InitializeScriptBuiltins();
+        }
+
+        private void InitializeScriptBuiltins()
+        {
+            // Add log object
+            var logObject = new ScriptObject();
+            GlobalObject.SetValue("log", logObject, true);
+            logObject.Import("info", (LogDelegate) (message => Site.Info(message)));
+            logObject.Import("error", (LogDelegate)(message => Site.Error(message)));
+            logObject.Import("warn", (LogDelegate)(message => Site.Warning(message)));
+            logObject.Import("debug", (LogDelegate)(message => Site.Debug(message)));
+            logObject.Import("trace", (LogDelegate)(message => Site.Trace(message)));
+            logObject.Import("fatal", (LogDelegate)(message => Site.Fatal(message)));
         }
 
         public TemplateContext Context { get; }

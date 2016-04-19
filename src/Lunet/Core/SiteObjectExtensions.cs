@@ -58,7 +58,7 @@ namespace Lunet.Core
             site.Log.LogWarning(message, args);
         }
 
-        public static void Critical(this SiteObject site, string message, params object[] args)
+        public static void Fatal(this SiteObject site, string message, params object[] args)
         {
             site.Log.LogCritical(message, args);
         }
@@ -88,7 +88,7 @@ namespace Lunet.Core
             site.Log.LogWarning(GetSpanMessage(site, span, message), args);
         }
 
-        public static void Critical(this SiteObject site, SourceSpan span, string message, params object[] args)
+        public static void Fatal(this SiteObject site, SourceSpan span, string message, params object[] args)
         {
             site.Log.LogCritical(GetSpanMessage(site, span, message), args);
         }
