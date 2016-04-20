@@ -6,9 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
-using System.Text;
 using Lunet.Core;
-using Microsoft.Extensions.Logging;
 using Scriban.Runtime;
 using Lunet.Helpers;
 
