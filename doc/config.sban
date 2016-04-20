@@ -1,8 +1,17 @@
 title = "Test site"
 theme = "gold"
 
-jquery = resource "npm/jquery"
-io.copy jquery "dist/jquery.min.js" "js/"
+# io.copy $jquery.path + "dist/jquery.min.js" "js/"
+
+with bundle
+	$jquery = resource "npm/jquery"
+	# $bootstrap = resource "npm/bootstrap"
+	
+	js $jquery.path + "dist/jquery.min.js"
+	# css $bootstrap.path + "dist/bootstrap.min.js"
+end
+
+log.info bundles
 
 # log.fatal "plugin: " + jquery.name + " path: " + jquery.path
-log.info jquery
+log.info "yes"

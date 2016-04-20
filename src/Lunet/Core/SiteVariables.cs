@@ -8,6 +8,8 @@ namespace Lunet.Core
 
         public const string Resources = "resources";
 
+        public const string Bundles = "bundles";
+
         public const string DefaultPageExtension = "default_page_extension";
 
         public const string UrlAsFile = "url_as_file";

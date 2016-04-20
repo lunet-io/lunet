@@ -1,4 +1,11 @@
 ﻿<meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+{{~ for $link in (bundle page.bundle).links ~}}
+	{{~ if $link.type == "css" }}
+<link rel="stylesheet" href="{{$link.url}}">
+	{{~ else if $link.type == "js" }}
+<script src="{{$link.url}}" type="text/javascript"></script>
+	{{~ end }}
+{{~ end }}
 <title>{{site.title}} with theme {{site.theme}} : [{{site.gold}}]</title>

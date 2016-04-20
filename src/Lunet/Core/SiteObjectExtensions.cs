@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
 
@@ -26,6 +27,26 @@ namespace Lunet.Core
         public static string GetRelativePath(this SiteObject site, string fullFilePath, PathFlags flags)
         {
             return site.BaseDirectory.GetRelativePath(fullFilePath, flags);
+        }
+
+        public static bool IsFilePrivateOrMeta(this SiteObject site, string fullFilePath)
+        {
+            if (fullFilePath == null) throw new ArgumentNullException(nameof(fullFilePath));
+
+            if (fullFilePath.StartsWith(site.Meta.PrivateDirectory.FullPath))
+            {
+                return true;
+            }
+
+            foreach (var meta in site.Meta.Directories)
+            {
+                if (fullFilePath.StartsWith(meta.FullPath))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static bool CanTrace(this SiteObject site)

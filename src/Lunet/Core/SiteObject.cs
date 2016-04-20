@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Lunet.Bundles;
 using Lunet.Helpers;
 using Lunet.Plugins;
 using Lunet.Resources;
@@ -62,6 +63,7 @@ namespace Lunet.Core
                 (Themes = new ThemeManager(this)),
                 (Plugins = new PluginManager(this)),
                 (Resources = new ResourceManager(this)),
+                (Bundles = new BundleManager(this)),
             };
 
             Statistics = new SiteStatistics();
@@ -107,6 +109,8 @@ namespace Lunet.Core
         public ScriptManager Scripts { get; }
 
         public ResourceManager Resources { get; }
+
+        public BundleManager Bundles { get; }
 
         public SiteStatistics Statistics { get; }
 

@@ -66,6 +66,7 @@ namespace Lunet.Core
         {
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
             if (relativePath == null) throw new ArgumentNullException(nameof(relativePath));
+            relativePath = PathUtil.NormalizeRelativePath(relativePath, false);
             if (Path.IsPathRooted(relativePath)) throw new ArgumentException($"Path [{relativePath}] cannot be rooted", nameof(relativePath));
 
             var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, relativePath)).Normalize();
