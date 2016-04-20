@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using Lunet.Helpers;
 using Scriban.Helpers;
 using Scriban.Runtime;
 
@@ -15,7 +16,7 @@ namespace Lunet.Core
             if (sourceFileInfo == null) throw new ArgumentNullException(nameof(sourceFileInfo));
             if (site == null) throw new ArgumentNullException(nameof(site));
             RootDirectory = rootDirectoryInfo;
-            SourceFileInfo = sourceFileInfo;
+            SourceFileInfo = sourceFileInfo.Normalize();
             SourceFile = sourceFileInfo.FullName;
             Site = site;
 

@@ -15,7 +15,7 @@ namespace Lunet.Core
     {
         private readonly HashSet<string> previousOutputDirectories;
         private readonly HashSet<string> previousOutputFiles;
-        private readonly Dictionary<string, ContentObject> filesWritten;
+        private readonly Dictionary<string, FileInfo> filesWritten;
         private bool isInitialized;
         private readonly Stopwatch clock;
         private readonly Stopwatch totalDuration;
@@ -26,7 +26,7 @@ namespace Lunet.Core
             previousOutputDirectories = new HashSet<string>();
             previousOutputFiles = new HashSet<string>();
             Scripts = Site.Scripts;
-            filesWritten = new Dictionary<string, ContentObject>();
+            filesWritten = new Dictionary<string, FileInfo>();
             clock = new Stopwatch();
             totalDuration = new Stopwatch();
         }
@@ -40,29 +40,17 @@ namespace Lunet.Core
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
             if (outputPath == null) throw new ArgumentNullException(nameof(outputPath));
 
-            var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, outputPath));
-            outputPath = Site.GetRelativePath(outputFile.FullName, PathFlags.File);
+            fromFile = fromFile.Normalize();
+            var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, outputPath)).Normalize();
+            TrackDestination(outputFile, fromFile);
 
-            ContentObject previousContent;
-            if (filesWritten.TryGetValue(outputPath, out previousContent))
+            if (!outputFile.Exists || (fromFile.LastWriteTime > outputFile.LastWriteTime))
             {
-                Site.Error($"The content [{previousContent.Path}] and [{Site.GetRelativePath(fromFile.FullName, PathFlags.File)}] have the same Url output [{outputPath}]");
-            }
-            else
-            {
-                filesWritten.Add(outputPath, new ContentObject(Site.BaseDirectory, fromFile, Site));
-            }
+                CreateDirectory(outputFile.Directory);
 
-            var outputDir = outputFile.Directory;
-            RemovePrevious(outputDir, outputFile.FullName);
-
-            outputDir.Create();
-
-            if (!File.Exists(outputFile.FullName) || (fromFile.LastWriteTime > outputFile.LastWriteTime))
-            {
                 if (Site.CanTrace())
                 {
-                    Site.Trace($"Copy file from [{Site.GetRelativePath(fromFile.FullName, PathFlags.File)} to [{outputPath}]");
+                    Site.Trace($"Copy file from [{Site.GetRelativePath(fromFile.FullName, PathFlags.File|PathFlags.Normalize)} to [{outputPath}]");
                 }
 
                 fromFile.CopyTo(outputFile.FullName, true);
@@ -78,41 +66,19 @@ namespace Lunet.Core
         {
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
             if (relativePath == null) throw new ArgumentNullException(nameof(relativePath));
-            var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, relativePath)).FullName;
-            var outputDir = new DirectoryInfo(Path.GetDirectoryName(outputFile));
+            if (Path.IsPathRooted(relativePath)) throw new ArgumentException($"Path [{relativePath}] cannot be rooted", nameof(relativePath));
 
-            ContentObject previousContent;
+            var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, relativePath)).Normalize();
+            var outputDir = outputFile.Directory;
+            if (outputDir == null)
+            {
+                throw new ArgumentException("Output directory cannot be empty", nameof(relativePath));
+            }
+            TrackDestination(outputFile, fromFile.SourceFileInfo);
+
             var stat = Site.Statistics.GetContentStat(fromFile);
 
-            if (filesWritten.TryGetValue(relativePath, out previousContent))
-            {
-                Site.Error($"The content [{previousContent.Path}] and [{fromFile.Path}] have the same Url output [{relativePath}]");
-            }
-            else
-            {
-                filesWritten.Add(relativePath, fromFile);
-            }
-
-            RemovePrevious(outputDir, outputFile);
-
-            bool directoryAlreadyExist = true;
-            try
-            {
-                if (!outputDir.Exists)
-                {
-                    if (Site.CanTrace())
-                    {
-                        Site.Trace($"Create directory [{Site.GetRelativePath(outputDir.FullName, PathFlags.Directory)}]");
-                    }
-                    outputDir.Create();
-                    directoryAlreadyExist = false;
-                }
-            }
-            catch (Exception ex) // wide catch
-            {
-                Site.Error($"Unable to create directory [{Site.GetRelativePath(outputDir.FullName, PathFlags.Directory)}]. Reason:{ex.GetReason()}");
-                return false;
-            }
+            CreateDirectory(outputDir);
 
             clock.Restart();
             try
@@ -120,13 +86,12 @@ namespace Lunet.Core
                 // If the source file is not newer than the destination file, don't overwrite it
                 if (fromFile.Content != null)
                 {
-
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile, PathFlags.File)}]");
+                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File)}]");
                     }
 
-                    using (var writer = new StreamWriter(outputFile))
+                    using (var writer = new StreamWriter(outputFile.FullName))
                     {
                         writer.Write(fromFile.Content);
                         writer.Flush();
@@ -136,15 +101,14 @@ namespace Lunet.Core
                         stat.OutputBytes += writer.BaseStream.Length;
                     }
                 }
-                else if (!directoryAlreadyExist || !File.Exists(outputFile) ||
-                         (fromFile.ModifiedTime > File.GetLastWriteTime(outputFile)))
+                else if (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime))
                 {
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile, PathFlags.File)}]");
+                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File)}]");
                     }
 
-                    fromFile.SourceFileInfo.CopyTo(outputFile, true);
+                    fromFile.SourceFileInfo.CopyTo(outputFile.FullName, true);
 
                     // Update statistics
                     stat.Static = true;
@@ -164,18 +128,35 @@ namespace Lunet.Core
             return true;
         }
 
-        private void RemovePrevious(DirectoryInfo outputDir, string outputFile)
+        public void TrackDestination(FileInfo outputFile, FileInfo sourceFile)
         {
-// If the directory is used for a new file, remove it from the list of previous directories
+            if (outputFile == null) throw new ArgumentNullException(nameof(outputFile));
+            if (sourceFile == null) throw new ArgumentNullException(nameof(sourceFile));
+
+            var relativePath = Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize);
+            var outputFilename = outputFile.FullName;
+
+
+            FileInfo previousSourceFile;
+            if (filesWritten.TryGetValue(outputFilename, out previousSourceFile))
+            {
+                Site.Error($"The content [{Site.GetRelativePath(previousSourceFile.FullName, PathFlags.File|PathFlags.Normalize)}] and [{Site.GetRelativePath(sourceFile.FullName, PathFlags.File | PathFlags.Normalize)}] have the same Url output [{relativePath}]");
+            }
+            else
+            {
+                filesWritten.Add(outputFilename, sourceFile);
+            }
+
+            // If the directory is used for a new file, remove it from the list of previous directories
             // Note that we remove even if things are not working after, so that previous files are kept 
             // in case of an error
-            var previousDir = outputDir;
+            var previousDir = outputFile.Directory;
             while (previousDir != null)
             {
                 previousOutputDirectories.Remove(previousDir.FullName);
                 previousDir = previousDir.Parent;
             }
-            previousOutputFiles.Remove(outputFile);
+            previousOutputFiles.Remove(outputFilename);
         }
 
         public void Initialize()
@@ -261,13 +242,18 @@ namespace Lunet.Core
         {
             if (!directory.Exists)
             {
+                if (Site.CanTrace())
+                {
+                    Site.Trace($"Create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory)}]");
+                }
+
                 try
                 {
                     directory.Create();
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Unable to create [{directory}] directory. Reason:{ex.GetReason()}");
+                    Site.Error($"Unable to create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory)}]. Reason:{ex.GetReason()}");
                 }
             }
         }
@@ -275,17 +261,18 @@ namespace Lunet.Core
         private void CleanupOutputFiles()
         {
             // Remove all previous files that have not been generated
-            foreach (var outputFile in previousOutputFiles)
+            foreach (var outputFilename in previousOutputFiles)
             {
+                var outputFile = new FileInfo(outputFilename);
                 try
                 {
-                    if (File.Exists(outputFile))
+                    if (outputFile.Exists)
                     {
                         if (Site.CanTrace())
                         {
-                            Site.Trace($"Delete file [{Site.GetRelativePath(outputFile, PathFlags.File)}]");
+                            Site.Trace($"Delete file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File)}]");
                         }
-                        File.Delete(outputFile);
+                        outputFile.Delete();
                     }
                 }
                 catch (Exception)
@@ -339,7 +326,7 @@ namespace Lunet.Core
                 {
                     if (entry is FileInfo)
                     {
-                        previousOutputFiles.Add(entry.FullName);
+                        previousOutputFiles.Add(((FileInfo)entry).FullName);
                     }
                     else if (entry is DirectoryInfo)
                     {

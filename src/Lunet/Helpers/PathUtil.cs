@@ -8,6 +8,11 @@ namespace Lunet.Helpers
     {
         private static readonly char[] TrimCharStart = new[] {'/'};
 
+        public static FileInfo Normalize(this FileInfo fileInfo)
+        {
+            return new FileInfo(fileInfo.FullName);
+        }
+
         public static string NormalizeRelativePath(string filePath, bool isDirectory)
         {
             if (filePath == null) throw new ArgumentNullException(nameof(filePath));
