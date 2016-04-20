@@ -11,7 +11,7 @@ using Lunet.Resources;
 
 namespace Lunet.Scripts
 {
-    public class ScriptIo : DynamicObject
+    public class ScriptIo : DynamicObject<ScriptManager>
     {
         private readonly SiteObject site;
 

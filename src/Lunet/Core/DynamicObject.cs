@@ -23,4 +23,18 @@ namespace Lunet.Core
 
         public object Parent { get; }
     }
+
+    /// <summary>
+    /// Base implementation of a <see cref="DynamicObject"/> accessible from a script
+    /// using scriban <see cref="ScriptObject"/>.
+    /// </summary>
+    /// <seealso cref="Scriban.Runtime.ScriptObject" />
+    /// <seealso cref="IDynamicObject" />
+    public class DynamicObject<T> : DynamicObject
+    {
+        public DynamicObject(T parent) : base(parent)
+        {
+        }
+        public new T Parent => (T) base.Parent;
+    }
 }
