@@ -187,7 +187,7 @@ namespace Lunet.Plugins
             {
                 clock.Restart();
 
-                plugin.BeginProcess();
+                plugin.EndProcess();
 
                 // Update statistics
                 clock.Stop();
