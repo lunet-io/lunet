@@ -29,6 +29,7 @@ namespace Lunet.Bundles
                 [BundleObjectProperties.CssType] = "/css/"
             };
             SetValue(BundleObjectProperties.UrlDestination, UrlDestination, true);
+            MinifyExtension = ".min";
 
             Import(BundleObjectProperties.JsType, (StringFunctionDelegate)FunctionJs);
             Import(BundleObjectProperties.CssType, (StringFunctionDelegate)FunctionCss);
@@ -50,6 +51,18 @@ namespace Lunet.Bundles
         {
             get { return GetSafeValue<bool>(BundleObjectProperties.Minify); }
             set { this[BundleObjectProperties.Minify] = value; }
+        }
+
+        public string MinifyExtension
+        {
+            get { return GetSafeValue<string>(BundleObjectProperties.MinifyExtension); }
+            set { this[BundleObjectProperties.MinifyExtension] = value; }
+        }
+
+        public string Minifier
+        {
+            get { return GetSafeValue<string>(BundleObjectProperties.Minifier); }
+            set { this[BundleObjectProperties.Minifier] = value; }
         }
 
         public void AddLink(string type, string url)

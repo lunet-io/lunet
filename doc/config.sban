@@ -7,8 +7,12 @@ with bundle
 	$jquery = resource "npm/jquery"
 	# $bootstrap = resource "npm/bootstrap"
 	
-	js $jquery.path + "dist/jquery.min.js"
+	js $jquery.path + "dist/jquery.js"
 	# css $bootstrap.path + "dist/bootstrap.min.js"
+	
+	concat = true
+	minify = true
+	minify_ext = ""
 end
 
 log.info bundles

@@ -18,5 +18,9 @@ namespace Lunet.Bundles
         public const string Concat = "concat";
 
         public const string Minify = "minify";
+
+        public const string MinifyExtension = "minify_ext";
+
+        public const string Minifier = "minifier";
     }
 }

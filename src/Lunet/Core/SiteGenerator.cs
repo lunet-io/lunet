@@ -133,20 +133,22 @@ namespace Lunet.Core
         public void TrackDestination(FileInfo outputFile, FileInfo sourceFile)
         {
             if (outputFile == null) throw new ArgumentNullException(nameof(outputFile));
-            if (sourceFile == null) throw new ArgumentNullException(nameof(sourceFile));
 
             var relativePath = Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize);
             var outputFilename = outputFile.FullName;
 
-
-            FileInfo previousSourceFile;
-            if (filesWritten.TryGetValue(outputFilename, out previousSourceFile))
+            if (sourceFile != null)
             {
-                Site.Error($"The content [{Site.GetRelativePath(previousSourceFile.FullName, PathFlags.File|PathFlags.Normalize)}] and [{Site.GetRelativePath(sourceFile.FullName, PathFlags.File | PathFlags.Normalize)}] have the same Url output [{relativePath}]");
-            }
-            else
-            {
-                filesWritten.Add(outputFilename, sourceFile);
+                FileInfo previousSourceFile;
+                if (filesWritten.TryGetValue(outputFilename, out previousSourceFile))
+                {
+                    Site.Error(
+                        $"The content [{Site.GetRelativePath(previousSourceFile.FullName, PathFlags.File | PathFlags.Normalize)}] and [{Site.GetRelativePath(sourceFile.FullName, PathFlags.File | PathFlags.Normalize)}] have the same Url output [{relativePath}]");
+                }
+                else
+                {
+                    filesWritten.Add(outputFilename, sourceFile);
+                }
             }
 
             // If the directory is used for a new file, remove it from the list of previous directories

@@ -18,6 +18,7 @@ namespace Lunet.Core
             RootDirectory = rootDirectoryInfo;
             SourceFileInfo = sourceFileInfo.Normalize();
             SourceFile = sourceFileInfo.FullName;
+            Type = ContentType.File;
             Site = site;
 
             Path = RootDirectory.GetRelativePath(SourceFile, PathFlags.Normalize);
@@ -49,13 +50,27 @@ namespace Lunet.Core
             }
 
             // Replicate readonly values to the Scripting object
-            DynamicObject.SetValue(FileVariables.Length, Length, true);
-            DynamicObject.SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
-            DynamicObject.SetValue(FileVariables.Path, Path, true);
-            DynamicObject.SetValue(FileVariables.Extension, Extension, true);
+            InitializeVariables();
+        }
 
-            DynamicObject.SetValue(PageVariables.Section, Layout, true);
-            DynamicObject.SetValue(PageVariables.PathInSection, PathInSection, true);
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ContentObject"/> class that is not attached to a particular file.
+        /// </summary>
+        /// <param name="rootDirectoryInfo">The root directory information.</param>
+        /// <param name="site">The site.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// </exception>
+        public ContentObject(DirectoryInfo rootDirectoryInfo, SiteObject site)
+        {
+            if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
+            if (site == null) throw new ArgumentNullException(nameof(site));
+            RootDirectory = rootDirectoryInfo;
+            Site = site;
+
+            Type = ContentType.Dynamic;
+
+            // Replicate readonly values to the Scripting object
+            InitializeVariables();
         }
 
         public FolderInfo RootDirectory { get; }
@@ -67,6 +82,8 @@ namespace Lunet.Core
         public string SourceFile { get; }
 
         public long Length { get; }
+
+        public ContentType Type { get; }
 
         public string Path { get; }
 
@@ -157,6 +174,18 @@ namespace Lunet.Core
                 url = PathUtil.NormalizeRelativePath(url, false);
             }
             return url;
+        }
+
+        private void InitializeVariables()
+        {
+            // Replicate readonly values to the Scripting object
+            DynamicObject.SetValue(FileVariables.Length, Length, true);
+            DynamicObject.SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
+            DynamicObject.SetValue(FileVariables.Path, Path, true);
+            DynamicObject.SetValue(FileVariables.Extension, Extension, true);
+
+            DynamicObject.SetValue(PageVariables.Section, Layout, true);
+            DynamicObject.SetValue(PageVariables.PathInSection, PathInSection, true);
         }
     }
 }

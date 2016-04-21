@@ -7,6 +7,7 @@ namespace Lunet.Bundles
         public BundleLink(BundleObject parent, string type, string path, string url) : base(parent)
         {
             Type = type;
+            Path = path;
             Url = url;
         }
 
@@ -28,5 +29,9 @@ namespace Lunet.Bundles
             get { return GetSafeValue<string>("url"); }
             set { this["url"] = value; }
         }
+
+        public string Content { get; set; }
+
+        public ContentObject ContentObject { get; set; }
     }
 }

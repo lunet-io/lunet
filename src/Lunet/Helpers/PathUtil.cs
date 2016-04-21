@@ -55,11 +55,12 @@ namespace Lunet.Helpers
             if (builder == null)
             {
                 // Remove leading /
-                if (!isUrl && filePath.StartsWith("/"))
+                var startsBySlash2 = filePath.StartsWith("/");
+                if (!isUrl && startsBySlash2)
                 {
                     filePath = filePath.TrimStart(TrimCharStart);
                 }
-                else if (isUrl)
+                else if (isUrl && !startsBySlash2)
                 {
                     builder = StringBuilderCache.Local();
                     builder.Append("/");
@@ -89,10 +90,11 @@ namespace Lunet.Helpers
 
             var str = builder.ToString();
 
-            if (!isUrl && str.StartsWith("/"))
+            var startsBySlash = str.StartsWith("/");
+            if (!isUrl && startsBySlash)
             {
                 str = filePath.TrimStart(TrimCharStart);
-            } else if (isUrl)
+            } else if (isUrl && !startsBySlash)
             {
                 str = "/" + filePath;
             }
