@@ -30,18 +30,18 @@ namespace Lunet.Core
             var sectionIndex = Path.IndexOf('/');
             if (sectionIndex >= 0)
             {
-                Layout = Path.Substring(0, sectionIndex);
+                Section = Path.Substring(0, sectionIndex);
                 PathInSection = Path.Substring(sectionIndex + 1);
             }
             else
             {
-                Layout = string.Empty;
+                Section = string.Empty;
                 PathInSection = Path;
             }
-            Section = Layout;
+            Layout = Section;
 
             // Extract the default Url of this content
-            Url = Path.Substring(0, Path.Length - Extension.Length);
+            Url = "/" + Path.Substring(0, Path.Length - Extension.Length);
 
             if (Site.UrlAsFile)
             {
@@ -150,6 +150,12 @@ namespace Lunet.Core
                 url += "/index";
             }
             url += ContentExtension;
+
+            // Make sure that destination path does not start by a /
+            if (!uri.IsAbsoluteUri)
+            {
+                url = PathUtil.NormalizeRelativePath(url, false);
+            }
             return url;
         }
     }
