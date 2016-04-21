@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Lunet.Core;
+using Lunet.Helpers;
 using Scriban.Runtime;
 
 namespace Lunet.Bundles
@@ -22,11 +23,12 @@ namespace Lunet.Bundles
             SetValue(BundleObjectProperties.Name, Name, true);
             SetValue(BundleObjectProperties.Links, Links, true);
 
-            Directories = new DynamicObject<BundleObject>(this)
+            UrlDestination = new DynamicObject<BundleObject>(this)
             {
                 [BundleObjectProperties.JsType] = "/js/",
                 [BundleObjectProperties.CssType] = "/css/"
             };
+            SetValue(BundleObjectProperties.UrlDestination, UrlDestination, true);
 
             Import(BundleObjectProperties.JsType, (StringFunctionDelegate)FunctionJs);
             Import(BundleObjectProperties.CssType, (StringFunctionDelegate)FunctionCss);
@@ -36,7 +38,7 @@ namespace Lunet.Bundles
 
         public List<BundleLink> Links { get; }
 
-        public ScriptObject Directories { get; }
+        public ScriptObject UrlDestination { get; }
 
         public bool Concat
         {
@@ -60,7 +62,7 @@ namespace Lunet.Bundles
                 throw new LunetException($"Invalid url [{url}]");
             }
 
-            var link = new BundleLink(this, type, uri.ToString());
+            var link = new BundleLink(this, type, uri.IsAbsoluteUri ? null : uri.ToString(), uri.IsAbsoluteUri ? uri.ToString() : null);
             Links.Add(link);
         }
 

@@ -8,6 +8,7 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Lunet.Plugins;
+using Scriban.Runtime;
 
 namespace Lunet.Bundles
 {
@@ -43,46 +44,70 @@ namespace Lunet.Bundles
 
             foreach (var bundle in bundleUsed)
             {
+                // Sanitize url destination for the bundle
+                foreach (var urlDestType in bundle.UrlDestination.Keys)
+                {
+                    var urlDest = bundle.UrlDestination.GetSafeValue<string>(urlDestType);
+                    if (string.IsNullOrWhiteSpace(urlDest))
+                    {
+                        Site.Warning($"Invalid null or empty url_dest for type [{urlDestType}] in bundle [{bundle.Name}]. Reset default to \"/res/\"");
+                        urlDest = "/res/";
+                    }
+
+                    Uri url;
+                    if (!Uri.TryCreate(urlDest, UriKind.Relative, out url))
+                    {
+                        Site.Error($"Unable to parse url_dest [{urlDest}] for type [{urlDestType}] in bundle [{bundle.Name}]");
+                    }
+
+                    var finalUrl = PathUtil.NormalizeUrl(urlDest, true);
+
+                    if (finalUrl != urlDest)
+                    {
+                        bundle.UrlDestination[urlDestType] = finalUrl;
+                    }
+                }
+
                 if (!bundle.Concat && !bundle.Minify)
                 {
                     foreach (var link in bundle.Links)
                     {
+                        var path = link.Path;
                         var url = link.Url;
 
-                        var outputUrlDirectory = bundle.Directories[link.Type];
-                        // TODO: if dir is null, what can we do?
+                        var outputUrlDirectory = bundle.UrlDestination[link.Type];
 
-                        Uri result;
-                        if (Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out result))
+                        if (url != null)
                         {
-                            if (result.IsAbsoluteUri)
+                            Uri result;
+                            if (!Uri.TryCreate(url, UriKind.Absolute, out result))
                             {
-                                // TODO: handle absolute Uri                                
+                                Site.Error($"Invalid absolute url [{url}] in bundle [{bundle.Name}]");
+                            }
+                        }
+                        else if (path != null)
+                        {
+                            path = PathUtil.NormalizeRelativePath(path, false);
+
+                            var entry = Site.BaseDirectory.CombineToFile(path);
+
+                            ContentObject previousContent;
+                            if (staticFiles.TryGetValue(entry, out previousContent))
+                            {
+                                previousContent.Url = outputUrlDirectory + Path.GetFileName(previousContent.Url);
                             }
                             else
                             {
-                                url = PathUtil.NormalizeRelativePath(url, false);
+                                // If the file is private or meta, we need to copy to the output
+                                // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
+                                url = outputUrlDirectory + Path.GetFileName(path);
+                                link.Url = url;
 
-                                var entry = new FileInfo(Path.Combine(Site.BaseDirectory, url)).Normalize();
-
-                                ContentObject previousContent;
-                                if (staticFiles.TryGetValue(entry, out previousContent))
+                                if (!staticFiles.ContainsKey(entry))
                                 {
-                                    previousContent.Url = outputUrlDirectory + Path.GetFileName(previousContent.Url);
-                                }
-                                else
-                                {
-                                    // If the file is private or meta, we need to copy to the output
-                                    // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
-                                    url = outputUrlDirectory + Path.GetFileName(url);
-                                    link.Url = url;
-
-                                    if (!staticFiles.ContainsKey(entry))
-                                    {
-                                        var newStaticFile = new ContentObject(Site.BaseDirectory, entry, Site) { Url = url };
-                                        Site.StaticFiles.Add(newStaticFile);
-                                        staticFiles.Add(entry, newStaticFile);
-                                    }
+                                    var newStaticFile = new ContentObject(Site.BaseDirectory, entry, Site) {Url = url};
+                                    Site.StaticFiles.Add(newStaticFile);
+                                    staticFiles.Add(entry, newStaticFile);
                                 }
                             }
                         }

@@ -4,7 +4,7 @@ namespace Lunet.Bundles
 {
     public class BundleLink : DynamicObject<BundleObject>
     {
-        public BundleLink(BundleObject parent, string type, string url) : base(parent)
+        public BundleLink(BundleObject parent, string type, string path, string url) : base(parent)
         {
             Type = type;
             Url = url;
@@ -14,6 +14,13 @@ namespace Lunet.Bundles
         {
             get { return GetSafeValue<string>("type"); }
             set { this["type"] = value; }
+        }
+
+
+        public string Path
+        {
+            get { return GetSafeValue<string>("path"); }
+            set { this["path"] = value; }
         }
 
         public string Url
