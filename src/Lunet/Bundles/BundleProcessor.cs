@@ -139,40 +139,51 @@ namespace Lunet.Bundles
                     // Process file by existing processors
                     if (currentContent == null)
                     {
-                        currentContent = new ContentObject(Site.BaseDirectory, entry, Site) { Url = url };
-                    }
-                    var listTemp = new List<ContentObject>() { currentContent };
-                    Site.Plugins.ProcessContent(listTemp, false);
-
-                    // If we require concat and/or minify, we preload the content of the file
-                    if (bundle.Concat || bundle.Minify)
-                    {
-                        try
+                        if (entry.Exists)
                         {
-                            link.Content = currentContent.Content ?? File.ReadAllText(entry.FullName);
+                            currentContent = new ContentObject(Site.BaseDirectory, entry, Site) { Url = url };
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            Site.Error(
-                                $"Unable to load content [{entry}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
+                            Site.Error($"Unable to find content [{Site.GetRelativePath(entry.FullName, PathFlags.File | PathFlags.Normalize)}] in bundle [{bundle.Name}]");
                         }
                     }
 
-                    // If we are concatenating
-                    if (concatBuilders != null)
+                    if (currentContent != null)
                     {
-                        currentContent.Discard = true;
-
-                        // Remove this link from the list of links, as we are going to squash them after
-                        bundle.Links.RemoveAt(i);
-                        i--;
-                        concatBuilders[link.Type].AppendLine(link.Content);
-                    }
-                    else if (!isExistingContent)
-                    {
-                        Site.StaticFiles.Add(currentContent);
+                        var listTemp = new List<ContentObject>() { currentContent };
+                        Site.Plugins.ProcessContent(listTemp, false);
                         link.ContentObject = currentContent;
-                        staticFiles.Add(entry.FullName, currentContent);
+
+                        // If we require concat and/or minify, we preload the content of the file
+                        if (bundle.Concat || bundle.Minify)
+                        {
+                            try
+                            {
+                                link.Content = currentContent.Content ?? File.ReadAllText(entry.FullName);
+                            }
+                            catch (Exception ex)
+                            {
+                                Site.Error(
+                                    $"Unable to load content [{Site.GetRelativePath(entry.FullName, PathFlags.File | PathFlags.Normalize)}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
+                            }
+                        }
+
+                        // If we are concatenating
+                        if (concatBuilders != null)
+                        {
+                            currentContent.Discard = true;
+
+                            // Remove this link from the list of links, as we are going to squash them after
+                            bundle.Links.RemoveAt(i);
+                            i--;
+                            concatBuilders[link.Type].AppendLine(link.Content);
+                        }
+                        else if (!isExistingContent)
+                        {
+                            Site.StaticFiles.Add(currentContent);
+                            staticFiles.Add(entry.FullName, currentContent);
+                        }
                     }
                 }
             }
@@ -238,10 +249,20 @@ namespace Lunet.Bundles
                             var minExtension = (bundle.MinifyExtension ?? string.Empty) + "." + link.Type;
                             if (!contentObject.Url.EndsWith(minExtension))
                             {
-                                contentObject.Url = Path.ChangeExtension(contentObject.Url, minExtension);
+                                var url = Path.ChangeExtension(contentObject.Url, minExtension);
+                                contentObject.Url = url;
                             }
                         }
                     }
+                }
+            }
+
+            foreach (var link in bundle.Links)
+            {
+                var contentObject = link.ContentObject;
+                if (contentObject != null)
+                {
+                    link.Url = contentObject.Url;
                 }
             }
         }
