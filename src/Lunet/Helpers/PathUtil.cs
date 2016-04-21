@@ -8,6 +8,12 @@ namespace Lunet.Helpers
     {
         private static readonly char[] TrimCharStart = new[] {'/'};
 
+
+        public static string NormalizeExtension(string extension)
+        {
+            return extension.StartsWith(".") ? extension : "." + extension;
+        }
+
         public static T Normalize<T>(this T fileInfo) where T : FileSystemInfo
         {
             if (fileInfo is FileInfo)
