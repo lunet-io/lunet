@@ -8,12 +8,26 @@ namespace Lunet.Helpers
     {
         private static readonly char[] TrimCharStart = new[] {'/'};
 
-        public static FileInfo Normalize(this FileInfo fileInfo)
+        public static T Normalize<T>(this T fileInfo) where T : FileSystemInfo
         {
-            return new FileInfo(fileInfo.FullName);
+            if (fileInfo is FileInfo)
+            {
+                return (T)(object)new FileInfo(fileInfo.FullName);
+            }
+            return (T)(object)new DirectoryInfo(fileInfo.FullName);
+        }
+
+        public static string NormalizeUrl(string filePath, bool isDirectory)
+        {
+            return NormalizePathOrUrl(filePath, isDirectory, true);
         }
 
         public static string NormalizeRelativePath(string filePath, bool isDirectory)
+        {
+            return NormalizePathOrUrl(filePath, isDirectory, false);
+        }
+
+        private static string NormalizePathOrUrl(string filePath, bool isDirectory, bool isUrl)
         {
             if (filePath == null) throw new ArgumentNullException(nameof(filePath));
             filePath = filePath.Trim();
@@ -41,20 +55,29 @@ namespace Lunet.Helpers
             if (builder == null)
             {
                 // Remove leading /
-                if (filePath.StartsWith("/"))
+                if (!isUrl && filePath.StartsWith("/"))
                 {
                     filePath = filePath.TrimStart(TrimCharStart);
+                }
+                else if (isUrl)
+                {
+                    builder = StringBuilderCache.Local();
+                    builder.Append("/");
+                    builder.Append(filePath);
                 }
 
                 // Append '/' if it is a directory
                 if (isDirectory && !string.IsNullOrWhiteSpace(filePath) && !filePath.EndsWith("/"))
                 {
-                    builder = StringBuilderCache.Local();
-                    builder.Append(filePath);
+                    if (builder == null)
+                    {
+                        builder = StringBuilderCache.Local();
+                        builder.Append(filePath);
+                    }
                     builder.Append('/');
-                    return builder.ToString();
                 }
-                return filePath;
+
+                return builder?.ToString() ?? filePath;
             }
             builder.Append(filePath, previousOffset, filePath.Length - previousOffset);
 
@@ -66,10 +89,14 @@ namespace Lunet.Helpers
 
             var str = builder.ToString();
 
-            if (str.StartsWith("/"))
+            if (!isUrl && str.StartsWith("/"))
             {
                 str = filePath.TrimStart(TrimCharStart);
+            } else if (isUrl)
+            {
+                str = "/" + filePath;
             }
+
             builder.Length = 0;
             return str;
         }
