@@ -41,7 +41,7 @@ namespace Lunet.Core
             if (outputPath == null) throw new ArgumentNullException(nameof(outputPath));
 
             fromFile = fromFile.Normalize();
-            var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, outputPath)).Normalize();
+            var outputFile = Site.OutputDirectory.CombineToFile(outputPath);
             TrackDestination(outputFile, fromFile);
 
             if (!outputFile.Exists || (fromFile.LastWriteTime > outputFile.LastWriteTime))
@@ -69,7 +69,7 @@ namespace Lunet.Core
             relativePath = PathUtil.NormalizeRelativePath(relativePath, false);
             if (Path.IsPathRooted(relativePath)) throw new ArgumentException($"Path [{relativePath}] cannot be rooted", nameof(relativePath));
 
-            var outputFile = new FileInfo(Path.Combine(Site.OutputDirectory, relativePath)).Normalize();
+            var outputFile = Site.OutputDirectory.CombineToFile(relativePath);
             var outputDir = outputFile.Directory;
             if (outputDir == null)
             {
@@ -84,12 +84,12 @@ namespace Lunet.Core
             clock.Restart();
             try
             {
-                // If the source file is not newer than the destination file, don't overwrite it
+                // If the file has a content, we will use this instead
                 if (fromFile.Content != null)
                 {
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File)}]");
+                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize)}]");
                     }
 
                     using (var writer = new StreamWriter(outputFile.FullName))
@@ -102,11 +102,12 @@ namespace Lunet.Core
                         stat.OutputBytes += writer.BaseStream.Length;
                     }
                 }
+                // If the source file is not newer than the destination file, don't overwrite it
                 else if (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime))
                 {
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File)}]");
+                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize)}]");
                     }
 
                     fromFile.SourceFileInfo.CopyTo(outputFile.FullName, true);
@@ -118,7 +119,7 @@ namespace Lunet.Core
             }
             catch (Exception ex)
             {
-                Site.Error($"Unable to copy file [{Site.GetRelativePath(fromFile.SourceFileInfo.FullName, PathFlags.File)}] to [{outputFile}]. Reason:{ex.GetReason()}");
+                Site.Error($"Unable to copy file [{Site.GetRelativePath(fromFile.SourceFileInfo.FullName, PathFlags.File | PathFlags.Normalize)}] to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
             }
             finally
@@ -245,7 +246,7 @@ namespace Lunet.Core
             {
                 if (Site.CanTrace())
                 {
-                    Site.Trace($"Create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory)}]");
+                    Site.Trace($"Create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory | PathFlags.Normalize)}]");
                 }
 
                 try
@@ -254,7 +255,7 @@ namespace Lunet.Core
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Unable to create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory)}]. Reason:{ex.GetReason()}");
+                    Site.Error($"Unable to create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory | PathFlags.Normalize)}]. Reason:{ex.GetReason()}");
                 }
             }
         }
@@ -271,7 +272,7 @@ namespace Lunet.Core
                     {
                         if (Site.CanTrace())
                         {
-                            Site.Trace($"Delete file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File)}]");
+                            Site.Trace($"Delete file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize)}]");
                         }
                         outputFile.Delete();
                     }
@@ -289,7 +290,7 @@ namespace Lunet.Core
                     {
                         if (Site.CanTrace())
                         {
-                            Site.Trace($"Delete directory [{Site.GetRelativePath(outputDirectory, PathFlags.Directory)}]");
+                            Site.Trace($"Delete directory [{Site.GetRelativePath(outputDirectory, PathFlags.Directory | PathFlags.Normalize)}]");
                         }
                         Directory.Delete(outputDirectory);
                     }

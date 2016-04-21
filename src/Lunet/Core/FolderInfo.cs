@@ -13,20 +13,20 @@ namespace Lunet.Core
         public FolderInfo(string fullPath)
         {
             if (fullPath == null) throw new ArgumentNullException(nameof(fullPath));
-            Info = new DirectoryInfo(fullPath);
-            FullPath = Info.FullName;
+            FullName = new DirectoryInfo(fullPath).FullName;
+            Info = new DirectoryInfo(FullName);
         }
 
         public FolderInfo(DirectoryInfo directory)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
-            Info = directory;
-            FullPath = directory.FullName;
+            FullName = directory.FullName;
+            Info = new DirectoryInfo(FullName);
         }
 
         public DirectoryInfo Info { get; }
 
-        public string FullPath { get; }
+        public string FullName { get; }
 
         public bool Exists => Info.Exists;
 
@@ -35,15 +35,26 @@ namespace Lunet.Core
             Info.Create();
         }
 
+        public string Combine(string relativePath)
+        {
+            var newPath = PathUtil.NormalizeRelativePath(relativePath, false);
+            return new FileInfo(Path.Combine(this, newPath)).FullName;
+        }
+        public FileInfo CombineToFile(string relativePath)
+        {
+            var newPath = PathUtil.NormalizeRelativePath(relativePath, false);
+            return new FileInfo(Path.Combine(this, newPath)).Normalize();
+        }
+
         public FolderInfo GetSubFolder(string subDirectoryPath)
         {
             if (subDirectoryPath == null) throw new ArgumentNullException(nameof(subDirectoryPath));
-            var path = new DirectoryInfo(Path.Combine(this, subDirectoryPath));
+            var path = new DirectoryInfo(Combine(subDirectoryPath));
 
             // If the sub directory is going above the base directory, log an error
-            if (FullPath.StartsWith(path.FullName))
+            if (FullName.StartsWith(path.FullName))
             {
-                throw new LunetException($"The sub-directory [{subDirectoryPath}] cannot cross above the base directory [{FullPath}]");
+                throw new LunetException($"The sub-directory [{subDirectoryPath}] cannot cross above the base directory [{FullName}]");
             }
             return path;
         }
@@ -62,12 +73,12 @@ namespace Lunet.Core
         {
             if (fullFilePath == null) throw new ArgumentNullException(nameof(fullFilePath));
             var fullPath = Path.GetFullPath(fullFilePath);
-            if (!fullPath.StartsWith(FullPath))
+            if (!fullPath.StartsWith(FullName))
             {
-                throw new LunetException($"Cannot query for the relative path [{fullFilePath}] outside the theme directory [{FullPath}]");
+                throw new LunetException($"Cannot query for the relative path [{fullFilePath}] outside the theme directory [{FullName}]");
             }
 
-            var path = fullPath.Substring(FullPath.Length + 1);
+            var path = fullPath.Substring(FullName.Length + 1);
             return flags.Normalize() ? PathUtil.NormalizeRelativePath(path, flags.IsDirectory()) : path;
         }
 
@@ -83,7 +94,7 @@ namespace Lunet.Core
 
         public static implicit operator string(FolderInfo folderInfo)
         {
-            return folderInfo.FullPath;
+            return folderInfo.FullName;
         }
 
         public static implicit operator DirectoryInfo(FolderInfo folderInfo)
@@ -93,7 +104,7 @@ namespace Lunet.Core
 
         public override string ToString()
         {
-            return FullPath;
+            return FullName;
         }
     }
 }

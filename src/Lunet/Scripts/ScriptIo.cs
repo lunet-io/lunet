@@ -39,29 +39,24 @@ namespace Lunet.Scripts
             var isOutputDirectory = outputPath.EndsWith("\\") || outputPath.EndsWith("/");
             var rootFolder = resourceContext?.AbsoluteDirectory ?? site.BaseDirectory;
 
-            var normalizeOutput = PathUtil.NormalizeRelativePath(outputPath, isOutputDirectory);
-            if (Path.IsPathRooted(normalizeOutput))
+            var normalizedOutput = PathUtil.NormalizeRelativePath(outputPath, isOutputDirectory);
+            if (Path.IsPathRooted(normalizedOutput))
             {
                 throw new LunetException($"Cannot output to a root directory [{outputPath}].  Only relative is accepted");
             }
 
             if (!isOutputDirectory && fromFiles.Count > 1)
             {
-                throw new LunetException($"Cannot output to a single file [{normalizeOutput}] when input has more than 1 file ({fromFiles.Count})");
+                throw new LunetException($"Cannot output to a single file [{normalizedOutput}] when input has more than 1 file ({fromFiles.Count})");
             }
 
-            var outputNormalized = Path.Combine(site.OutputDirectory, PathUtil.NormalizeRelativePath(outputPath, isOutputDirectory));
+            var normalizedOutputFull = Path.Combine(site.OutputDirectory, normalizedOutput);
 
             foreach (var inputFile in fromFiles)
             {
                 if (inputFile == null)
                 {
                     continue;
-                }
-
-                if (isOutputDirectory)
-                {
-                    
                 }
 
                 var inputFileTrim = inputFile.Trim();
@@ -76,8 +71,8 @@ namespace Lunet.Scripts
 
                 var relativeOutputFile =
                     PathUtil.NormalizeRelativePath(site.OutputDirectory.GetRelativePath(isOutputDirectory
-                        ? Path.Combine(outputNormalized, Path.GetFileName(inputFullPath))
-                        : outputNormalized, PathFlags.File), false);
+                        ? Path.Combine(normalizedOutputFull, Path.GetFileName(inputFullPath))
+                        : normalizedOutputFull, PathFlags.File), false);
 
                 site.Generator.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
             }
