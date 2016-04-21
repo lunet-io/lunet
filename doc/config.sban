@@ -6,11 +6,11 @@ theme = "gold"
 with bundle
 	# Add js files from resources
 	$jquery = resource "npm/jquery"
-	js $jquery.path + "dist/jquery.js"
+	js $jquery.main
 
 	# tether
 	$tether = resource "npm/tether"
-	js $tether.path + "dist/js/tether.js"
+	js $tether.main
 
 	# bootstrap
 	$bootstrap = resource "npm/bootstrap/4.0.0-alpha.2"

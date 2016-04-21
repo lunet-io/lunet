@@ -23,10 +23,10 @@ namespace Lunet.Resources
             Version = version;
             AbsoluteDirectory = absoluteDirectory;
             Provider = provider;
-            Directory = provider.Manager.Site.GetRelativePath(AbsoluteDirectory, PathFlags.Directory|PathFlags.Normalize);
+            Path = provider.Manager.Site.GetRelativePath(AbsoluteDirectory, PathFlags.Directory|PathFlags.Normalize);
 
             DynamicObject.SetValue("provider", Provider.Name, true);
-            DynamicObject.SetValue("path", Directory, true);
+            DynamicObject.SetValue("path", Path, true);
         }
 
         public string Name { get; }
@@ -35,7 +35,7 @@ namespace Lunet.Resources
 
         public ResourceProvider Provider { get; }
 
-        public string Directory { get; }
+        public string Path { get; }
 
         public FolderInfo AbsoluteDirectory { get;  }
     }
