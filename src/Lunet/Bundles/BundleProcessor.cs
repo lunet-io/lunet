@@ -161,6 +161,7 @@ namespace Lunet.Bundles
                         {
                             var newStaticFile = new ContentObject(Site.BaseDirectory, entry, Site) {Url = url};
                             Site.StaticFiles.Add(newStaticFile);
+                            link.ContentObject = newStaticFile;
                             staticFiles.Add(entry, newStaticFile);
                         }
                     }
@@ -223,7 +224,7 @@ namespace Lunet.Bundles
                         var contentObject = link.ContentObject;
                         if (contentObject != null)
                         {
-                            contentObject.Content = minifier.Minify(link.Type, contentObject.Content);
+                            contentObject.Content = minifier.Minify(link.Type, link.Content);
 
                             var minExtension = (bundle.MinifyExtension ?? string.Empty) + "." + link.Type;
                             if (!contentObject.Url.EndsWith(minExtension))
