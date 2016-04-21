@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System.IO;
 using Lunet.Core;
 using Lunet.Plugins;
 using Lunet.Plugins.Markdig;
@@ -34,10 +35,10 @@ namespace Lunet.Plugins.Markdig
 
         public override ContentResult TryProcess(ContentObject page)
         {
-            var extension = page.ContentExtension;
+            var contentType = page.ContentType;
 
             // This plugin is only working on files with a frontmatter and the markdown extension
-            if (!(page.HasFrontMatter && (extension == ".md" || extension == ".markdown")))
+            if (!page.HasFrontMatter || contentType != ContentTypes.Markdown)
             {
                 return ContentResult.None;
             }
@@ -55,7 +56,9 @@ namespace Lunet.Plugins.Markdig
 
             var html = Markdown.ToHtml(page.Content, pipeline);
             page.Content = html;
-            page.ContentExtension = Site.GetSafeDefaultPageExtension();
+            var htmExtension  = Site.GetSafeDefaultPageExtension();
+            page.ContentType = ContentTypes.Html;
+            page.Url = Path.ChangeExtension(page.Url, htmExtension);
 
             // Allow further processing of this page
             return ContentResult.Continue;

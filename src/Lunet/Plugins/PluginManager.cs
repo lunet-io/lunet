@@ -148,7 +148,7 @@ namespace Lunet.Plugins
                     {
                         var processor = pendingPageProcessors[i];
 
-                        // Note that page.ContentExtension can be changed by a processor 
+                        // Note that page.ContentType can be changed by a processor 
                         // while processing a page
                         clock.Restart();
                         var result = processor.TryProcess(page);

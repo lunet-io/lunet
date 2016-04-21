@@ -45,12 +45,13 @@
     <Compile Include="Bundles\BundleObjectProperties.cs" />
     <Compile Include="Bundles\BundleProcessor.cs" />
     <Compile Include="Bundles\IContentMinifier.cs" />
-    <Compile Include="Core\ContentType.cs" />
+    <Compile Include="Core\ContentObjectType.cs" />
     <Compile Include="Core\PathFlags.cs" />
     <Compile Include="Helpers\ExceptionUtil.cs" />
     <Compile Include="Helpers\StringBuilderCache.cs" />
     <Compile Include="Helpers\TarUtil.cs" />
     <Compile Include="Helpers\ZipUtil.cs" />
+    <Compile Include="Plugins\ContentTypes.cs" />
     <Compile Include="Plugins\NUglify\NUglifyPlugin.cs" />
     <Compile Include="Resources\ResourceInstallFlags.cs" />
     <Compile Include="Resources\ResourceProvider.cs" />

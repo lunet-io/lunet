@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
+using Lunet.Plugins;
 using Scriban.Helpers;
 using Scriban.Runtime;
 
@@ -18,14 +19,14 @@ namespace Lunet.Core
             RootDirectory = rootDirectoryInfo;
             SourceFileInfo = sourceFileInfo.Normalize();
             SourceFile = sourceFileInfo.FullName;
-            Type = ContentType.File;
+            ObjectType = ContentObjectType.File;
             Site = site;
 
             Path = RootDirectory.GetRelativePath(SourceFile, PathFlags.Normalize);
             Length = SourceFileInfo.Length;
             Extension = SourceFileInfo.Extension.ToLowerInvariant();
             ModifiedTime = SourceFileInfo.LastWriteTime;
-            ContentExtension = Extension;
+            ContentType = Site.ContentTypes.GetContentType(Extension);
 
             // Extract the section of this content
             var sectionIndex = Path.IndexOf('/');
@@ -42,12 +43,8 @@ namespace Lunet.Core
             Layout = Section;
 
             // Extract the default Url of this content
-            Url = "/" + Path.Substring(0, Path.Length - Extension.Length);
-
-            if (Site.UrlAsFile)
-            {
-                UrlExplicit = true;
-            }
+            // By default, for html content, we don't output a file but a directory
+            Url = "/" + Path;
 
             // Replicate readonly values to the Scripting object
             InitializeVariables();
@@ -67,7 +64,7 @@ namespace Lunet.Core
             RootDirectory = rootDirectoryInfo;
             Site = site;
 
-            Type = ContentType.Dynamic;
+            ObjectType = ContentObjectType.Dynamic;
 
             // Replicate readonly values to the Scripting object
             InitializeVariables();
@@ -83,7 +80,7 @@ namespace Lunet.Core
 
         public long Length { get; }
 
-        public ContentType Type { get; }
+        public ContentObjectType ObjectType { get; }
 
         public string Path { get; }
 
@@ -101,7 +98,6 @@ namespace Lunet.Core
             get { return DynamicObject.GetSafeValue<bool>(FileVariables.Discard); }
             set { DynamicObject[FileVariables.Discard] = value; }
         }
-       
 
         /// <summary>
         /// Gets or sets the script attached to this page if any.
@@ -124,7 +120,7 @@ namespace Lunet.Core
         /// <summary>
         /// Gets or sets the output extension. If null, by default the same as the input <see cref="Extension"/>.
         /// </summary>
-        public string ContentExtension
+        public string ContentType
         {
             get { return DynamicObject.GetSafeValue<string>(PageVariables.ContentExtension); }
             set { DynamicObject[PageVariables.ContentExtension] = value; }
@@ -136,13 +132,6 @@ namespace Lunet.Core
             set { DynamicObject[PageVariables.Url] = value; }
         }
 
-        public bool UrlExplicit
-        {
-            get { return DynamicObject.GetSafeValue<bool>(PageVariables.UrlExplicit); }
-            set { DynamicObject[PageVariables.UrlExplicit] = value; }
-        }
-
-
         public string Layout
         {
             get { return DynamicObject.GetSafeValue<string>(PageVariables.Layout); }
@@ -151,29 +140,36 @@ namespace Lunet.Core
 
         public string GetDestinationPath()
         {
-            var url = Url;
+            var urlAsPath = Url;
 
             Uri uri;
-            if (!Uri.TryCreate(url, UriKind.Relative, out uri))
+            if (!Uri.TryCreate(urlAsPath, UriKind.Relative, out uri))
             {
-                Site.Warning($"Invalid Url [{url}] for page [{Path}]. Reverting to page default.");
-                url = Url = Path;
+                Site.Warning($"Invalid Url [{urlAsPath}] for page [{Path}]. Reverting to page default.");
+                urlAsPath = Url = Path;
             }
 
-            var isIndex = System.IO.Path.GetFileName(Url) == "index";
-            if (!isIndex && 
-                ContentExtension == Site.DefaultPageExtension && !UrlExplicit)
+            if (ContentType == ContentTypes.Html && !Site.UrlAsFile)
             {
-                url += "/index";
+                var isIndex = System.IO.Path.GetFileNameWithoutExtension(urlAsPath) == "index";
+                if (!isIndex)
+                {
+                    var extension = System.IO.Path.GetExtension(urlAsPath);
+                    if (extension != null)
+                    {
+                        urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - extension.Length);
+                    }
+                    urlAsPath = PathUtil.NormalizeRelativePath(urlAsPath, true);
+                    urlAsPath += "index" + Site.GetSafeDefaultPageExtension();
+                }
             }
-            url += ContentExtension;
 
             // Make sure that destination path does not start by a /
             if (!uri.IsAbsoluteUri)
             {
-                url = PathUtil.NormalizeRelativePath(url, false);
+                urlAsPath = PathUtil.NormalizeRelativePath(urlAsPath, false);
             }
-            return url;
+            return urlAsPath;
         }
 
         private void InitializeVariables()

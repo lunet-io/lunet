@@ -46,7 +46,7 @@ namespace Lunet.Layouts
             do
             {
                 continueLayout = false;
-                var layoutExtension = page.ContentExtension ?? Site.GetSafeDefaultPageExtension();
+                var layoutExtension = page.ContentType ?? Site.GetSafeDefaultPageExtension();
                 var layoutScript = GetLayout(layoutName, page.ScriptObjectLocal.GetSafeValue<string>(PageVariables.LayoutType), layoutExtension);
 
                 // If we haven't found any layout, this is not an error, so we let the 

@@ -3,7 +3,7 @@
 // See the license.txt file in the project root for more information.
 namespace Lunet.Core
 {
-    public enum ContentType
+    public enum ContentObjectType
     {
         File,
 
