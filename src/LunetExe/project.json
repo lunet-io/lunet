@@ -6,8 +6,10 @@
     "net46": {}
   },
   "dependencies": {
-    "Microsoft.Extensions.Logging": "1.0.0-rc3-20605",
-    "Microsoft.Extensions.Logging.Console": "1.0.0-rc3-20605",
+    "Microsoft.AspNetCore.Hosting": "1.0.0-*",
+    "Microsoft.AspNetCore.Server.WebListener": "0.1.0-rc3-20639",
+    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc3-20639",
+    "Microsoft.Extensions.Logging.Console": "1.0.0-rc3-20639",
     "Newtonsoft.Json": "8.0.3",
     "NuGet.Versioning": "3.5.0-beta-1178",
     "System.Buffers": "4.0.0-rc3-24015-00",
