@@ -61,7 +61,7 @@ namespace Lunet
             var directory = new DirectoryInfo(directoryPath);
             while (directory != null)
             {
-                var site = TryFromFile(Path.Combine(directory.FullName, SiteFactory.DefaultConfigFilename), loggerFactory);
+                var site = TryFromFile(Path.Combine(directory.FullName, DefaultConfigFilename), loggerFactory);
 
                 if (site != null)
                 {
