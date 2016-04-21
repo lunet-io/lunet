@@ -53,6 +53,8 @@
     <Compile Include="Helpers\ZipUtil.cs" />
     <Compile Include="Plugins\ContentTypes.cs" />
     <Compile Include="Plugins\NUglify\NUglifyPlugin.cs" />
+    <Compile Include="Plugins\SharpScss\ScssProcessor.cs" />
+    <Compile Include="Plugins\SharpScss\SharpScssPlugin.cs" />
     <Compile Include="Resources\ResourceInstallFlags.cs" />
     <Compile Include="Resources\ResourceProvider.cs" />
     <Compile Include="Resources\NpmResourceProvider.cs" />

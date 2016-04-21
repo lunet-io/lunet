@@ -3,12 +3,14 @@ theme = "gold"
 
 # io.copy $jquery.path + "dist/jquery.min.js" "js/"
 
+
 with bundle
 	$jquery = resource "npm/jquery"
-	# $bootstrap = resource "npm/bootstrap"
-	
+	$bootstrap = resource "npm/bootstrap/4.0.0-alpha.2"
+	scss.includes = [$bootstrap.path + "scss"]
+
 	js $jquery.path + "dist/jquery.js"
-	# css $bootstrap.path + "dist/bootstrap.min.js"
+	css "css/test.scss"
 	
 	concat = true
 	minify = true

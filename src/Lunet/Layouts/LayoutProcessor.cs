@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Lunet.Core;
+using Lunet.Helpers;
 using Lunet.Plugins;
 using Scriban;
 using Scriban.Parsing;
@@ -46,7 +47,8 @@ namespace Lunet.Layouts
             do
             {
                 continueLayout = false;
-                var layoutExtension = page.ContentType ?? Site.GetSafeDefaultPageExtension();
+                // TODO: We are using content type here with the layout extension, is it ok?
+                var layoutExtension = PathUtil.NormalizeExtension(page.ContentType) ?? Site.GetSafeDefaultPageExtension();
                 var layoutScript = GetLayout(layoutName, page.ScriptObjectLocal.GetSafeValue<string>(PageVariables.LayoutType), layoutExtension);
 
                 // If we haven't found any layout, this is not an error, so we let the 

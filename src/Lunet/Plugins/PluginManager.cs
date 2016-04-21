@@ -100,7 +100,7 @@ namespace Lunet.Plugins
             }
         }
 
-        public void ProcessPages(List<ContentObject> pages)
+        public void ProcessContent(List<ContentObject> pages, bool copyOutput)
         {
             if (pages == null) throw new ArgumentNullException(nameof(pages));
 
@@ -171,7 +171,7 @@ namespace Lunet.Plugins
                 pendingPageProcessors.Clear();
 
                 // Copy only if the file are marked as include
-                if (!breakProcessing && !page.Discard)
+                if (copyOutput && !breakProcessing && !page.Discard)
                 {
                     Site.Generator.TryCopyContentToOutput(page, page.GetDestinationPath());
                 }

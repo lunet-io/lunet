@@ -43,10 +43,10 @@ namespace Lunet.Bundles
             }
 
             // Compute a cache of current static files
-            var staticFiles = new Dictionary<FileInfo, ContentObject>();
+            var staticFiles = new Dictionary<string, ContentObject>();
             foreach (var staticFile in Site.StaticFiles)
             {
-                staticFiles.Add(staticFile.SourceFileInfo, staticFile);
+                staticFiles.Add(staticFile.SourceFile, staticFile);
             }
 
             // Process bundle
@@ -56,7 +56,7 @@ namespace Lunet.Bundles
             }
         }
 
-        private void ProcessBundle(BundleObject bundle, Dictionary<FileInfo, ContentObject> staticFiles)
+        private void ProcessBundle(BundleObject bundle, Dictionary<string, ContentObject> staticFiles)
         {
             // Sanitize url destination for the bundle
             foreach (var urlDestType in bundle.UrlDestination.Keys.ToList())
@@ -87,7 +87,7 @@ namespace Lunet.Bundles
             ProcessBundleLinks(bundle, staticFiles);
         }
 
-        private void ProcessBundleLinks(BundleObject bundle, Dictionary<FileInfo, ContentObject> staticFiles)
+        private void ProcessBundleLinks(BundleObject bundle, Dictionary<string, ContentObject> staticFiles)
         {
             Dictionary<string, StringBuilder> concatBuilders = null;
             if (bundle.Concat)
@@ -124,46 +124,55 @@ namespace Lunet.Bundles
 
                     var outputUrlDirectory = bundle.UrlDestination[link.Type];
 
-                    ContentObject previousContent;
-                    if (staticFiles.TryGetValue(entry, out previousContent))
+                    ContentObject currentContent;
+                    bool isExistingContent = false;
+                    if (staticFiles.TryGetValue(entry.FullName, out currentContent))
                     {
-                        previousContent.Url = outputUrlDirectory + Path.GetFileName(previousContent.Url);
+                        isExistingContent = true;
+                        currentContent.Url = outputUrlDirectory + Path.GetFileName(currentContent.Url);
                     }
-                    else
+                    // If the file is private or meta, we need to copy to the output
+                    // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
+                    url = outputUrlDirectory + Path.GetFileName(path);
+                    link.Url = url;
+
+                    // Process file by existing processors
+                    if (currentContent == null)
                     {
-                        // If the file is private or meta, we need to copy to the output
-                        // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
-                        url = outputUrlDirectory + Path.GetFileName(path);
-                        link.Url = url;
+                        currentContent = new ContentObject(Site.BaseDirectory, entry, Site) { Url = url };
+                    }
+                    var listTemp = new List<ContentObject>() { currentContent };
+                    Site.Plugins.ProcessContent(listTemp, false);
 
-                        // If we require concat and/or minify, we preload the content of the file
-                        if (bundle.Concat || bundle.Minify)
+                    // If we require concat and/or minify, we preload the content of the file
+                    if (bundle.Concat || bundle.Minify)
+                    {
+                        try
                         {
-                            try
-                            {
-                                link.Content = File.ReadAllText(entry.FullName);
-                            }
-                            catch (Exception ex)
-                            {
-                                Site.Error($"Unable to load content [{entry}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
-                            }
+                            link.Content = currentContent.Content ?? File.ReadAllText(entry.FullName);
                         }
+                        catch (Exception ex)
+                        {
+                            Site.Error(
+                                $"Unable to load content [{entry}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
+                        }
+                    }
 
-                        // If we are concatenating
-                        if (concatBuilders != null)
-                        {
-                            // Remove this link from the list of links, as we are going to squash them after
-                            bundle.Links.RemoveAt(i);
-                            i--;
-                            concatBuilders[link.Type].AppendLine(link.Content);
-                        }
-                        else if (!staticFiles.ContainsKey(entry))
-                        {
-                            var newStaticFile = new ContentObject(Site.BaseDirectory, entry, Site) {Url = url};
-                            Site.StaticFiles.Add(newStaticFile);
-                            link.ContentObject = newStaticFile;
-                            staticFiles.Add(entry, newStaticFile);
-                        }
+                    // If we are concatenating
+                    if (concatBuilders != null)
+                    {
+                        currentContent.Discard = true;
+
+                        // Remove this link from the list of links, as we are going to squash them after
+                        bundle.Links.RemoveAt(i);
+                        i--;
+                        concatBuilders[link.Type].AppendLine(link.Content);
+                    }
+                    else if (!isExistingContent)
+                    {
+                        Site.StaticFiles.Add(currentContent);
+                        link.ContentObject = currentContent;
+                        staticFiles.Add(entry.FullName, currentContent);
                     }
                 }
             }

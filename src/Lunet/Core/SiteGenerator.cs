@@ -223,10 +223,10 @@ namespace Lunet.Core
             try
             {
                 // Process static files
-                Site.Plugins.ProcessPages(Site.StaticFiles);
+                Site.Plugins.ProcessContent(Site.StaticFiles, true);
 
                 // Process pages (files with front matter)
-                Site.Plugins.ProcessPages(Site.Pages);
+                Site.Plugins.ProcessContent(Site.Pages, true);
             }
             finally
             {

@@ -5,7 +5,7 @@ This is a welcome file
 
 We would like to try this
 
-```c#
+```csharp
 public class Yes
 {
 
