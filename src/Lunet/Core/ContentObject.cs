@@ -11,7 +11,7 @@ namespace Lunet.Core
     [DebuggerDisplay("Content: {Path}")]
     public class ContentObject : LunetObject
     {
-        public ContentObject(DirectoryInfo rootDirectoryInfo, FileInfo sourceFileInfo, SiteObject site)
+        public ContentObject(SiteObject site, DirectoryInfo rootDirectoryInfo, FileInfo sourceFileInfo)
         {
             if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
             if (sourceFileInfo == null) throw new ArgumentNullException(nameof(sourceFileInfo));

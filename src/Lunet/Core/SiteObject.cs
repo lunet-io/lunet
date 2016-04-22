@@ -240,12 +240,12 @@ namespace Lunet.Core
                     var scriptPage = Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatter);
                     if (!scriptPage.HasErrors)
                     {
-                        page = new ContentObject(rootDirectory, file, this) { Script = scriptPage.Page };
+                        page = new ContentObject(this, rootDirectory, file) { Script = scriptPage.Page };
                     }
                 }
                 else
                 {
-                    this.StaticFiles.Add(new ContentObject(rootDirectory, file, this));
+                    this.StaticFiles.Add(new ContentObject(this, rootDirectory, file));
                 }
             }
             finally

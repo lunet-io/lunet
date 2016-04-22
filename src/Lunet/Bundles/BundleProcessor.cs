@@ -141,7 +141,7 @@ namespace Lunet.Bundles
                     {
                         if (entry.Exists)
                         {
-                            currentContent = new ContentObject(Site.BaseDirectory, entry, Site) { Url = url };
+                            currentContent = new ContentObject(Site, Site.BaseDirectory, entry) { Url = url };
                         }
                         else
                         {
