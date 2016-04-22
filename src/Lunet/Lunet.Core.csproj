@@ -79,6 +79,10 @@
     <Compile Include="Statistics\SiteStatistics.cs" />
     <Compile Include="Scripts\ScriptManager.cs" />
     <Compile Include="Core\SiteGenerator.cs" />
+    <Compile Include="Taxonomies\Taxonomy.cs" />
+    <Compile Include="Taxonomies\TaxonomyManager.cs" />
+    <Compile Include="Taxonomies\TaxonomyProcessor.cs" />
+    <Compile Include="Taxonomies\TaxonomyTerm.cs" />
     <Compile Include="Themes\DefaultThemeProvider.cs" />
     <Compile Include="Themes\IThemeProvider.cs" />
     <Compile Include="Themes\ThemeDescription.cs" />

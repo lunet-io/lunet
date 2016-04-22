@@ -12,6 +12,7 @@ using Lunet.Plugins;
 using Lunet.Resources;
 using Lunet.Scripts;
 using Lunet.Statistics;
+using Lunet.Taxonomies;
 using Lunet.Themes;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
@@ -65,6 +66,7 @@ namespace Lunet.Core
                 (Plugins = new PluginManager(this)),
                 (Resources = new ResourceManager(this)),
                 (Bundles = new BundleManager(this)),
+                (Taxonomies = new TaxonomyManager(this)),
             };
 
             Statistics = new SiteStatistics();
@@ -116,6 +118,8 @@ namespace Lunet.Core
         public SiteStatistics Statistics { get; }
 
         public ContentTypeManager ContentTypes { get; }
+
+        public TaxonomyManager Taxonomies { get; }
 
         public bool UrlAsFile
         {

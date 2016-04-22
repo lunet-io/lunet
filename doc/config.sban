@@ -3,6 +3,11 @@ theme = "gold"
 
 # io.copy $jquery.path + "dist/jquery.min.js" "js/"
 
+with taxonomies
+	tags = "tag"
+	categories = "category"
+end
+
 with bundle
 	# Add js files from resources
 	$jquery = resource "npm/jquery"
@@ -22,8 +27,8 @@ with bundle
 	# Add main css file
 	css "css/test.scss"
 	
-	concat = false
-	minify = false
+	concat = true
+	minify = true
 	
 	# Uncomment the following line to change the extension used to after minifaction
 	# minify_ext = ".min"
