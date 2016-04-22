@@ -48,7 +48,7 @@ namespace Lunet.Layouts
             {
                 continueLayout = false;
                 // TODO: We are using content type here with the layout extension, is it ok?
-                var layoutExtension = PathUtil.NormalizeExtension(page.ContentType) ?? Site.GetSafeDefaultPageExtension();
+                var layoutExtension = PathUtil.NormalizeExtension(page.ContentType.Name) ?? Site.GetSafeDefaultPageExtension();
                 var layoutScript = GetLayout(layoutName, page.ScriptObjectLocal.GetSafeValue<string>(PageVariables.LayoutType), layoutExtension);
 
                 // If we haven't found any layout, this is not an error, so we let the 

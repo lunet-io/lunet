@@ -50,7 +50,7 @@ namespace Lunet.Core
             LoggerFactory = loggerFactory ?? new LoggerFactory();
             LoggerFactory.AddProvider(new LoggerProviderIntercept(this));
             Log = LoggerFactory.CreateLogger("lunet");
-            ContentTypes = new ContentTypes();
+            ContentTypes = new ContentTypeManager();
 
             OutputDirectory = BaseDirectory.GetSubFolder(SiteDirectoryName);
 
@@ -115,7 +115,7 @@ namespace Lunet.Core
 
         public SiteStatistics Statistics { get; }
 
-        public ContentTypes ContentTypes { get; }
+        public ContentTypeManager ContentTypes { get; }
 
         public bool UrlAsFile
         {

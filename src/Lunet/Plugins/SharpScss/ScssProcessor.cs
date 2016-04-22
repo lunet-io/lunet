@@ -8,12 +8,14 @@ namespace Lunet.Plugins.SharpScss
 {
     public class ScssProcessor : ContentProcessor
     {
+        public static readonly ContentType ScssType = new ContentType("scss");
+
         public override ContentResult TryProcess(ContentObject file)
         {
             var contentType = file.ContentType;
 
             // This plugin is only working on files with a frontmatter and the markdown extension
-            if (contentType != "scss")
+            if (contentType != ScssType)
             {
                 return ContentResult.None;
             }
@@ -47,8 +49,7 @@ namespace Lunet.Plugins.SharpScss
             var result = Scss.ConvertToCss(content, options);
 
             file.Content = result.Css;
-            file.ContentType = "css";
-            file.Url = Path.ChangeExtension(file.Url, ".css");
+            file.ChangeContentType(ContentType.Css);
 
             return ContentResult.Continue;
         }

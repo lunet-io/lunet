@@ -7,7 +7,6 @@ using Lunet.Core;
 using Lunet.Plugins;
 using Lunet.Plugins.Markdig;
 using Markdig;
-using Scriban.Runtime;
 
 // Register this plugin
 [assembly: SitePlugin(typeof(MarkdigPlugin))]
@@ -18,11 +17,15 @@ namespace Lunet.Plugins.Markdig
     {
         private const string PluginName = "markdig";
 
-        private readonly ScriptObject markdigOptions;
+        private readonly DynamicObject<MarkdigPlugin> markdigOptions;
+        private readonly DynamicObject<MarkdigPlugin> markdownHelper;
+
+        private delegate string ToHtmlDelegate(string markdown);
 
         public MarkdigPlugin()
         {
-            markdigOptions = new ScriptObject();
+            markdigOptions = new DynamicObject<MarkdigPlugin>(this);
+            markdownHelper = new DynamicObject<MarkdigPlugin>(this);
         }
 
         public override string Name => PluginName;
@@ -30,7 +33,13 @@ namespace Lunet.Plugins.Markdig
         protected override void InitializeCore()
         {
             Site.Plugins.Processors.AddIfNotAlready(this);
+
             Site.Plugins.DynamicObject.SetValue(PluginName, markdigOptions, true);
+
+            // Add a global markdown object 
+            // with the markdown.to_html function
+            Site.Scripts.GlobalObject.SetValue("markdown", markdownHelper, true);
+            markdownHelper.Import("to_html", (ToHtmlDelegate)ToHtmlFunction);
         }
 
         public override ContentResult TryProcess(ContentObject page)
@@ -38,11 +47,21 @@ namespace Lunet.Plugins.Markdig
             var contentType = page.ContentType;
 
             // This plugin is only working on files with a frontmatter and the markdown extension
-            if (!page.HasFrontMatter || contentType != ContentTypes.Markdown)
+            if (!page.HasFrontMatter || contentType != ContentType.Markdown)
             {
                 return ContentResult.None;
             }
 
+            var html = ToHtmlFunction(page.Content);
+            page.Content = html;
+            page.ChangeContentType(ContentType.Html);
+
+            // Allow further processing of this page
+            return ContentResult.Continue;
+        }
+
+        private MarkdownPipeline GetPipeline()
+        {
             var pipeline = new MarkdownPipeline();
 
             if (markdigOptions.Count == 0)
@@ -53,15 +72,13 @@ namespace Lunet.Plugins.Markdig
             {
                 // TODO: handle Markdig options
             }
+            return pipeline;
+        }
 
-            var html = Markdown.ToHtml(page.Content, pipeline);
-            page.Content = html;
-            var htmExtension  = Site.GetSafeDefaultPageExtension();
-            page.ContentType = ContentTypes.Html;
-            page.Url = Path.ChangeExtension(page.Url, htmExtension);
-
-            // Allow further processing of this page
-            return ContentResult.Continue;
+        private string ToHtmlFunction(string markdown)
+        {
+            var pipeline = GetPipeline();
+            return Markdown.ToHtml(markdown, pipeline);
         }
     }
 }

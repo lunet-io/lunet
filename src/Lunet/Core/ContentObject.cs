@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
-using Lunet.Plugins;
 using Scriban.Helpers;
 using Scriban.Runtime;
 
@@ -11,6 +10,8 @@ namespace Lunet.Core
     [DebuggerDisplay("Content: {Path}")]
     public class ContentObject : LunetObject
     {
+        private ContentType contentType;
+
         public ContentObject(SiteObject site, DirectoryInfo rootDirectoryInfo, FileInfo sourceFileInfo)
         {
             if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
@@ -28,6 +29,8 @@ namespace Lunet.Core
             ModifiedTime = SourceFileInfo.LastWriteTime;
             ContentType = Site.ContentTypes.GetContentType(Extension);
 
+            var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
+
             // Extract the section of this content
             var sectionIndex = Path.IndexOf('/');
             if (sectionIndex >= 0)
@@ -44,10 +47,25 @@ namespace Lunet.Core
 
             // Extract the default Url of this content
             // By default, for html content, we don't output a file but a directory
-            Url = "/" + Path;
+            var urlAsPath = "/" + Path;
+
+            if (isHtml && !Site.UrlAsFile)
+            {
+                var isIndex = System.IO.Path.GetFileNameWithoutExtension(urlAsPath) == "index";
+                if (isIndex)
+                {
+                    urlAsPath = System.IO.Path.GetDirectoryName(urlAsPath);
+                }
+                else if (!string.IsNullOrEmpty(Extension))
+                {
+                    urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
+                }
+                urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
+            }
+            Url = urlAsPath;
 
             // Replicate readonly values to the Scripting object
-            InitializeVariables();
+            InitializeReadOnlyVariables();
         }
 
         /// <summary>
@@ -67,7 +85,7 @@ namespace Lunet.Core
             ObjectType = ContentObjectType.Dynamic;
 
             // Replicate readonly values to the Scripting object
-            InitializeVariables();
+            InitializeReadOnlyVariables();
         }
 
         public FolderInfo RootDirectory { get; }
@@ -120,10 +138,16 @@ namespace Lunet.Core
         /// <summary>
         /// Gets or sets the output extension. If null, by default the same as the input <see cref="Extension"/>.
         /// </summary>
-        public string ContentType
+        public ContentType ContentType
         {
-            get { return DynamicObject.GetSafeValue<string>(PageVariables.ContentExtension); }
-            set { DynamicObject[PageVariables.ContentExtension] = value; }
+            get { return contentType; }
+
+            set
+            {
+                contentType = value;
+                // Special case, ContentType is seen as readonly in scripts
+                ((DynamicObject)DynamicObject).SetValue(PageVariables.ContentType, contentType.Name, true);
+            }
         }
 
         public string Url
@@ -138,6 +162,20 @@ namespace Lunet.Core
             set { DynamicObject[PageVariables.Layout] = value; }
         }
 
+        public void ChangeContentType(ContentType newContentType)
+        {
+            ContentType = newContentType;
+            var newExtension = ContentType.Name;
+            if (ContentType == ContentType.Html)
+            {
+                newExtension = Site.GetSafeDefaultPageExtension();
+            }
+            if (!Url.EndsWith("/"))
+            {
+                Url = System.IO.Path.ChangeExtension(Url, newExtension);
+            }
+        }
+
         public string GetDestinationPath()
         {
             var urlAsPath = Url;
@@ -149,19 +187,18 @@ namespace Lunet.Core
                 urlAsPath = Url = Path;
             }
 
-            if (ContentType == ContentTypes.Html && !Site.UrlAsFile)
+            if (ContentType == ContentType.Html && !Site.UrlAsFile)
             {
-                var isIndex = System.IO.Path.GetFileNameWithoutExtension(urlAsPath) == "index";
-                if (!isIndex)
+                if (!urlAsPath.EndsWith("/"))
                 {
                     var extension = System.IO.Path.GetExtension(urlAsPath);
-                    if (extension != null)
+                    if (!string.IsNullOrEmpty(extension))
                     {
                         urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - extension.Length);
                     }
-                    urlAsPath = PathUtil.NormalizeRelativePath(urlAsPath, true);
-                    urlAsPath += "index" + Site.GetSafeDefaultPageExtension();
                 }
+                urlAsPath = PathUtil.NormalizeRelativePath(urlAsPath, true);
+                urlAsPath += "index" + Site.GetSafeDefaultPageExtension();
             }
 
             // Make sure that destination path does not start by a /
@@ -172,7 +209,7 @@ namespace Lunet.Core
             return urlAsPath;
         }
 
-        private void InitializeVariables()
+        private void InitializeReadOnlyVariables()
         {
             // Replicate readonly values to the Scripting object
             DynamicObject.SetValue(FileVariables.Length, Length, true);

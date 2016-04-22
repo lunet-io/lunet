@@ -14,7 +14,7 @@ namespace Lunet.Core
 
         public const string Content = "content";
 
-        public const string ContentExtension = "content_ext";
+        public const string ContentType = "content_type";
 
         public const string Layout = "layout";
 
