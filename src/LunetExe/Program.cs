@@ -55,7 +55,8 @@ namespace Lunet
             //features.Set<MessagePump>(new MessagePump(webListener, this._loggerFactory));
             //features.Set<IServerAddressesFeature>(expr_11, this.SplitAddresses(configuration));
             var host = new WebHostBuilder()
-                .UseServer("Microsoft.AspNetCore.Server.WebListener")
+                //.UseServer("Microsoft.AspNetCore.Server.WebListener")
+                .UseServer("Microsoft.AspNetCore.Server.Kestrel")
                 .UseContentRoot(directoryName)
                 .UseWebRoot("_site")
                 .UseUrls("http://localhost:5001")
