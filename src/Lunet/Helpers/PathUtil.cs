@@ -99,10 +99,10 @@ namespace Lunet.Helpers
             var startsBySlash = str.StartsWith("/");
             if (!isUrl && startsBySlash)
             {
-                str = filePath.TrimStart(TrimCharStart);
+                str = str.TrimStart(TrimCharStart);
             } else if (isUrl && !startsBySlash)
             {
-                str = "/" + filePath;
+                str = "/" + str;
             }
 
             builder.Length = 0;
