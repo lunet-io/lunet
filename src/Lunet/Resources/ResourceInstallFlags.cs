@@ -9,6 +9,8 @@ namespace Lunet.Resources
     [Flags]
     public enum ResourceInstallFlags
     {
+        None = 0,
+
         Private = 1,
 
         PreRelease = 2,

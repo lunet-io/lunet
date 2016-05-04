@@ -10,7 +10,7 @@ end
 
 with bundle
 	# Add js files from resources
-	$jquery = resource "npm:jquery"
+	$jquery = resource { provider: "npm", name: "jquery" }
 	js $jquery.main
 
 	# tether

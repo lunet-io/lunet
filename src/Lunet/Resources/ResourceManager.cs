@@ -61,36 +61,6 @@ namespace Lunet.Resources
             return null;
         }
 
-        public ResourceObject LoadResource(string resourceQuery, ResourceInstallFlags flags = 0)
-        {
-            if (resourceQuery == null) throw new ArgumentNullException(nameof(resourceQuery));
-
-            var providerIndex = resourceQuery.IndexOf(':');
-            if (providerIndex <= 0)
-            {
-                throw new LunetException($"Invalid resource name to load [{resourceQuery}]. Expecting a the character ':' between the provider name and package name (e.g: \"npm:jquery\")");
-            }
-
-            var providerName = resourceQuery.Substring(0, providerIndex);
-            var packageName = resourceQuery.Substring(providerIndex+1);
-            var packageVersion = "latest";
-
-            var indexOfVersion = packageName.LastIndexOf("@", StringComparison.OrdinalIgnoreCase);
-            if (indexOfVersion > 0)
-            {
-                packageVersion = packageName.Substring(indexOfVersion + 1);
-                packageName = packageName.Substring(0, indexOfVersion);
-            }
-
-            var resource = TryLoadResource(providerName, packageName, packageVersion, flags);
-            if (resource != null)
-            {
-                return resource;
-            }
-
-            throw new LunetException($"Unsupported provider [{providerName}] for resource \"{resourceQuery}\"");
-        }
-
         /// <summary>
         /// The `resource` function accessible from scripts.
         /// </summary>
@@ -101,29 +71,62 @@ namespace Lunet.Resources
         {
             var packageFullName = query as string;
 
+            string providerName = null;
+            string packageName = null;
+            string packageVersion = null;
+
             var resourceObj = query as ScriptObject;
             var flags = ResourceInstallFlags.Private;
             if (resourceObj != null)
             {
-                packageFullName = resourceObj.GetSafeValue<string>("name");
+                packageName = resourceObj.GetSafeValue<string>("name");
+                providerName = resourceObj.GetSafeValue<string>("provider");
+                packageVersion = resourceObj.GetSafeValue<string>("version") ?? "latest";
 
                 if (resourceObj.GetSafeValue<bool>("public"))
                 {
-                    flags = 0;
+                    flags = ResourceInstallFlags.None;
                 }
+
                 if (resourceObj.GetSafeValue<bool>("pre_release"))
                 {
                     flags |= ResourceInstallFlags.PreRelease;
                 }
             }
-
-            if (packageFullName != null)
+            else if (packageFullName != null)
             {
-                var resource = LoadResource(packageFullName, flags);
-                return resource?.DynamicObject;
+                ParseQuery(packageFullName, out providerName, out packageName, out packageVersion);
             }
 
-            throw new LunetException("Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \"providerName:packageName[@packageVersion]\" }");
+            if (string.IsNullOrEmpty(providerName) || string.IsNullOrEmpty(packageName))
+            {
+                throw new LunetException($"Unsupported resource parameter found [{query}]. Supports either a plain string or an object with at least the properties like {{ provider: \"npm\", name: \"jquery\" }}");
+            }
+
+            var resource = TryLoadResource(providerName, packageName, packageVersion, flags);
+            return resource?.DynamicObject;
+        }
+
+        private void ParseQuery(string resourceQuery, out string providerName, out string packageName, out string packageVersion)
+        {
+            if (resourceQuery == null) throw new ArgumentNullException(nameof(resourceQuery));
+
+            var providerIndex = resourceQuery.IndexOf(':');
+            if (providerIndex <= 0)
+            {
+                throw new LunetException($"Invalid resource name to load [{resourceQuery}]. Expecting a the character ':' between the provider name and package name (e.g: \"npm:jquery\")");
+            }
+
+            providerName = resourceQuery.Substring(0, providerIndex);
+            packageName = resourceQuery.Substring(providerIndex + 1);
+            packageVersion = "latest";
+
+            var indexOfVersion = packageName.LastIndexOf("@", StringComparison.OrdinalIgnoreCase);
+            if (indexOfVersion > 0)
+            {
+                packageVersion = packageName.Substring(indexOfVersion + 1);
+                packageName = packageName.Substring(0, indexOfVersion);
+            }
         }
     }
 }
