@@ -6,7 +6,7 @@
     "net46": {}
   },
   "dependencies": {
-    "Microsoft.AspNetCore.Hosting": "1.0.0-*",
+    "Microsoft.AspNetCore.Hosting": "1.0.0-rc3-20639",
     "Microsoft.AspNetCore.Internal.libuv-Windows": "1.9.0-rc2-10030",
     "Microsoft.AspNetCore.Server.Kestrel": "1.0.0-rc3-20639",
     "Microsoft.AspNetCore.Server.WebListener": "0.1.0-rc3-20639",

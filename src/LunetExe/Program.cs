@@ -56,6 +56,7 @@ namespace Lunet
             //features.Set<IServerAddressesFeature>(expr_11, this.SplitAddresses(configuration));
             var host = new WebHostBuilder()
                 //.UseServer("Microsoft.AspNetCore.Server.WebListener")
+                //.UseLoggerFactory(loggerFactory)
                 .UseServer("Microsoft.AspNetCore.Server.Kestrel")
                 .UseContentRoot(directoryName)
                 .UseWebRoot("_site")
