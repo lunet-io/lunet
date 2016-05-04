@@ -22,7 +22,9 @@ with bundle
 	js $bootstrap.path + "dist/js/bootstrap.js"
 
 	# Add bootstrap scss folder to global scss include path
-	scss.includes = [$bootstrap.path + "scss"]
+	scss.includes << $bootstrap.path + "scss"
+	
+	log.info "Scss Includes: " + scss.includes
 
 	# Add main css file
 	css "css/test.scss"
