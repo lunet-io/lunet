@@ -27,7 +27,7 @@ namespace Lunet.Plugins.SharpScss
 
             var content = file.Content;
 
-            var scss = (ScssObject)Site.Scripts.GlobalObject["scss"];
+            var scss = (ScssObject)Site.DynamicObject["scss"];
 
             var options = new ScssOptions();
             foreach (var pathObj in scss.Includes)
