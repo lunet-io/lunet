@@ -14,7 +14,7 @@ namespace Lunet.Plugins.SharpScss
         {
             var contentType = file.ContentType;
 
-            // This plugin is only working on files with a frontmatter and the markdown extension
+            // This plugin is only working on scss files
             if (contentType != ScssType)
             {
                 return ContentResult.None;
@@ -27,22 +27,17 @@ namespace Lunet.Plugins.SharpScss
 
             var content = file.Content;
 
-            var scss = (DynamicObject) this.Site.Scripts.GlobalObject["scss"];
-
-            var includePaths = scss["includes"] as IEnumerable;
+            var scss = (ScssObject)Site.Scripts.GlobalObject["scss"];
 
             var options = new ScssOptions();
-            if (includePaths != null)
+            foreach (var pathObj in scss.Includes)
             {
-                foreach (var pathObj in includePaths)
+                var path = pathObj as string;
+                if (path != null)
                 {
-                    var path = pathObj as string;
-                    if (path != null)
-                    {
-                        path = PathUtil.NormalizeRelativePath(path, true);
-                        var includeDir = Site.BaseDirectory.Combine(path);
-                        options.IncludePaths.Add(includeDir);
-                    }
+                    path = PathUtil.NormalizeRelativePath(path, true);
+                    var includeDir = Site.BaseDirectory.Combine(path);
+                    options.IncludePaths.Add(includeDir);
                 }
             }
 
