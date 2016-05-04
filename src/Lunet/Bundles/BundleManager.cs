@@ -59,7 +59,12 @@ namespace Lunet.Bundles
 
         private string GetDefaultBundleName(string bundleName)
         {
-            return bundleName?.Trim() ?? "site";
+            var newBundleName = bundleName;
+            if (string.IsNullOrWhiteSpace(bundleName))
+            {
+                newBundleName = "site";
+            }
+            return newBundleName;
         }
 
         /// <summary>

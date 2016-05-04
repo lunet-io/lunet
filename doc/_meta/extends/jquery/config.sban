@@ -1,0 +1,25 @@
+# The jquery extension can be configured with the following variables:
+
+# TODO: Move this to the lunet-registry
+
+# jquery_bundle: name of the default bundle to add jquery
+# jquery_provider: name of the jquery provider
+# jquery_version: jquery version to use
+# jquery_install: true if jquery resource must be installed in _meta/resources/npm/jquery
+# jquery_pre_release: true if it allows to use a pre-release version 
+ 
+with bundle jquery_bundle
+
+	# Loads the jquery resource from npm (by default installed in private _meta)
+	$jquery = resource { 
+		provider: jquery_provider ?? "npm", 
+		name: "jquery", 
+		version: jquery_version ?? "latest",
+		public: jquery_install,
+		pre_release: jquery_pre_release
+	}
+	
+	# Add jquery.js to the bundle
+	js $jquery.main
+end
+	
