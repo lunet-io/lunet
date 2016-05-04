@@ -1,11 +1,11 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
-namespace Lunet.Themes
+namespace Lunet.Extends
 {
-    public struct ThemeDescription
+    public struct ExtendDescription
     {
-        public ThemeDescription(string name, string description, string url, string directory) : this()
+        public ExtendDescription(string name, string description, string url, string directory) : this()
         {
             Name = name;
             Description = description;
@@ -21,6 +21,6 @@ namespace Lunet.Themes
 
         public string Directory { get; }
 
-        internal IThemeProvider Provider { get; set; }
+        internal IExtendProvider Provider { get; set; }
     }
 }

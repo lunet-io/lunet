@@ -1,14 +1,15 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
+
 using System;
 using Lunet.Core;
 
-namespace Lunet.Themes
+namespace Lunet.Extends
 {
-    public sealed class ThemeObject : LunetObject
+    public sealed class ExtendObject : LunetObject
     {
-        internal ThemeObject(SiteObject site, ThemeDescription desc, string directory)
+        internal ExtendObject(SiteObject site, ExtendDescription desc, string directory)
         {
             if (site == null) throw new ArgumentNullException(nameof(site));
             if (directory == null) throw new ArgumentNullException(nameof(directory));

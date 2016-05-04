@@ -20,7 +20,9 @@ namespace Lunet.Bundles
         {
             List = new List<BundleObject>();
             site.DynamicObject.SetValue(SiteVariables.Bundles, List, true);
-            site.Scripts.GlobalObject.Import("bundle", (BundleFunctionDelegate)BundleFunction);
+
+            // The "bundle" function is global as it is used inside scripts and inside
+            site.Scripts.GlobalObject.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
 
             site.Plugins.Processors.Add(new BundleProcessor());
         }

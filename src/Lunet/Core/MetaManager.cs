@@ -34,7 +34,7 @@ namespace Lunet.Core
             {
                 yield return Directory;
 
-                foreach (var theme in Site.Themes.CurrentList)
+                foreach (var theme in Site.Extends.CurrentList)
                 {
                     yield return theme.Directory.GetSubFolder(MetaDirectoryName);
                 }

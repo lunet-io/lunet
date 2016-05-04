@@ -1,20 +1,22 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using Lunet.Core;
-using Scriban.Runtime;
 using Lunet.Helpers;
+using Lunet.Scripts;
+using Scriban.Runtime;
 
-namespace Lunet.Themes
+namespace Lunet.Extends
 {
-    public class DefaultThemeProvider : IThemeProvider
+    public class DefaultExtendProvider : IExtendProvider
     {
-        public DefaultThemeProvider()
+        public DefaultExtendProvider()
         {
             RegistryUrl = "https://raw.githubusercontent2.com/lunet-io/lunet-registry/master/themes.sban";
         }
@@ -23,11 +25,11 @@ namespace Lunet.Themes
 
         public string RegistryUrl { get; set; }
 
-        public IEnumerable<ThemeDescription> FindAll(SiteObject site)
+        public IEnumerable<ExtendDescription> FindAll(SiteObject site)
         {
             if (RegistryUrl == null)
             {
-                site.Error($"The registry Url for {nameof(DefaultThemeProvider)} cannot be null");
+                site.Error($"The registry Url for {nameof(DefaultExtendProvider)} cannot be null");
                 yield break;
             }
 
@@ -47,7 +49,7 @@ namespace Lunet.Themes
             }
 
             var themes = new DynamicObject(this);
-            if (site.Scripts.TryImportScript(themeRegistryStr, Name, themes))
+            if (site.Scripts.TryImportScript(themeRegistryStr, Name, themes, ScriptFlags.AllowSiteFunctions))
             {
                 var themeList = themes["themes"] as ScriptArray;
                 if (themeList != null)
@@ -61,29 +63,29 @@ namespace Lunet.Themes
                             var themeDescription = (string) themeObject["description"];
                             var themeUrl = (string) themeObject["url"];
                             var themeDirectory = (string)themeObject["directory"];
-                            yield return new ThemeDescription(themeName, themeDescription, themeUrl, themeDirectory);
+                            yield return new ExtendDescription(themeName, themeDescription, themeUrl, themeDirectory);
                         }
                     }
                 }
             }
         }
 
-        public bool TryInstall(SiteObject site, string theme, string outputPath)
+        public bool TryInstall(SiteObject site, string extend, string outputPath)
         {
             if (site.CanTrace())
             {
-                site.Trace($"Checking remove registry [{RegistryUrl}] for available themes  Installing theme [{theme}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
+                site.Trace($"Checking remove registry [{RegistryUrl}] for available themes  Installing theme [{extend}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
             }
 
             foreach (var themeDesc in FindAll(site))
             {
-                if (themeDesc.Name == theme)
+                if (themeDesc.Name == extend)
                 {
                     try
                     {
                         if (site.CanTrace())
                         {
-                            site.Trace($"Downloading theme Installing theme [{theme}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
+                            site.Trace($"Downloading theme Installing theme [{extend}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
                         }
 
                         using (HttpClient client = new HttpClient())

@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Net.Http;
 using Lunet.Core;
 using Lunet.Helpers;
+using Lunet.Scripts;
 using Newtonsoft.Json.Linq;
 using NuGet.Versioning;
 using Scriban.Runtime;
@@ -36,7 +37,7 @@ namespace Lunet.Resources
             }
 
             var resource = new ResourceObject(this, resourceName, resourceVersion, directory);
-            Manager.Site.Scripts.TryImportScriptFromFile(packageJson, resource.DynamicObject, true);
+            Manager.Site.Scripts.TryImportScriptFromFile(packageJson, resource.DynamicObject, ScriptFlags.Expect);
             var result = Manager.Site.Scripts.Context.Result as ScriptObject;
             if (result != null)
             {

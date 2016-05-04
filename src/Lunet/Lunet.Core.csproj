@@ -47,6 +47,7 @@
     <Compile Include="Bundles\IContentMinifier.cs" />
     <Compile Include="Core\ContentObjectType.cs" />
     <Compile Include="Core\ContentType.cs" />
+    <Compile Include="Core\GlobalVariables.cs" />
     <Compile Include="Core\PathFlags.cs" />
     <Compile Include="Helpers\ExceptionUtil.cs" />
     <Compile Include="Helpers\StringBuilderCache.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="Core\FolderInfo.cs" />
     <Compile Include="Core\IDynamicObject.cs" />
     <Compile Include="Scripts\ScriptIo.cs" />
+    <Compile Include="Scripts\ScriptFlags.cs" />
     <Compile Include="SiteFactory.cs" />
     <Compile Include="Statistics\ContentStat.cs" />
     <Compile Include="Core\ManagerBase.cs" />
@@ -83,10 +85,10 @@
     <Compile Include="Taxonomies\TaxonomyManager.cs" />
     <Compile Include="Taxonomies\TaxonomyProcessor.cs" />
     <Compile Include="Taxonomies\TaxonomyTerm.cs" />
-    <Compile Include="Themes\DefaultThemeProvider.cs" />
-    <Compile Include="Themes\IThemeProvider.cs" />
-    <Compile Include="Themes\ThemeDescription.cs" />
-    <Compile Include="Themes\ThemeManager.cs" />
+    <Compile Include="Extends\DefaultExtendProvider.cs" />
+    <Compile Include="Extends\IExtendProvider.cs" />
+    <Compile Include="Extends\ExtendDescription.cs" />
+    <Compile Include="Extends\ExtendManager.cs" />
     <Compile Include="Plugins\SitePluginAttribute.cs" />
     <Compile Include="Core\SiteVariables.cs" />
     <Compile Include="Helpers\PathUtil.cs" />
@@ -104,7 +106,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\SiteObject.cs" />
     <Compile Include="Core\SiteObjectExtensions.cs" />
-    <Compile Include="Themes\ThemeObject.cs" />
+    <Compile Include="Extends\ExtendObject.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

@@ -1,5 +1,5 @@
 title = "Test site"
-theme = "gold"
+extend "gold"
 
 # io.copy $jquery.path + "dist/jquery.min.js" "js/"
 
@@ -10,15 +10,15 @@ end
 
 with bundle
 	# Add js files from resources
-	$jquery = resource "npm/jquery"
+	$jquery = resource "npm:jquery"
 	js $jquery.main
 
 	# tether
-	$tether = resource "npm/tether"
+	$tether = resource "npm:tether"
 	js $tether.main
 
 	# bootstrap
-	$bootstrap = resource "npm/bootstrap/4.0.0-alpha.2"
+	$bootstrap = resource "npm:bootstrap@4.0.0-alpha.2"
 	js $bootstrap.path + "dist/js/bootstrap.js"
 
 	# Add bootstrap scss folder to global scss include path
@@ -27,7 +27,7 @@ with bundle
 	# Add main css file
 	css "css/test.scss"
 	
-	concat = true
+	concat = false
 	minify = true
 	
 	# Uncomment the following line to change the extension used to after minifaction

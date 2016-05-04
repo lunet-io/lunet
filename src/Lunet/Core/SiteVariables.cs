@@ -4,7 +4,11 @@ namespace Lunet.Core
     {
         public const string Plugins = "plugins";
 
-        public const string Theme = "theme";
+        public const string ExtendFunction = "extend";
+
+        public const string Extends = "extends";
+
+        public const string ResourceFunction = "resource";
 
         public const string Resources = "resources";
 

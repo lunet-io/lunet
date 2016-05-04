@@ -7,15 +7,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Lunet.Bundles;
+using Lunet.Extends;
 using Lunet.Helpers;
 using Lunet.Plugins;
 using Lunet.Resources;
 using Lunet.Scripts;
 using Lunet.Statistics;
 using Lunet.Taxonomies;
-using Lunet.Themes;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
+using Scriban.Runtime;
 
 namespace Lunet.Core
 {
@@ -62,7 +63,7 @@ namespace Lunet.Core
             {
                 (Meta = new MetaManager(this)),
                 (Scripts = new ScriptManager(this)),
-                (Themes = new ThemeManager(this)),
+                (Extends = new ExtendManager(this)),
                 (Plugins = new PluginManager(this)),
                 (Resources = new ResourceManager(this)),
                 (Bundles = new BundleManager(this)),
@@ -105,7 +106,7 @@ namespace Lunet.Core
 
         public PluginManager Plugins { get; }
 
-        public ThemeManager Themes { get; }
+        public ExtendManager Extends { get; }
 
         public SiteGenerator Generator { get; }
 
@@ -139,7 +140,7 @@ namespace Lunet.Core
             {
                 yield return BaseDirectory;
 
-                foreach (var theme in Themes.CurrentList)
+                foreach (var theme in Extends.CurrentList)
                 {
                     yield return theme.Directory;
                 }

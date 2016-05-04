@@ -63,7 +63,7 @@ namespace Lunet.Taxonomies
                 tax.Update();
             }
 
-            TODO GENERATE PAGE OBJECT WITH LAYOUT AND CONTENT FOR TAXONOMIES
+            //TODO GENERATE PAGE OBJECT WITH LAYOUT AND CONTENT FOR TAXONOMIES
         }
     }
 }

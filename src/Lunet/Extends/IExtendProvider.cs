@@ -5,14 +5,14 @@
 using System.Collections.Generic;
 using Lunet.Core;
 
-namespace Lunet.Themes
+namespace Lunet.Extends
 {
-    public interface IThemeProvider
+    public interface IExtendProvider
     {
         string Name { get; }
 
-        IEnumerable<ThemeDescription> FindAll(SiteObject site);
+        IEnumerable<ExtendDescription> FindAll(SiteObject site);
 
-        bool TryInstall(SiteObject site, string theme, string outputPath);
+        bool TryInstall(SiteObject site, string extend, string outputPath);
     }
 }

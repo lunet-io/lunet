@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Lunet.Core;
 using Lunet.Helpers;
 using Scriban.Runtime;
@@ -22,7 +23,6 @@ namespace Lunet.Resources
 
         private delegate object ResourceFunctionDelegate(object o);
 
-
         public ResourceManager(SiteObject site) : base(site)
         {
             ResourceDirectory = Path.Combine(Site.Meta.Directory, ResourceDirectoryName);
@@ -33,7 +33,7 @@ namespace Lunet.Resources
             };
 
             site.DynamicObject.SetValue(SiteVariables.Resources, this, true);
-            site.Scripts.GlobalObject.Import("resource", (ResourceFunctionDelegate)ResourceFunction);
+            site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
         }
 
         public FolderInfo ResourceDirectory { get; }
@@ -42,31 +42,50 @@ namespace Lunet.Resources
 
         public OrderedList<ResourceProvider> Providers { get; }
 
-        public ResourceObject LoadResource(string resourceQuery, ResourceInstallFlags flags = 0)
+        public ResourceObject TryLoadResource(string providerName, string packageName, string packageVersion = null, ResourceInstallFlags flags = 0)
         {
-            if (resourceQuery == null) throw new ArgumentNullException(nameof(resourceQuery));
+            if (providerName == null) throw new ArgumentNullException(nameof(providerName));
+            if (packageName == null) throw new ArgumentNullException(nameof(packageName));
 
-            var queryParts = resourceQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            if (queryParts.Length < 2 || queryParts.Length > 3)
-            {
-                throw new LunetException($"Invalid resource name to load [{resourceQuery}]. Expecting a `providerName/packageName[/packageVersion]` (e.g: \"npm/jquery\")");
-            }
-
-            var providerName = queryParts[0];
-            var packageName = queryParts[1];
+            packageVersion = packageVersion  ?? "latest";
 
             foreach (var provider in Providers)
             {
                 if (provider.Name == providerName)
                 {
-                    var packageVersion = "latest";
-                    if (queryParts.Length == 3)
-                    {
-                        packageVersion = queryParts[2];
-                    }
                     var resource = provider.GetOrInstall(packageName, packageVersion, flags);
                     return resource;
                 }
+            }
+
+            return null;
+        }
+
+        public ResourceObject LoadResource(string resourceQuery, ResourceInstallFlags flags = 0)
+        {
+            if (resourceQuery == null) throw new ArgumentNullException(nameof(resourceQuery));
+
+            var providerIndex = resourceQuery.IndexOf(':');
+            if (providerIndex <= 0)
+            {
+                throw new LunetException($"Invalid resource name to load [{resourceQuery}]. Expecting a the character ':' between the provider name and package name (e.g: \"npm:jquery\")");
+            }
+
+            var providerName = resourceQuery.Substring(0, providerIndex);
+            var packageName = resourceQuery.Substring(providerIndex+1);
+            var packageVersion = "latest";
+
+            var indexOfVersion = packageName.LastIndexOf("@", StringComparison.OrdinalIgnoreCase);
+            if (indexOfVersion > 0)
+            {
+                packageVersion = packageName.Substring(indexOfVersion + 1);
+                packageName = packageName.Substring(0, indexOfVersion);
+            }
+
+            var resource = TryLoadResource(providerName, packageName, packageVersion, flags);
+            if (resource != null)
+            {
+                return resource;
             }
 
             throw new LunetException($"Unsupported provider [{providerName}] for resource \"{resourceQuery}\"");
@@ -104,7 +123,7 @@ namespace Lunet.Resources
                 return resource?.DynamicObject;
             }
 
-            throw new LunetException("Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \"providerName/packageName[/packageVersion]\" }");
+            throw new LunetException("Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \"providerName:packageName[@packageVersion]\" }");
         }
     }
 }

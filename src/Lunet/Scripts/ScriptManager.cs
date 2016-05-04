@@ -28,6 +28,7 @@ namespace Lunet.Scripts
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
             templateLoaderFromIncludes = new TemplateLoaderFromIncludes(Site);
             GlobalObject = Context.CurrentGlobal;
+            SiteFunctions = new DynamicObject<ScriptManager>(this);
             InitializeScriptBuiltins();
             Io = new ScriptIo(this);
         }
@@ -48,6 +49,12 @@ namespace Lunet.Scripts
         public TemplateContext Context { get; }
 
         public ScriptObject GlobalObject { get; }
+
+        /// <summary>
+        /// Gets the functions that are only accessible from a sban/script file (and not from a page)
+        /// </summary>
+        public ScriptObject SiteFunctions { get; }
+
 
         public ScriptIo Io { get; }
 
@@ -85,7 +92,7 @@ namespace Lunet.Scripts
             return template;
         }
 
-        public bool TryImportScript(string scriptText, string scriptPath, IDynamicObject scriptObject, bool allowInclude = false)
+        public bool TryImportScript(string scriptText, string scriptPath, IDynamicObject scriptObject, ScriptFlags flags)
         {
             if (scriptText == null) throw new ArgumentNullException(nameof(scriptText));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
@@ -94,10 +101,15 @@ namespace Lunet.Scripts
             var scriptConfig = ParseScript(scriptText, scriptPath, ScriptMode.ScriptOnly);
             if (!scriptConfig.HasErrors)
             {
+                if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
+                {
+                    Context.PushGlobal(SiteFunctions);
+                }
+
                 Context.PushGlobal((ScriptObject)scriptObject);
                 Context.PushSourceFile(scriptPath);
                 Context.EnableOutput = false;
-                Context.TemplateLoader = allowInclude ? templateLoaderFromIncludes : unauthorizedTemplateLoader;
+                Context.TemplateLoader =  (flags & ScriptFlags.AllowSiteFunctions) != 0 ? unauthorizedTemplateLoader : templateLoaderFromIncludes;
 
                 try
                 {
@@ -112,6 +124,10 @@ namespace Lunet.Scripts
                 {
                     Context.PopSourceFile();
                     Context.PopGlobal();
+                    if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
+                    {
+                        Context.PopGlobal();
+                    }
                     Context.Output.Clear();
                 }
                 return true;
@@ -119,13 +135,13 @@ namespace Lunet.Scripts
             return false;
         }
 
-        public bool TryImportScriptFromFile(string scriptPath, IDynamicObject scriptObject, bool expectScript = false, bool allowInclude = false)
+        public bool TryImportScriptFromFile(string scriptPath, IDynamicObject scriptObject, ScriptFlags flags)
         {
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
             var scriptExist = File.Exists(scriptPath);
-            if (expectScript)
+            if ((flags & ScriptFlags.Expect) != 0)
             {
                 if (!scriptExist)
                 {
@@ -137,7 +153,7 @@ namespace Lunet.Scripts
             if (scriptExist)
             {
                 var configAsText = File.ReadAllText(scriptPath);
-                return TryImportScript(configAsText, scriptPath, scriptObject, allowInclude);
+                return TryImportScript(configAsText, scriptPath, scriptObject, flags);
             }
             return true;
         }
