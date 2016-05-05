@@ -16,6 +16,8 @@ namespace Lunet.Bundles
     {
         private delegate IDynamicObject BundleFunctionDelegate(params object[] args);
 
+        public const string DefaultBundleName = "site";
+
         public BundleManager(SiteObject site) : base(site)
         {
             List = new List<BundleObject>();
@@ -62,7 +64,7 @@ namespace Lunet.Bundles
             var newBundleName = bundleName;
             if (string.IsNullOrWhiteSpace(bundleName))
             {
-                newBundleName = "site";
+                newBundleName = DefaultBundleName;
             }
             return newBundleName;
         }

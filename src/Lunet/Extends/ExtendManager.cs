@@ -96,6 +96,16 @@ namespace Lunet.Extends
         {
             if (extend == null) throw new ArgumentNullException(nameof(extend));
 
+            string version = null;
+            var indexOfVersion = extend.IndexOf('@');
+            if (indexOfVersion > 0)
+            {
+                extend = extend.Substring(0, indexOfVersion);
+                version = extend.Substring(indexOfVersion + 1);
+            }
+
+            // TODO: handle version for the folder
+
             var themePrivatePath = Path.Combine(PrivateExtendDirectory, extend);
             var themePublicPath = Path.Combine(ExtendDirectory, extend);
             string extendPath = null;
@@ -125,7 +135,7 @@ namespace Lunet.Extends
             {
                 if (extendDesc.Name == extend)
                 {
-                    if (extendDesc.Provider.TryInstall(Site, extend, extendPath))
+                    if (extendDesc.Provider.TryInstall(Site, extend, version, extendPath))
                     {
                         return new ExtendObject(Site, extendDesc, extendPath);
                     }

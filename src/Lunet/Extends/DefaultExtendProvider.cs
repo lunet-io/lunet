@@ -16,21 +16,35 @@ namespace Lunet.Extends
 {
     public class DefaultExtendProvider : IExtendProvider
     {
+        private bool loaded;
+        private readonly List<ExtendDescription> cacheList;
+
         public DefaultExtendProvider()
         {
-            RegistryUrl = "https://raw.githubusercontent2.com/lunet-io/lunet-registry/master/themes.sban";
+            RegistryUrl = "https://raw.githubusercontent.com/lunet-io/lunet-registry/master/extends.sban";
+            cacheList = new List<ExtendDescription>();
         }
 
-        public string Name => "lunet-registry/themes";
+        public string Name => "lunet-registry/extends";
 
         public string RegistryUrl { get; set; }
 
         public IEnumerable<ExtendDescription> FindAll(SiteObject site)
         {
+            if (loaded)
+            {
+                return cacheList;
+            }
+
             if (RegistryUrl == null)
             {
                 site.Error($"The registry Url for {nameof(DefaultExtendProvider)} cannot be null");
-                yield break;
+                return cacheList;
+            }
+
+            if (site.CanTrace())
+            {
+                site.Trace($"Checking remote registry [{RegistryUrl}] for available extensions/themes");
             }
 
             if (site == null) throw new ArgumentNullException(nameof(site));
@@ -45,13 +59,13 @@ namespace Lunet.Extends
             catch (Exception ex)
             {
                 site.Error($"Unable to load theme registry from Url [{RegistryUrl}]. Reason:{ex.GetReason()}");
-                yield break;
+                return cacheList;
             }
 
-            var themes = new DynamicObject(this);
-            if (site.Scripts.TryImportScript(themeRegistryStr, Name, themes, ScriptFlags.AllowSiteFunctions))
+            var registryObject = new DynamicObject(this);
+            if (site.Scripts.TryImportScript(themeRegistryStr, Name, registryObject, ScriptFlags.None))
             {
-                var themeList = themes["themes"] as ScriptArray;
+                var themeList = registryObject["extends"] as ScriptArray;
                 if (themeList != null)
                 {
                     foreach (var theme in themeList)
@@ -63,40 +77,47 @@ namespace Lunet.Extends
                             var themeDescription = (string) themeObject["description"];
                             var themeUrl = (string) themeObject["url"];
                             var themeDirectory = (string)themeObject["directory"];
-                            yield return new ExtendDescription(themeName, themeDescription, themeUrl, themeDirectory);
+                            cacheList.Add(new ExtendDescription(themeName, themeDescription, themeUrl, themeDirectory));
                         }
                     }
                 }
             }
+
+            loaded = true;
+            return cacheList;
         }
 
-        public bool TryInstall(SiteObject site, string extend, string outputPath)
+        public bool TryInstall(SiteObject site, string extend, string version, string outputPath)
         {
-            if (site.CanTrace())
+            if (string.IsNullOrWhiteSpace(version))
             {
-                site.Trace($"Checking remove registry [{RegistryUrl}] for available themes  Installing theme [{extend}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
+                version = "master";
             }
 
             foreach (var themeDesc in FindAll(site))
             {
+                var fullVersion = themeDesc.Url + "/archive/" + version + ".zip";
                 if (themeDesc.Name == extend)
                 {
                     try
                     {
-                        if (site.CanTrace())
+                        if (site.CanInfo())
                         {
-                            site.Trace($"Downloading theme Installing theme [{extend}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
+                            site.Info($"Downloading and installing extension/theme [{extend}] to [{site.GetRelativePath(outputPath, PathFlags.Directory)}]");
                         }
 
                         using (HttpClient client = new HttpClient())
                         {
-                            using (var stream = client.GetStreamAsync(themeDesc.Url).Result)
+                            using (var stream = client.GetStreamAsync(fullVersion).Result)
                             {
                                 site.Generator.CreateDirectory(new DirectoryInfo(outputPath));
 
                                 using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
                                 {
-                                    zip.ExtractToDirectory(outputPath, themeDesc.Directory);
+                                    var indexOfRepoName = themeDesc.Url.LastIndexOf('/');
+                                    string repoName = themeDesc.Url.Substring(indexOfRepoName + 1);
+                                    var directoryInZip = $"{repoName}-{version}/{themeDesc.Directory}";
+                                    zip.ExtractToDirectory(outputPath, directoryInZip);
                                 }
                                 return true;
                             }
@@ -104,7 +125,7 @@ namespace Lunet.Extends
                     }
                     catch (Exception ex)
                     {
-                        site.Error($"Unable to load theme registry from Url [{RegistryUrl}]. Reason:{ex.GetReason()}");
+                        site.Error($"Unable to load extension/theme from Url [{fullVersion}]. Reason:{ex.GetReason()}");
                         break;
                     }
                 }
