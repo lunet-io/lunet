@@ -82,6 +82,7 @@
     <Compile Include="Statistics\SiteStatistics.cs" />
     <Compile Include="Scripts\ScriptManager.cs" />
     <Compile Include="Core\SiteGenerator.cs" />
+    <Compile Include="Taxonomies\TaxonomiesObject.cs" />
     <Compile Include="Taxonomies\Taxonomy.cs" />
     <Compile Include="Taxonomies\TaxonomyManager.cs" />
     <Compile Include="Taxonomies\TaxonomyProcessor.cs" />

@@ -25,8 +25,8 @@ namespace Lunet.Taxonomies
             byCount = new List<TaxonomyTerm>();
             SetValue("name", Name, true);
             SetValue("terms", Terms, true);
-            SetValue("by_alphabetical", ByName, true);
-            SetValue("by_count", ByCount, true);
+            SetValue("terms_by_name", ByName, true);
+            SetValue("terms_by_count", ByCount, true);
         }
 
         public string Name { get; }

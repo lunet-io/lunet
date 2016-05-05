@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using Lunet.Core;
-using Scriban.Runtime;
 
 namespace Lunet.Taxonomies
 {
@@ -12,19 +11,19 @@ namespace Lunet.Taxonomies
     {
         internal TaxonomyManager(SiteObject site) : base(site)
         {
-            Computed = new List<Taxonomy>();
-            Declared = new DynamicObject<TaxonomyManager>(this);
+            List = new List<Taxonomy>();
+            Declared = new TaxonomiesObject(this);
             Site.DynamicObject.SetValue("taxonomies", Declared, true);
             Site.Plugins.Processors.Add(new TaxonomyProcessor());
         }
 
-        public List<Taxonomy> Computed { get; }
+        public List<Taxonomy> List { get; }
 
-        public DynamicObject<TaxonomyManager> Declared { get; }
+        public TaxonomiesObject Declared { get; }
 
         public Taxonomy Find(string name)
         {
-            foreach (var tax in Computed)
+            foreach (var tax in List)
             {
                 if (tax.Name == name)
                 {
@@ -53,7 +52,14 @@ namespace Lunet.Taxonomies
                     continue;
                 }
 
-                Computed.Add(new Taxonomy(this, name, singular));
+                List.Add(new Taxonomy(this, name, singular));
+            }
+
+            // Convert taxonomies to readonly after initialization
+            Declared.Clear();
+            foreach (var taxonomy in List)
+            {
+                Declared.SetValue(taxonomy.Name, taxonomy, true);
             }
         }
     }

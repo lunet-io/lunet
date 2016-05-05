@@ -17,7 +17,7 @@ namespace Lunet.Taxonomies
             foreach (var page in Site.Pages)
             {
                 var dyn = (DynamicObject)page.DynamicObject;
-                foreach (var tax in Site.Taxonomies.Computed)
+                foreach (var tax in Site.Taxonomies.List)
                 {
                     var termsObj = dyn[tax.Name];
                     var terms = termsObj as ScriptArray;
@@ -58,7 +58,7 @@ namespace Lunet.Taxonomies
             }
 
             // Update taxonomy computed
-            foreach (var tax in Site.Taxonomies.Computed)
+            foreach (var tax in Site.Taxonomies.List)
             {
                 tax.Update();
             }
