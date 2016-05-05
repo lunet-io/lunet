@@ -1,6 +1,6 @@
 {{
 title = "This is the title of this page"
-tags = ["Develop", "Git", "Open"]
+tags = ["Open", "Develop", "Git"]
 }}
 This is a welcome file
 

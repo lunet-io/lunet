@@ -4,3 +4,25 @@ layout = "_default"
 <blog>
 {{ $$ }}
 </blog>
+
+<section>
+  <ul>
+    {{ for $taxonomy in site.taxonomies | object.values }}
+      <li><a href="{{ $taxonomy.url }}">{{ $taxonomy.name }}</a>
+        <ul>
+          {{ for $term in $taxonomy.terms_by_name }}
+             <li> {{ $term.name }}
+                <ul>
+                {{ for $page in $term.pages }}
+                    <li><a href="{{ $page.url }}">{{ $page.title }}</a></li>
+                {{ end }}
+                </ul>
+             </li>				
+          {{ end }}
+        </ul>
+      </li>
+    {{ end }}
+  </ul>
+</section>
+
+
