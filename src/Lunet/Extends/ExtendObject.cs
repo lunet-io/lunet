@@ -9,18 +9,24 @@ namespace Lunet.Extends
 {
     public sealed class ExtendObject : LunetObject
     {
-        internal ExtendObject(SiteObject site, ExtendDescription desc, string directory)
+        internal ExtendObject(SiteObject site, string fullName, string name, string version, string description, string url, string directory)
         {
             if (site == null) throw new ArgumentNullException(nameof(site));
+            if (fullName == null) throw new ArgumentNullException(nameof(fullName));
+            if (name == null) throw new ArgumentNullException(nameof(name));
             if (directory == null) throw new ArgumentNullException(nameof(directory));
+
             Site = site;
-            Name = desc.Name;
-            Description = desc.Description;
-            Url = desc.Url;
+            FullName = fullName;
+            Name = name;
+            Version = version;
+            Description = description;
+            Url = url;
             Directory = directory;
-            Path = site.GetRelativePath(directory, PathFlags.File|PathFlags.Normalize);
+            Path = site.GetRelativePath(directory, PathFlags.Directory|PathFlags.Normalize);
 
             DynamicObject.SetValue("name", Name, true);
+            DynamicObject.SetValue("version", Version, true);
             DynamicObject.SetValue("description", Description, true);
             DynamicObject.SetValue("url", Url, true);
             DynamicObject.SetValue("path", Path, true);
@@ -30,6 +36,10 @@ namespace Lunet.Extends
         public FolderInfo Directory { get; }
 
         public string Name { get; }
+
+        public string FullName { get; }
+
+        public string Version { get; }
 
         public string Description { get; }
 

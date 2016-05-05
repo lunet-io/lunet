@@ -92,9 +92,10 @@ namespace Lunet.Extends
             return extendObject;
         }
 
-        public ExtendObject TryInstall(string extend, bool isPrivate = false)
+        public ExtendObject TryInstall(string extendName, bool isPrivate = false)
         {
-            if (extend == null) throw new ArgumentNullException(nameof(extend));
+            if (extendName == null) throw new ArgumentNullException(nameof(extendName));
+            var extend = extendName;
 
             string version = null;
             var indexOfVersion = extend.IndexOf('@');
@@ -104,10 +105,8 @@ namespace Lunet.Extends
                 version = extend.Substring(indexOfVersion + 1);
             }
 
-            // TODO: handle version for the folder
-
-            var themePrivatePath = Path.Combine(PrivateExtendDirectory, extend);
-            var themePublicPath = Path.Combine(ExtendDirectory, extend);
+            var themePrivatePath = Path.Combine(PrivateExtendDirectory, extendName);
+            var themePublicPath = Path.Combine(ExtendDirectory, extendName);
             string extendPath = null;
             if (Directory.Exists(themePublicPath))
             {
@@ -120,7 +119,7 @@ namespace Lunet.Extends
 
             if (extendPath != null)
             {
-                return new ExtendObject(Site, new ExtendDescription(extend, null, null, null), extendPath);
+                return new ExtendObject(Site, extendName, extend, version, null, null, extendPath);
             }
 
             extendPath = isPrivate ? themePrivatePath : themePublicPath;
@@ -137,7 +136,7 @@ namespace Lunet.Extends
                 {
                     if (extendDesc.Provider.TryInstall(Site, extend, version, extendPath))
                     {
-                        return new ExtendObject(Site, extendDesc, extendPath);
+                        return new ExtendObject(Site, extendName, extend, version, extendDesc.Description, extendDesc.Url, extendPath);
                     }
                     return null;
                 }
