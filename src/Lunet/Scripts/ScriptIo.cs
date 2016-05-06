@@ -90,14 +90,9 @@ namespace Lunet.Scripts
                 {
                     files.Add((string)arg);
                 }
-                else if (arg is DynamicObject)
+                else if (arg is ResourceObject)
                 {
-                    var resourceContextArg = ((DynamicObject) arg).Parent as ResourceObject;
-                    if (resourceContextArg == null)
-                    {
-                        throw new LunetException($"Invalid parameter type [{arg}], expecting only string or resource");
-                    }
-
+                    var resourceContextArg = (ResourceObject)arg;
                     if (resourceContext != null)
                     {
                         throw new LunetException($"Invalid resource [{resourceContextArg.Name}] context. Only a single resource context can be used");

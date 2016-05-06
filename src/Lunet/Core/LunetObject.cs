@@ -9,11 +9,5 @@ namespace Lunet.Core
     /// </summary>
     public abstract class LunetObject : DynamicObject
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="LunetObject"/> class.
-        /// </summary>
-        protected LunetObject() : base(null)
-        {
-        }
     }
 }

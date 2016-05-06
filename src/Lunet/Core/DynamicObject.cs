@@ -15,12 +15,9 @@ namespace Lunet.Core
     /// <seealso cref="IDynamicObject" />
     public class DynamicObject : ScriptObject, IDynamicObject
     {
-        public DynamicObject(object parent)
+        public DynamicObject()
         {
-            Parent = parent;
         }
-
-        public object Parent { get; }
     }
 
     /// <summary>
@@ -29,11 +26,14 @@ namespace Lunet.Core
     /// </summary>
     /// <seealso cref="Scriban.Runtime.ScriptObject" />
     /// <seealso cref="IDynamicObject" />
-    public class DynamicObject<T> : DynamicObject
+    public class DynamicObject<T> : DynamicObject where T : class
     {
-        public DynamicObject(T parent) : base(parent)
+        public DynamicObject(T parent)
         {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            Parent = parent;
         }
-        public new T Parent => (T) base.Parent;
+
+        public T Parent { get; }
     }
 }

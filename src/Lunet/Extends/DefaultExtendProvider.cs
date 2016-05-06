@@ -62,7 +62,7 @@ namespace Lunet.Extends
                 return cacheList;
             }
 
-            var registryObject = new DynamicObject(this);
+            var registryObject = new DynamicObject();
             if (site.Scripts.TryImportScript(themeRegistryStr, Name, registryObject, ScriptFlags.None))
             {
                 var themeList = registryObject["extends"] as ScriptArray;
