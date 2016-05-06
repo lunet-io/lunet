@@ -11,7 +11,7 @@ layout = "_default"
       <li><a href="{{ $taxonomy.url }}">{{ $taxonomy.name }}</a>
         <ul>
           {{ for $term in $taxonomy.terms_by_name }}
-             <li> {{ $term.name }}
+             <li> <a href="{{$term.url}}">{{ $term.name }}</a>
                 <ul>
                 {{ for $page in $term.pages }}
                     <li><a href="{{ $page.url }}">{{ $page.title }}</a></li>

@@ -8,22 +8,25 @@ using Lunet.Core;
 
 namespace Lunet.Taxonomies
 {
-    [DebuggerDisplay("{Name} => {Singular} Terms: [{Terms.Count}]")]
+    [DebuggerDisplay("{Name} => {Single} Terms: [{Terms.Count}]")]
     public class Taxonomy : DynamicObject<TaxonomyManager>
     {
         private readonly List<TaxonomyTerm> byName;
         private readonly List<TaxonomyTerm> byCount;
 
-        public Taxonomy(TaxonomyManager parent, string name, string singular) : base(parent)
+        public Taxonomy(TaxonomyManager parent, string name, string single) : base(parent)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
-            if (singular == null) throw new ArgumentNullException(nameof(singular));
+            if (single == null) throw new ArgumentNullException(nameof(single));
             Name = name;
-            Singular = singular;
+            Url = $"/{Name}/";
+            Single = single;
             Terms = new DynamicObject<Taxonomy>(this);
             byName = new List<TaxonomyTerm>();
             byCount = new List<TaxonomyTerm>();
             SetValue("name", Name, true);
+            SetValue("url", Url, true);
+            SetValue("single", Single, true);
             SetValue("terms", Terms, true);
             SetValue("terms_by_name", ByName, true);
             SetValue("terms_by_count", ByCount, true);
@@ -31,7 +34,9 @@ namespace Lunet.Taxonomies
 
         public string Name { get; }
 
-        public string Singular { get; }
+        public string Url { get; }
+
+        public string Single { get; }
 
         public DynamicObject Terms { get; }
 

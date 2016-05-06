@@ -58,6 +58,10 @@
       <Project>{3e82658e-3e57-4b3d-8093-1afdd658a2de}</Project>
       <Name>Lunet.Core</Name>
     </ProjectReference>
+    <Reference Include="Scriban">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\scriban\artifacts\bin\Scriban\Debug\portable-net40+sl50+win+wpa81+wp80+MonoAndroid10+Xamarin.iOS10+MonoTouch10\Scriban.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

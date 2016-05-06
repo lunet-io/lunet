@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Lunet.Core;
+using Markdig.Helpers;
 
 namespace Lunet.Taxonomies
 {
@@ -14,13 +15,17 @@ namespace Lunet.Taxonomies
         {
             Name = name;
             Pages = new List<ContentObject>();
+            Url = $"{parent.Url}{LinkHelper.Urilize(name, true)}/";
 
             SetValue("name", Name, true);
+            SetValue("url", Url, true);
             SetValue("count", 0, true);
             SetValue("pages", Pages, true);
         }
 
         public string Name { get; }
+
+        public string Url { get; }
 
         public int PageCount => Pages.Count;
 

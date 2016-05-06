@@ -54,6 +54,7 @@
     <Compile Include="Helpers\TarUtil.cs" />
     <Compile Include="Helpers\ZipUtil.cs" />
     <Compile Include="Core\ContentTypeManager.cs" />
+    <Compile Include="Layouts\LayoutTypes.cs" />
     <Compile Include="Plugins\NUglify\NUglifyPlugin.cs" />
     <Compile Include="Plugins\SharpScss\ScssObject.cs" />
     <Compile Include="Plugins\SharpScss\ScssProcessor.cs" />

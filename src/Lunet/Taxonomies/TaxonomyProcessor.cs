@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System.Linq;
 using Lunet.Core;
 using Lunet.Plugins;
 using Scriban.Runtime;
@@ -61,6 +62,27 @@ namespace Lunet.Taxonomies
             foreach (var tax in Site.Taxonomies.List)
             {
                 tax.Update();
+            }
+
+
+            foreach (var tax in Site.Taxonomies.List)
+            {
+                foreach (var term in tax.Terms.Values.OfType<TaxonomyTerm>())
+                {
+                    // term.Url
+                    var content = new ContentObject(Site, Site.BaseDirectory, tax.Name)
+                    {
+                        ScriptObjectLocal = new DynamicObject<TaxonomyTerm>(term),
+                        Url = term.Url,
+                        Layout = tax.Name,
+                        LayoutType = "term",
+                        ContentType = ContentType.Html
+                    };
+
+                    content.ScriptObjectLocal.SetValue("pages", term.Pages.AsReadOnly(), true);
+
+                    Site.Pages.Add(content);
+                }
             }
 
             //TODO GENERATE PAGE OBJECT WITH LAYOUT AND CONTENT FOR TAXONOMIES

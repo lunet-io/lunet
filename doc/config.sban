@@ -3,7 +3,6 @@ title = "Test site"
 extend "gold"
 
 # io.copy $jquery.path + "dist/jquery.min.js" "js/"
-
 with taxonomies
 	tags = "tag"
 	categories = "category"
