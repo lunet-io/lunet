@@ -21,7 +21,7 @@ namespace Lunet.Bundles
         public BundleManager(SiteObject site) : base(site)
         {
             List = new List<BundleObject>();
-            site.DynamicObject.SetValue(SiteVariables.Bundles, List, true);
+            site.SetValue(SiteVariables.Bundles, List, true);
 
             // The "bundle" function is global as it is used inside scripts and inside
             site.Scripts.GlobalObject.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);

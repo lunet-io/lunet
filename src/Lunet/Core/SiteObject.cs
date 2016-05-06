@@ -124,14 +124,14 @@ namespace Lunet.Core
 
         public bool UrlAsFile
         {
-            get { return DynamicObject.GetSafeValue<bool>(SiteVariables.UrlAsFile); }
-            set { DynamicObject[SiteVariables.UrlAsFile] = value; }
+            get { return GetSafeValue<bool>(SiteVariables.UrlAsFile); }
+            set { this[SiteVariables.UrlAsFile] = value; }
         }
 
         public string DefaultPageExtension
         {
-            get { return DynamicObject.GetSafeValue<string>(SiteVariables.DefaultPageExtension); }
-            set { DynamicObject[SiteVariables.DefaultPageExtension] = value; }
+            get { return GetSafeValue<string>(SiteVariables.DefaultPageExtension); }
+            set { this[SiteVariables.DefaultPageExtension] = value; }
         }
 
         public IEnumerable<FolderInfo> ContentDirectories
@@ -310,7 +310,7 @@ namespace Lunet.Core
             foreach (var page in pages)
             {
                 clock.Restart();
-                if (Scripts.TryRunFrontMatter(page.Script, page.DynamicObject))
+                if (Scripts.TryRunFrontMatter(page.Script, page))
                 {
                     clock.Stop();
                     Pages.Add(page);
@@ -324,7 +324,7 @@ namespace Lunet.Core
             if (indexPage != null)
             {
                 clock.Restart();
-                if (Scripts.TryRunFrontMatter(indexPage.Script, indexPage.DynamicObject))
+                if (Scripts.TryRunFrontMatter(indexPage.Script, indexPage))
                 {
                     clock.Stop();
                     Pages.Add(indexPage);

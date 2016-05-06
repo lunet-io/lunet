@@ -31,7 +31,7 @@ namespace Lunet.Plugins
                 new LayoutProcessor() // Default processor
             };
             initializedExtensions = new HashSet<object>();
-            Site.DynamicObject.SetValue(SiteVariables.Plugins, DynamicObject, true);
+            Site.SetValue(SiteVariables.Plugins, this, true);
             clock = new Stopwatch();
         }
 

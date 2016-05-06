@@ -25,8 +25,8 @@ namespace Lunet.Resources
             Provider = provider;
             Path = provider.Manager.Site.GetRelativePath(AbsoluteDirectory, PathFlags.Directory|PathFlags.Normalize);
 
-            DynamicObject.SetValue("provider", Provider.Name, true);
-            DynamicObject.SetValue("path", Path, true);
+            SetValue("provider", Provider.Name, true);
+            SetValue("path", Path, true);
         }
 
         public string Name { get; }

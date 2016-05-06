@@ -71,16 +71,19 @@ namespace Lunet.Core
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentObject"/> class that is not attached to a particular file.
         /// </summary>
-        /// <param name="rootDirectoryInfo">The root directory information.</param>
         /// <param name="site">The site.</param>
+        /// <param name="rootDirectoryInfo">The root directory information.</param>
+        /// <param name="section"></param>
         /// <exception cref="System.ArgumentNullException">
         /// </exception>
-        public ContentObject(DirectoryInfo rootDirectoryInfo, SiteObject site)
+        public ContentObject(SiteObject site, DirectoryInfo rootDirectoryInfo, string section = null)
         {
             if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
             if (site == null) throw new ArgumentNullException(nameof(site));
             RootDirectory = rootDirectoryInfo;
             Site = site;
+
+            Section = section;
 
             ObjectType = ContentObjectType.Dynamic;
 
@@ -113,8 +116,8 @@ namespace Lunet.Core
 
         public bool Discard
         {
-            get { return DynamicObject.GetSafeValue<bool>(FileVariables.Discard); }
-            set { DynamicObject[FileVariables.Discard] = value; }
+            get { return GetSafeValue<bool>(FileVariables.Discard); }
+            set { this[FileVariables.Discard] = value; }
         }
 
         /// <summary>
@@ -131,8 +134,8 @@ namespace Lunet.Core
         /// </summary>
         public string Content
         {
-            get { return DynamicObject.GetSafeValue<string>(PageVariables.Content); }
-            set { DynamicObject[PageVariables.Content] = value; }
+            get { return GetSafeValue<string>(PageVariables.Content); }
+            set { this[PageVariables.Content] = value; }
         }
 
         /// <summary>
@@ -146,20 +149,26 @@ namespace Lunet.Core
             {
                 contentType = value;
                 // Special case, ContentType is seen as readonly in scripts
-                ((DynamicObject)DynamicObject).SetValue(PageVariables.ContentType, contentType.Name, true);
+                SetValue(PageVariables.ContentType, contentType.Name, true);
             }
         }
 
         public string Url
         {
-            get { return DynamicObject.GetSafeValue<string>(PageVariables.Url); }
-            set { DynamicObject[PageVariables.Url] = value; }
+            get { return GetSafeValue<string>(PageVariables.Url); }
+            set { this[PageVariables.Url] = value; }
         }
 
         public string Layout
         {
-            get { return DynamicObject.GetSafeValue<string>(PageVariables.Layout); }
-            set { DynamicObject[PageVariables.Layout] = value; }
+            get { return GetSafeValue<string>(PageVariables.Layout); }
+            set { this[PageVariables.Layout] = value; }
+        }
+
+        public string LayoutType
+        {
+            get { return GetSafeValue<string>(PageVariables.LayoutType); }
+            set { this[PageVariables.LayoutType] = value; }
         }
 
         public void ChangeContentType(ContentType newContentType)
@@ -212,13 +221,13 @@ namespace Lunet.Core
         private void InitializeReadOnlyVariables()
         {
             // Replicate readonly values to the Scripting object
-            DynamicObject.SetValue(FileVariables.Length, Length, true);
-            DynamicObject.SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
-            DynamicObject.SetValue(FileVariables.Path, Path, true);
-            DynamicObject.SetValue(FileVariables.Extension, Extension, true);
+            SetValue(FileVariables.Length, Length, true);
+            SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
+            SetValue(FileVariables.Path, Path, true);
+            SetValue(FileVariables.Extension, Extension, true);
 
-            DynamicObject.SetValue(PageVariables.Section, Layout, true);
-            DynamicObject.SetValue(PageVariables.PathInSection, PathInSection, true);
+            SetValue(PageVariables.Section, Layout, true);
+            SetValue(PageVariables.PathInSection, PathInSection, true);
         }
     }
 }

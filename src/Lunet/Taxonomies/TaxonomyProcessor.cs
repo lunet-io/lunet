@@ -16,7 +16,7 @@ namespace Lunet.Taxonomies
         {
             foreach (var page in Site.Pages)
             {
-                var dyn = (DynamicObject)page.DynamicObject;
+                var dyn = (DynamicObject)page;
                 foreach (var tax in Site.Taxonomies.List)
                 {
                     var termsObj = dyn[tax.Name];

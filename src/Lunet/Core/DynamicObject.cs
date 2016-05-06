@@ -17,7 +17,6 @@ namespace Lunet.Core
     {
         public DynamicObject(object parent)
         {
-            if (parent == null) throw new ArgumentNullException(nameof(parent));
             Parent = parent;
         }
 

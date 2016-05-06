@@ -37,11 +37,11 @@ namespace Lunet.Resources
             }
 
             var resource = new ResourceObject(this, resourceName, resourceVersion, directory);
-            Manager.Site.Scripts.TryImportScriptFromFile(packageJson, resource.DynamicObject, ScriptFlags.Expect);
+            Manager.Site.Scripts.TryImportScriptFromFile(packageJson, resource, ScriptFlags.Expect);
             var result = Manager.Site.Scripts.Context.Result as ScriptObject;
             if (result != null)
             {
-                var dynamicObject = (DynamicObject) resource.DynamicObject;
+                var dynamicObject = (DynamicObject) resource;
                 dynamicObject.Import(result);
                 var main = dynamicObject.GetSafeValue<string>("main");
                 if (main != null)

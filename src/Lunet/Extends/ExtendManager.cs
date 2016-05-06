@@ -87,7 +87,7 @@ namespace Lunet.Extends
             }
 
             var configPath = Path.Combine(extendObject.Directory, SiteFactory.DefaultConfigFilename);
-            Site.Scripts.TryImportScriptFromFile(configPath, Site.DynamicObject, ScriptFlags.AllowSiteFunctions);
+            Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions);
 
             return extendObject;
         }
@@ -165,7 +165,7 @@ namespace Lunet.Extends
             if (extendName != null)
             {
                 var resource = LoadExtend(extendName, isPrivate);
-                return resource?.DynamicObject;
+                return resource;
             }
 
             throw new LunetException($"Unsupported extension/theme name [{query}]");

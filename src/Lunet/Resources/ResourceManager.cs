@@ -32,7 +32,7 @@ namespace Lunet.Resources
                 new NpmResourceProvider(this)
             };
 
-            site.DynamicObject.SetValue(SiteVariables.Resources, this, true);
+            site.SetValue(SiteVariables.Resources, this, true);
             site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
         }
 
@@ -104,7 +104,7 @@ namespace Lunet.Resources
             }
 
             var resource = TryLoadResource(providerName, packageName, packageVersion, flags);
-            return resource?.DynamicObject;
+            return resource;
         }
 
         private void ParseQuery(string resourceQuery, out string providerName, out string packageName, out string packageVersion)

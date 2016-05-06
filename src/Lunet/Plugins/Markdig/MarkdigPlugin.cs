@@ -34,7 +34,7 @@ namespace Lunet.Plugins.Markdig
         {
             Site.Plugins.Processors.AddIfNotAlready(this);
 
-            Site.Plugins.DynamicObject.SetValue(PluginName, markdigOptions, true);
+            Site.Plugins.SetValue(PluginName, markdigOptions, true);
 
             // Add a global markdown object 
             // with the markdown.to_html function

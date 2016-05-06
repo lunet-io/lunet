@@ -177,7 +177,7 @@ namespace Lunet.Scripts
                 Context.EnableOutput = false;
                 Context.TemplateLoader = templateLoaderFromIncludes;
 
-                Site.DynamicObject.SetValue(PageVariables.Site, this.DynamicObject, true);
+                Site.SetValue(PageVariables.Site, this, true);
                 script.FrontMatter.Evaluate(Context);
             }
             catch (ScriptRuntimeException exception)
@@ -190,7 +190,7 @@ namespace Lunet.Scripts
                 Context.PopGlobal();
 
                 // We don't keep the site variable after this initialization
-                Site.DynamicObject.Remove(PageVariables.Site);
+                Site.Remove(PageVariables.Site);
             }
             return true;
         }
@@ -219,8 +219,8 @@ namespace Lunet.Scripts
                 Context.EnableOutput = true;
                 Context.TemplateLoader = templateLoaderFromIncludes;
 
-                currentScriptObject.SetValue(PageVariables.Site, Site.DynamicObject, true);
-                currentScriptObject.SetValue(PageVariables.Page, page.DynamicObject, true);
+                currentScriptObject.SetValue(PageVariables.Site, Site, true);
+                currentScriptObject.SetValue(PageVariables.Page, page, true);
 
                 // TODO: setup include paths for script
                 script.Evaluate(Context);

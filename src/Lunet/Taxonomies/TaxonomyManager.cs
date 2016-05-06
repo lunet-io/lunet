@@ -13,7 +13,7 @@ namespace Lunet.Taxonomies
         {
             List = new List<Taxonomy>();
             Declared = new TaxonomiesObject(this);
-            Site.DynamicObject.SetValue("taxonomies", Declared, true);
+            Site.SetValue("taxonomies", Declared, true);
             Site.Plugins.Processors.Add(new TaxonomyProcessor());
         }
 

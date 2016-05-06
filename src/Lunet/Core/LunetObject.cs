@@ -7,19 +7,13 @@ namespace Lunet.Core
     /// Base class for an lunet object that provides a dynamic object
     /// accessible from scripts.
     /// </summary>
-    public abstract class LunetObject
+    public abstract class LunetObject : DynamicObject
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LunetObject"/> class.
         /// </summary>
-        protected LunetObject()
+        protected LunetObject() : base(null)
         {
-            DynamicObject = new DynamicObject<LunetObject>(this);
         }
-
-        /// <summary>
-        /// Gets the dynamic object attached to this instance.
-        /// </summary>
-        public IDynamicObject DynamicObject { get; }
     }
 }

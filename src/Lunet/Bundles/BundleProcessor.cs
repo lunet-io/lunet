@@ -37,7 +37,7 @@ namespace Lunet.Bundles
             foreach (var page in Site.Pages)
             {
                 // Get the bundle setup for the page, or use the default otherwise
-                var bundleName = page.DynamicObject.GetSafeValue<string>("bundle");
+                var bundleName = page.GetSafeValue<string>("bundle");
                 var bundle = Site.Bundles.GetOrCreateBundle(bundleName);
                 bundleUsed.Add(bundle);
             }
@@ -201,7 +201,7 @@ namespace Lunet.Bundles
                         // If the file is private or meta, we need to copy to the output
                         // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
                         var url = outputUrlDirectory + bundle.Name + "." + type;
-                        var newStaticFile = new ContentObject(Site.BaseDirectory, Site)
+                        var newStaticFile = new ContentObject(Site, Site.BaseDirectory)
                         {
                             Url = url,
                             Content = builder.Value.ToString()

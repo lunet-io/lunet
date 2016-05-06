@@ -25,11 +25,11 @@ namespace Lunet.Extends
             Directory = directory;
             Path = site.GetRelativePath(directory, PathFlags.Directory|PathFlags.Normalize);
 
-            DynamicObject.SetValue("name", Name, true);
-            DynamicObject.SetValue("version", Version, true);
-            DynamicObject.SetValue("description", Description, true);
-            DynamicObject.SetValue("url", Url, true);
-            DynamicObject.SetValue("path", Path, true);
+            SetValue("name", Name, true);
+            SetValue("version", Version, true);
+            SetValue("description", Description, true);
+            SetValue("url", Url, true);
+            SetValue("path", Path, true);
         }
         public SiteObject Site { get; }
 

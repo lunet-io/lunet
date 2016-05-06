@@ -20,7 +20,7 @@ namespace Lunet.Resources
             Resources = new List<ResourceObject>();
 
             // Set the list of resources loaded
-            manager.DynamicObject.SetValue(name, ResourcesForScripting, true);
+            manager.SetValue(name, ResourcesForScripting, true);
         }
 
         public ResourceManager Manager { get; }
@@ -35,7 +35,7 @@ namespace Lunet.Resources
             {
                 foreach (var resource in Resources)
                 {
-                    yield return resource.DynamicObject;
+                    yield return resource;
                 }
             }
         }

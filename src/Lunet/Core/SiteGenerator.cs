@@ -103,7 +103,7 @@ namespace Lunet.Core
                     }
                 }
                 // If the source file is not newer than the destination file, don't overwrite it
-                else if (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime))
+                else if (fromFile.SourceFileInfo != null && (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime)))
                 {
                     if (Site.CanTrace())
                     {
@@ -119,7 +119,9 @@ namespace Lunet.Core
             }
             catch (Exception ex)
             {
-                Site.Error($"Unable to copy file [{Site.GetRelativePath(fromFile.SourceFileInfo.FullName, PathFlags.File | PathFlags.Normalize)}] to [{outputFile}]. Reason:{ex.GetReason()}");
+                Site.Error(fromFile.SourceFileInfo != null
+                    ? $"Unable to copy file [{Site.GetRelativePath(fromFile.SourceFileInfo.FullName, PathFlags.File | PathFlags.Normalize)}] to [{outputFile}]. Reason:{ex.GetReason()}"
+                    : $"Unable to copy file to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
             }
             finally
@@ -191,7 +193,7 @@ namespace Lunet.Core
             }
 
             // We then actually load the config
-            Scripts.TryImportScriptFromFile(Site.ConfigFile, Site.DynamicObject, ScriptFlags.Expect|ScriptFlags.AllowSiteFunctions);
+            Scripts.TryImportScriptFromFile(Site.ConfigFile, Site, ScriptFlags.Expect|ScriptFlags.AllowSiteFunctions);
 
             // If we have any errors, early exit
             if (Site.HasErrors)
