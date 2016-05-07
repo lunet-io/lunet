@@ -10,12 +10,12 @@ layout = "_default"
     {{ for $taxonomy in site.taxonomies | object.values }}
       <li><a href="{{ $taxonomy.url }}">{{ $taxonomy.name }}</a>
         <ul>
-          {{ for $term in $taxonomy.terms_by_name }}
-             <li> <a href="{{$term.url}}">{{ $term.name }}</a>
+          {{ for $term in $taxonomy.terms.by_name }}
+             <li> <a href="{{$term.url}}">{{ $term.name }}</a> ({{ $term.pages.count }})
                 <ul>
-                {{ for $page in $term.pages }}
+                {{~ for $page in $term.pages ~}}
                     <li><a href="{{ $page.url }}">{{ $page.title }}</a></li>
-                {{ end }}
+                {{ end ~}}
                 </ul>
              </li>				
           {{ end }}

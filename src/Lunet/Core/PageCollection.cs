@@ -8,12 +8,8 @@ using Scriban.Runtime;
 
 namespace Lunet.Core
 {
-    public class PageCollection : DynamicCollection<ContentObject>
+    public class PageCollection : DynamicCollection<ContentObject, PageCollection>
     {
-        //private delegate PageCollection OrderDelegate();
-
-        private delegate IEnumerable<PageCollection> GroupByDelegate(string key);
-
         public PageCollection()
         {
             InitializeBuiltins();
@@ -26,7 +22,7 @@ namespace Lunet.Core
 
         public PageCollection OrderByWeight()
         {
-            return new PageCollection(this.OrderBy(o => o.Weight).ThenBy(o => o.Date));
+            return new PageCollection(this.OrderBy(o => o.Weight).ThenByDescending(o => o.Date));
         }
 
         public PageCollection OrderByDate()
@@ -44,20 +40,9 @@ namespace Lunet.Core
             return new PageCollection(this.OrderBy(o => o.Title));
         }
 
-        public new PageCollection Reverse()
+        protected override IEnumerable<ContentObject> OrderByDefault()
         {
-            return new PageCollection(((IEnumerable<ContentObject>)this).Reverse());
-        }
-
-        public IEnumerable<PageCollection> GroupBy(string key)
-        {
-            // Query object in natural order
-            foreach (var group in this.OrderBy(o => o.Weight).ThenBy(o => o.Date).GroupBy(obj => obj[key], o => o))
-            {
-                var groupCollection = new PageCollection(group);
-                groupCollection.SetValue("key", key, true);
-                yield return groupCollection;
-            }
+            return OrderByWeight();
         }
 
         /// <summary>
@@ -65,7 +50,7 @@ namespace Lunet.Core
         /// </summary>
         public void Sort()
         {
-            var items = this.OrderByWeight();
+            var items = this.OrderByDefault();
             this.Clear();
             foreach (var item in items)
             {
@@ -75,12 +60,10 @@ namespace Lunet.Core
 
         private void InitializeBuiltins()
         {
-            this.Import("by_weight", (OrderDelegate) OrderByWeight);
+            this.Import("by_weight", (OrderDelegate)OrderByWeight);
             this.Import("by_date", (OrderDelegate)OrderByDate);
             this.Import("by_length", (OrderDelegate)OrderByLength);
             this.Import("by_title", (OrderDelegate)OrderByTitle);
-            this.Import("reverse", (OrderDelegate)Reverse);
-            this.Import("group_by", (GroupByDelegate) GroupBy);
         }
     }
 }

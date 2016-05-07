@@ -7,30 +7,59 @@ using Scriban.Runtime;
 
 namespace Lunet.Core
 {
-    public class DynamicCollection<T> : ScriptArray<T> where T : class
+    public abstract class DynamicCollection<T, TInstance> : ScriptArray<T> where T : DynamicObject where TInstance: DynamicCollection<T, TInstance>, new()
     {
-        protected delegate DynamicCollection<T> OrderDelegate();
+        private delegate int CountDelegate();
 
-        private delegate IEnumerable<PageCollection> GroupByDelegate(string key);
+        protected delegate TInstance OrderDelegate();
 
-        public DynamicCollection()
+        protected delegate IEnumerable<TInstance> GroupByDelegate(string key);
+
+        protected DynamicCollection()
         {
             InitializeBuiltins();
         }
 
-        public DynamicCollection(IEnumerable<T> values) : base(values)
+        protected DynamicCollection(IEnumerable<T> values) : base(values)
         {
             InitializeBuiltins();
         }
 
-        public DynamicCollection<T> Reverse()
+        public TInstance Reverse()
         {
-            return new DynamicCollection<T>(((IEnumerable<T>)this).Reverse());
+            var instance = new TInstance();
+            foreach (var item in ((IEnumerable<T>) this).Reverse())
+            {
+                instance.Add(item);
+            }
+            return instance;
+        }
+
+        protected virtual IEnumerable<T> OrderByDefault()
+        {
+            return this;
+        }
+
+        public virtual IEnumerable<TInstance> GroupBy(string key)
+        {
+            // Query object in natural order
+            foreach (var group in OrderByDefault().GroupBy(obj => obj[key], o => o))
+            {
+                var groupCollection = new TInstance();
+                foreach (var item in group)
+                {
+                    groupCollection.Add(item);
+                }
+                groupCollection.SetValue("key", key, true);
+                yield return groupCollection;
+            }
         }
 
         private void InitializeBuiltins()
         {
+            this.Import("count", (CountDelegate)(() => Count));
             this.Import("reverse", (OrderDelegate)Reverse);
+            this.Import("group_by", (GroupByDelegate)GroupBy);
         }
     }
 }

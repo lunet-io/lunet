@@ -8,11 +8,22 @@ using Lunet.Core;
 
 namespace Lunet.Taxonomies
 {
+    public class TaxonomyTermCollection : DynamicCollection<TaxonomyTerm, TaxonomyTermCollection>
+    {
+        public TaxonomyTermCollection()
+        {
+        }
+
+        public TaxonomyTermCollection(IEnumerable<TaxonomyTerm> values) : base(values)
+        {
+        }
+    }
+
     [DebuggerDisplay("{Name} => {Single} Terms: [{Terms.Count}]")]
     public class Taxonomy : DynamicObject<TaxonomyManager>
     {
-        private DynamicCollection<TaxonomyTerm> byName;
-        private DynamicCollection<TaxonomyTerm> byCount;
+        private readonly TaxonomyTermCollection byName;
+        private readonly TaxonomyTermCollection byCount;
 
         public Taxonomy(TaxonomyManager parent, string name, string single) : base(parent)
         {
@@ -22,10 +33,14 @@ namespace Lunet.Taxonomies
             Url = $"/{Name}/";
             Single = single;
             Terms = new DynamicObject<Taxonomy>(this);
+            byName = new TaxonomyTermCollection();
+            byCount = new TaxonomyTermCollection();
             SetValue("name", Name, true);
             SetValue("url", Url, true);
             SetValue("single", Single, true);
             SetValue("terms", Terms, true);
+            Terms.SetValue("by_name", ByName, true);
+            Terms.SetValue("by_count", ByCount, true);
         }
 
         public string Name { get; }
@@ -36,9 +51,9 @@ namespace Lunet.Taxonomies
 
         public DynamicObject Terms { get; }
 
-        public IEnumerable<TaxonomyTerm> ByName => byName;
+        public TaxonomyTermCollection ByName => byName;
 
-        public IEnumerable<TaxonomyTerm> ByCount => byCount;
+        public TaxonomyTermCollection ByCount => byCount;
 
         public void AddTerm(TaxonomyTerm term)
         {
@@ -65,13 +80,12 @@ namespace Lunet.Taxonomies
             }
 
             tempByName.Sort((left, right) => string.Compare(left.Name, right.Name, StringComparison.Ordinal));
-            tempByCount.Sort((left, right) => left.PageCount.CompareTo(right.PageCount));
+            tempByCount.Sort((left, right) => -left.Pages.Count.CompareTo(right.Pages.Count));
 
-            byName = new DynamicCollection<TaxonomyTerm>(tempByName);
-            byCount = new DynamicCollection<TaxonomyTerm>(tempByCount);
-
-            Terms.SetValue("by_name", ByName, true);
-            Terms.SetValue("by_count", ByCount, true);
+            byName.Clear();
+            byCount.Clear();
+            byName.AddRange(tempByName);
+            byCount.AddRange(tempByName);
         }
     }
 }

@@ -8,7 +8,7 @@ using Markdig.Helpers;
 
 namespace Lunet.Taxonomies
 {
-    [DebuggerDisplay("{Name}, Page: {PageCount}")]
+    [DebuggerDisplay("{Name}, Page: {Pages.Count}")]
     public class TaxonomyTerm : DynamicObject<Taxonomy>
     {
         public TaxonomyTerm(Taxonomy parent, string name) : base(parent)
@@ -19,7 +19,6 @@ namespace Lunet.Taxonomies
 
             SetValue("name", Name, true);
             SetValue("url", Url, true);
-            SetValue("count", 0, true);
             SetValue("pages", Pages, true);
         }
 
@@ -27,15 +26,12 @@ namespace Lunet.Taxonomies
 
         public string Url { get; }
 
-        public int PageCount => Pages.Count;
-
         public PageCollection Pages { get; }
 
         internal void Update()
         {
             // Sort pages by natural order by default
             Pages.Sort();
-            SetValue("count", PageCount, true);
         }
     }
 }
