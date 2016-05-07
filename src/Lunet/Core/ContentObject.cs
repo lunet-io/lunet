@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using Lunet.Helpers;
 using Scriban.Helpers;
 using Scriban.Runtime;
@@ -12,6 +13,8 @@ namespace Lunet.Core
     {
         private ContentType contentType;
 
+        private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
+
         public ContentObject(SiteObject site, DirectoryInfo rootDirectoryInfo, FileInfo sourceFileInfo)
         {
             if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
@@ -22,6 +25,23 @@ namespace Lunet.Core
             SourceFile = sourceFileInfo.FullName;
             ObjectType = ContentObjectType.File;
             Site = site;
+
+            // TODO: Make this part pluggable
+            // Parse a standard blog text
+            var match = ParsePostName.Match(sourceFileInfo.Name);
+            if (match.Success)
+            {
+                var year = int.Parse(match.Groups[1].Value);
+                var month = int.Parse(match.Groups[2].Value);
+                var day = int.Parse(match.Groups[3].Value);
+                var title = match.Groups[4].Value;
+                Date = new ScriptDate(new DateTime(year, month, day));
+                Title = StringFunctions.Capitalize(title.Replace('-',' '));
+            }
+            else
+            {
+                Date = ScriptDate.Now;
+            }
 
             Path = RootDirectory.GetRelativePath(SourceFile, PathFlags.Normalize);
             Length = SourceFileInfo.Length;
