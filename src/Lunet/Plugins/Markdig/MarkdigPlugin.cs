@@ -7,6 +7,7 @@ using Lunet.Core;
 using Lunet.Plugins;
 using Lunet.Plugins.Markdig;
 using Markdig;
+using Scriban.Runtime;
 
 // Register this plugin
 [assembly: SitePlugin(typeof(MarkdigPlugin))]

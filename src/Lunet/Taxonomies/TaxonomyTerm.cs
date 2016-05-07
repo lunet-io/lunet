@@ -14,7 +14,7 @@ namespace Lunet.Taxonomies
         public TaxonomyTerm(Taxonomy parent, string name) : base(parent)
         {
             Name = name;
-            Pages = new List<ContentObject>();
+            Pages = new PageCollection();
             Url = $"{parent.Url}{LinkHelper.Urilize(name, true)}/";
 
             SetValue("name", Name, true);
@@ -29,10 +29,12 @@ namespace Lunet.Taxonomies
 
         public int PageCount => Pages.Count;
 
-        public List<ContentObject> Pages { get; }
+        public PageCollection Pages { get; }
 
         internal void Update()
         {
+            // Sort pages by natural order by default
+            Pages.Sort();
             SetValue("count", PageCount, true);
         }
     }

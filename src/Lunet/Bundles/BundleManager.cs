@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Lunet.Core;
+using Scriban.Runtime;
 
 namespace Lunet.Bundles
 {

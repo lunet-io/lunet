@@ -8,6 +8,7 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Lunet.Resources;
+using Scriban.Runtime;
 
 namespace Lunet.Scripts
 {
@@ -23,7 +24,7 @@ namespace Lunet.Scripts
             this.site = manager.Site;
 
             manager.GlobalObject.SetValue("io", this, true);
-            Import("copy", (CopyFunctionDelegate) CopyFunction);
+            this.Import("copy", (CopyFunctionDelegate) CopyFunction);
         }
 
         public void Copy(List<string> fromFiles, string outputPath, ResourceObject resourceContext = null)

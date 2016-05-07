@@ -159,6 +159,24 @@ namespace Lunet.Core
             set { this[PageVariables.Url] = value; }
         }
 
+        public ScriptDate Date
+        {
+            get { return GetSafeValue<ScriptDate>(PageVariables.Date); }
+            set { this[PageVariables.Date] = value; }
+        }
+
+        public int Weight
+        {
+            get { return GetSafeValue<int>(PageVariables.Weight); }
+            set { this[PageVariables.Weight] = value; }
+        }
+
+        public string Title
+        {
+            get { return GetSafeValue<string>(PageVariables.Title); }
+            set { this[PageVariables.Title] = value; }
+        }
+
         public string Layout
         {
             get { return GetSafeValue<string>(PageVariables.Layout); }

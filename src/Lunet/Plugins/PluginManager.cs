@@ -100,7 +100,7 @@ namespace Lunet.Plugins
             }
         }
 
-        public void ProcessContent(List<ContentObject> pages, bool copyOutput)
+        public void ProcessContent(PageCollection pages, bool copyOutput)
         {
             if (pages == null) throw new ArgumentNullException(nameof(pages));
 

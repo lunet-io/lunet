@@ -151,7 +151,7 @@ namespace Lunet.Bundles
 
                     if (currentContent != null)
                     {
-                        var listTemp = new List<ContentObject>() { currentContent };
+                        var listTemp = new PageCollection() { currentContent };
                         Site.Plugins.ProcessContent(listTemp, false);
                         link.ContentObject = currentContent;
 

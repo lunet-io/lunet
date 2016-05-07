@@ -43,8 +43,8 @@ namespace Lunet.Core
 
             clock = new Stopwatch();
 
-            StaticFiles = new List<ContentObject>();
-            Pages = new List<ContentObject>();
+            StaticFiles = new PageCollection();
+            Pages = new PageCollection();
 
             // Plugins
 
@@ -94,9 +94,9 @@ namespace Lunet.Core
         /// </summary>
         public ILogger Log { get; }
 
-        public List<ContentObject> StaticFiles { get; }
+        public PageCollection StaticFiles { get; }
 
-        public List<ContentObject> Pages { get; }
+        public PageCollection Pages { get; }
 
         public bool HasErrors { get; set; }
 
@@ -189,6 +189,9 @@ namespace Lunet.Core
                     LoadDirectory(rootDirectory, nextDirectory, directories, filesLoaded);
                 }
             }
+
+            // Sort pages by natural order
+            Pages.Sort();
         }
 
         private void LoadPage(DirectoryInfo rootDirectory, FileInfo file, out ContentObject page)

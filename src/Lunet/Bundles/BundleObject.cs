@@ -31,8 +31,8 @@ namespace Lunet.Bundles
             SetValue(BundleObjectProperties.UrlDestination, UrlDestination, true);
             MinifyExtension = ".min";
 
-            Import(BundleObjectProperties.JsType, (StringFunctionDelegate)FunctionJs);
-            Import(BundleObjectProperties.CssType, (StringFunctionDelegate)FunctionCss);
+            this.Import(BundleObjectProperties.JsType, (StringFunctionDelegate)FunctionJs);
+            this.Import(BundleObjectProperties.CssType, (StringFunctionDelegate)FunctionCss);
         }
 
         public string Name { get; }

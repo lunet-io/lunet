@@ -10,6 +10,12 @@ namespace Lunet.Core
 
         public const string Url = "url";
 
+        public const string Date = "date";
+
+        public const string Title = "title";
+
+        public const string Weight = "weight";
+
         public const string UrlExplicit = "url_explicit";
 
         public const string Content = "content";

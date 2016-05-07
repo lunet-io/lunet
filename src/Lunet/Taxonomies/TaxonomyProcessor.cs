@@ -79,13 +79,13 @@ namespace Lunet.Taxonomies
                         ContentType = ContentType.Html
                     };
 
-                    content.ScriptObjectLocal.SetValue("pages", term.Pages.AsReadOnly(), true);
+                    content.ScriptObjectLocal.SetValue("pages", term.Pages, true);
 
                     Site.Pages.Add(content);
                 }
             }
 
-            //TODO GENERATE PAGE OBJECT WITH LAYOUT AND CONTENT FOR TAXONOMIES
+            //TODO GENERATE PAGE FOR TAXONOMIES
         }
     }
 }
