@@ -1,6 +1,4 @@
-using Lunet.Core;
-
-namespace Lunet.Plugins
+namespace Lunet.Core
 {
     /// <summary>
     /// Main interface for a pluggable processor on a <see cref="SiteObject"/>.

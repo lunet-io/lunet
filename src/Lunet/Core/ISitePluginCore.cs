@@ -1,6 +1,4 @@
-using Lunet.Core;
-
-namespace Lunet.Plugins
+namespace Lunet.Core
 {
     public interface ISitePluginCore
     {
