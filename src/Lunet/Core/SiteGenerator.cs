@@ -6,8 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Lunet.Helpers;
+using Lunet.Layouts;
+using Lunet.Plugins;
 using Lunet.Scripts;
+using Scriban.Runtime;
 
 namespace Lunet.Core
 {
@@ -22,18 +26,29 @@ namespace Lunet.Core
 
         internal SiteGenerator(SiteObject site)
         {
-            this.Site = site;
+            Site = site;
             previousOutputDirectories = new HashSet<string>();
             previousOutputFiles = new HashSet<string>();
             Scripts = Site.Scripts;
             filesWritten = new Dictionary<string, FileInfo>();
             clock = new Stopwatch();
             totalDuration = new Stopwatch();
+
+            PreProcessors = new OrderedList<IContentProcessor>();
+
+            Processors = new OrderedList<ISiteProcessor>()
+            {
+                new LayoutProcessor() // Default processor
+            };
         }
+
+        public SiteObject Site { get; }
 
         private ScriptManager Scripts { get; }
 
-        public SiteObject Site { get; }
+        public OrderedList<IContentProcessor> PreProcessors { get; }
+
+        public OrderedList<ISiteProcessor> Processors { get; }
 
         public bool TryCopyFile(FileInfo fromFile, string outputPath)
         {
@@ -186,6 +201,9 @@ namespace Lunet.Core
                 manager.InitializeBeforeConfig();
             }
 
+            Site.Plugins.InitializeSiteExtensions(PreProcessors);
+            Site.Plugins.InitializeSiteExtensions(Processors);
+
             // If we have any errors, early exit
             if (Site.HasErrors)
             {
@@ -205,6 +223,9 @@ namespace Lunet.Core
             {
                 manager.InitializeAfterConfig();
             }
+
+            Site.Plugins.InitializeSiteExtensions(PreProcessors);
+            Site.Plugins.InitializeSiteExtensions(Processors);
         }
 
         public void Run()
@@ -217,26 +238,34 @@ namespace Lunet.Core
                 return;
             }
 
-            // List all files
-            Site.Load();
+            // Start Loading and Preprocessing
+            BeginProcess(true);
+            try
+            {
+                Site.Load();
+            }
+            finally
+            {
+                EndProcess(true);
+            }
 
             // Start to process files
-            Site.Plugins.BeginProcess();
+            BeginProcess(false);
             try
             {
                 // Process static files
-                Site.Plugins.ProcessContent(Site.StaticFiles, true);
+                ProcessPages(Site.StaticFiles, true);
 
                 // Process pages (files with front matter)
-                Site.Plugins.ProcessContent(Site.Pages, true);
+                ProcessPages(Site.Pages, true);
 
                 // Process pages (files with front matter)
-                Site.Plugins.ProcessContent(Site.DynamicPages, true);
+                ProcessPages(Site.DynamicPages, true);
             }
             finally
             {
                 // End the process
-                Site.Plugins.EndProcess();
+                EndProcess(false);
             }
 
             // Remove output files
@@ -246,6 +275,155 @@ namespace Lunet.Core
             totalDuration.Stop();
             Site.Statistics.TotalTime = totalDuration.Elapsed;
         }
+
+        private void BeginProcess(bool preProcess)
+        {
+            var statistics = Site.Statistics;
+
+            // Callback plugins once files have been initialized but not yet processed
+            var processors = preProcess ? PreProcessors.Cast<ISiteProcessor>() : Processors;
+            int i = 0;
+            foreach (var processor in processors)
+            {
+                var stat = statistics.GetPluginStat(processor);
+                stat.Order = i;
+
+                clock.Restart();
+                processor.BeginProcess();
+                clock.Stop();
+                stat.BeginProcessTime = clock.Elapsed;
+                i++;
+            }
+        }
+
+        private void EndProcess(bool preProcess)
+        {
+            var statistics = Site.Statistics;
+
+            // Callback plugins once files have been initialized but not yet processed
+            var processors = preProcess ? PreProcessors.Cast<ISiteProcessor>() : Processors;
+            foreach (var processor in processors)
+            {
+                clock.Restart();
+
+                processor.EndProcess();
+
+                // Update statistics
+                clock.Stop();
+                statistics.GetPluginStat(processor).EndProcessTime += clock.Elapsed;
+            }
+        }
+
+        public bool TryPreparePage(ContentObject page)
+        {
+            if (Scripts.TryRunFrontMatter(page.Script, page))
+            {
+                if (page.Script != null && TryEvaluate(page))
+                {
+                    // If page is discarded, skip it
+                    if (page.Discard)
+                    {
+                        return false;
+                    }
+
+                    var pendingPageProcessors = new List<IContentProcessor>();
+                    return TryProcessPage(page, PreProcessors, pendingPageProcessors, false);
+                }
+            }
+            return false;
+        }
+
+        public void ProcessPages(PageCollection pages, bool copyOutput)
+        {
+            if (pages == null) throw new ArgumentNullException(nameof(pages));
+
+            // Process pages
+            var pageProcessors = Processors.OfType<IContentProcessor>().ToList();
+            var pendingPageProcessors = new List<IContentProcessor>();
+            foreach (var page in pages)
+            {
+                TryProcessPage(page, pageProcessors, pendingPageProcessors, copyOutput);
+            }
+        }
+
+        private bool TryProcessPage(ContentObject page, List<IContentProcessor> pageProcessors, List<IContentProcessor> pendingPageProcessors, bool copyOutput)
+        {
+            // If page is discarded, skip it
+            if (page.Discard)
+            {
+                return false;
+            }
+
+            // By default working on all processors
+            // Order is important!
+            pendingPageProcessors.AddRange(pageProcessors);
+            bool hasBeenProcessed = true;
+            bool breakProcessing = false;
+
+            // We process the page going through all IContentProcessor from the end of the list
+            // (more priority) to the begining of the list (less priority).
+            // An IContentProcessor can transform the page to another type of content
+            // that could then be processed by another IContentProcessor
+            // But we make sure that a processor cannot process a page more than one time
+            // to avoid an infinite loop
+            while (hasBeenProcessed && !breakProcessing && !page.Discard)
+            {
+                hasBeenProcessed = false;
+                for (int i = pendingPageProcessors.Count - 1; i >= 0; i--)
+                {
+                    var processor = pendingPageProcessors[i];
+
+                    // Note that page.ContentType can be changed by a processor 
+                    // while processing a page
+                    clock.Restart();
+                    var result = processor.TryProcess(page);
+                    clock.Stop();
+
+                    if (result != ContentResult.None)
+                    {
+                        // Update statistics per plugin
+                        var statistics = Site.Statistics;
+                        var stat = statistics.GetPluginStat(processor);
+                        stat.PageCount++;
+                        stat.ProcessTime += clock.Elapsed;
+
+                        hasBeenProcessed = true;
+                        pendingPageProcessors.RemoveAt(i);
+                        breakProcessing = result == ContentResult.Break;
+                        break;
+                    }
+                }
+            }
+            pendingPageProcessors.Clear();
+
+            // Copy only if the file are marked as include
+            if (copyOutput && !breakProcessing && !page.Discard)
+            {
+                Site.Generator.TryCopyContentToOutput(page, page.GetDestinationPath());
+            }
+
+            return true;
+        }
+
+        private bool TryEvaluate(ContentObject page)
+        {
+            if (page.ScriptObjectLocal == null)
+            {
+                page.ScriptObjectLocal = new ScriptObject();
+            }
+
+            clock.Reset();
+            try
+            {
+                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObjectLocal);
+            }
+            finally
+            {
+                clock.Stop();
+                Site.Statistics.GetContentStat(page).EvaluateTime += clock.Elapsed;
+            }
+        }
+
 
         public void CreateDirectory(DirectoryInfo directory)
         {

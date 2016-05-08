@@ -18,7 +18,7 @@ namespace Lunet.Plugins.SharpScss
         public void Initialize(SiteObject site)
         {
             site.SetValue("scss", new ScssObject(this), true);
-            site.Plugins.Processors.Add(new ScssProcessor());
+            site.Generator.Processors.Add(new ScssProcessor());
         }
     }
 }

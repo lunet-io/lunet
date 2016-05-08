@@ -33,7 +33,7 @@ namespace Lunet.Plugins.Markdig
 
         protected override void InitializeCore()
         {
-            Site.Plugins.Processors.AddIfNotAlready(this);
+            Site.Generator.PreProcessors.AddIfNotAlready(this);
 
             Site.Plugins.SetValue(PluginName, markdigOptions, true);
 

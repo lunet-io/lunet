@@ -26,10 +26,7 @@ namespace Lunet.Plugins
         internal PluginManager(SiteObject site) : base(site)
         {
             List = new OrderedList<ISitePlugin>();
-            Processors = new OrderedList<ISiteProcessor>()
-            {
-                new LayoutProcessor() // Default processor
-            };
+
             initializedExtensions = new HashSet<object>();
             Site.SetValue(SiteVariables.Plugins, this, true);
             clock = new Stopwatch();
@@ -37,21 +34,19 @@ namespace Lunet.Plugins
 
         public OrderedList<ISitePlugin> List { get; }
 
-        public OrderedList<ISiteProcessor> Processors { get; }
-
         public override void InitializeBeforeConfig()
         {
             // We import all plugins from this assembly by default
             ImportPluginsFromAssembly(typeof(PluginManager).GetTypeInfo().Assembly);
 
             // Initialize all pending plugins
-            InitializePendingPluginsAndProcessors();
+            InitializeSiteExtensions(List);
         }
 
         public override void InitializeAfterConfig()
         {
             // Initialize all plugins added
-            InitializePendingPluginsAndProcessors();
+            InitializeSiteExtensions(List);
         }
 
         public void ImportPluginsFromAssembly(Assembly assembly)
@@ -82,145 +77,7 @@ namespace Lunet.Plugins
             }
         }
 
-        public void BeginProcess()
-        {
-            var statistics = Site.Statistics;
-
-            // Callback plugins once files have been initialized but not yet processed
-            for (int i = 0; i < Processors.Count; i++)
-            {
-                var processor = Processors[i];
-                var stat = statistics.GetPluginStat(processor);
-                stat.Order = i;
-
-                clock.Restart();
-                processor.BeginProcess();
-                clock.Stop();
-                stat.BeginProcessTime = clock.Elapsed;
-            }
-        }
-
-        public void ProcessContent(PageCollection pages, bool copyOutput)
-        {
-            if (pages == null) throw new ArgumentNullException(nameof(pages));
-
-            var statistics = Site.Statistics;
-
-            // Process pages
-            var pageProcessors = Processors.OfType<IContentProcessor>().ToList();
-            var pendingPageProcessors = new List<IContentProcessor>();
-            foreach (var page in pages)
-            {
-                // If page is discarded, skip it
-                if (page.Discard)
-                {
-                    continue;
-                }
-
-                // If there is a script on this page, and it didn't run well, proceed to next page
-                if (page.Script != null && !TryEvaluate(page))
-                {
-                    continue;
-                }
-
-                // If page is discarded, skip it
-                if (page.Discard)
-                {
-                    continue;
-                }
-
-                // By default working on all processors
-                // Order is important!
-                pendingPageProcessors.AddRange(pageProcessors);
-                bool hasBeenProcessed = true;
-                bool breakProcessing = false;
-
-                // We process the page going through all IContentProcessor from the end of the list
-                // (more priority) to the begining of the list (less priority).
-                // An IContentProcessor can transform the page to another type of content
-                // that could then be processed by another IContentProcessor
-                // But we make sure that a processor cannot process a page more than one time
-                // to avoid an infinite loop
-                while (hasBeenProcessed && !breakProcessing && !page.Discard)
-                {
-                    hasBeenProcessed = false;
-                    for (int i = pendingPageProcessors.Count - 1; i >= 0; i--)
-                    {
-                        var processor = pendingPageProcessors[i];
-
-                        // Note that page.ContentType can be changed by a processor 
-                        // while processing a page
-                        clock.Restart();
-                        var result = processor.TryProcess(page);
-                        clock.Stop();
-
-                        if (result != ContentResult.None)
-                        {
-                            // Update statistics per plugin
-                            var stat = statistics.GetPluginStat(processor);
-                            stat.PageCount++;
-                            stat.ProcessTime += clock.Elapsed;
-
-                            hasBeenProcessed = true;
-                            pendingPageProcessors.RemoveAt(i);
-                            breakProcessing = result == ContentResult.Break;
-                            break;
-                        }
-                    }
-                }
-                pendingPageProcessors.Clear();
-
-                // Copy only if the file are marked as include
-                if (copyOutput && !breakProcessing && !page.Discard)
-                {
-                    Site.Generator.TryCopyContentToOutput(page, page.GetDestinationPath());
-                }
-            }
-        }
-
-        public void EndProcess()
-        {
-            var statistics = Site.Statistics;
-
-            // Callback plugins once files have been initialized but not yet processed
-            foreach (var plugin in Processors)
-            {
-                clock.Restart();
-
-                plugin.EndProcess();
-
-                // Update statistics
-                clock.Stop();
-                statistics.GetPluginStat(plugin).EndProcessTime += clock.Elapsed;
-            }
-        }
-
-        private bool TryEvaluate(ContentObject page)
-        {
-            if (page.ScriptObjectLocal == null)
-            {
-                page.ScriptObjectLocal = new ScriptObject();
-            }
-
-            clock.Reset();
-            try
-            {
-                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObjectLocal);
-            }
-            finally
-            {
-                clock.Stop();
-                Site.Statistics.GetContentStat(page).EvaluateTime += clock.Elapsed;
-            }
-        }
-
-        private void InitializePendingPluginsAndProcessors()
-        {
-            InitializeSiteExtensions(List);
-            InitializeSiteExtensions(Processors);
-        }
-
-        private void InitializeSiteExtensions<T>(List<T> extensions) where T : ISitePluginCore
+        public void InitializeSiteExtensions<T>(List<T> extensions) where T : ISitePluginCore
         {
             // Because we expect that a Processor they modify the list of processors (add)
             // We iterate until all processors have been initialized

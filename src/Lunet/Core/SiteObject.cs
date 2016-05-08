@@ -57,21 +57,21 @@ namespace Lunet.Core
 
             DefaultPageExtension = DefaultPageExtensionValue;
 
+            Statistics = new SiteStatistics();
+
+            Scripts = new ScriptManager(this);
+            Generator = new SiteGenerator(this);
+
             // LoadConfig the plugins after they have been loaded/modified from the config
             Managers = new OrderedList<ManagerBase>()
             {
                 (Meta = new MetaManager(this)),
-                (Scripts = new ScriptManager(this)),
+                Scripts,
                 (Extends = new ExtendManager(this)),
                 (Plugins = new PluginManager(this)),
                 (Resources = new ResourceManager(this)),
-                (Bundles = new BundleManager(this))
+                (Bundles = new BundleManager(this)),
             };
-
-            Statistics = new SiteStatistics();
-
-            // Must be last
-            Generator = new SiteGenerator(this);
         }
 
         public string ConfigFile { get; }
@@ -311,7 +311,7 @@ namespace Lunet.Core
             foreach (var page in pages)
             {
                 clock.Restart();
-                if (Scripts.TryRunFrontMatter(page.Script, page))
+                if (Generator.TryPreparePage(page))
                 {
                     clock.Stop();
                     Pages.Add(page);
@@ -325,7 +325,7 @@ namespace Lunet.Core
             if (indexPage != null)
             {
                 clock.Restart();
-                if (Scripts.TryRunFrontMatter(indexPage.Script, indexPage))
+                if (Generator.TryPreparePage(indexPage))
                 {
                     clock.Stop();
                     Pages.Add(indexPage);

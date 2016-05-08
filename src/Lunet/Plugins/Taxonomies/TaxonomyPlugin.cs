@@ -17,7 +17,7 @@ namespace Lunet.Plugins.Taxonomies
 
         public override void Initialize(SiteObject site)
         {
-            site.Plugins.Processors.Add(new TaxonomyProcessor());
+            site.Generator.Processors.Add(new TaxonomyProcessor());
         }
    }
 }
