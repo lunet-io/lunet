@@ -1,12 +1,13 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Lunet.Core;
 
-namespace Lunet.Taxonomies
+namespace Lunet.Plugins.Taxonomies
 {
     public class TaxonomyTermCollection : DynamicCollection<TaxonomyTerm, TaxonomyTermCollection>
     {
@@ -20,12 +21,12 @@ namespace Lunet.Taxonomies
     }
 
     [DebuggerDisplay("{Name} => {Single} Terms: [{Terms.Count}]")]
-    public class Taxonomy : DynamicObject<TaxonomyManager>
+    public class Taxonomy : DynamicObject<TaxonomyProcessor>
     {
         private readonly TaxonomyTermCollection byName;
         private readonly TaxonomyTermCollection byCount;
 
-        public Taxonomy(TaxonomyManager parent, string name, string single) : base(parent)
+        public Taxonomy(TaxonomyProcessor parent, string name, string single) : base(parent)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (single == null) throw new ArgumentNullException(nameof(single));

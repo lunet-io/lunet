@@ -85,11 +85,11 @@
     <Compile Include="Statistics\SiteStatistics.cs" />
     <Compile Include="Scripts\ScriptManager.cs" />
     <Compile Include="Core\SiteGenerator.cs" />
-    <Compile Include="Taxonomies\TaxonomiesObject.cs" />
-    <Compile Include="Taxonomies\Taxonomy.cs" />
-    <Compile Include="Taxonomies\TaxonomyManager.cs" />
-    <Compile Include="Taxonomies\TaxonomyProcessor.cs" />
-    <Compile Include="Taxonomies\TaxonomyTerm.cs" />
+    <Compile Include="Plugins\Taxonomies\TaxonomyCollection.cs" />
+    <Compile Include="Plugins\Taxonomies\Taxonomy.cs" />
+    <Compile Include="Plugins\Taxonomies\TaxonomyPlugin.cs" />
+    <Compile Include="Plugins\Taxonomies\TaxonomyProcessor.cs" />
+    <Compile Include="Plugins\Taxonomies\TaxonomyTerm.cs" />
     <Compile Include="Extends\DefaultExtendProvider.cs" />
     <Compile Include="Extends\IExtendProvider.cs" />
     <Compile Include="Extends\ExtendDescription.cs" />

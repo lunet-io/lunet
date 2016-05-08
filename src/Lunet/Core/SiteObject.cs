@@ -13,10 +13,8 @@ using Lunet.Plugins;
 using Lunet.Resources;
 using Lunet.Scripts;
 using Lunet.Statistics;
-using Lunet.Taxonomies;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
-using Scriban.Runtime;
 
 namespace Lunet.Core
 {
@@ -45,6 +43,7 @@ namespace Lunet.Core
 
             StaticFiles = new PageCollection();
             Pages = new PageCollection();
+            DynamicPages = new PageCollection();
 
             // Plugins
 
@@ -66,8 +65,7 @@ namespace Lunet.Core
                 (Extends = new ExtendManager(this)),
                 (Plugins = new PluginManager(this)),
                 (Resources = new ResourceManager(this)),
-                (Bundles = new BundleManager(this)),
-                (Taxonomies = new TaxonomyManager(this)),
+                (Bundles = new BundleManager(this))
             };
 
             Statistics = new SiteStatistics();
@@ -96,6 +94,8 @@ namespace Lunet.Core
 
         public PageCollection StaticFiles { get; }
 
+        public PageCollection DynamicPages { get; }
+
         public PageCollection Pages { get; }
 
         public bool HasErrors { get; set; }
@@ -119,8 +119,6 @@ namespace Lunet.Core
         public SiteStatistics Statistics { get; }
 
         public ContentTypeManager ContentTypes { get; }
-
-        public TaxonomyManager Taxonomies { get; }
 
         public bool UrlAsFile
         {

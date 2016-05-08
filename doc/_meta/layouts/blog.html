@@ -7,7 +7,7 @@ layout = "_default"
 
 <section>
   <ul>
-    {{ for $taxonomy in site.taxonomies | object.values }}
+    {{ for $taxonomy in site.taxonomies }}
       <li><a href="{{ $taxonomy.url }}">{{ $taxonomy.name }}</a>
         <ul>
           {{ for $term in $taxonomy.terms.by_name }}

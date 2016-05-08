@@ -229,6 +229,9 @@ namespace Lunet.Core
 
                 // Process pages (files with front matter)
                 Site.Plugins.ProcessContent(Site.Pages, true);
+
+                // Process pages (files with front matter)
+                Site.Plugins.ProcessContent(Site.DynamicPages, true);
             }
             finally
             {

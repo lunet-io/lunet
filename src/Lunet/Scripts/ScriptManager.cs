@@ -48,7 +48,7 @@ namespace Lunet.Scripts
 
         public TemplateContext Context { get; }
 
-        public ScriptObject GlobalObject { get; }
+        public IScriptObject GlobalObject { get; }
 
         /// <summary>
         /// Gets the functions that are only accessible from a sban/script file (and not from a page)
