@@ -23,6 +23,7 @@ namespace Lunet.Helpers
             // Use specific settings to extract text from html
             var settings = new HtmlSettings()
             {
+                RemoveComments = false,
                 RemoveOptionalTags = false,
                 RemoveEmptyAttributes = false,
                 RemoveQuotedAttributes = false,
@@ -86,7 +87,6 @@ namespace Lunet.Helpers
             public HtmlWriterToSummary(TextWriter writer, HtmlToTextOptions options) : base(writer, options)
             {
             }
-
 
             protected override void Write(HtmlComment node)
             {
