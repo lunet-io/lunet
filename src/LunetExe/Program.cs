@@ -18,7 +18,7 @@ namespace Lunet
         {
             app.UseFileServer(new FileServerOptions
             {
-                FileProvider = new PhysicalFileProvider(@"C:\Code\lunet-io\lunet\doc\_site")                
+                FileProvider = new PhysicalFileProvider(@"C:\Code\lunet-io\lunet\doc\.lunet\_site")                
             });
 
             //app.UseStaticFiles(new StaticFileOptions()
@@ -59,7 +59,6 @@ namespace Lunet
                 //.UseLoggerFactory(loggerFactory)
                 .UseServer("Microsoft.AspNetCore.Server.Kestrel")
                 .UseContentRoot(directoryName)
-                .UseWebRoot("_site")
                 .UseUrls("http://localhost:5001")
                 .UseStartup<Program>()
                 .Build();

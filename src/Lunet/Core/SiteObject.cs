@@ -53,7 +53,7 @@ namespace Lunet.Core
             Log = LoggerFactory.CreateLogger("lunet");
             ContentTypes = new ContentTypeManager();
 
-            OutputDirectory = BaseDirectory.GetSubFolder(SiteDirectoryName);
+            OutputDirectory = PrivateBaseDirectory.GetSubFolder(SiteDirectoryName);
 
             DefaultPageExtension = DefaultPageExtensionValue;
 
