@@ -58,6 +58,7 @@
     <Compile Include="Core\ContentTypeManager.cs" />
     <Compile Include="Layouts\LayoutTypes.cs" />
     <Compile Include="Plugins\NUglify\NUglifyPlugin.cs" />
+    <Compile Include="Helpers\SummaryHelper.cs" />
     <Compile Include="Plugins\SharpScss\ScssObject.cs" />
     <Compile Include="Plugins\SharpScss\ScssProcessor.cs" />
     <Compile Include="Plugins\SharpScss\SharpScssPlugin.cs" />

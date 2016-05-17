@@ -21,6 +21,8 @@ namespace Lunet.Statistics
 
         public TimeSpan EvaluateTime { get; set; }
 
+        public TimeSpan SummaryTime { get; set; }
+
         public TimeSpan OutputTime { get; set; }
     }
 }

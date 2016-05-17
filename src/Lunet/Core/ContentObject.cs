@@ -159,6 +159,15 @@ namespace Lunet.Core
         }
 
         /// <summary>
+        /// Gets or sets the summary of this page.
+        /// </summary>
+        public string Summary
+        {
+            get { return GetSafeValue<string>(PageVariables.Summary); }
+            set { this[PageVariables.Summary] = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the output extension. If null, by default the same as the input <see cref="Extension"/>.
         /// </summary>
         public ContentType ContentType

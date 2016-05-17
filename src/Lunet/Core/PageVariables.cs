@@ -20,6 +20,10 @@ namespace Lunet.Core
 
         public const string Content = "content";
 
+        public const string Summary = "summary";
+
+        public const string SummaryKeepFormatting = "summary_keep_formatting";
+
         public const string ContentType = "content_type";
 
         public const string Layout = "layout";

@@ -235,19 +235,8 @@ namespace Lunet.Core
 
                 if (hasFrontMatter)
                 {
-                    // Read the stream
-                    var reader = new StreamReader(stream);
-                    var content = reader.ReadToEnd();
-                    // Early dispose the stream
-                    stream.Dispose();
+                    page = LoadPageScript(stream, rootDirectory, file);
                     stream = null;
-
-                    // Parse the page, using front-matter mode
-                    var scriptPage = Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatter);
-                    if (!scriptPage.HasErrors)
-                    {
-                        page = new ContentObject(this, rootDirectory, file) { Script = scriptPage.Page };
-                    }
                 }
                 else
                 {
@@ -261,10 +250,52 @@ namespace Lunet.Core
             }
         }
 
+
+        private ContentObject LoadPageScript(Stream stream, DirectoryInfo rootDirectory, FileInfo file)
+        {
+            // Read the stream
+            var reader = new StreamReader(stream);
+            var content = reader.ReadToEnd();
+            // Early dispose the stream
+            stream.Dispose();
+
+            ContentObject page = null;
+
+            // Parse the page, using front-matter mode
+            var scriptPage = Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatter);
+            if (!scriptPage.HasErrors)
+            {
+                page = new ContentObject(this, rootDirectory, file)
+                {
+                    Script = scriptPage.Page
+                };
+
+                var evalClock = Stopwatch.StartNew();
+                if (Generator.TryPreparePage(page))
+                {
+                    evalClock.Stop();
+
+                    // Update statistics
+                    var contentStat = Statistics.GetContentStat(page);
+                    
+                    contentStat.EvaluateTime += evalClock.Elapsed;
+
+                    // Update the summary of the page
+                    evalClock.Restart();
+                    SummaryHelper.UpdateSummary(page);
+                    evalClock.Stop();
+
+                    // Update statistics
+                    contentStat.SummaryTime += evalClock.Elapsed;
+                }
+            }
+
+            return page;
+        }
+
         private void LoadDirectory(FolderInfo rootDirectory, DirectoryInfo directory, Queue<DirectoryInfo> directoryQueue, HashSet<string> loaded)
         {
             var pages = new List<ContentObject>();
-            ContentObject indexPage = null;
             foreach (var entry in directory.EnumerateFileSystemInfos())
             {
                 if (entry.Name == SiteFactory.DefaultConfigFilename)
@@ -286,52 +317,17 @@ namespace Lunet.Core
                     clock.Restart();
                     LoadPage(rootDirectory, (FileInfo)entry, out page);
                     clock.Stop();
+
                     if (page != null)
                     {
                         // Update statistics
                         Statistics.GetContentStat(page).LoadingParsingTime += clock.Elapsed;
-
-                        if (page.SourceFileInfo.Name.StartsWith("index.") && indexPage == null)
-                        {
-                            indexPage = page;
-                        }
-                        else
-                        {
-                            pages.Add(page);
-                        }
+                        Pages.Add(page);
                     }
                 }
                 else if (!entry.Name.StartsWith("_"))
                 {
                     directoryQueue.Enqueue((DirectoryInfo)entry);
-                }
-            }
-
-            // Process all pages before the index
-            foreach (var page in pages)
-            {
-                clock.Restart();
-                if (Generator.TryPreparePage(page))
-                {
-                    clock.Stop();
-                    Pages.Add(page);
-
-                    // Update statistics
-                    Statistics.GetContentStat(page).EvaluateTime += clock.Elapsed;
-                }
-            }
-
-            // Process the index
-            if (indexPage != null)
-            {
-                clock.Restart();
-                if (Generator.TryPreparePage(indexPage))
-                {
-                    clock.Stop();
-                    Pages.Add(indexPage);
-
-                    // Update statistics
-                    Statistics.GetContentStat(indexPage).EvaluateTime += clock.Elapsed;
                 }
             }
         }
