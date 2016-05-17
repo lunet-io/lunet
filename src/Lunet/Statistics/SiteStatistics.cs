@@ -28,10 +28,13 @@ namespace Lunet.Statistics
             if (page == null) throw new ArgumentNullException(nameof(page));
 
             ContentStat stat;
-            if (!Content.TryGetValue(page, out stat))
+            lock (Content)
             {
-                stat = new ContentStat(page);
-                Content.Add(page, stat);
+                if (!Content.TryGetValue(page, out stat))
+                {
+                    stat = new ContentStat(page);
+                    Content.Add(page, stat);
+                }
             }
             return stat;
         }
