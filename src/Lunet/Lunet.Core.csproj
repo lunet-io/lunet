@@ -51,6 +51,7 @@
     <Compile Include="Core\GlobalVariables.cs" />
     <Compile Include="Core\PageCollection.cs" />
     <Compile Include="Core\PathFlags.cs" />
+    <Compile Include="Core\SiteWatcher.cs" />
     <Compile Include="Helpers\ExceptionUtil.cs" />
     <Compile Include="Helpers\StringBuilderCache.cs" />
     <Compile Include="Helpers\TarUtil.cs" />
