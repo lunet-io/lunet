@@ -4,40 +4,125 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace Lunet.Core
 {
-    public class SiteWatcher : ManagerBase
+
+    public class FileSystemEventBatchArgs : EventArgs
     {
+        public FileSystemEventBatchArgs()
+        {
+            FileEvents = new List<FileSystemEventArgs>();
+        }
+
+        public List<FileSystemEventArgs> FileEvents { get; }
+    }
+
+    public class SiteWatcher
+    {
+        private DirectoryInfo baseDirectory;
         private FileSystemWatcher rootDirectoryWatcher;
         private FileSystemWatcher privateMetaWatcher;
 
+        private const int SleepForward = 48;
+        private const int MillisTimeout = 200;
+
         private readonly ILogger log;
         private readonly Dictionary<string, FileSystemWatcher> watchers;
+        private bool isDisposing;
+        private readonly Thread processEventsThread;
+        private readonly object batchLock;
+        private readonly Stopwatch clock;
+        private FileSystemEventBatchArgs batchEvents;
+        private readonly ManualResetEvent onClosingEvent;
 
-        internal SiteWatcher(SiteObject site) : base(site)
+        public SiteWatcher(ILoggerFactory loggerFactory)
         {
+            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
             watchers = new Dictionary<string, FileSystemWatcher>();
-            log = site.LoggerFactory.CreateLogger("watcher");
-
-            rootDirectoryWatcher = CreateFileWatch(Site.BaseDirectory, false);
-            privateMetaWatcher = CreateFileWatch(Site.Meta.PrivateDirectory, true);
+            log = loggerFactory.CreateLogger("watcher");
+            batchLock = new object();
+            processEventsThread = new Thread(ProcessEvents) {IsBackground = true};
+            clock = new Stopwatch();
+            onClosingEvent = new ManualResetEvent(false);
         }
 
-
-        public override void InitializeAfterConfig()
+        private void ProcessEvents()
         {
-            // TODO: Filters unwanted
-            foreach (var directory in Site.BaseDirectory.Info.EnumerateDirectories())
+            while (true)
             {
-                if (directory.FullName.Equals(Site.PrivateBaseDirectory))
+                FileSystemEventBatchArgs batchEventsCopy = null;
+
+                if (onClosingEvent.WaitOne(SleepForward))
+                {
+                    break;
+                }
+
+                lock (batchLock)
+                {
+                    if (clock.ElapsedMilliseconds <= MillisTimeout)
+                    {
+                        continue;
+                    }
+
+                    if (batchEvents != null && batchEvents.FileEvents.Count > 0)
+                    {
+                        batchEventsCopy = batchEvents;
+                        batchEvents = null;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+
+                // Invoke listeners
+                FileSystemEvents?.Invoke(this, batchEventsCopy);
+            }
+
+            onClosingEvent.Reset();
+        }
+
+        public event EventHandler<FileSystemEventBatchArgs> FileSystemEvents;
+
+        public void Start(SiteObject site)
+        {
+            if (site == null) throw new ArgumentNullException(nameof(site));
+
+            processEventsThread.Start();
+
+            baseDirectory = site.BaseDirectory;
+            rootDirectoryWatcher = CreateFileWatch(site.BaseDirectory, false);
+            privateMetaWatcher = CreateFileWatch(site.Meta.PrivateDirectory, true);
+
+            foreach (var directory in site.BaseDirectory.Info.EnumerateDirectories())
+            {
+                if (directory.FullName.Equals(site.PrivateBaseDirectory))
                 {
                     continue;
                 }
                 CreateFileWatch(directory.FullName, true);
+            }
+        }
+
+        public void Stop()
+        {
+            onClosingEvent.Set();
+            processEventsThread.Join();
+
+            lock (watchers)
+            {
+                isDisposing = true;
+                foreach (var watcher in watchers)
+                {
+                    DisposeWatcher(watcher.Value);
+                }
+                watchers.Clear();
             }
         }
 
@@ -46,6 +131,11 @@ namespace Lunet.Core
             FileSystemWatcher watcher;
             lock (watchers)
             {
+                if (isDisposing)
+                {
+                    return null;
+                }
+
                 if (watchers.TryGetValue(directory, out watcher))
                 {
                     return watcher;
@@ -116,7 +206,7 @@ namespace Lunet.Core
                         break;
                     case WatcherChangeTypes.Created:
                         // Create watcher only for top-level directories
-                        if (isDirectory && dir.Parent != null && dir.Parent.FullName == Site.BaseDirectory)
+                        if (isDirectory && dir.Parent != null && dir.Parent.FullName == baseDirectory.FullName)
                         {
                             CreateFileWatch(dir.FullName, true);
                         }
@@ -131,7 +221,7 @@ namespace Lunet.Core
                                 DisposeWatcher(renamed.OldFullPath);
 
                                 // Create watcher only for top-level directories
-                                if (dir.Parent != null && dir.Parent.FullName == Site.BaseDirectory)
+                                if (dir.Parent != null && dir.Parent.FullName == baseDirectory.FullName)
                                 {
                                     CreateFileWatch(renamed.FullPath, true);
                                 }
@@ -139,6 +229,18 @@ namespace Lunet.Core
                         }
                         break;
                 }
+            }
+
+            lock (batchLock)
+            {
+                clock.Restart();
+
+                if (batchEvents == null)
+                {
+                    batchEvents = new FileSystemEventBatchArgs();
+                }
+
+                batchEvents.FileEvents.Add(e);
             }
         }
         

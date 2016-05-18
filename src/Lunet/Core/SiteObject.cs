@@ -70,8 +70,7 @@ namespace Lunet.Core
                 (Extends = new ExtendManager(this)),
                 (Plugins = new PluginManager(this)),
                 (Resources = new ResourceManager(this)),
-                (Bundles = new BundleManager(this)),
-                (Watcher = new SiteWatcher(this))
+                (Bundles = new BundleManager(this))
             };
         }
 
@@ -120,8 +119,6 @@ namespace Lunet.Core
         public SiteStatistics Statistics { get; }
 
         public ContentTypeManager ContentTypes { get; }
-
-        public SiteWatcher Watcher { get; }
 
 
         public bool UrlAsFile

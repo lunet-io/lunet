@@ -1,0 +1,12 @@
+﻿<script>
+    var ws = new WebSocket("ws://localhost:5001/");
+    ws.onclose = function() {
+        console.log("websocket connection closed");
+    };
+    ws.onmessage = function (event) {
+        console.log("evt " + event.data);
+        if (event.data === "reload") {
+            location.reload();
+        }
+    };
+</script>

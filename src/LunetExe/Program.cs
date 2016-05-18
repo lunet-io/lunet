@@ -1,33 +1,130 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Lunet.Core;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Lunet
 {
     class Program
     {
+        private static readonly HashSet<WebSocket> sockets;
+
+        static Program()
+        {
+            sockets = new HashSet<WebSocket>();
+        }
+
+        public Program()
+        {
+            
+        }
+
         public void Configure(IApplicationBuilder app)
         {
-            app.UseFileServer(new FileServerOptions());
+            app.UseWebSockets();
+            app.Use(HandleWebSockets);
+
+            app.UseFileServer();
+        }
+
+        private async Task HandleWebSockets(HttpContext http, Func<Task> next)
+        {
+            if (http.WebSockets.IsWebSocketRequest)
+            {
+                var webSocket = await http.WebSockets.AcceptWebSocketAsync();
+
+                if (webSocket != null && webSocket.State == WebSocketState.Open)
+                {
+                    lock (sockets)
+                    {
+                        if (!sockets.Add(webSocket))
+                        {
+                            return;
+                        }
+                    }
+
+                    await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("test")), WebSocketMessageType.Text, true, CancellationToken.None);
+                    while (webSocket.State == WebSocketState.Open)
+                    {
+                        await webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), CancellationToken.None);
+                    }
+
+                    if (webSocket.State == WebSocketState.CloseReceived)
+                    {
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
+                    }
+
+                    lock (sockets)
+                    {
+                        sockets.Remove(webSocket);
+                    }
+                }
+            }
+            else
+            {
+                // Nothing to do here, pass downstream.  
+                await next();
+            }
         }
 
         static void Main(string[] args)
         {
             var loggerFactory = new LoggerFactory().AddConsole(LogLevel.Trace);
 
-            var site = SiteFactory.FromFile(Path.Combine(Environment.CurrentDirectory, args[0]), loggerFactory);
-            site.Generate();
+            var watcher = new SiteWatcher(loggerFactory);
 
+            SiteObject site = null;
 
-            DumpDependencies(site, "statics", site.StaticFiles);
-            DumpDependencies(site, "dynamics", site.DynamicPages);
-            DumpDependencies(site, "pages", site.Pages);
+            var generateSite = new Action(() =>
+            {
+                site = SiteFactory.FromFile(Path.Combine(Environment.CurrentDirectory, args[0]), loggerFactory);
+                site.Generate();
+                DumpDependencies(site, "statics", site.StaticFiles);
+                DumpDependencies(site, "dynamics", site.DynamicPages);
+                DumpDependencies(site, "pages", site.Pages);
 
-            site.Statistics.Dump((s => site.Info(s)));
+                site.Statistics.Dump((s => site.Info(s)));
+            });
+
+            generateSite();
+
+            watcher.Start(site);
+            watcher.FileSystemEvents += async (sender, eventArgs) =>
+            {
+                Console.WriteLine($"Received file events [{eventArgs.FileEvents.Count}]");
+
+                // Regenerate website
+                generateSite();
+
+                var localSockets = new List<WebSocket>();
+
+                lock (sockets)
+                {
+                    localSockets.Clear();
+                    localSockets.AddRange(sockets);
+                }
+
+                foreach (var socket in localSockets)
+                {
+                    if (socket.State == WebSocketState.Open)
+                    {
+                        byte[] messageData = Encoding.UTF8.GetBytes("reload");
+                        var outputBuffer = new ArraySegment<byte>(messageData);
+
+                        await socket.SendAsync(outputBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
+                }
+            };
 
             var host = new WebHostBuilder()
                 //.UseServer("Microsoft.AspNetCore.Server.WebListener")
@@ -38,6 +135,7 @@ namespace Lunet
                 .UseUrls("http://localhost:5001")
                 .UseStartup<Program>()
                 .Build();
+
             host.Run();
         }
 
