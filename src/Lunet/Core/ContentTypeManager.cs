@@ -15,21 +15,9 @@ namespace Lunet.Core
 
         public ContentTypeManager()
         {
-            extensionToContentType = new Dictionary<string, ContentType>(StringComparer.OrdinalIgnoreCase)
-            {
-                [".htm"] = ContentType.Html,
-                [".html"] = ContentType.Html,
-                [".markdown"] = ContentType.Markdown,
-                [".md"] = ContentType.Markdown,
-                // Not used, but for example
-                [".jpg"] = ContentType.Jpeg,
-                [".jpeg"] = ContentType.Jpeg,
-            };
-
-            htmlContentType = new HashSet<ContentType>()
-            {
-                ContentType.Html, ContentType.Markdown
-            };
+            extensionToContentType = new Dictionary<string, ContentType>(StringComparer.OrdinalIgnoreCase);
+            htmlContentType = new HashSet<ContentType>();
+            AddBuiltins();
         }
 
         public void AddContentType(string extension, ContentType contentType)
@@ -61,6 +49,20 @@ namespace Lunet.Core
             return extensionToContentType.TryGetValue(extension, out contentType)
                 ? contentType
                 : new ContentType(extension.TrimStart(new[] {'.'}));
+        }
+
+        private void AddBuiltins()
+        {
+            extensionToContentType[".htm"] = ContentType.Html;
+            extensionToContentType[".html"] = ContentType.Html;
+            extensionToContentType[".markdown"] = ContentType.Markdown;
+            extensionToContentType[".md"] = ContentType.Markdown;
+            // Not used, but for example
+            extensionToContentType[".jpg"] = ContentType.Jpeg;
+            extensionToContentType[".jpeg"] = ContentType.Jpeg;
+
+            htmlContentType.Add(ContentType.Html);
+            htmlContentType.Add(ContentType.Markdown);
         }
     }
 }

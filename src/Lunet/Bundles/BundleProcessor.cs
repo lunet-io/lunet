@@ -89,15 +89,15 @@ namespace Lunet.Bundles
 
         private void ProcessBundleLinks(BundleObject bundle, Dictionary<string, ContentObject> staticFiles)
         {
-            Dictionary<string, StringBuilder> concatBuilders = null;
+            Dictionary<string, ConcatGroup> concatBuilders = null;
             if (bundle.Concat)
             {
-                concatBuilders = new Dictionary<string, StringBuilder>();
+                concatBuilders = new Dictionary<string, ConcatGroup>();
                 foreach (var type in bundle.UrlDestination)
                 {
                     if (!concatBuilders.ContainsKey(type.Key))
                     {
-                        concatBuilders[type.Key] = new StringBuilder();
+                        concatBuilders[type.Key] = new ConcatGroup();
                     }
                 }
             }
@@ -177,7 +177,9 @@ namespace Lunet.Bundles
                             // Remove this link from the list of links, as we are going to squash them after
                             bundle.Links.RemoveAt(i);
                             i--;
-                            concatBuilders[link.Type].AppendLine(link.Content);
+
+                            concatBuilders[link.Type].Pages.Add(currentContent);
+                            concatBuilders[link.Type].Builder.AppendLine(link.Content);
                         }
                         else if (!isExistingContent)
                         {
@@ -191,11 +193,12 @@ namespace Lunet.Bundles
             // Concatenate files if necessary
             if (concatBuilders != null)
             {
-                foreach (var builder in concatBuilders)
+                foreach (var builderGroup in concatBuilders)
                 {
-                    if (builder.Value.Length > 0)
+                    var builder = builderGroup.Value.Builder;
+                    if (builder.Length > 0)
                     {
-                        var type = builder.Key;
+                        var type = builderGroup.Key;
                         var outputUrlDirectory = bundle.UrlDestination[type];
 
                         // If the file is private or meta, we need to copy to the output
@@ -204,9 +207,15 @@ namespace Lunet.Bundles
                         var newStaticFile = new ContentObject(Site, Site.BaseDirectory)
                         {
                             Url = url,
-                            Content = builder.Value.ToString()
+                            Content = builder.ToString()
                         };
-                        Site.StaticFiles.Add(newStaticFile);
+                        Site.DynamicPages.Add(newStaticFile);
+
+                        // Add file dependencies
+                        foreach (var page in builderGroup.Value.Pages)
+                        {
+                            newStaticFile.Dependencies.Add(new PageContentDependency(page));
+                        }
 
                         var link = new BundleLink(bundle, type, null, url)
                         {
@@ -265,6 +274,18 @@ namespace Lunet.Bundles
                     link.Url = contentObject.Url;
                 }
             }
+        }
+
+        private class ConcatGroup
+        {
+            public ConcatGroup()
+            {
+                Pages = new List<ContentObject>();
+                Builder = new StringBuilder();
+            }
+            public List<ContentObject> Pages { get; }
+
+            public StringBuilder Builder { get; }
         }
     }
 }

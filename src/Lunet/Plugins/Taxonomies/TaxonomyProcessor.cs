@@ -142,6 +142,11 @@ namespace Lunet.Plugins.Taxonomies
                     content.ScriptObjectLocal.SetValue("taxonomy", tax, true);
                     content.ScriptObjectLocal.SetValue("term", term, true);
 
+                    foreach (var page in term.Pages)
+                    {
+                        content.Dependencies.Add(new PageContentDependency(page));
+                    }
+
                     Site.DynamicPages.Add(content);
                 }
 
@@ -156,6 +161,9 @@ namespace Lunet.Plugins.Taxonomies
                         ContentType = ContentType.Html
                     };
                     content.ScriptObjectLocal.SetValue("taxonomy", tax, true);
+
+                    // TODO: Add dependencies
+
                     Site.DynamicPages.Add(content);
                 }
             }

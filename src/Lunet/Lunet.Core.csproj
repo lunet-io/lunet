@@ -45,6 +45,7 @@
     <Compile Include="Bundles\BundleObjectProperties.cs" />
     <Compile Include="Bundles\BundleProcessor.cs" />
     <Compile Include="Bundles\IContentMinifier.cs" />
+    <Compile Include="Core\ContentDependency.cs" />
     <Compile Include="Core\ContentObjectType.cs" />
     <Compile Include="Core\ContentType.cs" />
     <Compile Include="Core\DynamicCollection.cs" />

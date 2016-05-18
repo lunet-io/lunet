@@ -17,7 +17,7 @@ namespace Lunet.Extends
     /// Manages themes.
     /// </summary>
     /// <seealso cref="ManagerBase" />
-    public class ExtendManager : ManagerBase
+    public sealed class ExtendManager : ManagerBase
     {
         private const string ExtendsDirectoryName = "extends";
 
@@ -25,18 +25,15 @@ namespace Lunet.Extends
 
         public ExtendManager(SiteObject site) : base(site)
         {
-            Providers = new OrderedList<IExtendProvider>();
-
             ExtendDirectory = Path.Combine(Site.Meta.Directory, ExtendsDirectoryName);
             PrivateExtendDirectory = Path.Combine(Site.Meta.PrivateDirectory, ExtendsDirectoryName);
-            CurrentList = new List<ExtendObject>();
             Providers = new OrderedList<IExtendProvider>()
             {
                 new DefaultExtendProvider()
             };
-
-            site.Scripts.GlobalObject.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
-            site.Scripts.SiteFunctions.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
+            CurrentList = new List<ExtendObject>();
+            Site.Scripts.GlobalObject.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
+            Site.Scripts.SiteFunctions.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
         }
 
         public FolderInfo ExtendDirectory { get; }

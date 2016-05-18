@@ -16,7 +16,6 @@ namespace Lunet.Scripts
     public class ScriptManager : ManagerBase
     {
         private readonly ITemplateLoader unauthorizedTemplateLoader;
-        private readonly ITemplateLoader templateLoaderFromIncludes;
 
         private const string IncludesDirectoryName = "includes";
 
@@ -26,7 +25,6 @@ namespace Lunet.Scripts
         {
             Context = new TemplateContext();
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
-            templateLoaderFromIncludes = new TemplateLoaderFromIncludes(Site);
             GlobalObject = Context.CurrentGlobal;
             SiteFunctions = new DynamicObject<ScriptManager>(this);
             InitializeScriptBuiltins();
@@ -109,7 +107,7 @@ namespace Lunet.Scripts
                 Context.PushGlobal((ScriptObject)scriptObject);
                 Context.PushSourceFile(scriptPath);
                 Context.EnableOutput = false;
-                Context.TemplateLoader =  (flags & ScriptFlags.AllowSiteFunctions) != 0 ? unauthorizedTemplateLoader : templateLoaderFromIncludes;
+                Context.TemplateLoader =  (flags & ScriptFlags.AllowSiteFunctions) != 0 ? unauthorizedTemplateLoader : new TemplateLoaderFromIncludes(Site);
 
                 try
                 {
@@ -175,7 +173,7 @@ namespace Lunet.Scripts
             try
             {
                 Context.EnableOutput = false;
-                Context.TemplateLoader = templateLoaderFromIncludes;
+                Context.TemplateLoader = new TemplateLoaderFromIncludes(Site);
 
                 Site.SetValue(PageVariables.Site, this, true);
                 script.FrontMatter.Evaluate(Context);
@@ -217,13 +215,20 @@ namespace Lunet.Scripts
             try
             {
                 Context.EnableOutput = true;
-                Context.TemplateLoader = templateLoaderFromIncludes;
+                var includeLoader = new TemplateLoaderFromIncludes(Site);
+                Context.TemplateLoader = includeLoader;
 
                 currentScriptObject.SetValue(PageVariables.Site, Site, true);
                 currentScriptObject.SetValue(PageVariables.Page, page, true);
 
                 // TODO: setup include paths for script
                 script.Evaluate(Context);
+
+                foreach (var includeFile in includeLoader.IncludeFiles)
+                {
+                    page.Dependencies.Add(new FileContentDependency(includeFile));
+                }
+
             }
             catch (ScriptRuntimeException exception)
             {
@@ -301,7 +306,10 @@ namespace Lunet.Scripts
             public TemplateLoaderFromIncludes(SiteObject site)
             {
                 this.site = site;
+                IncludeFiles = new List<string>();
             }
+
+            public List<string> IncludeFiles { get; }
 
             public string Load(TemplateContext context, SourceSpan callerSpan, string templateName, out string templateFilePath)
             {
@@ -316,8 +324,10 @@ namespace Lunet.Scripts
                 foreach (var directory in site.Meta.Directories)
                 {
                     var includePath = Path.Combine(directory, IncludesDirectoryName, templateName);
-                    if (File.Exists(includePath))
+                    var file = new FileInfo(includePath);
+                    if (file.Exists)
                     {
+                        IncludeFiles.Add(file.FullName);
                         templateFilePath = includePath;
                         return File.ReadAllText(includePath);
                     }

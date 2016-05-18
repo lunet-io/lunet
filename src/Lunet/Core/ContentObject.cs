@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -23,6 +24,7 @@ namespace Lunet.Core
             RootDirectory = rootDirectoryInfo;
             SourceFileInfo = sourceFileInfo.Normalize();
             SourceFile = sourceFileInfo.FullName;
+            Dependencies = new List<ContentDependency>();
             ObjectType = ContentObjectType.File;
             Site = site;
 
@@ -101,6 +103,7 @@ namespace Lunet.Core
             if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
             if (site == null) throw new ArgumentNullException(nameof(site));
             RootDirectory = rootDirectoryInfo;
+            Dependencies = new List<ContentDependency>();
             Site = site;
 
             Section = section;
@@ -217,6 +220,8 @@ namespace Lunet.Core
             get { return GetSafeValue<string>(PageVariables.LayoutType); }
             set { this[PageVariables.LayoutType] = value; }
         }
+
+        public List<ContentDependency> Dependencies { get; }
 
         public void ChangeContentType(ContentType newContentType)
         {

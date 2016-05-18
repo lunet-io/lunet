@@ -46,6 +46,14 @@ namespace Lunet.Plugins.SharpScss
             file.Content = result.Css;
             file.ChangeContentType(ContentType.Css);
 
+            if (result.IncludedFiles != null)
+            {
+                foreach (var includeFile in result.IncludedFiles)
+                {
+                    file.Dependencies.Add(new FileContentDependency(includeFile));
+                }
+            }
+
             return ContentResult.Continue;
         }
     }

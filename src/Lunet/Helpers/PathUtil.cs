@@ -14,6 +14,12 @@ namespace Lunet.Helpers
             return extension.StartsWith(".") ? extension : "." + extension;
         }
 
+        public static string Normalize(string filePath)
+        {
+            if (filePath == null) throw new ArgumentNullException(nameof(filePath));
+            return new FileInfo(filePath).FullName;
+        }
+
         public static T Normalize<T>(this T fileInfo) where T : FileSystemInfo
         {
             if (fileInfo is FileInfo)

@@ -22,12 +22,13 @@ namespace Lunet.Bundles
         public BundleManager(SiteObject site) : base(site)
         {
             List = new List<BundleObject>();
-            site.SetValue(SiteVariables.Bundles, List, true);
+
+            Site.SetValue(SiteVariables.Bundles, List, true);
 
             // The "bundle" function is global as it is used inside scripts and inside
-            site.Scripts.GlobalObject.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
+            Site.Scripts.GlobalObject.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
 
-            site.Generator.Processors.Add(new BundleProcessor());
+            Site.Generator.Processors.Add(new BundleProcessor());
         }
 
         public List<BundleObject> List { get; }

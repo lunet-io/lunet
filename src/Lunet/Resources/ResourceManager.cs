@@ -17,7 +17,7 @@ namespace Lunet.Resources
     /// Manages resources.
     /// </summary>
     /// <seealso cref="ManagerBase" />
-    public class ResourceManager : ManagerBase
+    public sealed class ResourceManager : ManagerBase
     {
         private const string ResourceDirectoryName = "resources";
 
@@ -31,9 +31,8 @@ namespace Lunet.Resources
             {
                 new NpmResourceProvider(this)
             };
-
-            site.SetValue(SiteVariables.Resources, this, true);
-            site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
+            Site.SetValue(SiteVariables.Resources, this, true);
+            Site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
         }
 
         public FolderInfo ResourceDirectory { get; }

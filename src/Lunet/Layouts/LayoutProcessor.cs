@@ -91,6 +91,9 @@ namespace Lunet.Layouts
                     break;
                 }
 
+                // Add dependency to the layout file
+                page.Dependencies.Add(new FileContentDependency(layoutScript.SourceFilePath));
+
                 // If we had any errors, the page is invalid, so we can't process it
                 if (layoutScript.HasErrors)
                 {
