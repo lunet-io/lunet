@@ -3,6 +3,8 @@
 // See the license.txt file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace Lunet.Core
 {
@@ -22,9 +24,13 @@ namespace Lunet.Core
         {
             Directory = Site.BaseDirectory.GetSubFolder(MetaDirectoryName); 
             PrivateDirectory = Site.PrivateBaseDirectory.GetSubFolder(MetaDirectoryName);
+            BuiltinDirectory = Path.GetDirectoryName(typeof(MetaManager).GetTypeInfo().Assembly.Location);
         }
 
         public FolderInfo Directory { get; }
+
+        public FolderInfo BuiltinDirectory { get; }
+
 
         public FolderInfo PrivateDirectory { get; }
 
@@ -38,6 +44,9 @@ namespace Lunet.Core
                 {
                     yield return theme.Directory.GetSubFolder(MetaDirectoryName);
                 }
+
+                // Last one is the builtin directory
+                yield return new DirectoryInfo(Path.Combine(BuiltinDirectory, MetaDirectoryName));
             }
         }
     }
