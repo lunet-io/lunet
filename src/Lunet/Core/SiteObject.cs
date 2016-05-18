@@ -120,6 +120,17 @@ namespace Lunet.Core
 
         public ContentTypeManager ContentTypes { get; }
 
+        public string BasePath
+        {
+            get { return this.GetSafeValue<string>(SiteVariables.BasePath); }
+            set { this[SiteVariables.BasePath] = value; }
+        }
+
+        public string BaseUrl
+        {
+            get { return this.GetSafeValue<string>(SiteVariables.BaseUrl); }
+            set { this[SiteVariables.BaseUrl] = value; }
+        }
 
         public bool UrlAsFile
         {

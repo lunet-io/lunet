@@ -88,6 +88,7 @@ namespace Lunet
             var generateSite = new Action(() =>
             {
                 site = SiteFactory.FromFile(Path.Combine(Environment.CurrentDirectory, args[0]), loggerFactory);
+                site.BaseUrl = "http://localhost:5001";
                 site.Generate();
                 DumpDependencies(site, "statics", site.StaticFiles);
                 DumpDependencies(site, "dynamics", site.DynamicPages);
@@ -132,7 +133,7 @@ namespace Lunet
                 .UseServer("Microsoft.AspNetCore.Server.Kestrel")
                 .UseContentRoot(site.OutputDirectory)
                 .UseWebRoot(site.OutputDirectory)
-                .UseUrls("http://localhost:5001")
+                .UseUrls(site.BaseUrl)
                 .UseStartup<Program>()
                 .Build();
 

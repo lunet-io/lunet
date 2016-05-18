@@ -12,19 +12,85 @@ using Scriban.Runtime;
 
 namespace Lunet.Scripts
 {
-    public class ScriptIo : DynamicObject<ScriptManager>
+    public class ScriptGlobalFunctions : DynamicObject<ScriptManager>
     {
-        private readonly SiteObject site;
-
         private delegate void CopyFunctionDelegate(params object[] args);
 
-        public ScriptIo(ScriptManager manager) : base(manager)
+        private delegate void LogDelegate(string message);
+
+        public ScriptGlobalFunctions(ScriptManager manager) : base(manager)
         {
             if (manager == null) throw new ArgumentNullException(nameof(manager));
-            this.site = manager.Site;
+            this.Site = manager.Site;
 
-            manager.GlobalObject.SetValue("io", this, true);
-            this.Import("copy", (CopyFunctionDelegate) CopyFunction);
+            // Add log object
+            var logObject = new DynamicObject<ScriptGlobalFunctions>(this);
+            manager.GlobalObject.SetValue("log", logObject, true);
+            logObject.Import("info", (LogDelegate)(message => Site.Info(message)));
+            logObject.Import("error", (LogDelegate)(message => Site.Error(message)));
+            logObject.Import("warn", (LogDelegate)(message => Site.Warning(message)));
+            logObject.Import("debug", (LogDelegate)(message => Site.Debug(message)));
+            logObject.Import("trace", (LogDelegate)(message => Site.Trace(message)));
+            logObject.Import("fatal", (LogDelegate)(message => Site.Fatal(message)));
+
+            // Import io object
+            var ioObject = new DynamicObject<ScriptGlobalFunctions>(this);
+            manager.GlobalObject.SetValue("io", ioObject, true);
+            ioObject.Import("copy", (CopyFunctionDelegate) CopyFunction);
+
+            // Import global function
+            manager.GlobalObject.Import("absurl", new Func<string, string>(AbsoluteUrl));
+        }
+
+        public SiteObject Site { get; }
+
+        public string AbsoluteUrl(string url)
+        {
+            url = url ?? string.Empty;
+            var builder = StringBuilderCache.Local();
+
+            // site.basepath = ""  or "/my_subproject"
+            // site.baseurl = http://myproject.github.io
+
+            // page.url = "/mypage/under/this/folder/"
+
+            // (page.url | absurl) => "http://myproject.github.io/my_sub_project/mypage/under/this/folder/"
+
+            var baseUrl = Site.BaseUrl ?? string.Empty;
+            var basePath = Site.BasePath ?? string.Empty;
+
+            builder.Append(baseUrl);
+
+            var baseUrlHasTrailingSlash = baseUrl.EndsWith("/");
+            if (baseUrlHasTrailingSlash)
+            {
+                if (basePath.StartsWith("/"))
+                {
+                    basePath = basePath.Substring(1);
+                }
+            }
+            else if (!basePath.StartsWith("/") && basePath != string.Empty)
+            {
+                builder.Append("/");
+            }
+            builder.Append(basePath);
+
+            var urlStartsWithSlash = url.StartsWith("/");
+            if (!basePath.EndsWith("/"))
+            {
+                if (!urlStartsWithSlash)
+                {
+                    builder.Append('/');
+                }
+            }
+            else if (urlStartsWithSlash)
+            {
+                url = url.Substring(1);
+            }
+            builder.Append(url);
+
+
+            return builder.ToString();
         }
 
         public void Copy(List<string> fromFiles, string outputPath, ResourceObject resourceContext = null)
@@ -38,7 +104,7 @@ namespace Lunet.Scripts
             }
 
             var isOutputDirectory = outputPath.EndsWith("\\") || outputPath.EndsWith("/");
-            var rootFolder = resourceContext?.AbsoluteDirectory ?? site.BaseDirectory;
+            var rootFolder = resourceContext?.AbsoluteDirectory ?? Site.BaseDirectory;
 
             var normalizedOutput = PathUtil.NormalizeRelativePath(outputPath, isOutputDirectory);
             if (Path.IsPathRooted(normalizedOutput))
@@ -51,7 +117,7 @@ namespace Lunet.Scripts
                 throw new LunetException($"Cannot output to a single file [{normalizedOutput}] when input has more than 1 file ({fromFiles.Count})");
             }
 
-            var normalizedOutputFull = Path.Combine(site.OutputDirectory, normalizedOutput);
+            var normalizedOutputFull = Path.Combine(Site.OutputDirectory, normalizedOutput);
 
             foreach (var inputFile in fromFiles)
             {
@@ -71,11 +137,11 @@ namespace Lunet.Scripts
                 var inputFullPath  = Path.Combine(rootFolder, inputFileFullPath);
 
                 var relativeOutputFile =
-                    PathUtil.NormalizeRelativePath(site.OutputDirectory.GetRelativePath(isOutputDirectory
+                    PathUtil.NormalizeRelativePath(Site.OutputDirectory.GetRelativePath(isOutputDirectory
                         ? Path.Combine(normalizedOutputFull, Path.GetFileName(inputFullPath))
                         : normalizedOutputFull, PathFlags.File), false);
 
-                site.Generator.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
+                Site.Generator.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
             }
         }
 

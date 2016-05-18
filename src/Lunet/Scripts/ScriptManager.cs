@@ -19,29 +19,12 @@ namespace Lunet.Scripts
 
         private const string IncludesDirectoryName = "includes";
 
-        private delegate void LogDelegate(string message);
-
         internal ScriptManager(SiteObject site) : base(site)
         {
             Context = new TemplateContext();
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
             GlobalObject = Context.CurrentGlobal;
-            SiteFunctions = new DynamicObject<ScriptManager>(this);
-            InitializeScriptBuiltins();
-            Io = new ScriptIo(this);
-        }
-
-        private void InitializeScriptBuiltins()
-        {
-            // Add log object
-            var logObject = new ScriptObject();
-            GlobalObject.SetValue("log", logObject, true);
-            logObject.Import("info", (LogDelegate) (message => Site.Info(message)));
-            logObject.Import("error", (LogDelegate)(message => Site.Error(message)));
-            logObject.Import("warn", (LogDelegate)(message => Site.Warning(message)));
-            logObject.Import("debug", (LogDelegate)(message => Site.Debug(message)));
-            logObject.Import("trace", (LogDelegate)(message => Site.Trace(message)));
-            logObject.Import("fatal", (LogDelegate)(message => Site.Fatal(message)));
+            SiteFunctions = new ScriptGlobalFunctions(this);
         }
 
         public TemplateContext Context { get; }
@@ -51,10 +34,7 @@ namespace Lunet.Scripts
         /// <summary>
         /// Gets the functions that are only accessible from a sban/script file (and not from a page)
         /// </summary>
-        public ScriptObject SiteFunctions { get; }
-
-
-        public ScriptIo Io { get; }
+        public ScriptGlobalFunctions SiteFunctions { get; }
 
         /// <summary>
         /// Parses a script with the specified content and path.

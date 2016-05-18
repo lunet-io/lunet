@@ -1,4 +1,8 @@
 title = "Test site"
+
+basepath = ""
+baseurl = baseurl ?? "http://xoofx.com"
+
 # Testing local extension
 extend "gold"
 

@@ -2,6 +2,10 @@ namespace Lunet.Core
 {
     public static class SiteVariables
     {
+        public const string BasePath = "basepath";
+
+        public const string BaseUrl = "baseurl";
+
         public const string Plugins = "plugins";
 
         public const string ExtendFunction = "extend";

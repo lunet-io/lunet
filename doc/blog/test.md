@@ -4,6 +4,8 @@ tags = ["Open", "Develop", "Git"]
 }}
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sollicitudin egestas ipsum. Suspendisse accumsan nisl sed mauris tempor, sed gravida erat eleifend. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed ligula purus, viverra quis felis nec, blandit vulputate diam. Mauris faucibus diam eget laoreet hendrerit. Donec non posuere magna. Mauris aliquam nulla at odio lacinia, quis accumsan nulla molestie. Morbi et euismod massa, quis mattis lacus. Aliquam tellus ex, lobortis a convallis eu, vehicula at erat. Curabitur rhoncus quis tellus nec bibendum. Donec at nisi eget ipsum ultrices fringilla.
 
+And this is a test wooot: [This is a test]({{page.url | absurl}})
+
 <!--more-->
 
 Nullam quam dolor, aliquet et ligula ut, maximus pretium leo. Sed mattis commodo mauris, non egestas erat gravida eget. Vivamus dui dolor, maximus ac dui ut, condimentum semper elit. Proin lobortis elit eget augue aliquet ornare. Nunc feugiat id mauris ut imperdiet. Donec vulputate est eros, ac ultricies felis facilisis sit amet. Phasellus dui purus, tristique vel dapibus et, posuere ut eros. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque luctus aliquet justo, ac consequat odio faucibus sit amet. Duis magna orci, porttitor id imperdiet eget, viverra sed metus.
