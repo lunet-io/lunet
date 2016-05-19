@@ -6,17 +6,16 @@
     "net46": {}
   },
   "dependencies": {
-    "Microsoft.AspNetCore.Hosting": "1.0.0-rc3-20939",
-    "Microsoft.AspNetCore.Internal.libuv-Windows": "1.9.0-rc2-10030",
-    "Microsoft.AspNetCore.Server.Kestrel": "1.0.0-rc3-20939",
-    "Microsoft.AspNetCore.Server.WebListener": "0.1.0-rc3-20939",
-    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc3-20939",
-    "Microsoft.AspNetCore.WebSockets.Server": "0.1.0-rc3-20939",
-    "Microsoft.Extensions.Logging.Console": "1.0.0-rc3-20939",
-    "Newtonsoft.Json": "8.0.3",
-    "NuGet.Versioning": "3.5.0-rc-1285",
-    "System.Buffers": "4.0.0-rc3-24117-00",
-    "System.IO.Compression": "4.1.0-rc3-24117-00",
-    "System.Net.Http": "4.1.0-rc3-24117-00"
+    "Microsoft.AspNetCore.Hosting": "1.0.0-rc2-final",
+    "Microsoft.AspNetCore.Server.Kestrel": "1.0.0-rc2-final",
+    "Microsoft.AspNetCore.Server.WebListener": "0.1.0-rc2-final",
+    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc2-final",
+    "Microsoft.AspNetCore.WebSockets.Server": "0.1.0-rc2-final",
+    "Microsoft.Extensions.Logging.Console": "1.0.0-rc2-final"
+    //"Newtonsoft.Json": "8.0.3",
+    //"NuGet.Versioning": "3.5.0-rc-1285",
+    //"System.Buffers": "4.0.0-rc3-24117-00",
+    //"System.IO.Compression": "4.1.0-rc3-24117-00",
+    //"System.Net.Http": "4.1.0-rc3-24117-00"
   }
 }
