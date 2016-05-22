@@ -6,18 +6,22 @@ using System;
 
 namespace Lunet.Core
 {
+    public interface ISiteService
+    {
+    }
+
     /// <summary>
-    /// Base class for a Manager.
+    /// Base class for a service.
     /// </summary>
     /// <seealso cref="LunetObject" />
-    public abstract class ManagerBase : LunetObject
+    public abstract class ServiceBase : LunetObject, ISiteService
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ManagerBase"/> class.
+        /// Initializes a new instance of the <see cref="ServiceBase"/> class.
         /// </summary>
         /// <param name="site">The site.</param>
         /// <exception cref="System.ArgumentNullException">If <paramref name="site"/> is null</exception>
-        protected ManagerBase(SiteObject site)
+        protected ServiceBase(SiteObject site)
         {
             if (site == null) throw new ArgumentNullException(nameof(site));
             Site = site;
@@ -27,16 +31,5 @@ namespace Lunet.Core
         /// Gets the site object.
         /// </summary>
         public SiteObject Site { get; }
-
-        /// <summary>
-        /// Initializes this instance.
-        /// </summary>
-        public virtual void InitializeBeforeConfig()
-        {
-        }
-
-        public virtual void InitializeAfterConfig()
-        {
-        }
     }
 }

@@ -18,7 +18,7 @@ namespace Lunet.Resources
 {
     public class NpmResourceProvider : ResourceProvider
     {
-        public NpmResourceProvider(ResourceManager manager) : base(manager, "npm")
+        public NpmResourceProvider(ResourceService service) : base(service, "npm")
         {
             RegistryUrl = "https://registry.npmjs.org/";
         }
@@ -31,14 +31,14 @@ namespace Lunet.Resources
             var packageJson = Path.Combine(directory, "package.json");
             if (!File.Exists(packageJson))
             {
-                Manager.Site.Error(
-                    $"The [{Name}] package doesn't contain the file package.json at [{Manager.Site.GetRelativePath(directory, PathFlags.Directory)}package.json]");
+                Service.Site.Error(
+                    $"The [{Name}] package doesn't contain the file package.json at [{Service.Site.GetRelativePath(directory, PathFlags.Directory)}package.json]");
                 return null;
             }
 
             var resource = new ResourceObject(this, resourceName, resourceVersion, directory);
-            Manager.Site.Scripts.TryImportScriptFromFile(packageJson, resource, ScriptFlags.Expect);
-            var result = Manager.Site.Scripts.Context.Result as ScriptObject;
+            Service.Site.Scripts.TryImportScriptFromFile(packageJson, resource, ScriptFlags.Expect);
+            var result = Service.Site.Scripts.Context.Result as ScriptObject;
             if (result != null)
             {
                 var dynamicObject = (DynamicObject) resource;
@@ -68,7 +68,7 @@ namespace Lunet.Resources
             }
             catch (Exception ex)
             {
-                Manager.Site.Error(
+                Service.Site.Error(
                     $"Unable to load a [{Name}] resource from registry from Url [{npmPackageUrl}]. Reason:{ex.GetReason()}");
                 return null;
             }
@@ -77,7 +77,7 @@ namespace Lunet.Resources
             var versions = resourceJson["versions"] as JObject;
             if (versions == null)
             {
-                Manager.Site.Error(
+                Service.Site.Error(
                     $"Unable to find `versions` property from [{Name}] package from Url [{npmPackageUrl}]");
                 return null;
             }
@@ -158,13 +158,13 @@ namespace Lunet.Resources
                 }
                 catch (Exception ex)
                 {
-                    Manager.Site.Error(
+                    Service.Site.Error(
                         $"Unable to download and install the [{Name}] package [{resourceName}/{resourceVersion}] from the url [{downloadUrl}]. Reason:{ex.GetReason()}");
                     return null;
                 }
             }
 
-            Manager.Site.Error($"Unable to find the [{Name}] package [{resourceName}] with the specific version [{resourceVersion}] from the available version [{string.Join(",", downloads.Keys)}]");
+            Service.Site.Error($"Unable to find the [{Name}] package [{resourceName}] with the specific version [{resourceVersion}] from the available version [{string.Join(",", downloads.Keys)}]");
             return null;
         }
     }

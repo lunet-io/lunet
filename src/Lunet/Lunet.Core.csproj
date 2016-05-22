@@ -39,17 +39,19 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bundles\BundleLink.cs" />
-    <Compile Include="Bundles\BundleManager.cs" />
-    <Compile Include="Bundles\BundleObject.cs" />
-    <Compile Include="Bundles\BundleObjectProperties.cs" />
-    <Compile Include="Bundles\BundleProcessor.cs" />
-    <Compile Include="Bundles\IContentMinifier.cs" />
+    <Compile Include="Plugins\Bundles\BundleLink.cs" />
+    <Compile Include="Plugins\Bundles\BundleService.cs" />
+    <Compile Include="Plugins\Bundles\BundleObject.cs" />
+    <Compile Include="Plugins\Bundles\BundleObjectProperties.cs" />
+    <Compile Include="Plugins\Bundles\BundleProcessor.cs" />
+    <Compile Include="Plugins\Bundles\BundlePlugin.cs" />
+    <Compile Include="Plugins\Bundles\IContentMinifier.cs" />
     <Compile Include="Core\ContentDependency.cs" />
     <Compile Include="Core\ContentObjectType.cs" />
     <Compile Include="Core\ContentType.cs" />
     <Compile Include="Core\DynamicCollection.cs" />
     <Compile Include="Core\GlobalVariables.cs" />
+    <Compile Include="Core\IContentProvider.cs" />
     <Compile Include="Core\PageCollection.cs" />
     <Compile Include="Core\PathFlags.cs" />
     <Compile Include="Core\SiteWatcher.cs" />
@@ -58,51 +60,57 @@
     <Compile Include="Helpers\TarUtil.cs" />
     <Compile Include="Helpers\ZipUtil.cs" />
     <Compile Include="Core\ContentTypeManager.cs" />
-    <Compile Include="Layouts\LayoutTypes.cs" />
+    <Compile Include="Plugins\Hosting\HostingService.cs" />
+    <Compile Include="Plugins\Extends\ExtendPlugin.cs" />
+    <Compile Include="Plugins\Layouts\LayoutTypes.cs" />
+    <Compile Include="Plugins\Layouts\LayoutPlugin.cs" />
+    <Compile Include="Plugins\Markdig\MarkdigProcessor.cs" />
     <Compile Include="Plugins\NUglify\NUglifyPlugin.cs" />
     <Compile Include="Helpers\SummaryHelper.cs" />
     <Compile Include="Plugins\SharpScss\ScssObject.cs" />
     <Compile Include="Plugins\SharpScss\ScssProcessor.cs" />
     <Compile Include="Plugins\SharpScss\SharpScssPlugin.cs" />
-    <Compile Include="Resources\ResourceInstallFlags.cs" />
-    <Compile Include="Resources\ResourceProvider.cs" />
-    <Compile Include="Resources\NpmResourceProvider.cs" />
-    <Compile Include="Resources\ResourceManager.cs" />
-    <Compile Include="Resources\ResourceObject.cs" />
+    <Compile Include="Plugins\Resources\ResourcesPlugin.cs" />
+    <Compile Include="Plugins\Resources\ResourceInstallFlags.cs" />
+    <Compile Include="Plugins\Resources\ResourceProvider.cs" />
+    <Compile Include="Plugins\Resources\NpmResourceProvider.cs" />
+    <Compile Include="Plugins\Resources\ResourceService.cs" />
+    <Compile Include="Plugins\Resources\ResourceObject.cs" />
     <Compile Include="Core\DynamicObject.cs" />
     <Compile Include="Core\FileVariables.cs" />
     <Compile Include="Core\FolderInfo.cs" />
     <Compile Include="Core\IDynamicObject.cs" />
+    <Compile Include="Properties\SharedAssemblyInfo.cs" />
     <Compile Include="Scripts\ScriptGlobalFunctions.cs" />
     <Compile Include="Scripts\ScriptFlags.cs" />
+    <Compile Include="SiteExtensions.cs" />
     <Compile Include="SiteFactory.cs" />
     <Compile Include="Statistics\ContentStat.cs" />
-    <Compile Include="Core\ManagerBase.cs" />
-    <Compile Include="Core\MetaManager.cs" />
-    <Compile Include="Layouts\LayoutProcessor.cs" />
+    <Compile Include="Core\ServiceBase.cs" />
+    <Compile Include="Plugins\Layouts\LayoutProcessor.cs" />
     <Compile Include="Plugins\Markdig\MarkdigPlugin.cs" />
     <Compile Include="Core\ContentResult.cs" />
-    <Compile Include="Plugins\PluginManager.cs" />
-    <Compile Include="Plugins\SitePlugin.cs" />
+    <Compile Include="Core\PluginService.cs" />
+    <Compile Include="Core\SitePlugin.cs" />
     <Compile Include="Statistics\PluginStat.cs" />
     <Compile Include="Statistics\SiteStatistics.cs" />
-    <Compile Include="Scripts\ScriptManager.cs" />
+    <Compile Include="Scripts\ScriptService.cs" />
     <Compile Include="Core\SiteGenerator.cs" />
     <Compile Include="Plugins\Taxonomies\TaxonomyCollection.cs" />
     <Compile Include="Plugins\Taxonomies\Taxonomy.cs" />
     <Compile Include="Plugins\Taxonomies\TaxonomyPlugin.cs" />
     <Compile Include="Plugins\Taxonomies\TaxonomyProcessor.cs" />
     <Compile Include="Plugins\Taxonomies\TaxonomyTerm.cs" />
-    <Compile Include="Extends\DefaultExtendProvider.cs" />
-    <Compile Include="Extends\IExtendProvider.cs" />
-    <Compile Include="Extends\ExtendDescription.cs" />
-    <Compile Include="Extends\ExtendManager.cs" />
-    <Compile Include="Plugins\SitePluginAttribute.cs" />
+    <Compile Include="Plugins\Extends\DefaultExtendProvider.cs" />
+    <Compile Include="Plugins\Extends\IExtendProvider.cs" />
+    <Compile Include="Plugins\Extends\ExtendDescription.cs" />
+    <Compile Include="Plugins\Extends\ExtendService.cs" />
+    <Compile Include="Core\SitePluginAttribute.cs" />
     <Compile Include="Core\SiteVariables.cs" />
     <Compile Include="Helpers\PathUtil.cs" />
     <Compile Include="Helpers\OrderedList.cs" />
     <Compile Include="Core\ISitePluginCore.cs" />
-    <Compile Include="Plugins\ISitePlugin.cs" />
+    <Compile Include="Core\ISitePlugin.cs" />
     <Compile Include="Core\ISiteProcessor.cs" />
     <Compile Include="Core\IContentProcessor.cs" />
     <Compile Include="Core\LunetException.cs" />
@@ -114,7 +122,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\SiteObject.cs" />
     <Compile Include="Core\SiteObjectExtensions.cs" />
-    <Compile Include="Extends\ExtendObject.cs" />
+    <Compile Include="Plugins\Extends\ExtendObject.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -135,6 +143,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

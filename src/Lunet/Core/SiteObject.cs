@@ -6,11 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using Autofac;
 using Lunet.Bundles;
-using Lunet.Extends;
 using Lunet.Helpers;
+using Lunet.Hosting;
 using Lunet.Plugins;
-using Lunet.Resources;
 using Lunet.Scripts;
 using Lunet.Statistics;
 using Microsoft.Extensions.Logging;
@@ -20,10 +21,13 @@ namespace Lunet.Core
 {
     public class SiteObject : LunetObject
     {
+        public const string MetaDirectoryName = "_meta";
         private const string SiteDirectoryName = "_site";
         private const string PrivateDirectoryName = ".lunet";
         private const string DefaultPageExtensionValue = ".html";
         private readonly Stopwatch clock;
+        private readonly Dictionary<Type, ISiteService> services;
+        internal readonly OrderedList<ISiteService> orderedServices;
 
         public SiteObject(string configFilePathArg, ILoggerFactory loggerFactory = null)
         {
@@ -38,13 +42,20 @@ namespace Lunet.Core
             }
             BaseDirectory = baseDirectoryFullpath;
             PrivateBaseDirectory = Path.Combine(baseDirectoryFullpath, PrivateDirectoryName);
+            MetaDirectory = BaseDirectory.GetSubFolder(MetaDirectoryName);
+            PrivateMetaDirectory = PrivateBaseDirectory.GetSubFolder(MetaDirectoryName);
+            BuiltinMetaDirectory = Path.GetDirectoryName(typeof(SiteObject).Assembly.Location);
+
+            services = new Dictionary<Type, ISiteService>();
+            orderedServices = new OrderedList<ISiteService>();
+            ContentProviders = new OrderedList<IContentProvider>();
 
             clock = new Stopwatch();
 
             StaticFiles = new PageCollection();
             Pages = new PageCollection();
             DynamicPages = new PageCollection();
-
+            
             // Plugins
 
             // Create the logger
@@ -59,19 +70,16 @@ namespace Lunet.Core
 
             Statistics = new SiteStatistics();
 
-            Scripts = new ScriptManager(this);
-            Generator = new SiteGenerator(this);
+            Scripts = new ScriptService(this);
+            Register(Scripts);
 
-            // LoadConfig the plugins after they have been loaded/modified from the config
-            Managers = new OrderedList<ManagerBase>()
-            {
-                (Meta = new MetaManager(this)),
-                Scripts,
-                (Extends = new ExtendManager(this)),
-                (Plugins = new PluginManager(this)),
-                (Resources = new ResourceManager(this)),
-                (Bundles = new BundleManager(this))
-            };
+            Generator = new SiteGenerator(this);
+            Register(Generator);
+
+            Plugins = new PluginService(this);
+            Register(Plugins);
+
+            Plugins.ImportPluginsFromAssembly(typeof(SiteObject).GetTypeInfo().Assembly);
         }
 
         public string ConfigFile { get; }
@@ -80,8 +88,14 @@ namespace Lunet.Core
 
         public FolderInfo PrivateBaseDirectory { get; }
 
-        public FolderInfo OutputDirectory { get; set; }
+        public FolderInfo MetaDirectory { get; }
 
+        public FolderInfo BuiltinMetaDirectory { get; }
+
+        public FolderInfo PrivateMetaDirectory { get; }
+
+        public FolderInfo OutputDirectory { get; set; }
+        
         /// <summary>
         /// Gets the logger factory that was used to create the site logger <see cref="Log"/>.
         /// </summary>
@@ -100,21 +114,11 @@ namespace Lunet.Core
 
         public bool HasErrors { get; set; }
 
-        internal List<ManagerBase> Managers { get; }
-
-        public MetaManager Meta { get; }
-
-        public PluginManager Plugins { get; }
-
-        public ExtendManager Extends { get; }
+        public PluginService Plugins { get; }
 
         public SiteGenerator Generator { get; }
 
-        public ScriptManager Scripts { get; }
-
-        public ResourceManager Resources { get; }
-
-        public BundleManager Bundles { get; }
+        public ScriptService Scripts { get; }
 
         public SiteStatistics Statistics { get; }
 
@@ -144,16 +148,35 @@ namespace Lunet.Core
             set { this[SiteVariables.DefaultPageExtension] = value; }
         }
 
+        public OrderedList<IContentProvider> ContentProviders { get; }
+        
         public IEnumerable<FolderInfo> ContentDirectories
         {
             get
             {
                 yield return BaseDirectory;
 
-                foreach (var theme in Extends.CurrentList)
+                foreach (var contentProvider in ContentProviders)
                 {
-                    yield return theme.Directory;
+                    foreach (var dir in contentProvider.GetDirectories())
+                    {
+                        yield return dir;
+                    }
                 }
+            }
+        }
+
+        public IEnumerable<FolderInfo> MetaDirectories
+        {
+            get
+            {
+                foreach (var directory in ContentDirectories)
+                {
+                    yield return directory.GetSubFolder(MetaDirectoryName);
+                }
+
+                // Last one is the builtin directory
+                yield return new DirectoryInfo(Path.Combine(BuiltinMetaDirectory, MetaDirectoryName));
             }
         }
 
@@ -177,6 +200,33 @@ namespace Lunet.Core
         public void Generate()
         {
             Generator.Run();
+        }
+
+        public T GetService<T>() where T : class, ISiteService
+        {
+            ISiteService instance;
+            services.TryGetValue(typeof(T), out instance);
+            return (T)instance;
+        }
+
+        public void Register<T>(T instance) where T : class, ISiteService
+        {
+            if (instance == null) throw new ArgumentNullException(nameof(instance));
+            RegisterAs<T, T>(instance);
+        }
+
+        public void RegisterAs<T, TInterface>(T instance) where T : class, TInterface where TInterface: ISiteService
+        {
+            if (instance == null) throw new ArgumentNullException(nameof(instance));
+
+            if (!services.ContainsKey(typeof(TInterface)))
+            {
+                services[typeof(TInterface)] = instance;
+                if (!orderedServices.Contains(instance))
+                {
+                    orderedServices.Add(instance);
+                }
+            }
         }
 
         public void Load()
@@ -261,7 +311,6 @@ namespace Lunet.Core
                 stream?.Dispose();
             }
         }
-
 
         private ContentObject LoadPageScript(Stream stream, DirectoryInfo rootDirectory, FileInfo file)
         {

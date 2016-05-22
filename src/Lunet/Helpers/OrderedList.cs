@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Lunet.Helpers
 {
@@ -12,8 +13,18 @@ namespace Lunet.Helpers
     /// <typeparam name="T">Type of the list item</typeparam>
     /// <seealso cref="System.Collections.Generic.List{T}" />
     /// <remarks>We use a typed list and don't use extension methods because it would pollute all list implemts and the top level namespace.</remarks>
-    public class OrderedList<T> : List<T>
+    public class OrderedList<T> : Collection<T>
     {
+        public OrderedList()
+        {
+        }
+
+        public OrderedList(IEnumerable<T> list)
+        {
+            if (list == null) throw new ArgumentNullException(nameof(list));
+            AddRange(list);
+        }
+
         public bool InsertBefore<TElement>(T element) where TElement : T
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
@@ -92,6 +103,15 @@ namespace Lunet.Helpers
                 }
             }
             return false;
+        }
+
+        public void AddRange<TList>(TList collection) where TList: IEnumerable<T>
+        {
+            if (collection == null) throw new ArgumentNullException(nameof(collection));
+            foreach (var item in collection)
+            {
+                Add(item);
+            }
         }
 
         public bool ReplacyBy<TElement>(T element) where TElement : T

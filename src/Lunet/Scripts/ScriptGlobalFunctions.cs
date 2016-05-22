@@ -12,20 +12,20 @@ using Scriban.Runtime;
 
 namespace Lunet.Scripts
 {
-    public class ScriptGlobalFunctions : DynamicObject<ScriptManager>
+    public class ScriptGlobalFunctions : DynamicObject<ScriptService>
     {
         private delegate void CopyFunctionDelegate(params object[] args);
 
         private delegate void LogDelegate(string message);
 
-        public ScriptGlobalFunctions(ScriptManager manager) : base(manager)
+        public ScriptGlobalFunctions(ScriptService service) : base(service)
         {
-            if (manager == null) throw new ArgumentNullException(nameof(manager));
-            this.Site = manager.Site;
+            if (service == null) throw new ArgumentNullException(nameof(service));
+            this.Site = service.Site;
 
             // Add log object
             var logObject = new DynamicObject<ScriptGlobalFunctions>(this);
-            manager.GlobalObject.SetValue("log", logObject, true);
+            service.GlobalObject.SetValue("log", logObject, true);
             logObject.Import("info", (LogDelegate)(message => Site.Info(message)));
             logObject.Import("error", (LogDelegate)(message => Site.Error(message)));
             logObject.Import("warn", (LogDelegate)(message => Site.Warning(message)));
@@ -35,11 +35,11 @@ namespace Lunet.Scripts
 
             // Import io object
             var ioObject = new DynamicObject<ScriptGlobalFunctions>(this);
-            manager.GlobalObject.SetValue("io", ioObject, true);
+            service.GlobalObject.SetValue("io", ioObject, true);
             ioObject.Import("copy", (CopyFunctionDelegate) CopyFunction);
 
             // Import global function
-            manager.GlobalObject.Import("absurl", new Func<string, string>(AbsoluteUrl));
+            service.GlobalObject.Import("absurl", new Func<string, string>(AbsoluteUrl));
         }
 
         public SiteObject Site { get; }

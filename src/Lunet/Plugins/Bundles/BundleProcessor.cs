@@ -17,17 +17,21 @@ namespace Lunet.Bundles
     {
         public override string Name => "bundler";
 
-        public BundleProcessor()
+        public BundleProcessor(BundleService bundleService)
         {
+            if (bundleService == null) throw new ArgumentNullException(nameof(bundleService));
+            Service = bundleService;
             Minifiers = new OrderedList<IContentMinifier>();
         }
+
+        public BundleService Service { get; }
 
         public OrderedList<IContentMinifier> Minifiers { get; }
 
         public override void BeginProcess()
         {
             // If we don't have any bundles, early exit
-            if (Site.Bundles.List.Count == 0)
+            if (Service.List.Count == 0)
             {
                 return;
             }
@@ -38,7 +42,7 @@ namespace Lunet.Bundles
             {
                 // Get the bundle setup for the page, or use the default otherwise
                 var bundleName = page.GetSafeValue<string>("bundle");
-                var bundle = Site.Bundles.GetOrCreateBundle(bundleName);
+                var bundle = Service.GetOrCreateBundle(bundleName);
                 bundleUsed.Add(bundle);
             }
 

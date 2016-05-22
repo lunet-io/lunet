@@ -11,19 +11,19 @@ namespace Lunet.Resources
 {
     public abstract class ResourceProvider
     {
-        protected ResourceProvider(ResourceManager manager, string name)
+        protected ResourceProvider(ResourceService service, string name)
         {
-            if (manager == null) throw new ArgumentNullException(nameof(manager));
+            if (service == null) throw new ArgumentNullException(nameof(service));
             if (name == null) throw new ArgumentNullException(nameof(name));
-            Manager = manager;
+            Service = service;
             Name = name;
             Resources = new List<ResourceObject>();
 
             // Set the list of resources loaded
-            manager.SetValue(name, ResourcesForScripting, true);
+            service.SetValue(name, ResourcesForScripting, true);
         }
 
-        public ResourceManager Manager { get; }
+        public ResourceService Service { get; }
 
         public string Name { get; }
 
@@ -58,8 +58,8 @@ namespace Lunet.Resources
 
         public string FindFromDirectory(string resourceName, string resourceVersion)
         {
-            var resourcePrivatePath = Path.Combine(Manager.PrivateResourceDirectory, Name, resourceName, resourceVersion);
-            var resourcePublicPath = Path.Combine(Manager.ResourceDirectory, Name, resourceName, resourceVersion);
+            var resourcePrivatePath = Path.Combine(Service.PrivateResourceDirectory, Name, resourceName, resourceVersion);
+            var resourcePublicPath = Path.Combine(Service.ResourceDirectory, Name, resourceName, resourceVersion);
             string directory = null;
             if (Directory.Exists(resourcePublicPath))
             {
@@ -105,8 +105,8 @@ namespace Lunet.Resources
 
             // Otherwise we are going to check if it is already on the disk
 
-            var resourcePrivatePath = Path.Combine(Manager.PrivateResourceDirectory, Name, resourceName, resourceVersion);
-            var resourcePublicPath = Path.Combine(Manager.ResourceDirectory, Name, resourceName, resourceVersion);
+            var resourcePrivatePath = Path.Combine(Service.PrivateResourceDirectory, Name, resourceName, resourceVersion);
+            var resourcePublicPath = Path.Combine(Service.ResourceDirectory, Name, resourceName, resourceVersion);
 
             string resourcePath = FindFromDirectory(resourceName, resourceVersion);
             if (Directory.Exists(resourcePublicPath))

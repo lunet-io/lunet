@@ -16,17 +16,17 @@ namespace Lunet.Resources
     /// <summary>
     /// Manages resources.
     /// </summary>
-    /// <seealso cref="ManagerBase" />
-    public sealed class ResourceManager : ManagerBase
+    /// <seealso cref="ServiceBase" />
+    public sealed class ResourceService : ServiceBase
     {
         private const string ResourceDirectoryName = "resources";
 
         private delegate object ResourceFunctionDelegate(object o);
 
-        public ResourceManager(SiteObject site) : base(site)
+        public ResourceService(SiteObject site) : base(site)
         {
-            ResourceDirectory = Path.Combine(Site.Meta.Directory, ResourceDirectoryName);
-            PrivateResourceDirectory = Path.Combine(Site.Meta.PrivateDirectory, ResourceDirectoryName);
+            ResourceDirectory = Path.Combine(Site.MetaDirectory, ResourceDirectoryName);
+            PrivateResourceDirectory = Path.Combine(Site.PrivateMetaDirectory, ResourceDirectoryName);
             Providers = new OrderedList<ResourceProvider>()
             {
                 new NpmResourceProvider(this)

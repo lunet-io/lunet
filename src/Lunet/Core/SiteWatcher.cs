@@ -98,7 +98,7 @@ namespace Lunet.Core
 
             baseDirectory = site.BaseDirectory;
             rootDirectoryWatcher = CreateFileWatch(site.BaseDirectory, false);
-            privateMetaWatcher = CreateFileWatch(site.Meta.PrivateDirectory, true);
+            privateMetaWatcher = CreateFileWatch(site.PrivateMetaDirectory, true);
 
             foreach (var directory in site.BaseDirectory.Info.EnumerateDirectories())
             {

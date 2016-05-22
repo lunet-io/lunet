@@ -26,7 +26,7 @@ namespace Lunet.Layouts
 
         public delegate IEnumerable<string> GetLayoutPathsDelegate(SiteObject site, string layoutName, string layoutType, string layoutExtension);
 
-        internal LayoutProcessor()
+        public LayoutProcessor()
         {
             layouts = new Dictionary<string, Template>();
             layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
@@ -176,7 +176,7 @@ namespace Lunet.Layouts
 
         private static IEnumerable<string> SingleLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.Meta.Directories)
+            foreach (var metaDir in site.MetaDirectories)
             {
                 // try: _meta/layouts/{layoutName}/single.{layoutExtension}
                 yield return Path.Combine(metaDir, LayoutDirectoryName, layoutName, layoutType + layoutExtension);
@@ -197,7 +197,7 @@ namespace Lunet.Layouts
 
         private static IEnumerable<string> ListLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.Meta.Directories)
+            foreach (var metaDir in site.MetaDirectories)
             {
                 // try: _meta/layouts/{layoutName}/list.{layoutExtension}
                 yield return Path.Combine(metaDir, LayoutDirectoryName, layoutName, layoutType + layoutExtension);

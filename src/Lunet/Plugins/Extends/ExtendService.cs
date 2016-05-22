@@ -16,17 +16,17 @@ namespace Lunet.Extends
     /// <summary>
     /// Manages themes.
     /// </summary>
-    /// <seealso cref="ManagerBase" />
-    public sealed class ExtendManager : ManagerBase
+    /// <seealso cref="ServiceBase" />
+    public sealed class ExtendService : ServiceBase, IContentProvider
     {
         private const string ExtendsDirectoryName = "extends";
 
         private delegate object ExtendFunctionDelegate(object o);
 
-        public ExtendManager(SiteObject site) : base(site)
+        public ExtendService(SiteObject site) : base(site)
         {
-            ExtendDirectory = Path.Combine(Site.Meta.Directory, ExtendsDirectoryName);
-            PrivateExtendDirectory = Path.Combine(Site.Meta.PrivateDirectory, ExtendsDirectoryName);
+            ExtendDirectory = Path.Combine(Site.MetaDirectory, ExtendsDirectoryName);
+            PrivateExtendDirectory = Path.Combine(Site.PrivateMetaDirectory, ExtendsDirectoryName);
             Providers = new OrderedList<IExtendProvider>()
             {
                 new DefaultExtendProvider()
@@ -41,6 +41,14 @@ namespace Lunet.Extends
         public FolderInfo PrivateExtendDirectory { get; }
 
         public OrderedList<IExtendProvider> Providers { get; }
+
+        public IEnumerable<FolderInfo> GetDirectories()
+        {
+            foreach (var extend in CurrentList)
+            {
+                yield return extend.Directory;
+            }
+        }
 
         /// <summary>
         /// Gets the list of themes currently used.

@@ -12,14 +12,14 @@ namespace Lunet.Bundles
     /// <summary>
     /// Manages resources.
     /// </summary>
-    /// <seealso cref="ManagerBase" />
-    public class BundleManager : ManagerBase
+    /// <seealso cref="ServiceBase" />
+    public class BundleService : ServiceBase
     {
         private delegate IDynamicObject BundleFunctionDelegate(params object[] args);
 
         public const string DefaultBundleName = "site";
 
-        public BundleManager(SiteObject site) : base(site)
+        public BundleService(SiteObject site) : base(site)
         {
             List = new List<BundleObject>();
 
@@ -28,7 +28,7 @@ namespace Lunet.Bundles
             // The "bundle" function is global as it is used inside scripts and inside
             Site.Scripts.GlobalObject.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
 
-            Site.Generator.Processors.Add(new BundleProcessor());
+            Site.Generator.Processors.Add(new BundleProcessor(this));
         }
 
         public List<BundleObject> List { get; }

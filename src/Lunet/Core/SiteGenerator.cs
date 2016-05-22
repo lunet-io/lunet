@@ -15,7 +15,40 @@ using Scriban.Runtime;
 
 namespace Lunet.Core
 {
-    public class SiteGenerator
+    public class PluginCollection<T> : OrderedList<T> where T : ISitePluginCore
+    {
+        private readonly SiteObject site;
+
+        public PluginCollection(SiteObject site)
+        {
+            if (site == null) throw new ArgumentNullException(nameof(site));
+            this.site = site;
+        }
+
+        protected override void InsertItem(int index, T item)
+        {
+            base.InsertItem(index, item);
+            Initialize(item);
+        }
+
+
+        protected override void SetItem(int index, T item)
+        {
+            base.SetItem(index, item);
+            Initialize(item);
+        }
+
+        protected virtual T Initialize(T item)
+        {
+            var clock = Stopwatch.StartNew();
+            item.Initialize(site);
+            site.Statistics.GetPluginStat(item).InitializeTime += clock.Elapsed;
+            return item;
+        }
+    }
+
+
+    public class SiteGenerator : ServiceBase
     {
         private readonly HashSet<string> previousOutputDirectories;
         private readonly HashSet<string> previousOutputFiles;
@@ -24,9 +57,8 @@ namespace Lunet.Core
         private readonly Stopwatch clock;
         private readonly Stopwatch totalDuration;
 
-        internal SiteGenerator(SiteObject site)
+        public SiteGenerator(SiteObject site) : base(site)
         {
-            Site = site;
             previousOutputDirectories = new HashSet<string>();
             previousOutputFiles = new HashSet<string>();
             Scripts = Site.Scripts;
@@ -34,21 +66,16 @@ namespace Lunet.Core
             clock = new Stopwatch();
             totalDuration = new Stopwatch();
 
-            PreProcessors = new OrderedList<IContentProcessor>();
+            PreProcessors = new PluginCollection<IContentProcessor>(Site);
 
-            Processors = new OrderedList<ISiteProcessor>()
-            {
-                new LayoutProcessor() // Default processor
-            };
+            Processors = new PluginCollection<ISiteProcessor>(Site);
         }
 
-        public SiteObject Site { get; }
+        private ScriptService Scripts { get; }
 
-        private ScriptManager Scripts { get; }
+        public PluginCollection<IContentProcessor> PreProcessors { get; }
 
-        public OrderedList<IContentProcessor> PreProcessors { get; }
-
-        public OrderedList<ISiteProcessor> Processors { get; }
+        public PluginCollection<ISiteProcessor> Processors { get; }
 
         public bool TryCopyFile(FileInfo fromFile, string outputPath)
         {
@@ -196,14 +223,6 @@ namespace Lunet.Core
             }
             isInitialized = true;
 
-            foreach (var manager in Site.Managers)
-            {
-                manager.InitializeBeforeConfig();
-            }
-
-            Site.Plugins.InitializeSiteExtensions(PreProcessors);
-            Site.Plugins.InitializeSiteExtensions(Processors);
-
             // If we have any errors, early exit
             if (Site.HasErrors)
             {
@@ -212,20 +231,6 @@ namespace Lunet.Core
 
             // We then actually load the config
             Scripts.TryImportScriptFromFile(Site.ConfigFile, Site, ScriptFlags.Expect|ScriptFlags.AllowSiteFunctions);
-
-            // If we have any errors, early exit
-            if (Site.HasErrors)
-            {
-                return;
-            }
-
-            foreach (var manager in Site.Managers)
-            {
-                manager.InitializeAfterConfig();
-            }
-
-            Site.Plugins.InitializeSiteExtensions(PreProcessors);
-            Site.Plugins.InitializeSiteExtensions(Processors);
         }
 
         public void Run()
@@ -326,7 +331,7 @@ namespace Lunet.Core
                         return false;
                     }
 
-                    var pendingPageProcessors = new List<IContentProcessor>();
+                    var pendingPageProcessors = new OrderedList<IContentProcessor>();
                     return TryProcessPage(page, PreProcessors, pendingPageProcessors, false);
                 }
             }
@@ -338,15 +343,15 @@ namespace Lunet.Core
             if (pages == null) throw new ArgumentNullException(nameof(pages));
 
             // Process pages
-            var pageProcessors = Processors.OfType<IContentProcessor>().ToList();
-            var pendingPageProcessors = new List<IContentProcessor>();
+            var pageProcessors = new OrderedList<IContentProcessor>(Processors.OfType<IContentProcessor>());
+            var pendingPageProcessors = new OrderedList<IContentProcessor>();
             foreach (var page in pages)
             {
                 TryProcessPage(page, pageProcessors, pendingPageProcessors, copyOutput);
             }
         }
 
-        private bool TryProcessPage(ContentObject page, List<IContentProcessor> pageProcessors, List<IContentProcessor> pendingPageProcessors, bool copyOutput)
+        private bool TryProcessPage(ContentObject page, OrderedList<IContentProcessor> pageProcessors, OrderedList<IContentProcessor> pendingPageProcessors, bool copyOutput)
         {
             // If page is discarded, skip it
             if (page.Discard)

@@ -33,12 +33,12 @@ namespace Lunet.Core
         {
             if (fullFilePath == null) throw new ArgumentNullException(nameof(fullFilePath));
 
-            if (fullFilePath.StartsWith(site.Meta.PrivateDirectory.FullName))
+            if (fullFilePath.StartsWith(site.PrivateMetaDirectory.FullName))
             {
                 return true;
             }
 
-            foreach (var meta in site.Meta.Directories)
+            foreach (var meta in site.MetaDirectories)
             {
                 if (fullFilePath.StartsWith(meta.FullName))
                 {

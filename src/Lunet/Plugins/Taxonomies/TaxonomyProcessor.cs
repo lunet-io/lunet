@@ -172,7 +172,7 @@ namespace Lunet.Plugins.Taxonomies
 
         private static IEnumerable<string> TermsLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.Meta.Directories)
+            foreach (var metaDir in site.MetaDirectories)
             {
                 // try: _meta/layouts/{layoutName}/terms.{layoutExtension}
                 yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName, layoutType + layoutExtension);
@@ -193,7 +193,7 @@ namespace Lunet.Plugins.Taxonomies
 
         private static IEnumerable<string> TermPagesLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.Meta.Directories)
+            foreach (var metaDir in site.MetaDirectories)
             {
                 // try: _meta/layouts/{layoutName}/{layoutType}.{layoutExtension}
                 yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName, layoutType + layoutExtension);

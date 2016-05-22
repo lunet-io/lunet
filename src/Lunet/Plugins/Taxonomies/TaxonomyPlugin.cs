@@ -5,6 +5,7 @@
 using Lunet.Core;
 using Lunet.Plugins;
 using Lunet.Plugins.Taxonomies;
+using Lunet.Resources;
 
 // Register this plugin
 [assembly: SitePlugin(typeof(TaxonomyPlugin))]

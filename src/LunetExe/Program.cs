@@ -61,7 +61,15 @@ namespace Lunet
 
                     if (webSocket.State == WebSocketState.CloseReceived)
                     {
-                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
+                        try
+                        {
+                            await
+                                webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing",
+                                    CancellationToken.None);
+                        } catch (ObjectDisposedException)
+                        {
+                            
+                        }
                     }
 
                     lock (sockets)
@@ -77,8 +85,35 @@ namespace Lunet
             }
         }
 
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
+            var app = new LunetCommandLine();
+
+            app.OnExecute(() =>
+            {
+                //RunCommand runCmd = new RunCommand();
+                return 0;
+            });
+
+            try
+            {
+                return app.Execute(args);
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                Console.Error.WriteLine(ex.ToString());
+#else
+                Reporter.Error.WriteLine(ex.Message);
+#endif
+                return 1;
+            }
+
+
+
+
+
+            return 0;
             var loggerFactory = new LoggerFactory().AddConsole(LogLevel.Trace);
 
             var watcher = new SiteWatcher(loggerFactory);
@@ -122,19 +157,21 @@ namespace Lunet
                         byte[] messageData = Encoding.UTF8.GetBytes("reload");
                         var outputBuffer = new ArraySegment<byte>(messageData);
 
-                        await socket.SendAsync(outputBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                        try
+                        {
+                            await socket.SendAsync(outputBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            
+                        }
                     }
                 }
             };
 
+
             var host = new WebHostBuilder()
-                //.UseServer("Microsoft.AspNetCore.Server.WebListener")
-                //.UseLoggerFactory(loggerFactory)
-                .UseServer("Microsoft.AspNetCore.Server.Kestrel")
-                .UseContentRoot(site.OutputDirectory)
-                .UseWebRoot(site.OutputDirectory)
-                .UseUrls(site.BaseUrl)
-                .UseStartup<Program>()
+                .UseLunet(site)
                 .Build();
 
             host.Run();
