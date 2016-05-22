@@ -49,6 +49,7 @@ namespace Lunet.Core
             services = new Dictionary<Type, ISiteService>();
             orderedServices = new OrderedList<ISiteService>();
             ContentProviders = new OrderedList<IContentProvider>();
+            CommandLine = new LunetCommandLine();
 
             clock = new Stopwatch();
 
@@ -123,6 +124,8 @@ namespace Lunet.Core
         public SiteStatistics Statistics { get; }
 
         public ContentTypeManager ContentTypes { get; }
+
+        public LunetCommandLine CommandLine { get; }
 
         public string BasePath
         {

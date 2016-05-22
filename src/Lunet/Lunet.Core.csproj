@@ -39,6 +39,12 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\CommandArgument.cs" />
+    <Compile Include="Helpers\CommandLineApplication.cs" />
+    <Compile Include="Helpers\CommandOption.cs" />
+    <Compile Include="Helpers\CommandOptionType.cs" />
+    <Compile Include="Helpers\CommandParsingException.cs" />
+    <Compile Include="Core\LunetCommandLine.cs" />
     <Compile Include="Plugins\Bundles\BundleLink.cs" />
     <Compile Include="Plugins\Bundles\BundleService.cs" />
     <Compile Include="Plugins\Bundles\BundleObject.cs" />
