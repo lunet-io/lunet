@@ -1,6 +1,6 @@
 # lunet
 
-<img style="float: right;" width="96px" height="96px" src="doc/images/lunet.png">
+<img align="right" width="96px" height="96px" src="doc/images/lunet.png">
 
 A fast and powerfull static website generator written in C#
 
