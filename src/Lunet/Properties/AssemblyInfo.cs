@@ -5,4 +5,4 @@
 // associated with an assembly.
 [assembly: AssemblyTitle("Lunet application")]
 [assembly: AssemblyDescription("Lunet executable")]
-[assembly: AssemblyProduct("LunetExe")]
+[assembly: AssemblyProduct("Lunet")]
