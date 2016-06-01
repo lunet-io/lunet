@@ -4,6 +4,11 @@
     "emitEntryPoint": true,
     "compile": {
       "include": [ "../Lunet.Core/Properties/SharedAssemblyInfo.cs" ]
+    },
+    "copyToOutput": {
+      "mapping": {
+        "files/" : "../Lunet.Core/files/**" 
+      } 
     }
   },
   "runtimes": {

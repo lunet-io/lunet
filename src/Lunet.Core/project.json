@@ -26,6 +26,11 @@
       }
     }
   },
+  "buildOptions": {
+    "copyToOutput": {
+      "include": [ "files" ]
+    }
+  },
   "dependencies": {
     "Markdig": "0.2.0",
     "Scriban": "0.1.0",
