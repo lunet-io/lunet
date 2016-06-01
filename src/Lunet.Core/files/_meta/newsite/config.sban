@@ -1,0 +1,31 @@
+# General settings
+title = "Title of your website"
+
+# Setup baseurl if not defined
+baseurl = baseurl ?? "http://yourwebsite.com"
+#basepath = basepath ?? ""  # Only if you need to access from "http://yourwebsite.com/yourbasepath"
+
+# Uncomment this to start using an extension. Use `lunet extends` command to list which extensions are available
+#extend "jquery"
+
+# Uncomment this to download and install the following npm package
+#mypackage = resource "npm:existing-npm-package"
+
+# Add another taxonomy. Defaults are `tags` and `categories`
+#with taxonomies
+#	mytags = "mytag"
+#end
+
+##
+with bundle
+	# Add main css file
+	css "css/test.scss"
+	# concat = false
+	# minify = false	
+	# Uncomment the following line to change the extension used to after minifaction
+	# minify_ext = ".min"
+end
+##
+
+# Use log.info to log informations
+#log.info bundles
