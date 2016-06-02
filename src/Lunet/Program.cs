@@ -1,5 +1,6 @@
 ﻿using System;
 using Lunet.Core;
+using Lunet.Logging;
 using Microsoft.Extensions.Logging;
 
 namespace Lunet
@@ -8,9 +9,8 @@ namespace Lunet
     {
         static int Main(string[] args)
         {
-            var loggerFactory = new LoggerFactory().AddConsole(LogLevel.Trace);
-
-            var site = new SiteObject(loggerFactory);
+            var loggerFactory = new LoggerFactory();
+            var site = new SiteObject(loggerFactory).AddConsoleLogger();
             return site.Run(args);
         }
 

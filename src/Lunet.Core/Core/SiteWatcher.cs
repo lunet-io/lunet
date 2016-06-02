@@ -48,7 +48,7 @@ namespace Lunet.Core
             if (site == null) throw new ArgumentNullException(nameof(site));
             this.site = site;
             watchers = new Dictionary<string, FileSystemWatcher>();
-            log = site.LoggerFactory.CreateLogger("watcher");
+            log = site.Log;
             batchLock = new object();
             processEventsThread = new Thread(ProcessEvents) {IsBackground = true};
             clock = new Stopwatch();

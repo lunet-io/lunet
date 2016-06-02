@@ -24,14 +24,14 @@ namespace Lunet.Scripts
             this.Site = service.Site;
 
             // Add log object
-            var logObject = new DynamicObject<ScriptGlobalFunctions>(this);
-            service.GlobalObject.SetValue("log", logObject, true);
-            logObject.Import("info", (LogDelegate)(message => Site.Info(message)));
-            logObject.Import("error", (LogDelegate)(message => Site.Error(message)));
-            logObject.Import("warn", (LogDelegate)(message => Site.Warning(message)));
-            logObject.Import("debug", (LogDelegate)(message => Site.Debug(message)));
-            logObject.Import("trace", (LogDelegate)(message => Site.Trace(message)));
-            logObject.Import("fatal", (LogDelegate)(message => Site.Fatal(message)));
+            LogObject = new DynamicObject<ScriptGlobalFunctions>(this);
+            service.GlobalObject.SetValue("log", LogObject, true);
+            LogObject.Import("info", (LogDelegate)(message => Site.Info(message)));
+            LogObject.Import("error", (LogDelegate)(message => Site.Error(message)));
+            LogObject.Import("warn", (LogDelegate)(message => Site.Warning(message)));
+            LogObject.Import("debug", (LogDelegate)(message => Site.Debug(message)));
+            LogObject.Import("trace", (LogDelegate)(message => Site.Trace(message)));
+            LogObject.Import("fatal", (LogDelegate)(message => Site.Fatal(message)));
 
             // Import io object
             var ioObject = new DynamicObject<ScriptGlobalFunctions>(this);
@@ -47,6 +47,8 @@ namespace Lunet.Scripts
         }
 
         public SiteObject Site { get; }
+
+        public DynamicObject LogObject { get; }
 
         public string AbsoluteUrl(string url)
         {

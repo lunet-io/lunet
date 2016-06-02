@@ -76,14 +76,20 @@ namespace Lunet.Hosting
             BuildSite(Site, true);
             try
             {
-                var host = new WebHostBuilder()
+                var hostBuilder = new WebHostBuilder()
                     .UseKestrel()
-                    .UseLoggerFactory(Site.LoggerFactory)
                     .UseContentRoot(Site.OutputDirectory)
                     .UseWebRoot(Site.OutputDirectory)
                     .UseUrls(Site.BaseUrl)
-                    .Configure(Configure)
-                    .Build();
+                    .Configure(Configure);
+
+                // Enable server log only if log.server = true
+                if (Site.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server"))
+                {
+                    hostBuilder.UseLoggerFactory(Site.LoggerFactory);
+                }
+
+                var host = hostBuilder.Build();
 
                 host.Run();
             }

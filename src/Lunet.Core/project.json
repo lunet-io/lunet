@@ -42,6 +42,7 @@
     "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc2-final",
     "Microsoft.AspNetCore.WebSockets.Server": "0.1.0-rc2-final",
     "Microsoft.Extensions.Logging": "1.0.0-rc2-final",
+    "Microsoft.Extensions.Logging.Console": "1.0.0-rc2-final",
     "Newtonsoft.Json": "8.0.4-beta1",
     "NuGet.Versioning": "3.5.0-rc-1298",
     "NUglify": "1.4.0",

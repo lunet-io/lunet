@@ -154,7 +154,7 @@ namespace Lunet.Core
         /// An event occured when the site has been updated.
         /// </summary>
         public event EventHandler<EventArgs> Updated;
-        
+
         public string BasePath
         {
             get { return this.GetSafeValue<string>(SiteVariables.BasePath); }
@@ -204,6 +204,35 @@ namespace Lunet.Core
 
                 yield return BuiltinDirectory;
             }
+        }
+
+        public bool LogFilter(string category, LogLevel level)
+        {
+            var levelStr = Scripts.SiteFunctions.LogObject.GetSafeValue<string>("level")?.ToLowerInvariant() ?? "info";
+            var filterLevel = LogLevel.Information;
+            switch (levelStr)
+            {
+                case "debug":
+                    filterLevel = LogLevel.Debug;
+                    break;
+                case "info":
+                    filterLevel = LogLevel.Information;
+                    break;
+                case "error":
+                    filterLevel = LogLevel.Error;
+                    break;
+                case "trace":
+                    filterLevel = LogLevel.Trace;
+                    break;
+                case "critical":
+                    filterLevel = LogLevel.Critical;
+                    break;
+                case "warning":
+                    filterLevel = LogLevel.Warning;
+                    break;
+            }
+
+            return level >= filterLevel;
         }
 
         public IEnumerable<FolderInfo> MetaDirectories
