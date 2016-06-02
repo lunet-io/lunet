@@ -1,11 +1,11 @@
 ﻿<script>
     (function() {
-        var ws = new WebSocket("{{site.baseurl | string.replace_first 'http:' 'ws:'}}");
+        var ws = new WebSocket("{{site.livereload_url}}");
         ws.onclose = function() {
-            console.log("websocket connection closed");
+            // console.log("websocket connection closed");
         };
         ws.onmessage = function(event) {
-            console.log("evt " + event.data);
+            // console.log("evt " + event.data);
             if (event.data === "reload") {
                 location.reload();
             }

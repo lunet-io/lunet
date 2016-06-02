@@ -6,10 +6,11 @@
       "include": [ "../Lunet.Core/Properties/SharedAssemblyInfo.cs" ]
     },
     "copyToOutput": {
-      "mapping": {
-        "files/" : "../Lunet.Core/files/**" 
-      } 
+      "include":  ["data"] 
     }
+  },
+  "publishOptions": {
+    "include": [ "data" ]
   },
   "runtimes": {
     "win7-x64": { }
