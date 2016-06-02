@@ -235,6 +235,19 @@ namespace Lunet.Core
             return level >= filterLevel;
         }
 
+        public int Clean()
+        {
+            if (ConfigFile.Exists)
+            {
+                FileUtil.DeleteDirectory(PrivateBaseDirectory, Log);
+                this.Info($"Directory {PrivateBaseDirectory} deleted");
+                return 0;
+            }
+
+            this.Error($"The config file [{ConfigFile.Name}] was not found");
+            return 1;
+        }
+
         public IEnumerable<FolderInfo> MetaDirectories
         {
             get

@@ -2,8 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System;
 using System.IO;
 using Lunet.Core;
+using Microsoft.Extensions.Logging;
 
 namespace Lunet.Helpers
 {
@@ -43,5 +45,42 @@ namespace Lunet.Helpers
                 }
             }
         }
+
+        public static void DeleteDirectory(FolderInfo directory)
+        {
+            if (!directory.Exists)
+            {
+                return;
+            }
+
+            DirectoryInfo[] dirs = directory.Info.GetDirectories();
+
+            foreach (var file in directory.Info.GetFiles())
+            {
+                try
+                {
+                    file.Delete();
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }
+
+            foreach (DirectoryInfo subdir in dirs)
+            {
+                DeleteDirectory(subdir);
+            }
+
+            try
+            {
+                directory.Info.Delete();
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+        }
+
     }
 }

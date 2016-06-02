@@ -110,6 +110,20 @@ namespace Lunet.Core
                 };
 
             }, false);
+
+            // The clean command
+            CleanCommand = Command("clean", newApp =>
+            {
+                newApp.Description = "Cleans temporary folder";
+                newApp.HelpOption("-h|--help");
+
+                newApp.Invoke = () =>
+                {
+                    HandleCommonOptions();
+                    return site.Clean();
+                };
+
+            }, false);
         }
 
         public CommandLineApplication InitCommand { get; }
@@ -119,6 +133,8 @@ namespace Lunet.Core
         public CommandLineApplication ConfigCommand { get; }
         
         public CommandLineApplication RunCommand { get; }
+
+        public CommandLineApplication CleanCommand { get; }
 
         public CommandOption Defines { get; }
 
