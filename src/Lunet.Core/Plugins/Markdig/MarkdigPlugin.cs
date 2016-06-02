@@ -18,7 +18,7 @@ namespace Lunet.Plugins.Markdig
 
         public void Initialize(SiteObject site)
         {
-            site.Generator.PreProcessors.AddIfNotAlready(new MarkdigProcessor());
+            site.Builder.PreProcessors.AddIfNotAlready(new MarkdigProcessor());
         }
     }
 }

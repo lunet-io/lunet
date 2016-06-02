@@ -74,8 +74,8 @@ namespace Lunet.Core
             Scripts = new ScriptService(this);
             Register(Scripts);
 
-            Generator = new SiteBuilder(this);
-            Register(Generator);
+            Builder = new SiteBuilder(this);
+            Register(Builder);
 
             Plugins = new PluginService(this);
             Register(Plugins);
@@ -136,7 +136,7 @@ namespace Lunet.Core
 
         public PluginService Plugins { get; }
 
-        public SiteBuilder Generator { get; }
+        public SiteBuilder Builder { get; }
 
         public ScriptService Scripts { get; }
 
@@ -275,7 +275,7 @@ namespace Lunet.Core
         {
             if (Initialize())
             {
-                Generator.Run();
+                Builder.Run();
             }
         }
 
@@ -456,7 +456,7 @@ namespace Lunet.Core
                 };
 
                 var evalClock = Stopwatch.StartNew();
-                if (Generator.TryPreparePage(page))
+                if (Builder.TryPreparePage(page))
                 {
                     evalClock.Stop();
 

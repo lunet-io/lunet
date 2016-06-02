@@ -156,7 +156,7 @@ namespace Lunet.Bundles
                     if (currentContent != null)
                     {
                         var listTemp = new PageCollection() { currentContent };
-                        Site.Generator.ProcessPages(listTemp, false);
+                        Site.Builder.ProcessPages(listTemp, false);
                         link.ContentObject = currentContent;
 
                         // If we require concat and/or minify, we preload the content of the file

@@ -19,7 +19,7 @@ namespace Lunet.Plugins.NUglify
         public string Name => "nuglify";
         public void Initialize(SiteObject site)
         {
-            var bundleProcessor = site.Generator.Processors.Find<BundleProcessor>();
+            var bundleProcessor = site.Builder.Processors.Find<BundleProcessor>();
             if (bundleProcessor != null)
             {
                 bundleProcessor.Minifiers.AddIfNotAlready(this);

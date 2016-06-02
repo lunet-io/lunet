@@ -24,7 +24,7 @@ namespace Lunet.Plugins.Taxonomies
         {
             Site.SetValue("taxonomies", List, true);
 
-            var layoutProcessor = Site.Generator.Processors.Find<LayoutProcessor>();
+            var layoutProcessor = Site.Builder.Processors.Find<LayoutProcessor>();
             layoutProcessor.RegisterLayoutPathProvider("terms", TermsLayout);
             layoutProcessor.RegisterLayoutPathProvider("term", TermPagesLayout);
         }

@@ -13,7 +13,7 @@ namespace Lunet.Plugins.Layouts
 
         public override void Initialize(SiteObject site)
         {
-            site.Generator.Processors.Insert(0, new LayoutProcessor());
+            site.Builder.Processors.Insert(0, new LayoutProcessor());
         }
     }
 }

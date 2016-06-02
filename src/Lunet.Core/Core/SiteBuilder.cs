@@ -401,7 +401,7 @@ namespace Lunet.Core
             // Copy only if the file are marked as include
             if (copyOutput && !breakProcessing && !page.Discard)
             {
-                Site.Generator.TryCopyContentToOutput(page, page.GetDestinationPath());
+                Site.Builder.TryCopyContentToOutput(page, page.GetDestinationPath());
             }
 
             return true;

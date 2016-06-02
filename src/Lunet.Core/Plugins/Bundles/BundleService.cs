@@ -31,7 +31,7 @@ namespace Lunet.Bundles
             // The "bundle" function is global as it is used inside scripts and inside
             Site.Scripts.GlobalObject.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
 
-            Site.Generator.Processors.Add(new BundleProcessor(this));
+            Site.Builder.Processors.Add(new BundleProcessor(this));
         }
 
         public List<BundleObject> List { get; }

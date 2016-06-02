@@ -17,7 +17,7 @@ namespace Lunet.Core
             if (site == null) throw new ArgumentNullException(nameof(site));
             this.site = site;
             Name = "lunet";
-            FullName = "Lunet Static Website Generator";
+            FullName = "Lunet Static Website Engine";
             Description = "LunetCommand to generate static website";
             HandleResponseFiles = false;
             AllowArgumentSeparator = true;

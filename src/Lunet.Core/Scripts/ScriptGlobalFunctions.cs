@@ -145,7 +145,7 @@ namespace Lunet.Scripts
                         ? Path.Combine(normalizedOutputFull, Path.GetFileName(inputFullPath))
                         : normalizedOutputFull, PathFlags.File), false);
 
-                Site.Generator.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
+                Site.Builder.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
             }
         }
 
