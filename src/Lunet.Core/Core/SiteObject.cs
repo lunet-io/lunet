@@ -438,7 +438,7 @@ namespace Lunet.Core
                         Pages.Add(page);
                     }
                 }
-                else if (!entry.Name.StartsWith("_"))
+                else if (!entry.Name.StartsWith("_") && entry.Name != PrivateDirectoryName)
                 {
                     directoryQueue.Enqueue((DirectoryInfo)entry);
                 }
