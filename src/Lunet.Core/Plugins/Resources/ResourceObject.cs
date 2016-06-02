@@ -9,8 +9,8 @@ namespace Lunet.Resources
     /// <summary>
     /// An object associated to a resource, accessible at runtime.
     /// </summary>
-    /// <seealso cref="LunetObject" />
-    public class ResourceObject : LunetObject
+    /// <seealso cref="DynamicObject" />
+    public class ResourceObject : DynamicObject
     {
         public ResourceObject(ResourceProvider provider, string name, string version, string absoluteDirectory)
         {

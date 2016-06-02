@@ -14,7 +14,6 @@ namespace Lunet.Plugins
     /// <summary>
     /// Manages plugins of a site.
     /// </summary>
-    /// <seealso cref="LunetObject" />
     public sealed class PluginService : ServiceBase
     {
         internal PluginService(SiteObject site) : base(site)

@@ -40,6 +40,10 @@ namespace Lunet.Scripts
 
             // Import global function
             service.GlobalObject.Import("absurl", new Func<string, string>(AbsoluteUrl));
+
+            // Setup global Lunet object
+            var lunetObject = new LunetObject(Site);
+            service.GlobalObject.SetValue("lunet", lunetObject, true);
         }
 
         public SiteObject Site { get; }

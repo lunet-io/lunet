@@ -7,7 +7,7 @@ using Lunet.Core;
 
 namespace Lunet.Extends
 {
-    public sealed class ExtendObject : LunetObject
+    public sealed class ExtendObject : DynamicObject
     {
         internal ExtendObject(SiteObject site, string fullName, string name, string version, string description, string url, string directory)
         {

@@ -13,8 +13,8 @@ namespace Lunet.Core
     /// <summary>
     /// Base class for a service.
     /// </summary>
-    /// <seealso cref="LunetObject" />
-    public abstract class ServiceBase : LunetObject, ISiteService
+    /// <seealso cref="DynamicObject" />
+    public abstract class ServiceBase : DynamicObject, ISiteService
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceBase"/> class.

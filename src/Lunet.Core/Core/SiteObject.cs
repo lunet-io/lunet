@@ -18,7 +18,7 @@ using Scriban.Parsing;
 
 namespace Lunet.Core
 {
-    public class SiteObject : LunetObject
+    public class SiteObject : DynamicObject
     {
         public const string MetaDirectoryName = "_meta";
         private const string SharedFilesName = "files";

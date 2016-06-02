@@ -10,7 +10,7 @@ using Scriban.Runtime;
 namespace Lunet.Core
 {
     [DebuggerDisplay("Content: {Path}")]
-    public class ContentObject : LunetObject
+    public class ContentObject : DynamicObject
     {
         private ContentType contentType;
 

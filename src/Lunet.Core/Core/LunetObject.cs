@@ -7,7 +7,14 @@ namespace Lunet.Core
     /// Base class for an lunet object that provides a dynamic object
     /// accessible from scripts.
     /// </summary>
-    public abstract class LunetObject : DynamicObject
+    public class LunetObject : DynamicObject<SiteObject>
     {
+        public LunetObject(SiteObject site) : base(site)
+        {
+            Version = LunetVersion.AssemblyVersionInfo;
+            SetValue("version", Version, true);
+        }
+
+        public string Version { get; }
     }
 }
