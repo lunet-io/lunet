@@ -21,7 +21,7 @@ namespace Lunet.Core
     public class SiteObject : DynamicObject
     {
         public const string MetaDirectoryName = "_meta";
-        private const string SharedFilesName = "files";
+        private const string SharedFilesName = "data";
         private const string OutputDirectoryName = "www";
         private const string PrivateDirectoryName = ".lunet";
         private const string DefaultPageExtensionValue = ".html";
