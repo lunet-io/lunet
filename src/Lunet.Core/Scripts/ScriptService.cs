@@ -137,7 +137,7 @@ namespace Lunet.Scripts
             if (scriptExist)
             {
                 var configAsText = File.ReadAllText(scriptPath);
-                return TryImportScript(configAsText, scriptPath, scriptObject, flags);
+                return TryImportScript(configAsText, scriptPath, scriptObject, flags, context);
             }
             return true;
         }
