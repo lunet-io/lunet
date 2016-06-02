@@ -21,5 +21,7 @@ namespace Lunet.Core
         public const string DefaultPageExtension = "default_page_ext";
 
         public const string UrlAsFile = "url_as_file";
+
+        public const string Html = "html";
     }
 }

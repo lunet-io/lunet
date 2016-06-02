@@ -61,6 +61,9 @@ namespace Lunet.Core
 
             DefaultPageExtension = DefaultPageExtensionValue;
 
+            Html = new HtmlObject(this);
+            SetValue(SiteVariables.Html, Html, true);
+
             CommandLine = new LunetCommandLine(this);
 
             Statistics = new SiteStatistics();
@@ -139,6 +142,8 @@ namespace Lunet.Core
         public ContentTypeManager ContentTypes { get; }
 
         public LunetCommandLine CommandLine { get; }
+
+        public HtmlObject Html { get; }
 
         public string BasePath
         {
