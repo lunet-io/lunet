@@ -6,6 +6,8 @@ namespace Lunet.Core
 
         public const string BaseUrl = "baseurl";
 
+        public const string BaseUrlForce = "baseurlforce";
+
         public const string Plugins = "plugins";
 
         public const string ExtendFunction = "extend";

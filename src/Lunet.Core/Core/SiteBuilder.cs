@@ -48,7 +48,7 @@ namespace Lunet.Core
     }
 
 
-    public class SiteGenerator : ServiceBase
+    public class SiteBuilder : ServiceBase
     {
         private readonly HashSet<string> previousOutputDirectories;
         private readonly HashSet<string> previousOutputFiles;
@@ -57,7 +57,7 @@ namespace Lunet.Core
         private readonly Stopwatch clock;
         private readonly Stopwatch totalDuration;
 
-        public SiteGenerator(SiteObject site) : base(site)
+        public SiteBuilder(SiteObject site) : base(site)
         {
             previousOutputDirectories = new HashSet<string>();
             previousOutputFiles = new HashSet<string>();

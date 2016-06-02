@@ -48,7 +48,7 @@ namespace Lunet.Core
             };
 
             // New command
-            NewCommand = Command("init", newApp =>
+            InitCommand = Command("init", newApp =>
             {
                 newApp.Description = "Creates a new website";
 
@@ -105,29 +105,14 @@ namespace Lunet.Core
                 newApp.Invoke = () =>
                 {
                     HandleCommonOptions();
-                    try
-                    {
-                        site.Build();
-                        return 0;
-                    }
-                    catch (Exception ex)
-                    {
-                        site.Error($"Unexpected exception while trying to copy files: {ex.GetReason()}");
-                        return 1;
-                    }
+                    site.Build();
+                    return site.HasErrors ? 1 : 0;
                 };
 
-
-            }, false);
-
-            // The server command
-            ServerCommand = Command("server", newApp =>
-            {
-                newApp.Description = "Builds the website, runs a web server and watches for changes";
-                var noWatch = newApp.Option("-n|--no-watch", "Disables watching files and triggering of a new run", CommandOptionType.NoValue);
-                newApp.HelpOption("-h|--help");
             }, false);
         }
+
+        public CommandLineApplication InitCommand { get; }
 
         public CommandLineApplication NewCommand { get; }
 
@@ -135,15 +120,13 @@ namespace Lunet.Core
         
         public CommandLineApplication RunCommand { get; }
 
-        public CommandLineApplication ServerCommand { get; }
-
         public CommandOption Defines { get; }
 
         public CommandOption OutputDirectory { get; }
 
         public CommandOption InputDirectory { get; }
 
-        private void HandleCommonOptions()
+        public void HandleCommonOptions()
         {
             // Setup a default directory if necessary
             if (InputDirectory.HasValue())

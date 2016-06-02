@@ -25,9 +25,11 @@ namespace Lunet.Core
 
     public class SiteWatcher
     {
+        private readonly SiteObject site;
         private DirectoryInfo baseDirectory;
         private FileSystemWatcher rootDirectoryWatcher;
         private FileSystemWatcher privateMetaWatcher;
+        private string privateBaseDirectory;
 
         private const int SleepForward = 48;
         private const int MillisTimeout = 200;
@@ -41,11 +43,12 @@ namespace Lunet.Core
         private FileSystemEventBatchArgs batchEvents;
         private readonly ManualResetEvent onClosingEvent;
 
-        public SiteWatcher(ILoggerFactory loggerFactory)
+        public SiteWatcher(SiteObject site)
         {
-            if (loggerFactory == null) throw new ArgumentNullException(nameof(loggerFactory));
+            if (site == null) throw new ArgumentNullException(nameof(site));
+            this.site = site;
             watchers = new Dictionary<string, FileSystemWatcher>();
-            log = loggerFactory.CreateLogger("watcher");
+            log = site.LoggerFactory.CreateLogger("watcher");
             batchLock = new object();
             processEventsThread = new Thread(ProcessEvents) {IsBackground = true};
             clock = new Stopwatch();
@@ -81,8 +84,17 @@ namespace Lunet.Core
                     }
                 }
 
+                // TODO: squash events here (to avoid having duplicated events)
+
                 // Invoke listeners
-                FileSystemEvents?.Invoke(this, batchEventsCopy);
+                try
+                {
+                    FileSystemEvents?.Invoke(this, batchEventsCopy);
+                }
+                catch (Exception ex)
+                {
+                    log.LogError($"Unexpected error on SiteWatcher callback. Reason: {ex.GetReason()}");
+                }
             }
 
             onClosingEvent.Reset();
@@ -90,30 +102,33 @@ namespace Lunet.Core
 
         public event EventHandler<FileSystemEventBatchArgs> FileSystemEvents;
 
-        public void Start(SiteObject site)
+        public void Start()
         {
-            if (site == null) throw new ArgumentNullException(nameof(site));
-
-            processEventsThread.Start();
-
+            if (processEventsThread.IsAlive)
+            {
+                return;
+            }
+            privateBaseDirectory = site.PrivateBaseDirectory;
             baseDirectory = site.BaseDirectory;
             rootDirectoryWatcher = CreateFileWatch(site.BaseDirectory, false);
             privateMetaWatcher = CreateFileWatch(site.PrivateMetaDirectory, true);
 
             foreach (var directory in site.BaseDirectory.Info.EnumerateDirectories())
             {
-                if (directory.FullName.Equals(site.PrivateBaseDirectory))
-                {
-                    continue;
-                }
                 CreateFileWatch(directory.FullName, true);
             }
+
+            // Starts the thread
+            processEventsThread.Start();
         }
 
         public void Stop()
         {
-            onClosingEvent.Set();
-            processEventsThread.Join();
+            if (processEventsThread.IsAlive)
+            {
+                onClosingEvent.Set();
+                processEventsThread.Join();
+            }
 
             lock (watchers)
             {
@@ -126,8 +141,18 @@ namespace Lunet.Core
             }
         }
 
+        private bool IsPrivateDirectory(string directory)
+        {
+            return directory.StartsWith(privateBaseDirectory);
+        }
+
         private FileSystemWatcher CreateFileWatch(string directory, bool recursive)
         {
+            // We don't track changes in PrivateBaseDirectory
+            if (IsPrivateDirectory(directory))
+            {
+                return null;
+            }
             FileSystemWatcher watcher;
             lock (watchers)
             {
@@ -141,7 +166,10 @@ namespace Lunet.Core
                     return watcher;
                 }
 
-                log.LogTrace($"Tracking file system changed from directory [{directory}]");
+                if (log.IsEnabled(LogLevel.Trace))
+                {
+                    log.LogTrace($"Tracking file system changed for directory [{directory}]");
+                }
 
                 watcher = new FileSystemWatcher
                 {
@@ -178,7 +206,10 @@ namespace Lunet.Core
 
         private void DisposeWatcher(FileSystemWatcher watcher)
         {
-            log.LogTrace($"Untrack changes from [{watcher.Path}]");
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace($"Untrack changes from [{watcher.Path}]");
+            }
 
             watcher.EnableRaisingEvents = false;
             watcher.Changed -= OnFileSystemEvent;
@@ -191,14 +222,20 @@ namespace Lunet.Core
 
         private void OnFileSystemEvent(object sender, FileSystemEventArgs e)
         {
-            log.LogTrace($"File event occured: {e.ChangeType} -> {e.FullPath}");
+            var dir = new DirectoryInfo(e.FullPath);
+            if (IsPrivateDirectory(dir.FullName))
+            {
+                return;
+            }
+
+            if (log.IsEnabled(LogLevel.Trace))
+            {
+                log.LogTrace($"File event occured: {e.ChangeType} -> {e.FullPath}");
+            }
 
             lock (watchers)
             {
-
-                var dir = new DirectoryInfo(e.FullPath);
                 var isDirectory = dir.Exists;
-
                 switch (e.ChangeType)
                 {
                     case WatcherChangeTypes.Deleted:

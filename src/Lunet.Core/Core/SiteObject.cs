@@ -31,6 +31,7 @@ namespace Lunet.Core
         private readonly Dictionary<Type, ISiteService> services;
         internal readonly OrderedList<ISiteService> orderedServices;
         private FolderInfo baseDirectory;
+        private bool isInitialized;
 
         public SiteObject() : this(null)
         {
@@ -64,6 +65,8 @@ namespace Lunet.Core
             Html = new HtmlObject(this);
             SetValue(SiteVariables.Html, Html, true);
 
+            Watcher = new SiteWatcher(this);
+
             CommandLine = new LunetCommandLine(this);
 
             Statistics = new SiteStatistics();
@@ -71,7 +74,7 @@ namespace Lunet.Core
             Scripts = new ScriptService(this);
             Register(Scripts);
 
-            Generator = new SiteGenerator(this);
+            Generator = new SiteBuilder(this);
             Register(Generator);
 
             Plugins = new PluginService(this);
@@ -133,7 +136,7 @@ namespace Lunet.Core
 
         public PluginService Plugins { get; }
 
-        public SiteGenerator Generator { get; }
+        public SiteBuilder Generator { get; }
 
         public ScriptService Scripts { get; }
 
@@ -145,6 +148,13 @@ namespace Lunet.Core
 
         public HtmlObject Html { get; }
 
+        public SiteWatcher Watcher { get; }
+
+        /// <summary>
+        /// An event occured when the site has been updated.
+        /// </summary>
+        public event EventHandler<EventArgs> Updated;
+        
         public string BasePath
         {
             get { return this.GetSafeValue<string>(SiteVariables.BasePath); }
@@ -155,6 +165,12 @@ namespace Lunet.Core
         {
             get { return this.GetSafeValue<string>(SiteVariables.BaseUrl); }
             set { this[SiteVariables.BaseUrl] = value; }
+        }
+
+        public bool BaseUrlForce
+        {
+            get { return this.GetSafeValue<bool>(SiteVariables.BaseUrlForce); }
+            set { this[SiteVariables.BaseUrlForce] = value; }
         }
 
         public bool UrlAsFile
@@ -235,23 +251,79 @@ namespace Lunet.Core
             this.Info($"New website created at {destinationDir}");
         }
 
-        public void Initialize()
+        public bool Initialize()
         {
             if (ConfigFile.Exists)
             {
+                if (isInitialized)
+                {
+                    return true;
+                }
+
+                isInitialized = true;
+                 
                 // We then actually load the config
-                Scripts.TryImportScriptFromFile(ConfigFile.FullName, this, ScriptFlags.Expect | ScriptFlags.AllowSiteFunctions);
+                return Scripts.TryImportScriptFromFile(ConfigFile.FullName, this,
+                    ScriptFlags.Expect | ScriptFlags.AllowSiteFunctions);
             }
-            else
-            {
-                this.Error($"The config file [{ConfigFile.Name}] was not found");
-            }
+
+            this.Error($"The config file [{ConfigFile.Name}] was not found");
+            return false;
         }
 
         public void Build()
         {
-            Initialize();
-            Generator.Run();
+            if (Initialize())
+            {
+                Generator.Run();
+            }
+        }
+
+        public void WatchForRebuild(Action<SiteObject> rebuild)
+        {
+            if (rebuild == null) throw new ArgumentNullException(nameof(rebuild));
+            Watcher.Start();
+
+            Watcher.FileSystemEvents += (sender, args) =>
+            {
+                if (this.CanTrace())
+                {
+                    this.Trace($"Received file events [{args.FileEvents.Count}]");
+                }
+
+                try
+                {
+                    // Regenerate website
+                    // NOTE: we are recreating a full new SiteObject here (not incremental)
+                    var siteObject = SiteFactory.FromDirectory(BaseDirectory, LoggerFactory);
+
+                    rebuild(siteObject);
+                }
+                catch (Exception ex)
+                {
+                    this.Error($"Unexpected error while reloading the site. Reason: {ex.GetReason()}");
+                }
+            };
+        }
+
+        public int Run(string[] args)
+        {
+            if (args == null) throw new ArgumentNullException(nameof(args));
+
+            try
+            {
+                if (ConfigFile.Exists)
+                {
+                    Initialize();
+                }
+
+                return CommandLine.Execute(args);
+            }
+            catch (Exception ex)
+            {
+                this.Error($"Unexpected error. Reason: {ex.GetReason()}");
+                return 1;
+            }
         }
 
         public T GetService<T>() where T : class, ISiteService
