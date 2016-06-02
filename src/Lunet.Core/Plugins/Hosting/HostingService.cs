@@ -83,6 +83,10 @@ namespace Lunet.Hosting
                     .UseUrls(Site.BaseUrl)
                     .Configure(Configure);
 
+                // Setup the environment
+                // TODO: access to Site.Scripts.SiteFunctions.LunetObject is too long!
+                hostBuilder.UseEnvironment(Site.Scripts.SiteFunctions.LunetObject.Environment ?? "Development");
+
                 // Enable server log only if log.server = true
                 if (Site.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server"))
                 {

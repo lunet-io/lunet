@@ -42,13 +42,16 @@ namespace Lunet.Scripts
             service.GlobalObject.Import("absurl", new Func<string, string>(AbsoluteUrl));
 
             // Setup global Lunet object
-            var lunetObject = new LunetObject(Site);
-            service.GlobalObject.SetValue("lunet", lunetObject, true);
+            LunetObject = new LunetObject(Site);
+            service.GlobalObject.SetValue("lunet", LunetObject, true);
         }
 
         public SiteObject Site { get; }
 
         public DynamicObject LogObject { get; }
+
+        public LunetObject LunetObject { get; }
+
 
         public string AbsoluteUrl(string url)
         {

@@ -13,8 +13,15 @@ namespace Lunet.Core
         {
             Version = LunetVersion.AssemblyVersionInfo;
             SetValue("version", Version, true);
+            Environment = "Development";
         }
 
         public string Version { get; }
+
+        public string Environment
+        {
+            get { return GetSafeValue<string>("env"); }
+            set { this["env"] = value; }
+        }
     }
 }
