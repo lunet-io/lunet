@@ -134,7 +134,7 @@ namespace Lunet.Core
                         Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize)}]");
                     }
 
-                    using (var writer = new StreamWriter(new FileStream(outputFile.FullName, FileMode.OpenOrCreate, FileAccess.Write)))
+                    using (var writer = new StreamWriter(new FileStream(outputFile.FullName, FileMode.Create, FileAccess.Write)))
                     {
                         writer.Write(fromFile.Content);
                         writer.Flush();
