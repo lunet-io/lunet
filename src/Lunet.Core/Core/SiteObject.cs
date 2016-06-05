@@ -21,11 +21,11 @@ namespace Lunet.Core
     public class SiteObject : DynamicObject
     {
         public const string MetaDirectoryName = "_meta";
-        private const string SharedFilesName = "data";
-        private const string OutputDirectoryName = "www";
-        private const string PrivateDirectoryName = ".lunet";
-        private const string DefaultPageExtensionValue = ".html";
-        private const string DefaultConfigFileName = "config.sban";
+        public const string SharedFilesName = "data";
+        public const string OutputDirectoryName = "www";
+        public const string PrivateDirectoryName = ".lunet";
+        public const string DefaultPageExtensionValue = ".html";
+        public const string DefaultConfigFileName = "config.sban";
 
         private readonly Stopwatch clock;
         private readonly Dictionary<Type, ISiteService> services;
@@ -391,170 +391,6 @@ namespace Lunet.Core
                 if (!orderedServices.Contains(instance))
                 {
                     orderedServices.Add(instance);
-                }
-            }
-        }
-
-        public void Load()
-        {
-            StaticFiles.Clear();
-            Pages.Clear();
-
-            // Get the list of root directories from themes
-            var rootDirectories = new List<FolderInfo>(ContentDirectories);
-
-            // Compute the list of files that we will actually process
-            var filesLoaded = new HashSet<string>();
-            foreach (var rootDirectory in rootDirectories)
-            {
-                var directories = new Queue<DirectoryInfo>();
-                directories.Enqueue(rootDirectory);
-                while (directories.Count > 0)
-                {
-                    var nextDirectory = directories.Dequeue();
-                    LoadDirectory(rootDirectory, nextDirectory, directories, filesLoaded);
-                }
-            }
-
-            // Sort pages by natural order
-            Pages.Sort();
-        }
-
-        private void LoadPage(DirectoryInfo rootDirectory, FileInfo file, out ContentObject page)
-        {
-            page = null;
-            var buffer = new byte[16];
-
-            var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
-            try
-            {
-                var count = stream.Read(buffer, 0, buffer.Length);
-                // Rewind to 0
-                stream.Position = 0;
-
-                bool hasFrontMatter = false;
-                bool isBinary = false;
-
-                int startFrontMatter = 0;
-
-                // Does it start with UTF8 BOM? If yes, skip it
-                // EF BB BF
-                if (buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF)
-                {
-                    startFrontMatter = 3;
-                }
-
-                if (buffer[startFrontMatter] == '{' && buffer[startFrontMatter + 1] == '{')
-                {
-                    for (int i = startFrontMatter + 2; i < count; i++)
-                    {
-                        if (buffer[i] == 0)
-                        {
-                            isBinary = true;
-                            break;
-                        }
-                    }
-
-                    if (!isBinary)
-                    {
-                        hasFrontMatter = true;
-                    }
-                }
-
-                if (hasFrontMatter)
-                {
-                    page = LoadPageScript(stream, rootDirectory, file);
-                    stream = null;
-                }
-                else
-                {
-                    this.StaticFiles.Add(new ContentObject(this, rootDirectory, file));
-                }
-            }
-            finally
-            {
-                // Dispose stream used
-                stream?.Dispose();
-            }
-        }
-
-        private ContentObject LoadPageScript(Stream stream, DirectoryInfo rootDirectory, FileInfo file)
-        {
-            // Read the stream
-            var reader = new StreamReader(stream);
-            var content = reader.ReadToEnd();
-            // Early dispose the stream
-            stream.Dispose();
-
-            ContentObject page = null;
-
-            // Parse the page, using front-matter mode
-            var scriptPage = Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatter);
-            if (!scriptPage.HasErrors)
-            {
-                page = new ContentObject(this, rootDirectory, file)
-                {
-                    Script = scriptPage.Page
-                };
-
-                var evalClock = Stopwatch.StartNew();
-                if (Builder.TryPreparePage(page))
-                {
-                    evalClock.Stop();
-
-                    // Update statistics
-                    var contentStat = Statistics.GetContentStat(page);
-                    
-                    contentStat.EvaluateTime += evalClock.Elapsed;
-
-                    // Update the summary of the page
-                    evalClock.Restart();
-                    SummaryHelper.UpdateSummary(page);
-                    evalClock.Stop();
-
-                    // Update statistics
-                    contentStat.SummaryTime += evalClock.Elapsed;
-                }
-            }
-
-            return page;
-        }
-
-        private void LoadDirectory(FolderInfo rootDirectory, DirectoryInfo directory, Queue<DirectoryInfo> directoryQueue, HashSet<string> loaded)
-        {
-            var pages = new List<ContentObject>();
-            foreach (var entry in directory.EnumerateFileSystemInfos())
-            {
-                if (entry.Name == SiteFactory.DefaultConfigFilename)
-                {
-                    continue;
-                }
-
-                if (entry is FileInfo)
-                {
-                    // If the relative path is already registered, we won't process this file
-                    var relativePath = rootDirectory.GetRelativePath(entry.FullName, PathFlags.Normalize);
-                    if (loaded.Contains(relativePath))
-                    {
-                        continue;
-                    }
-                    loaded.Add(relativePath);
-
-                    ContentObject page;
-                    clock.Restart();
-                    LoadPage(rootDirectory, (FileInfo)entry, out page);
-                    clock.Stop();
-
-                    if (page != null)
-                    {
-                        // Update statistics
-                        Statistics.GetContentStat(page).LoadingParsingTime += clock.Elapsed;
-                        Pages.Add(page);
-                    }
-                }
-                else if (!entry.Name.StartsWith("_") && entry.Name != PrivateDirectoryName)
-                {
-                    directoryQueue.Enqueue((DirectoryInfo)entry);
                 }
             }
         }

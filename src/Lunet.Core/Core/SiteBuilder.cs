@@ -7,10 +7,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Lunet.Helpers;
 using Lunet.Layouts;
 using Lunet.Plugins;
 using Lunet.Scripts;
+using Scriban.Parsing;
 using Scriban.Runtime;
 
 namespace Lunet.Core
@@ -47,14 +51,12 @@ namespace Lunet.Core
         }
     }
 
-
     public class SiteBuilder : ServiceBase
     {
         private readonly HashSet<string> previousOutputDirectories;
         private readonly HashSet<string> previousOutputFiles;
         private readonly Dictionary<string, FileInfo> filesWritten;
         private bool isInitialized;
-        private readonly Stopwatch clock;
         private readonly Stopwatch totalDuration;
 
         public SiteBuilder(SiteObject site) : base(site)
@@ -63,7 +65,6 @@ namespace Lunet.Core
             previousOutputFiles = new HashSet<string>();
             Scripts = Site.Scripts;
             filesWritten = new Dictionary<string, FileInfo>();
-            clock = new Stopwatch();
             totalDuration = new Stopwatch();
 
             PreProcessors = new PluginCollection<IContentProcessor>(Site);
@@ -77,6 +78,78 @@ namespace Lunet.Core
 
         public PluginCollection<ISiteProcessor> Processors { get; }
 
+        public void Initialize()
+        {
+            totalDuration.Restart();
+
+            // We collect all previous file entries in the output directory
+            CollectPreviousFileEntries();
+
+            filesWritten.Clear();
+            Site.Statistics.Reset();
+
+            if (isInitialized)
+            {
+                return;
+            }
+            isInitialized = true;
+
+            // If we have any errors, early exit
+            if (Site.HasErrors)
+            {
+                return;
+            }
+        }
+
+        public void Run()
+        {
+            Initialize();
+
+            // If we have any errors, early exit
+            if (Site.HasErrors)
+            {
+                return;
+            }
+
+            // Start Loading and Preprocessing
+            BeginProcess(true);
+            try
+            {
+                LoadAllContent();
+            }
+            finally
+            {
+                EndProcess(true);
+            }
+
+            // Start to process files
+            BeginProcess(false);
+            try
+            {
+                // Process static files
+                ProcessPages(Site.StaticFiles, true);
+
+                // Process pages (files with front matter)
+                ProcessPages(Site.Pages, true);
+
+                // Process pages (files with front matter)
+                ProcessPages(Site.DynamicPages, true);
+            }
+            finally
+            {
+                // End the process
+                EndProcess(false);
+            }
+
+            // Remove output files
+            CleanupOutputFiles();
+
+            // Update statistics
+            totalDuration.Stop();
+            Site.Statistics.TotalTime = totalDuration.Elapsed;
+        }
+
+        
         public bool TryCopyFile(FileInfo fromFile, string outputPath)
         {
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
@@ -111,6 +184,8 @@ namespace Lunet.Core
             relativePath = PathUtil.NormalizeRelativePath(relativePath, false);
             if (Path.IsPathRooted(relativePath)) throw new ArgumentException($"Path [{relativePath}] cannot be rooted", nameof(relativePath));
 
+            var clock = Stopwatch.StartNew();
+
             var outputFile = Site.OutputDirectory.CombineToFile(relativePath);
             var outputDir = outputFile.Directory;
             if (outputDir == null)
@@ -123,7 +198,6 @@ namespace Lunet.Core
 
             CreateDirectory(outputDir);
 
-            clock.Restart();
             try
             {
                 // If the file has a content, we will use this instead
@@ -207,77 +281,6 @@ namespace Lunet.Core
             previousOutputFiles.Remove(outputFilename);
         }
 
-        public void Initialize()
-        {
-            totalDuration.Restart();
-
-            // We collect all previous file entries in the output directory
-            CollectPreviousFileEntries();
-
-            filesWritten.Clear();
-            Site.Statistics.Reset();
-
-            if (isInitialized)
-            {
-                return;
-            }
-            isInitialized = true;
-
-            // If we have any errors, early exit
-            if (Site.HasErrors)
-            {
-                return;
-            }
-        }
-
-        public void Run()
-        {
-            Initialize();
-
-            // If we have any errors, early exit
-            if (Site.HasErrors)
-            {
-                return;
-            }
-
-            // Start Loading and Preprocessing
-            BeginProcess(true);
-            try
-            {
-                Site.Load();
-            }
-            finally
-            {
-                EndProcess(true);
-            }
-
-            // Start to process files
-            BeginProcess(false);
-            try
-            {
-                // Process static files
-                ProcessPages(Site.StaticFiles, true);
-
-                // Process pages (files with front matter)
-                ProcessPages(Site.Pages, true);
-
-                // Process pages (files with front matter)
-                ProcessPages(Site.DynamicPages, true);
-            }
-            finally
-            {
-                // End the process
-                EndProcess(false);
-            }
-
-            // Remove output files
-            CleanupOutputFiles();
-
-            // Update statistics
-            totalDuration.Stop();
-            Site.Statistics.TotalTime = totalDuration.Elapsed;
-        }
-
         private void BeginProcess(bool preProcess)
         {
             var statistics = Site.Statistics;
@@ -285,6 +288,7 @@ namespace Lunet.Core
             // Callback plugins once files have been initialized but not yet processed
             var processors = preProcess ? PreProcessors.Cast<ISiteProcessor>() : Processors;
             int i = 0;
+            var clock = Stopwatch.StartNew();
             foreach (var processor in processors)
             {
                 var stat = statistics.GetPluginStat(processor);
@@ -304,6 +308,7 @@ namespace Lunet.Core
 
             // Callback plugins once files have been initialized but not yet processed
             var processors = preProcess ? PreProcessors.Cast<ISiteProcessor>() : Processors;
+            var clock = Stopwatch.StartNew();
             foreach (var processor in processors)
             {
                 clock.Restart();
@@ -348,6 +353,196 @@ namespace Lunet.Core
             }
         }
 
+        private void LoadAllContent()
+        {
+            Site.StaticFiles.Clear();
+            Site.Pages.Clear();
+
+            // Load a content asynchronously
+            var contentLoaderBlock = new TransformBlock<ContentReference, ContentObject>(
+                async reference => await LoadContent(reference),
+                new ExecutionDataflowBlockOptions()
+                {
+                    EnsureOrdered = false,
+                    MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded
+                });
+
+            // Add the content loaded to the correct list (static vs pages)
+            var contentAdderBlock = new ActionBlock<ContentObject>(content =>
+            {
+                // We don't need lock as this block has a MaxDegreeOfParallelism = 1
+                var list = content.ScriptObjectLocal != null ? Site.Pages : Site.StaticFiles;
+                list.Add(content);
+            });
+
+            // Link loader and adder
+            contentLoaderBlock.LinkTo(contentAdderBlock, new DataflowLinkOptions() { PropagateCompletion = true });
+
+            // We don't use a block for this part (annoying without struct tuples)
+
+            // Get the list of root directories from themes
+            var rootDirectories = new List<FolderInfo>(Site.ContentDirectories);
+
+            // Compute the list of files that we will actually process
+            var filesLoaded = new HashSet<string>();
+            foreach (var rootDirectory in rootDirectories)
+            {
+                var directories = new Queue<FolderInfo>();
+                directories.Enqueue(rootDirectory);
+                while (directories.Count > 0)
+                {
+                    var nextDirectory = directories.Dequeue();
+                    foreach (var contentReference in LoadDirectory(rootDirectory, nextDirectory, directories, filesLoaded))
+                    {
+                        contentLoaderBlock.Post(contentReference);
+                    }
+                }
+            }
+
+            // We are done loading content, wait for completion
+            contentLoaderBlock.Complete();
+            contentAdderBlock.Completion.Wait();
+
+            // Finally, we sort pages by natural order
+            Site.Pages.Sort();
+        }
+
+        private IEnumerable<ContentReference> LoadDirectory(FolderInfo rootDirectory, DirectoryInfo directory, Queue<FolderInfo> directoryQueue, HashSet<string> loaded)
+        {
+            foreach (var entry in directory.EnumerateFileSystemInfos())
+            {
+                if (entry.Name == SiteFactory.DefaultConfigFilename)
+                {
+                    continue;
+                }
+
+                if (entry is FileInfo)
+                {
+                    // If the relative path is already registered, we won't process this file
+                    var relativePath = rootDirectory.GetRelativePath(entry.FullName, PathFlags.Normalize);
+                    if (loaded.Contains(relativePath))
+                    {
+                        continue;
+                    }
+                    loaded.Add(relativePath);
+
+                    yield return new ContentReference(rootDirectory, (FileInfo)entry);
+                }
+                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.PrivateDirectoryName)
+                {
+                    directoryQueue.Enqueue((FolderInfo)entry);
+                }
+            }
+        }
+
+        private async Task<ContentObject> LoadContent(ContentReference arg)
+        {
+            ContentObject page = null;
+            var buffer = new byte[16];
+
+            var file = arg.FileInfo;
+            var rootDirectory = arg.RootFolder;
+
+            var clock = Stopwatch.StartNew();
+            var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+            try
+            {
+                var count = await stream.ReadAsync(buffer, 0, buffer.Length);
+                // Rewind to 0
+                stream.Position = 0;
+
+                bool hasFrontMatter = false;
+                bool isBinary = false;
+
+                int startFrontMatter = 0;
+
+                // Does it start with UTF8 BOM? If yes, skip it
+                // EF BB BF
+                if (buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF)
+                {
+                    startFrontMatter = 3;
+                }
+
+                if (buffer[startFrontMatter] == '{' && buffer[startFrontMatter + 1] == '{')
+                {
+                    for (int i = startFrontMatter + 2; i < count; i++)
+                    {
+                        if (buffer[i] == 0)
+                        {
+                            isBinary = true;
+                            break;
+                        }
+                    }
+
+                    if (!isBinary)
+                    {
+                        hasFrontMatter = true;
+                    }
+                }
+
+                if (hasFrontMatter)
+                {
+                    page = await LoadPageScript(Site, stream, rootDirectory, file);
+                    stream = null;
+                }
+                else
+                {
+                    page = new ContentObject(Site, rootDirectory, file);
+                }
+            }
+            finally
+            {
+                // Dispose stream used
+                stream?.Dispose();
+            }
+
+            clock.Stop();
+            Site.Statistics.GetContentStat(page).LoadingParsingTime += clock.Elapsed;
+
+            return page;
+        }
+        private static async Task<ContentObject> LoadPageScript(SiteObject site, Stream stream, DirectoryInfo rootDirectory, FileInfo file)
+        {
+            // Read the stream
+            var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            // Early dispose the stream
+            stream.Dispose();
+
+            ContentObject page = null;
+
+            // Parse the page, using front-matter mode
+            var scriptPage = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatter);
+            if (!scriptPage.HasErrors)
+            {
+                page = new ContentObject(site, rootDirectory, file)
+                {
+                    Script = scriptPage.Page
+                };
+
+                var evalClock = Stopwatch.StartNew();
+                if (site.Builder.TryPreparePage(page))
+                {
+                    evalClock.Stop();
+
+                    // Update statistics
+                    var contentStat = site.Statistics.GetContentStat(page);
+
+                    contentStat.EvaluateTime += evalClock.Elapsed;
+
+                    // Update the summary of the page
+                    evalClock.Restart();
+                    SummaryHelper.UpdateSummary(page);
+                    evalClock.Stop();
+
+                    // Update statistics
+                    contentStat.SummaryTime += evalClock.Elapsed;
+                }
+            }
+
+            return page;
+        }
+
         private bool TryProcessPage(ContentObject page, OrderedList<IContentProcessor> pageProcessors, OrderedList<IContentProcessor> pendingPageProcessors, bool copyOutput)
         {
             // If page is discarded, skip it
@@ -368,6 +563,7 @@ namespace Lunet.Core
             // that could then be processed by another IContentProcessor
             // But we make sure that a processor cannot process a page more than one time
             // to avoid an infinite loop
+            var clock = Stopwatch.StartNew();
             while (hasBeenProcessed && !breakProcessing && !page.Discard)
             {
                 hasBeenProcessed = false;
@@ -414,7 +610,7 @@ namespace Lunet.Core
                 page.ScriptObjectLocal = new ScriptObject();
             }
 
-            clock.Reset();
+            var clock = Stopwatch.StartNew();
             try
             {
                 return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObjectLocal);
@@ -425,7 +621,6 @@ namespace Lunet.Core
                 Site.Statistics.GetContentStat(page).EvaluateTime += clock.Elapsed;
             }
         }
-
 
         public void CreateDirectory(DirectoryInfo directory)
         {
@@ -523,6 +718,19 @@ namespace Lunet.Core
                     }
                 }
             }
+        }
+
+        internal struct ContentReference
+        {
+            public ContentReference(FolderInfo rootFolder, FileInfo fileInfo)
+            {
+                RootFolder = rootFolder;
+                FileInfo = fileInfo;
+            }
+
+            public readonly FolderInfo RootFolder;
+
+            public readonly FileInfo FileInfo;
         }
     }
 }
