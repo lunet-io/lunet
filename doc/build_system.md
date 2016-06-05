@@ -84,7 +84,8 @@ After the full build workflow happened.
   - Rerun a full build
 
 
-
+- a change in a css used by a bundle would not regenerate pages, just the bundle
+- a change in bundle config would regenerate all pages
 
 
 
