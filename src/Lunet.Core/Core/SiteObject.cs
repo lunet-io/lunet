@@ -239,7 +239,7 @@ namespace Lunet.Core
         {
             if (ConfigFile.Exists)
             {
-                FileUtil.DeleteDirectory(PrivateBaseDirectory, Log);
+                FileUtil.DeleteDirectory(PrivateBaseDirectory);
                 this.Info($"Directory {PrivateBaseDirectory} deleted");
                 return 0;
             }
