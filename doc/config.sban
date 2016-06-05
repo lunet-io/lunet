@@ -45,4 +45,14 @@ end
 # log.info bundles
 
 # log.fatal "plugin: " + jquery.name + " path: " + jquery.path
-# log.info "yes"
+
+# Defines the top-level toc
+# The doc can also be defined in a toc.sban file
+##
+toc "
+- tutorial/index.md
+- guideline/index.md
+- spec/index.md
+- docfxapi
+"
+
