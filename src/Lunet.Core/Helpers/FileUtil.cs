@@ -8,7 +8,7 @@ using Lunet.Core;
 
 namespace Lunet.Helpers
 {
-    internal static class FileUtil
+    public static class FileUtil
     {
         public static void DirectoryCopy(FolderInfo sourcedir, FolderInfo destDir, bool copySubDirs, bool overwrite)
         {

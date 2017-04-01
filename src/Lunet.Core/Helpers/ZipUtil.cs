@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.IO.Compression;
 
 namespace Lunet.Helpers
 {
-    internal static class ZipUtil
+    public static class ZipUtil
     {
         public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, string filterPath = null)
         {
@@ -14,8 +13,6 @@ namespace Lunet.Helpers
 
             if (destinationDirectoryName == null)
                 throw new ArgumentNullException(nameof(destinationDirectoryName));
-
-            Contract.EndContractBlock();
 
             // Rely on Directory.CreateDirectory for validation of destinationDirectoryName.
 
@@ -136,9 +133,6 @@ namespace Lunet.Helpers
                 throw new ArgumentNullException(nameof(destinationFileName));
 
             // Rely on FileStream's ctor for further checking destinationFileName parameter
-
-            Contract.EndContractBlock();
-
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
             using (Stream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))

@@ -1,11 +1,10 @@
 ﻿using Lunet.Core;
 using Lunet.Extends;
 using Lunet.Plugins;
-using Lunet.Plugins.Extends;
 
 [assembly: SitePlugin(typeof(ExtendPlugin), Order = -100)]
 
-namespace Lunet.Plugins.Extends
+namespace Lunet.Extends
 {
     public class ExtendPlugin : SitePlugin
     {

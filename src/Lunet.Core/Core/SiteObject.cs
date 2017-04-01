@@ -7,9 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using Lunet.Bundles;
 using Lunet.Helpers;
-using Lunet.Hosting;
 using Lunet.Plugins;
 using Lunet.Scripts;
 using Lunet.Statistics;
@@ -339,6 +337,10 @@ namespace Lunet.Core
                     // NOTE: we are recreating a full new SiteObject here (not incremental)
                     var siteObject = SiteFactory.FromDirectory(BaseDirectory, LoggerFactory);
 
+                    // Copy the plugins from the current site
+                    siteObject.Plugins.Factory.AddRange(Plugins.Factory);
+                    siteObject.Plugins.LoadPlugins();
+
                     rebuild(siteObject);
                 }
                 catch (Exception ex)
@@ -354,6 +356,8 @@ namespace Lunet.Core
 
             try
             {
+                Plugins.LoadPlugins();
+
                 if (ConfigFile.Exists)
                 {
                     Initialize();

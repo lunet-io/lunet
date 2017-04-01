@@ -24,7 +24,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Lunet.Bundles\Lunet.Bundles.csproj" />
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
+    <ProjectReference Include="..\Lunet.Extends\Lunet.Extends.csproj" />
+    <ProjectReference Include="..\Lunet.Hosting\Lunet.Hosting.csproj" />
+    <ProjectReference Include="..\Lunet.Layouts\Lunet.Layouts.csproj" />
+    <ProjectReference Include="..\Lunet.Markdig\Lunet.Markdown.csproj" />
+    <ProjectReference Include="..\Lunet.NUglify\Lunet.Minifiers.csproj" />
+    <ProjectReference Include="..\Lunet.Scss\Lunet.Scss.csproj" />
+    <ProjectReference Include="..\Lunet.Taxonomies\Lunet.Taxonomies.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,11 +18,22 @@ namespace Lunet.Plugins
     {
         internal PluginService(SiteObject site) : base(site)
         {
+            Factory = new OrderedList<Func<ISitePlugin>>();
             List = new PluginCollection<ISitePlugin>(Site);
             Site.SetValue(SiteVariables.Plugins, this, true);
         }
 
+        public OrderedList<Func<ISitePlugin>> Factory { get; }
+
         public PluginCollection<ISitePlugin> List { get; }
+
+        public void LoadPlugins()
+        {
+            foreach (var pluginFactory in Factory)
+            {
+                List.Add(pluginFactory());
+            }
+        }
 
         public void ImportPluginsFromAssembly(Assembly assembly)
         {
@@ -31,7 +42,7 @@ namespace Lunet.Plugins
             foreach (var pluginAttr in attributes)
             {
                 var pluginType = pluginAttr.PluginType;
-                if (!typeof (ISitePlugin).IsAssignableFrom(pluginType))
+                if (!typeof (ISitePlugin).GetTypeInfo().IsAssignableFrom(pluginType))
                 {
                     Site.Error($"The plugin [{pluginType}] must be of the type {typeof(ISitePlugin)}");
                     continue;

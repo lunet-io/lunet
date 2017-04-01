@@ -27,6 +27,8 @@
     <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <RootNamespace>Lunet</RootNamespace>
+    <DefineConstants>NTAR_PUBLIC</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,25 +38,28 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Markdig" Version="0.10.7" />
-    <PackageReference Include="Scriban" Version="0.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="1.1.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="1.1.1" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="1.1.1" />
-    <PackageReference Include="Microsoft.AspNetCore.WebSockets.Server" Version="0.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
-    <PackageReference Include="NuGet.Versioning" Version="4.0.0" />
-    <PackageReference Include="NUglify" Version="1.5.5" />
-    <PackageReference Include="SharpScss" Version="1.2.0" />
-    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
-    <PackageReference Include="System.Net.Http" Version="4.3.1" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.7.0" />
+    <Compile Remove="Plugins\**" />
+    <EmbeddedResource Remove="Plugins\**" />
+    <None Remove="Plugins\**" />
   </ItemGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-    <DefineConstants>$(DefineConstants);CORE</DefineConstants>
-  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="0.10.7" />
+    <PackageReference Include="Scriban" Version="0.3.0" />
+    <PackageReference Include="NUglify" Version="1.5.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.1" />
+    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+    <PackageReference Include="System.IO.FileSystem.Watcher" Version="4.3.0" />
+    <PackageReference Include="System.Net.Http" Version="4.3.1" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.7.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
+    <PackageReference Include="NuGet.Versioning" Version="4.0.0" />
+    <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
 
 </Project>

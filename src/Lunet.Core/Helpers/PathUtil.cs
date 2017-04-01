@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Lunet.Helpers
 {
-    internal static class PathUtil
+    public static class PathUtil
     {
         private static readonly char[] TrimCharStart = new[] {'/'};
 

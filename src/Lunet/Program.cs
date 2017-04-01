@@ -1,6 +1,16 @@
 ﻿using System;
+using System.Reflection;
+using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Logging;
+using Lunet.Plugins.Bundles;
+using Lunet.Extends;
+using Lunet.Hosting;
+using Lunet.Plugins.Layouts;
+using Lunet.Plugins.Markdig;
+using Lunet.Plugins.NUglify;
+using Lunet.Plugins.SharpScss;
+using Lunet.Plugins.Taxonomies;
 using Microsoft.Extensions.Logging;
 
 namespace Lunet
@@ -11,6 +21,16 @@ namespace Lunet
         {
             var loggerFactory = new LoggerFactory();
             var site = new SiteObject(loggerFactory).AddConsoleLogger();
+
+            site.Plugins.Factory.Add(() => new BundlePlugin());
+            site.Plugins.Factory.Add(() => new ExtendPlugin());
+            site.Plugins.Factory.Add(() => new LayoutPlugin());
+            site.Plugins.Factory.Add(() => new HostingPlugin());
+            site.Plugins.Factory.Add(() => new MarkdigPlugin());
+            site.Plugins.Factory.Add(() => new NUglifyPlugin());
+            site.Plugins.Factory.Add(() => new SharpScssPlugin());
+            site.Plugins.Factory.Add(() => new TaxonomyPlugin());
+
             return site.Run(args);
         }
 

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Lunet.Helpers
 {
-    internal static class ExceptionUtil
+    public static class ExceptionUtil
     {
         public static string GetReason(this Exception exception)
         {

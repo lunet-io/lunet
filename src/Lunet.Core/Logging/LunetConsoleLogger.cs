@@ -4,7 +4,6 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Console.Internal;
