@@ -54,7 +54,7 @@ namespace Lunet.Plugins.Markdig
 
             if (markdigOptions.Count == 0)
             {
-                pipeline.UseAllExtensions();
+                pipeline.UseAdvancedExtensions();
             }
             else
             {

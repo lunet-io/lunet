@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Lunet.Core", "Lunet.Core\Lunet.Core.xproj", "{3E82658E-3E57-4B3D-8093-1AFDD658A2DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Core", "Lunet.Core\Lunet.Core.csproj", "{3E82658E-3E57-4B3D-8093-1AFDD658A2DE}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Lunet", "Lunet\Lunet.xproj", "{A8300674-269D-4991-9DE6-E015A3A6E260}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet", "Lunet\Lunet.csproj", "{A8300674-269D-4991-9DE6-E015A3A6E260}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

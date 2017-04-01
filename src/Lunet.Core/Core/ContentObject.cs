@@ -37,12 +37,12 @@ namespace Lunet.Core
                 var month = int.Parse(match.Groups[2].Value);
                 var day = int.Parse(match.Groups[3].Value);
                 var title = match.Groups[4].Value;
-                Date = new ScriptDate(new DateTime(year, month, day));
+                Date = new DateTime(year, month, day);
                 Title = StringFunctions.Capitalize(title.Replace('-',' '));
             }
             else
             {
-                Date = ScriptDate.Now;
+                Date = DateTime.Now;
             }
 
             Path = RootDirectory.GetRelativePath(SourceFile, PathFlags.Normalize);
@@ -128,7 +128,7 @@ namespace Lunet.Core
 
         public string Path { get; }
 
-        public ScriptDate ModifiedTime { get; }
+        public DateTime ModifiedTime { get; }
 
         public string Extension { get; }
 
@@ -191,9 +191,9 @@ namespace Lunet.Core
             set { this[PageVariables.Url] = value; }
         }
 
-        public ScriptDate Date
+        public DateTime Date
         {
-            get { return GetSafeValue<ScriptDate>(PageVariables.Date); }
+            get { return GetSafeValue<DateTime>(PageVariables.Date); }
             set { this[PageVariables.Date] = value; }
         }
 

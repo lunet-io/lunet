@@ -9,6 +9,7 @@ using Lunet.Core;
 using NUglify;
 using NUglify.Html;
 using Scriban.Helpers;
+using Scriban.Runtime;
 
 namespace Lunet.Helpers
 {
