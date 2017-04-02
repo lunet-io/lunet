@@ -4,6 +4,8 @@
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Lunet.Helpers;
 
 namespace Lunet.Core
@@ -24,7 +26,13 @@ namespace Lunet.Core
 
             HelpOption("-h|--help");
 
-            var version = VersionOption("-v|--version", LunetVersion.AssemblyVersion, LunetVersion.AssemblyVersionInfo);
+            var list = typeof(SiteFactory).GetTypeInfo().Assembly.CustomAttributes.ToList();
+
+
+            var versionText = typeof(SiteFactory).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
+            var infoVersionText = typeof(SiteFactory).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+
+            var version = VersionOption("-v|--version", versionText, infoVersionText);
 
             // The defines to setup before initializing config.sban
             Defines = Option("-d|--define <variable=value>", "Defines a site variable", CommandOptionType.MultipleValue);

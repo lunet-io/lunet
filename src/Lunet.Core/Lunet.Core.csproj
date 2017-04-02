@@ -7,7 +7,6 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <VersionPrefix>0.1.0</VersionPrefix>
     <Authors>Alexandre Mutel</Authors>
-    <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
     <TargetFramework>netstandard1.6</TargetFramework>
     <AssemblyName>Lunet.Core</AssemblyName>
     <PackageId>Lunet.Core</PackageId>
@@ -17,16 +16,6 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>git://github.com/lunet-io/lunet</RepositoryUrl>
     <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
-    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <RootNamespace>Lunet</RootNamespace>
     <DefineConstants>NTAR_PUBLIC</DefineConstants>
   </PropertyGroup>
@@ -35,12 +24,6 @@
     <Content Include="data\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Plugins\**" />
-    <EmbeddedResource Remove="Plugins\**" />
-    <None Remove="Plugins\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -59,6 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Properties\" />
     <Folder Include="Resources\" />
   </ItemGroup>
 
