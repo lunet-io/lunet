@@ -24,8 +24,11 @@ with bundle
 	js $tether.main
 	
 	# bootstrap
-	$bootstrap = resource "npm:bootstrap@4.0.0-alpha.2"
+	$bootstrap = resource "npm:bootstrap@4.0.0-alpha.6"
 	js $bootstrap.path + "dist/js/bootstrap.js"
+
+	# purecss
+	$purecss = resource "npm:purecss"
 
 	# Add bootstrap scss folder to global scss include path
 	scss.includes << $bootstrap.path + "scss"

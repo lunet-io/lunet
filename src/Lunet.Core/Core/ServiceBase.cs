@@ -23,8 +23,7 @@ namespace Lunet.Core
         /// <exception cref="System.ArgumentNullException">If <paramref name="site"/> is null</exception>
         protected ServiceBase(SiteObject site)
         {
-            if (site == null) throw new ArgumentNullException(nameof(site));
-            Site = site;
+            Site = site ?? throw new ArgumentNullException(nameof(site));
         }
 
         /// <summary>

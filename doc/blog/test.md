@@ -1,7 +1,7 @@
-{{
++++
 title = "This is the title of this page"
 tags = ["Open", "Develop", "Git"]
-}}
++++
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sollicitudin egestas ipsum. Suspendisse accumsan nisl sed mauris tempor, sed gravida erat eleifend. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Sed ligula purus, viverra quis felis nec, blandit vulputate diam. Mauris faucibus diam eget laoreet hendrerit. Donec non posuere magna. Mauris aliquam nulla at odio lacinia, quis accumsan nulla molestie. Morbi et euismod massa, quis mattis lacus. Aliquam tellus ex, lobortis a convallis eu, vehicula at erat. Curabitur rhoncus quis tellus nec bibendum. Donec at nisi eget ipsum ultrices fringilla.
 
 And this is a test wooot: [This is a test]({{page.url | absurl}})

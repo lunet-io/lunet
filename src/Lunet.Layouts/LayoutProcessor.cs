@@ -164,7 +164,7 @@ namespace Lunet.Layouts
                         if (File.Exists(layoutPath))
                         {
                             var scriptLayoutText = File.ReadAllText(layoutPath);
-                            layoutPage = Site.Scripts.ParseScript(scriptLayoutText, layoutPath, ScriptMode.FrontMatter);
+                            layoutPage = Site.Scripts.ParseScript(scriptLayoutText, layoutPath, ScriptMode.FrontMatterAndContent);
                             break;
                         }
                     }

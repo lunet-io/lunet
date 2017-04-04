@@ -1,6 +1,6 @@
-{{
++++
 title = "This is the title of this page"
-}}
++++
 This is a welcome file
 
 We would like to try this

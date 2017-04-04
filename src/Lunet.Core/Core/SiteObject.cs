@@ -72,7 +72,7 @@ namespace Lunet.Core
             Scripts = new ScriptService(this);
             Register(Scripts);
 
-            Builder = new SiteBuilder(this);
+            Builder = new ContentBuilder(this);
             Register(Builder);
 
             Plugins = new PluginService(this);
@@ -134,7 +134,7 @@ namespace Lunet.Core
 
         public PluginService Plugins { get; }
 
-        public SiteBuilder Builder { get; }
+        public ContentBuilder Builder { get; }
 
         public ScriptService Scripts { get; }
 

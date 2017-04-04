@@ -1,11 +1,13 @@
 ﻿using System;
 using System.IO;
+using Scriban.Parsing;
 using Scriban.Runtime;
 using SharpYaml;
 using SharpYaml.Events;
 using SharpYaml.Schemas;
+using Parser = SharpYaml.Parser;
 
-namespace Lunet.Helpers
+namespace Lunet.Yaml
 {
     /// <summary>
     /// Helper functions to decode a YAML into a Scriban <see cref="ScriptObject"/> or <see cref="ScriptArray"/>.
@@ -18,11 +20,11 @@ namespace Lunet.Helpers
         /// Extracts a YAML object from the YAML frontmatter and return the index of a string after the `---` end of the YAML frontmatter.
         /// </summary>
         /// <param name="yamlText">The input YAML expected to be a frontmatter, starting with a `---`</param>
-        /// <param name="index">the index of a string after the `---` end of the YAML frontmatter</param>
+        /// <param name="position">the index of a string after the `---` end of the YAML frontmatter</param>
         /// <returns>The parsed YAML frontmatter to a Scriban <see cref="ScriptObject"/></returns>
-        public static object FromYamlFrontMatter(string yamlText, out int index)
+        public static object FromYamlFrontMatter(string yamlText, out TextPosition position)
         {
-            return FromYaml(yamlText, true, out index);
+            return FromYaml(yamlText, true, out position);
         }
 
         /// <summary>
@@ -32,13 +34,13 @@ namespace Lunet.Helpers
         /// <returns>The parsed YAML object to a Scriban <see cref="ScriptObject"/> or <see cref="ScriptArray"/></returns>
         public static object FromYaml(string yamlText)
         {
-            int index;
-            return FromYaml(yamlText, false, out index);
+            TextPosition position;
+            return FromYaml(yamlText, false, out position);
         }
 
-        private static object FromYaml(string yamlText, bool expectOnlyFrontMatter, out int index)
+        private static object FromYaml(string yamlText, bool expectOnlyFrontMatter, out TextPosition position)
         {
-            index = 0;
+            position = new TextPosition();
             if (yamlText == null)
             {
                 return null;
@@ -112,7 +114,8 @@ namespace Lunet.Helpers
                 }
             }
 
-            index = reader.Parser.Current.Start.Index;
+            var yamlPosition = reader.Parser.Current.Start;
+            position = new TextPosition(yamlPosition.Index, yamlPosition.Line, yamlPosition.Column);
             return result;
         }
 

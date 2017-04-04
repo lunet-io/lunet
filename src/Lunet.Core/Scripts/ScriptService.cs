@@ -52,11 +52,7 @@ namespace Lunet.Scripts
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
             // Load parse the template
-            var template = Template.Parse(scriptContent, scriptPath,
-                new ParserOptions()
-                {
-                    Mode = parsingMode
-                });
+            var template = Template.Parse(scriptContent, scriptPath, null, new LexerOptions() { Mode = parsingMode });
 
             // If we have any errors, log them and set the errors flag on this instance
             if (template.HasErrors)

@@ -50,7 +50,14 @@ namespace Lunet.Core
         }
     }
 
-    public class SiteBuilder : ServiceBase
+    public interface IFrontMatterParser
+    {
+        bool CanHandle(byte[] header, int index);
+
+        bool TryParse(string text, ContentObject content, out TextPosition position);
+    }
+
+    public class ContentBuilder : ServiceBase
     {
         private readonly HashSet<string> previousOutputDirectories;
         private readonly HashSet<string> previousOutputFiles;
@@ -58,7 +65,7 @@ namespace Lunet.Core
         private bool isInitialized;
         private readonly Stopwatch totalDuration;
 
-        public SiteBuilder(SiteObject site) : base(site)
+        public ContentBuilder(SiteObject site) : base(site)
         {
             previousOutputDirectories = new HashSet<string>();
             previousOutputFiles = new HashSet<string>();
@@ -69,6 +76,8 @@ namespace Lunet.Core
             PreProcessors = new PluginCollection<IContentProcessor>(Site);
 
             Processors = new PluginCollection<ISiteProcessor>(Site);
+
+            FrontMatterParsers = new OrderedList<IFrontMatterParser>();
         }
 
         private ScriptService Scripts { get; }
@@ -76,6 +85,9 @@ namespace Lunet.Core
         public PluginCollection<IContentProcessor> PreProcessors { get; }
 
         public PluginCollection<ISiteProcessor> Processors { get; }
+
+
+        public OrderedList<IFrontMatterParser> FrontMatterParsers { get; }
 
         public void Initialize()
         {
@@ -462,9 +474,9 @@ namespace Lunet.Core
                     startFrontMatter = 3;
                 }
 
-                if (buffer[startFrontMatter] == '{' && buffer[startFrontMatter + 1] == '{')
+                if (buffer[startFrontMatter] == '+' && buffer[startFrontMatter + 1] == '+' && buffer[startFrontMatter + 2] == '+')
                 {
-                    for (int i = startFrontMatter + 2; i < count; i++)
+                    for (int i = startFrontMatter + 3; i < count; i++)
                     {
                         if (buffer[i] == 0)
                         {
@@ -511,7 +523,7 @@ namespace Lunet.Core
             ContentObject page = null;
 
             // Parse the page, using front-matter mode
-            var scriptPage = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatter);
+            var scriptPage = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatterAndContent);
             if (!scriptPage.HasErrors)
             {
                 page = new ContentObject(site, rootDirectory, file)

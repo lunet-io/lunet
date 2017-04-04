@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using Lunet.Helpers;
+using Lunet.Yaml;
+using Scriban.Parsing;
 using Xunit;
 using Scriban.Runtime;
 
@@ -13,7 +13,7 @@ namespace Lunet.Tests
         [Fact]
         public void TestYamlFrontMatter()
         {
-            int index;
+            TextPosition position;
             var input = @"---
 name: yes
 intvalue: 12351235
@@ -25,7 +25,9 @@ boooo:
 ---
 Yo
 ";
-            var result = YamlUtil.FromYamlFrontMatter(input, out index);
+            var result = YamlUtil.FromYamlFrontMatter(input, out position);
+
+            Assert.Equal(new TextPosition(89, 9, 0), position);
 
             var scriptObject = Assert.IsType<ScriptObject>(result);
             Assert.Equal(4, scriptObject.Keys.Count);
@@ -49,8 +51,7 @@ Yo
                 "c"
             }, scriptObject["boooo"]);
 
-            Assert.True(index > 0);
-            var remaining = input.Substring(index).Trim();
+            var remaining = input.Substring(position.Offset).Trim();
             Assert.Equal("Yo", remaining);
         }
     }

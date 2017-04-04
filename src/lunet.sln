@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Layouts", "Lunet.Layo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Tests", "Lunet.Tests\Lunet.Tests.csproj", "{C0B22D93-8761-47FC-9D0D-B95250AB07CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Yaml", "Lunet.Yaml\Lunet.Yaml.csproj", "{12D998DE-509A-4A63-82D5-1670FAB7C06A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12D998DE-509A-4A63-82D5-1670FAB7C06A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12D998DE-509A-4A63-82D5-1670FAB7C06A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12D998DE-509A-4A63-82D5-1670FAB7C06A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12D998DE-509A-4A63-82D5-1670FAB7C06A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
