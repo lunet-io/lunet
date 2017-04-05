@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Reflection;
-using Autofac;
 using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Datas;
@@ -14,7 +12,6 @@ using Lunet.Resources;
 using Lunet.Taxonomies;
 using Lunet.Scss;
 using Lunet.Yaml;
-using Microsoft.Extensions.Logging;
 
 namespace Lunet
 {
