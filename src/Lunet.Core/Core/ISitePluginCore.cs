@@ -1,3 +1,6 @@
+using System;
+using System.Diagnostics;
+
 namespace Lunet.Core
 {
     public interface ISitePluginCore
@@ -8,9 +11,22 @@ namespace Lunet.Core
         string Name { get; }
 
         /// <summary>
-        /// Initializes this plugin with the specified <see cref="SiteObject"/>.
+        /// Gets the site used by this plugin
         /// </summary>
-        /// <param name="site">The site object</param>
-        void Initialize(SiteObject site);
+        SiteObject Site { get; }
+    }
+
+    [DebuggerDisplay("Plugin: {Name}")]
+    public abstract class SitePluginCore : DynamicObject, ISitePluginCore
+    {
+        protected SitePluginCore(SiteObject site)
+        {
+            Site = site ?? throw new ArgumentNullException(nameof(site));
+
+        }
+
+        public virtual string Name => GetType().Name;
+
+        public SiteObject Site { get; }
     }
 }

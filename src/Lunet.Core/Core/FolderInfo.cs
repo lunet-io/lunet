@@ -8,7 +8,7 @@ using Lunet.Helpers;
 
 namespace Lunet.Core
 {
-    public struct FolderInfo
+    public struct FolderInfo : IEquatable<FolderInfo>
     {
         public static readonly FolderInfo Current = new FolderInfo(".");
 
@@ -32,10 +32,14 @@ namespace Lunet.Core
 
         public bool Exists => Info.Exists;
 
+        public string Name => Info.Name;
+
         public void Create()
         {
             Info.Create();
         }
+
+        public FolderInfo Parent => new FolderInfo(Info.Parent);
 
         public string Combine(string relativePath)
         {
@@ -107,6 +111,32 @@ namespace Lunet.Core
         public override string ToString()
         {
             return FullName;
+        }
+
+        public bool Equals(FolderInfo other)
+        {
+            return string.Equals(FullName, other.FullName);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is FolderInfo && Equals((FolderInfo) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return FullName == null ? 0 : FullName.GetHashCode();
+        }
+
+        public static bool operator ==(FolderInfo left, FolderInfo right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(FolderInfo left, FolderInfo right)
+        {
+            return !left.Equals(right);
         }
     }
 }

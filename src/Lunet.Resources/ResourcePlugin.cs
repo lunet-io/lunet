@@ -16,17 +16,16 @@ namespace Lunet.Resources
     /// <summary>
     /// Manages resources.
     /// </summary>
-    /// <seealso cref="ServiceBase" />
-    public sealed class ResourceService : ServiceBase
+    public sealed class ResourcePlugin : SitePlugin
     {
-        private const string ResourceDirectoryName = "resources";
+        private const string ResourceFolderName = "resources";
 
         private delegate object ResourceFunctionDelegate(object o);
 
-        public ResourceService(SiteObject site) : base(site)
+        public ResourcePlugin(SiteObject site) : base(site)
         {
-            ResourceDirectory = Path.Combine(Site.MetaDirectory, ResourceDirectoryName);
-            PrivateResourceDirectory = Path.Combine(Site.PrivateMetaDirectory, ResourceDirectoryName);
+            ResourceFolder = Path.Combine(Site.MetaFolder, ResourceFolderName);
+            PrivateResourceFolder = Path.Combine(Site.PrivateMetaFolder, ResourceFolderName);
             Providers = new OrderedList<ResourceProvider>()
             {
                 new NpmResourceProvider(this)
@@ -35,9 +34,9 @@ namespace Lunet.Resources
             Site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
         }
 
-        public FolderInfo ResourceDirectory { get; }
+        public FolderInfo ResourceFolder { get; }
 
-        public FolderInfo PrivateResourceDirectory { get; }
+        public FolderInfo PrivateResourceFolder { get; }
 
         public OrderedList<ResourceProvider> Providers { get; }
 

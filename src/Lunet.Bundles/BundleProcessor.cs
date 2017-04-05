@@ -9,29 +9,22 @@ using System.Linq;
 using System.Text;
 using Lunet.Core;
 using Lunet.Helpers;
-using Lunet.Plugins;
 
 namespace Lunet.Bundles
 {
-    public class BundleProcessor : ProcessorBase
+    public class BundleProcessor : ProcessorBase<BundlePlugin>
     {
-        public override string Name => "bundler";
-
-        public BundleProcessor(BundleService bundleService)
+        public BundleProcessor(BundlePlugin bundlePlugin) : base(bundlePlugin)
         {
-            if (bundleService == null) throw new ArgumentNullException(nameof(bundleService));
-            Service = bundleService;
             Minifiers = new OrderedList<IContentMinifier>();
         }
 
-        public BundleService Service { get; }
-
         public OrderedList<IContentMinifier> Minifiers { get; }
 
-        public override void BeginProcess()
+        public override void Process()
         {
             // If we don't have any bundles, early exit
-            if (Service.List.Count == 0)
+            if (Plugin.List.Count == 0)
             {
                 return;
             }
@@ -42,7 +35,7 @@ namespace Lunet.Bundles
             {
                 // Get the bundle setup for the page, or use the default otherwise
                 var bundleName = page.GetSafeValue<string>("bundle");
-                var bundle = Service.GetOrCreateBundle(bundleName);
+                var bundle = Plugin.GetOrCreateBundle(bundleName);
                 bundleUsed.Add(bundle);
             }
 
@@ -124,7 +117,7 @@ namespace Lunet.Bundles
                 {
                     path = PathUtil.NormalizeRelativePath(path, false);
                     link.Path = path;
-                    var entry = Site.BaseDirectory.CombineToFile(path);
+                    var entry = Site.BaseFolder.CombineToFile(path);
 
                     var outputUrlDirectory = bundle.UrlDestination[link.Type];
 
@@ -145,7 +138,7 @@ namespace Lunet.Bundles
                     {
                         if (entry.Exists)
                         {
-                            currentContent = new ContentObject(Site, Site.BaseDirectory, entry) { Url = url };
+                            currentContent = new ContentObject(Site, Site.BaseFolder, entry) { Url = url };
                         }
                         else
                         {
@@ -156,7 +149,7 @@ namespace Lunet.Bundles
                     if (currentContent != null)
                     {
                         var listTemp = new PageCollection() { currentContent };
-                        Site.Builder.ProcessPages(listTemp, false);
+                        Site.Content.ProcessPages(listTemp, false);
                         link.ContentObject = currentContent;
 
                         // If we require concat and/or minify, we preload the content of the file
@@ -208,7 +201,7 @@ namespace Lunet.Bundles
                         // If the file is private or meta, we need to copy to the output
                         // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
                         var url = outputUrlDirectory + bundle.Name + "." + type;
-                        var newStaticFile = new ContentObject(Site, Site.BaseDirectory)
+                        var newStaticFile = new ContentObject(Site, Site.BaseFolder)
                         {
                             Url = url,
                             Content = builder.ToString()

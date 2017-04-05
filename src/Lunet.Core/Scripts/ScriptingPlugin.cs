@@ -13,13 +13,13 @@ using Scriban.Runtime;
 
 namespace Lunet.Scripts
 {
-    public class ScriptService : ServiceBase
+    public class ScriptingPlugin : SitePlugin
     {
         private readonly ITemplateLoader unauthorizedTemplateLoader;
 
         private const string IncludesDirectoryName = "includes";
 
-        internal ScriptService(SiteObject site) : base(site)
+        internal ScriptingPlugin(SiteObject site) : base(site)
         {
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
             GlobalObject = TemplateContext.GetDefaultBuiltinObject();
@@ -305,7 +305,7 @@ namespace Lunet.Scripts
                     return null;
                 }
 
-                foreach (var directory in site.MetaDirectories)
+                foreach (var directory in site.MetaFolders)
                 {
                     var includePath = Path.Combine(directory, IncludesDirectoryName, templateName);
                     var file = new FileInfo(includePath);

@@ -5,11 +5,11 @@
 using Lunet.Core;
 using Scriban.Runtime;
 
-namespace Lunet.Plugins.SharpScss
+namespace Lunet.Scss
 {
-    public class ScssObject : DynamicObject<SharpScssPlugin>
+    public class ScssObject : DynamicObject<ScssPlugin>
     {
-        public ScssObject(SharpScssPlugin parent) : base(parent)
+        public ScssObject(ScssPlugin parent) : base(parent)
         {
             Includes = new ScriptArray();
             SetValue("includes", Includes, true);

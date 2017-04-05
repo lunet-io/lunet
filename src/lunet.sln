@@ -23,9 +23,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Scss", "Lunet.Scss\Lu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Layouts", "Lunet.Layouts\Lunet.Layouts.csproj", "{ABFE0E15-F643-4C84-A0C6-9225724284D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Feeds", "Lunet.Feeds\Lunet.Feeds.csproj", "{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Tests", "Lunet.Tests\Lunet.Tests.csproj", "{C0B22D93-8761-47FC-9D0D-B95250AB07CE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Yaml", "Lunet.Yaml\Lunet.Yaml.csproj", "{12D998DE-509A-4A63-82D5-1670FAB7C06A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Datas", "Lunet.Datas\Lunet.Datas.csproj", "{7BC41A85-EA4B-4365-824E-B6883DF0252B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Resources", "Lunet.Resources\Lunet.Resources.csproj", "{16B01731-3AB7-41EC-A201-1AA5CD32EC73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Watcher", "Lunet.Watcher\Lunet.Watcher.csproj", "{59247D07-E8D7-45EF-B566-DE77F19E5685}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,6 +81,10 @@ Global
 		{ABFE0E15-F643-4C84-A0C6-9225724284D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ABFE0E15-F643-4C84-A0C6-9225724284D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABFE0E15-F643-4C84-A0C6-9225724284D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -81,6 +93,18 @@ Global
 		{12D998DE-509A-4A63-82D5-1670FAB7C06A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12D998DE-509A-4A63-82D5-1670FAB7C06A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12D998DE-509A-4A63-82D5-1670FAB7C06A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BC41A85-EA4B-4365-824E-B6883DF0252B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BC41A85-EA4B-4365-824E-B6883DF0252B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BC41A85-EA4B-4365-824E-B6883DF0252B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BC41A85-EA4B-4365-824E-B6883DF0252B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16B01731-3AB7-41EC-A201-1AA5CD32EC73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16B01731-3AB7-41EC-A201-1AA5CD32EC73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16B01731-3AB7-41EC-A201-1AA5CD32EC73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16B01731-3AB7-41EC-A201-1AA5CD32EC73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59247D07-E8D7-45EF-B566-DE77F19E5685}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59247D07-E8D7-45EF-B566-DE77F19E5685}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59247D07-E8D7-45EF-B566-DE77F19E5685}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59247D07-E8D7-45EF-B566-DE77F19E5685}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

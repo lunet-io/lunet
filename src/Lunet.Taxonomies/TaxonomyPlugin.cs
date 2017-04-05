@@ -2,23 +2,20 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System;
 using Lunet.Core;
-using Lunet.Plugins;
-using Lunet.Plugins.Taxonomies;
-using Lunet.Resources;
+using Lunet.Layouts;
 
 // Register this plugin
-[assembly: SitePlugin(typeof(TaxonomyPlugin))]
 
-namespace Lunet.Plugins.Taxonomies
+namespace Lunet.Taxonomies
 {
     public class TaxonomyPlugin : SitePlugin
     {
-        public override string Name => "taxonomies";
-
-        public override void Initialize(SiteObject site)
+        public TaxonomyPlugin(SiteObject site, LayoutPlugin layoutPlugin) : base(site)
         {
-            site.Builder.Processors.Add(new TaxonomyProcessor());
+            if (layoutPlugin == null) throw new ArgumentNullException(nameof(layoutPlugin));
+            site.Content.AfterContentProcessors.Add(new TaxonomyProcessor(this, layoutPlugin));
         }
-   }
+    }
 }

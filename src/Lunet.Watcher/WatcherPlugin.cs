@@ -23,9 +23,8 @@ namespace Lunet.Core
         public List<FileSystemEventArgs> FileEvents { get; }
     }
 
-    public class SiteWatcher
+    public class WatcherPlugin : SitePlugin
     {
-        private readonly SiteObject site;
         private DirectoryInfo baseDirectory;
         private FileSystemWatcher rootDirectoryWatcher;
         private FileSystemWatcher privateMetaWatcher;
@@ -43,10 +42,8 @@ namespace Lunet.Core
         private FileSystemEventBatchArgs batchEvents;
         private readonly ManualResetEvent onClosingEvent;
 
-        public SiteWatcher(SiteObject site)
+        public WatcherPlugin(SiteObject site) : base(site)
         {
-            if (site == null) throw new ArgumentNullException(nameof(site));
-            this.site = site;
             watchers = new Dictionary<string, FileSystemWatcher>();
             log = site.Log;
             batchLock = new object();
@@ -108,12 +105,12 @@ namespace Lunet.Core
             {
                 return;
             }
-            privateBaseDirectory = site.PrivateBaseDirectory;
-            baseDirectory = site.BaseDirectory;
-            rootDirectoryWatcher = CreateFileWatch(site.BaseDirectory, false);
-            privateMetaWatcher = CreateFileWatch(site.PrivateMetaDirectory, true);
+            privateBaseDirectory = Site.PrivateBaseFolder;
+            baseDirectory = Site.BaseFolder;
+            rootDirectoryWatcher = CreateFileWatch(Site.BaseFolder, false);
+            privateMetaWatcher = CreateFileWatch(Site.PrivateMetaFolder, true);
 
-            foreach (var directory in site.BaseDirectory.Info.EnumerateDirectories())
+            foreach (var directory in Site.BaseFolder.Info.EnumerateDirectories())
             {
                 CreateFileWatch(directory.FullName, true);
             }
@@ -139,6 +136,37 @@ namespace Lunet.Core
                 }
                 watchers.Clear();
             }
+        }
+
+        public void WatchForRebuild(Action<SiteObject> rebuild)
+        {
+            if (rebuild == null) throw new ArgumentNullException(nameof(rebuild));
+            Start();
+
+            FileSystemEvents += (sender, args) =>
+            {
+                if (Site.CanTrace())
+                {
+                    Site.Trace($"Received file events [{args.FileEvents.Count}]");
+                }
+
+                try
+                {
+                    // Regenerate website
+                    // NOTE: we are recreating a full new SiteObject here (not incremental)
+                    var siteObject = new SiteObject(Site.LoggerFactory, Site.Plugins);
+
+                    // Copy the plugins from the current site
+                    //siteObject.Plugins.Factory.AddRange(Plugins.Factory);
+                    //siteObject.Plugins.LoadPlugins();
+
+                    rebuild(siteObject);
+                }
+                catch (Exception ex)
+                {
+                    Site.Error($"Unexpected error while reloading the site. Reason: {ex.GetReason()}");
+                }
+            };
         }
 
         private bool IsPrivateDirectory(string directory)

@@ -1,14 +1,17 @@
-using System.Collections;
 using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using SharpScss;
 
-namespace Lunet.Plugins.SharpScss
+namespace Lunet.Scss
 {
-    public class ScssProcessor : ContentProcessor
+    public class ScssProcessor : ContentProcessor<ScssPlugin>
     {
         public static readonly ContentType ScssType = new ContentType("scss");
+
+        public ScssProcessor(ScssPlugin plugin) : base(plugin)
+        {
+        }
 
         public override ContentResult TryProcess(ContentObject file)
         {
@@ -36,12 +39,12 @@ namespace Lunet.Plugins.SharpScss
                 if (path != null)
                 {
                     path = PathUtil.NormalizeRelativePath(path, true);
-                    var includeDir = Site.BaseDirectory.Combine(path);
+                    var includeDir = Site.BaseFolder.Combine(path);
                     options.IncludePaths.Add(includeDir);
                 }
             }
 
-            var result = Scss.ConvertToCss(content, options);
+            var result = SharpScss.Scss.ConvertToCss(content, options);
 
             file.Content = result.Css;
             file.ChangeContentType(ContentType.Css);

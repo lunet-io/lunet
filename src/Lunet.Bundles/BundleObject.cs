@@ -10,11 +10,11 @@ using Scriban.Runtime;
 
 namespace Lunet.Bundles
 {
-    public class BundleObject : DynamicObject<BundleService>
+    public class BundleObject : DynamicObject<BundlePlugin>
     {
         private delegate void StringFunctionDelegate(string filepath);
 
-        public BundleObject(BundleService service, string name) : base(service)
+        public BundleObject(BundlePlugin plugin, string name) : base(plugin)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             Name = name;

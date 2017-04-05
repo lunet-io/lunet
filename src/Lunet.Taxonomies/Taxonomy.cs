@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Lunet.Core;
 
-namespace Lunet.Plugins.Taxonomies
+namespace Lunet.Taxonomies
 {
     public class TaxonomyTermCollection : DynamicCollection<TaxonomyTerm, TaxonomyTermCollection>
     {

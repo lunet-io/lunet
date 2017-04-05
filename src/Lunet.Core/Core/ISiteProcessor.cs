@@ -5,8 +5,6 @@ namespace Lunet.Core
     /// </summary>
     public interface ISiteProcessor : ISitePluginCore
     {
-        void BeginProcess();
-
-        void EndProcess();
+        void Process();
     }
 }

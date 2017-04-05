@@ -8,6 +8,6 @@ namespace Lunet.Core
 {
     public interface IContentProvider
     {
-        IEnumerable<FolderInfo> GetDirectories();
+        IEnumerable<FolderInfo> GetFolders();
     }
 }

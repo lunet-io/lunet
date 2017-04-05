@@ -6,29 +6,23 @@ using System;
 
 namespace Lunet.Core
 {
-    public abstract class ProcessorBase : ISiteProcessor
+    public abstract class ProcessorBase<TPlugin> : SitePluginCore, ISiteProcessor where TPlugin : ISitePlugin
     {
-        protected SiteObject Site { get; private set; }
-
-        public virtual string Name => GetType().Name;
-
-        public void Initialize(SiteObject site)
+        protected ProcessorBase(TPlugin plugin) : base(GetSafePlugin(plugin).Site)
         {
-            if (site == null) throw new ArgumentNullException(nameof(site));
-            Site = site;
-            InitializeCore();
+            Plugin = plugin;
         }
 
-        protected virtual void InitializeCore()
+        public TPlugin Plugin { get; }
+
+        public virtual void Process()
         {
         }
 
-        public virtual void BeginProcess()
+        private static TPlugin GetSafePlugin(TPlugin plugin)
         {
-        }
-
-        public virtual void EndProcess()
-        {
+            if (plugin == null) throw new ArgumentNullException(nameof(plugin));
+            return plugin;
         }
     }
 }

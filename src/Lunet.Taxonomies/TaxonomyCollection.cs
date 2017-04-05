@@ -4,7 +4,7 @@
 
 using Lunet.Core;
 
-namespace Lunet.Plugins.Taxonomies
+namespace Lunet.Taxonomies
 {
     public class TaxonomyCollection : DynamicCollection<Taxonomy, TaxonomyCollection>
     {

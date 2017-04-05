@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,24 +10,21 @@ using Lunet.Core;
 using Lunet.Layouts;
 using Scriban.Runtime;
 
-namespace Lunet.Plugins.Taxonomies
+namespace Lunet.Taxonomies
 {
-    public class TaxonomyProcessor : ProcessorBase
+    public class TaxonomyProcessor : ProcessorBase<TaxonomyPlugin>
     {
         public override string Name => "taxonomies";
 
-        public TaxonomyProcessor()
+        public TaxonomyProcessor(TaxonomyPlugin plugin, LayoutPlugin layoutPlugin) : base(plugin)
         {
+            if (layoutPlugin == null) throw new ArgumentNullException(nameof(layoutPlugin));
             List = new TaxonomyCollection();
-        }
 
-        protected override void InitializeCore()
-        {
             Site.SetValue("taxonomies", List, true);
 
-            var layoutProcessor = Site.Builder.Processors.Find<LayoutProcessor>();
-            layoutProcessor.RegisterLayoutPathProvider("terms", TermsLayout);
-            layoutProcessor.RegisterLayoutPathProvider("term", TermPagesLayout);
+            layoutPlugin.Processor.RegisterLayoutPathProvider("terms", TermsLayout);
+            layoutPlugin.Processor.RegisterLayoutPathProvider("term", TermPagesLayout);
         }
 
         public TaxonomyCollection List { get; }
@@ -43,7 +41,7 @@ namespace Lunet.Plugins.Taxonomies
             return null;
         }
 
-        public override void BeginProcess()
+        public override void Process()
         {
             foreach (var taxonomy in List.ScriptObject)
             {
@@ -129,7 +127,7 @@ namespace Lunet.Plugins.Taxonomies
                 foreach (var term in tax.Terms.Values.OfType<TaxonomyTerm>())
                 {
                     // term.Url
-                    var content = new ContentObject(Site, Site.BaseDirectory, tax.Name)
+                    var content = new ContentObject(Site, Site.BaseFolder, tax.Name)
                     {
                         ScriptObjectLocal = new DynamicObject<TaxonomyTerm>(term),
                         Url = term.Url,
@@ -152,7 +150,7 @@ namespace Lunet.Plugins.Taxonomies
 
                 // Generate a terms page for the current taxonomy
                 {
-                    var content = new ContentObject(Site, Site.BaseDirectory, tax.Name)
+                    var content = new ContentObject(Site, Site.BaseFolder, tax.Name)
                     {
                         ScriptObjectLocal = new DynamicObject<Taxonomy>(tax),
                         Url = tax.Url,
@@ -172,54 +170,54 @@ namespace Lunet.Plugins.Taxonomies
 
         private static IEnumerable<string> TermsLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.MetaDirectories)
+            foreach (var metaDir in site.MetaFolders)
             {
                 // try: _meta/layouts/{layoutName}/terms.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName, layoutType + layoutExtension);
+                yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, layoutName, layoutType + layoutExtension);
 
                 // try: _meta/layouts/{layoutName}.terms.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName + "." + layoutType + layoutExtension);
+                yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, layoutName + "." + layoutType + layoutExtension);
 
                 if (layoutName != LayoutProcessor.DefaultLayoutName)
                 {
                     // try: _meta/layouts/_default/terms.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, LayoutProcessor.DefaultLayoutName, layoutType + layoutExtension);
+                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, LayoutProcessor.DefaultLayoutName, layoutType + layoutExtension);
 
                     // try: _meta/layouts/_default.terms.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, LayoutProcessor.DefaultLayoutName + "." + layoutType + layoutExtension);
+                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, LayoutProcessor.DefaultLayoutName + "." + layoutType + layoutExtension);
                 }
             }
         }
 
         private static IEnumerable<string> TermPagesLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.MetaDirectories)
+            foreach (var metaDir in site.MetaFolders)
             {
                 // try: _meta/layouts/{layoutName}/{layoutType}.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName, layoutType + layoutExtension);
+                yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, layoutName, layoutType + layoutExtension);
 
                 // try: _meta/layouts/{layoutName}.{layoutType}.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName + "." + layoutType + layoutExtension);
+                yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, layoutName + "." + layoutType + layoutExtension);
 
                 // try: _meta/layouts/{layoutName}/list.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName, LayoutTypes.List + layoutExtension);
+                yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, layoutName, LayoutTypes.List + layoutExtension);
 
                 // try: _meta/layouts/{layoutName}.list.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, layoutName + "." + LayoutTypes.List + layoutExtension);
+                yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, layoutName + "." + LayoutTypes.List + layoutExtension);
 
                 if (layoutName != LayoutProcessor.DefaultLayoutName)
                 {
                     // try: _meta/layouts/_default/{layoutType}.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, LayoutProcessor.DefaultLayoutName, layoutType + layoutExtension);
+                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, LayoutProcessor.DefaultLayoutName, layoutType + layoutExtension);
 
                     // try: _meta/layouts/_default.{layoutType}.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, LayoutProcessor.DefaultLayoutName + "." + layoutType + layoutExtension);
+                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, LayoutProcessor.DefaultLayoutName + "." + layoutType + layoutExtension);
 
                     // try: _meta/layouts/_default/list.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, LayoutProcessor.DefaultLayoutName, LayoutTypes.List + layoutExtension);
+                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, LayoutProcessor.DefaultLayoutName, LayoutTypes.List + layoutExtension);
 
                     // try: _meta/layouts/_default.list.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutDirectoryName, LayoutProcessor.DefaultLayoutName + "." + LayoutTypes.List + layoutExtension);
+                    yield return Path.Combine(metaDir, LayoutProcessor.LayoutFolderName, LayoutProcessor.DefaultLayoutName + "." + LayoutTypes.List + layoutExtension);
                 }
             }
         }

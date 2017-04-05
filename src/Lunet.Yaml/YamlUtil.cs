@@ -55,27 +55,26 @@ namespace Lunet.Yaml
             }
 
             reader.Expect<StreamStart>();
-            var hasDocumentStart = reader.Allow<DocumentStart>() != null;
+            var docStart = reader.Expect<DocumentStart>();
+            var hasDocumentStart = true;
 
             object result = null;
             ScriptArray objects = null;
 
             // If we expect to read multiple documents, we will return an array of result
-            if (!expectOnlyFrontMatter && hasDocumentStart)
-            {
-                objects = new ScriptArray();
-                result = objects;
-            }
-            else if (expectOnlyFrontMatter && !hasDocumentStart) 
+            if (expectOnlyFrontMatter && docStart.IsImplicit) 
             {
                 return null;
             }
+
+            Mark endPosition;
 
             while (true)
             {
                 if (reader.Accept<StreamEnd>())
                 {
-                    reader.Expect<StreamEnd>();
+                    var evt = reader.Expect<StreamEnd>();
+                    endPosition = evt.End;
                     break;
                 }
 
@@ -88,10 +87,13 @@ namespace Lunet.Yaml
                     if (expectOnlyFrontMatter)
                     {
                         reader.Allow<DocumentStart>();
+                        endPosition = reader.Parser.Current.Start;
                         break;
                     }
+                    continue;
                 }
-                else if (reader.Accept<DocumentStart>())
+
+                if (reader.Accept<DocumentStart>())
                 {
                     reader.Expect<DocumentStart>();
                     hasDocumentStart = true;
@@ -114,8 +116,7 @@ namespace Lunet.Yaml
                 }
             }
 
-            var yamlPosition = reader.Parser.Current.Start;
-            position = new TextPosition(yamlPosition.Index, yamlPosition.Line, yamlPosition.Column);
+            position = new TextPosition(endPosition.Index, endPosition.Line, endPosition.Column);
             return result;
         }
 

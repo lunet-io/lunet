@@ -23,7 +23,7 @@ namespace Lunet.Resources
             Version = version;
             AbsoluteDirectory = absoluteDirectory;
             Provider = provider;
-            Path = provider.Service.Site.GetRelativePath(AbsoluteDirectory, PathFlags.Directory|PathFlags.Normalize);
+            Path = provider.Plugin.Site.GetRelativePath(AbsoluteDirectory, PathFlags.Directory|PathFlags.Normalize);
 
             SetValue("provider", Provider.Name, true);
             SetValue("path", Path, true);

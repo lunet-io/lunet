@@ -16,17 +16,16 @@ namespace Lunet.Extends
     /// <summary>
     /// Manages themes.
     /// </summary>
-    /// <seealso cref="ServiceBase" />
-    public sealed class ExtendService : ServiceBase, IContentProvider
+    public sealed class ExtendsPlugin : SitePlugin, IContentProvider
     {
-        private const string ExtendsDirectoryName = "extends";
+        private const string ExtendsFolderName = "extends";
 
         private delegate object ExtendFunctionDelegate(object o);
 
-        public ExtendService(SiteObject site) : base(site)
+        public ExtendsPlugin(SiteObject site) : base(site)
         {
-            ExtendDirectory = Path.Combine(Site.MetaDirectory, ExtendsDirectoryName);
-            PrivateExtendDirectory = Path.Combine(Site.PrivateMetaDirectory, ExtendsDirectoryName);
+            ExtendsFolder = Path.Combine(Site.MetaFolder, ExtendsFolderName);
+            PrivateExtendsFolder = Path.Combine(Site.PrivateMetaFolder, ExtendsFolderName);
             Providers = new OrderedList<IExtendProvider>()
             {
                 new DefaultExtendProvider()
@@ -36,13 +35,13 @@ namespace Lunet.Extends
             Site.Scripts.SiteFunctions.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
         }
 
-        public FolderInfo ExtendDirectory { get; }
+        public FolderInfo ExtendsFolder { get; }
 
-        public FolderInfo PrivateExtendDirectory { get; }
+        public FolderInfo PrivateExtendsFolder { get; }
 
         public OrderedList<IExtendProvider> Providers { get; }
 
-        public IEnumerable<FolderInfo> GetDirectories()
+        public IEnumerable<FolderInfo> GetFolders()
         {
             foreach (var extend in CurrentList)
             {
@@ -91,7 +90,7 @@ namespace Lunet.Extends
                 Site.Trace($"Using extension/theme [{extendName}] from [{extendObject.Path}]");
             }
 
-            var configPath = Path.Combine(extendObject.Directory, SiteFactory.DefaultConfigFilename);
+            var configPath = Path.Combine(extendObject.Directory, SiteObject.DefaultConfigFileName);
             Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions);
 
             return extendObject;
@@ -110,8 +109,8 @@ namespace Lunet.Extends
                 version = extend.Substring(indexOfVersion + 1);
             }
 
-            var themePrivatePath = Path.Combine(PrivateExtendDirectory, extendName);
-            var themePublicPath = Path.Combine(ExtendDirectory, extendName);
+            var themePrivatePath = Path.Combine(PrivateExtendsFolder, extendName);
+            var themePublicPath = Path.Combine(ExtendsFolder, extendName);
             string extendPath = null;
             if (Directory.Exists(themePublicPath))
             {

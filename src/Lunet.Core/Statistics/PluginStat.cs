@@ -1,6 +1,5 @@
 using System;
 using Lunet.Core;
-using Lunet.Plugins;
 
 namespace Lunet.Statistics
 {
@@ -22,7 +21,7 @@ namespace Lunet.Statistics
 
         public TimeSpan BeginProcessTime { get; set; }
 
-        public TimeSpan ProcessTime { get; set; }
+        public TimeSpan ContentProcessTime { get; set; }
 
         public TimeSpan EndProcessTime { get; set; }
     }

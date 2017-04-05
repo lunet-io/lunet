@@ -12,5 +12,7 @@ public class Yes
 }
 ``` 
 
+This is an extract from data: {{ site.data.yoyo.name }}
+
 - This is an item
 - This is a second item

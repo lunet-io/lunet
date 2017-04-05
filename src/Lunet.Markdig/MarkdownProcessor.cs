@@ -7,22 +7,19 @@ using Lunet.Core;
 using Markdig;
 using Scriban.Runtime;
 
-namespace Lunet.Plugins.Markdig
+namespace Lunet.Markdown
 {
-    public class MarkdigProcessor : ContentProcessor
+    public class MarkdownProcessor : ContentProcessor<MarkdownPlugin>
     {
-        private readonly DynamicObject<MarkdigProcessor> markdigOptions;
-        private readonly DynamicObject<MarkdigProcessor> markdownHelper;
+        private readonly DynamicObject<MarkdownProcessor> markdigOptions;
+        private readonly DynamicObject<MarkdownProcessor> markdownHelper;
 
-        public MarkdigProcessor()
+        public MarkdownProcessor(MarkdownPlugin plugin) : base(plugin)
         {
-            markdigOptions = new DynamicObject<MarkdigProcessor>(this);
-            markdownHelper = new DynamicObject<MarkdigProcessor>(this);
-        }
+            markdigOptions = new DynamicObject<MarkdownProcessor>(this);
+            markdownHelper = new DynamicObject<MarkdownProcessor>(this);
 
-        protected override void InitializeCore()
-        {
-            Site.Plugins.SetValue("markdig", markdigOptions, true);
+            markdownHelper.SetValue("options", markdigOptions, true);
 
             // Add a global markdown object 
             // with the markdown.to_html function
@@ -66,7 +63,7 @@ namespace Lunet.Plugins.Markdig
         private string ToHtmlFunction(string markdown)
         {
             var pipeline = GetPipeline();
-            return Markdown.ToHtml(markdown, pipeline);
+            return Markdig.Markdown.ToHtml(markdown, pipeline);
         }
     }
 }

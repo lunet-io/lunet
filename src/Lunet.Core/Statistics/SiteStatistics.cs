@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Lunet.Core;
-using Lunet.Plugins;
 
 namespace Lunet.Statistics
 {

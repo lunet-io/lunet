@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Reflection;
+using Autofac;
 using Lunet.Bundles;
 using Lunet.Core;
+using Lunet.Datas;
 using Lunet.Logging;
-using Lunet.Plugins.Bundles;
 using Lunet.Extends;
 using Lunet.Hosting;
-using Lunet.Plugins.Layouts;
-using Lunet.Plugins.Markdig;
-using Lunet.Plugins.NUglify;
-using Lunet.Plugins.SharpScss;
-using Lunet.Plugins.Taxonomies;
+using Lunet.Layouts;
+using Lunet.Markdown;
+using Lunet.Minifiers;
+using Lunet.Resources;
+using Lunet.Taxonomies;
+using Lunet.Scss;
+using Lunet.Yaml;
 using Microsoft.Extensions.Logging;
 
 namespace Lunet
@@ -19,17 +22,24 @@ namespace Lunet
     {
         static int Main(string[] args)
         {
-            var loggerFactory = new LoggerFactory();
-            var site = new SiteObject(loggerFactory).AddConsoleLogger();
+            var siteFactory = new SiteFactory();
 
-            site.Plugins.Factory.Add(() => new BundlePlugin());
-            site.Plugins.Factory.Add(() => new ExtendPlugin());
-            site.Plugins.Factory.Add(() => new LayoutPlugin());
-            site.Plugins.Factory.Add(() => new HostingPlugin());
-            site.Plugins.Factory.Add(() => new MarkdigPlugin());
-            site.Plugins.Factory.Add(() => new NUglifyPlugin());
-            site.Plugins.Factory.Add(() => new SharpScssPlugin());
-            site.Plugins.Factory.Add(() => new TaxonomyPlugin());
+            siteFactory.Register<BundlePlugin>();
+            siteFactory.Register<ExtendsPlugin>();
+            siteFactory.Register<LayoutPlugin>();
+            siteFactory.Register<ResourcePlugin>();
+            siteFactory.Register<DatasPlugin>();
+            siteFactory.Register<WatcherPlugin>();
+            siteFactory.Register<HostingPlugin>();
+            siteFactory.Register<MarkdownPlugin>();
+            siteFactory.Register<MinifierPlugin>();
+            siteFactory.Register<ScssPlugin>();
+            siteFactory.Register<TaxonomyPlugin>();
+            siteFactory.Register<YamlPlugin>();
+
+            var site = siteFactory.Build();
+
+            site.AddConsoleLogger();
 
             return site.Run(args);
         }

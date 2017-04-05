@@ -29,28 +29,20 @@ namespace Lunet.Hosting
         {
             site[LiveReload] = value;
         }
-
-        public static void Server(this SiteObject site)
-        {
-            var hosting = site.GetService<HostingService>();
-            if (hosting == null)
-            {
-                throw new InvalidOperationException("Cannot find HostingService on SiteObject");
-            }
-            hosting.Server();
-        }
     }
 
-    public class HostingService : ServiceBase
+    public class HostingPlugin : SitePlugin
     {
         private const string LiveReloadBasePath = "/__livereload__";
         private readonly CommandOption noWatchOption;
         private readonly HashSet<WebSocket> sockets;
+        private readonly Lazy<WatcherPlugin> _watcher;
 
         public const string DefaultBaseUrl = "http://localhost:4000";
 
-        internal HostingService(SiteObject site) : base(site)
+        public HostingPlugin(SiteObject site, Lazy<WatcherPlugin> watcher) : base(site)
         {
+            _watcher = watcher;
             AppBuilders = new OrderedList<Action<IApplicationBuilder>>();
 
             sockets = new HashSet<WebSocket>();
@@ -78,8 +70,8 @@ namespace Lunet.Hosting
             {
                 var hostBuilder = new WebHostBuilder()
                     .UseKestrel()
-                    .UseContentRoot(Site.OutputDirectory)
-                    .UseWebRoot(Site.OutputDirectory)
+                    .UseContentRoot(Site.OutputFolder)
+                    .UseWebRoot(Site.OutputFolder)
                     .UseUrls(Site.BaseUrl)
                     .Configure(Configure);
 
@@ -132,7 +124,7 @@ namespace Lunet.Hosting
 
                 if (server)
                 {
-                    site.WatchForRebuild(siteToRebuild =>
+                    _watcher.Value.WatchForRebuild(siteToRebuild =>
                     {
                         BuildSite(siteToRebuild, false);
 

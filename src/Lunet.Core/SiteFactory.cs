@@ -4,85 +4,45 @@
 
 using System;
 using System.IO;
+using System.Reflection;
+using Autofac;
 using Lunet.Core;
 using Microsoft.Extensions.Logging;
 
 namespace Lunet
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    public static class SiteFactory
+    public class SiteFactory
     {
-        /// <summary>
-        /// The default configuration filename config.sban
-        /// </summary>
-        public const string DefaultConfigFilename = "config.sban";
+        private readonly ContainerBuilder _containerBuilder;
 
-        /// <summary>
-        /// Gets the <see cref="SiteObject"/> from the specified configuration file path.
-        /// </summary>
-        /// <param name="configFilePath">The configuration file path.</param>
-        /// <returns>The <see cref="SiteObject"/></returns>
-        /// <exception cref="System.IO.FileNotFoundException">If the <paramref name="configFilePath"/> file does not exist.</exception>
-        public static SiteObject FromFile(string configFilePath)
+        public SiteFactory()
         {
-            return FromFile(configFilePath, null);
+            _containerBuilder = new ContainerBuilder();
+            _containerBuilder.RegisterInstance(this);
         }
 
-        /// <summary>
-        /// Gets the <see cref="SiteObject"/> from the specified configuration file path.
-        /// </summary>
-        /// <param name="configFilePath">The configuration file path.</param>
-        /// <param name="loggerFactory">The logger factory.</param>
-        /// <returns>The <see cref="SiteObject"/></returns>
-        /// <exception cref="System.IO.FileNotFoundException">If the <paramref name="configFilePath"/> file does not exist.</exception>
-        public static SiteObject FromFile(string configFilePath, ILoggerFactory loggerFactory)
+        public void Register<TPlugin>() where TPlugin : ISitePlugin
         {
-            var site = TryFromFile(configFilePath, loggerFactory);
-            if (site == null)
-            {
-                throw new FileNotFoundException($"The config file [{configFilePath}] is not a valid path", configFilePath);
-            }
-            return site;
+            Register(typeof(TPlugin));
         }
 
-        /// <summary>
-        /// Gets the <see cref="SiteObject"/> from the specified directory or any parent directories.
-        /// </summary>
-        /// <param name="directoryPath">The directory path.</param>
-        /// <param name="loggerFactory">The logger factory.</param>
-        /// <returns>The <see cref="SiteObject"/></returns>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="System.IO.FileNotFoundException"></exception>
-        public static SiteObject FromDirectory(string directoryPath, ILoggerFactory loggerFactory = null)
+        public void Register(Type pluginType)
         {
-            if (directoryPath == null) throw new ArgumentNullException(nameof(directoryPath));
-            var directory = new DirectoryInfo(directoryPath);
-            while (directory != null)
+            if (pluginType == null) throw new ArgumentNullException(nameof(pluginType));
+            if (!typeof(ISitePlugin).GetTypeInfo().IsAssignableFrom(pluginType))
             {
-                var site = TryFromFile(Path.Combine(directory.FullName, DefaultConfigFilename), loggerFactory);
-
-                if (site != null)
-                {
-                    return site;
-                }
-
-                directory = directory.Parent;
+                throw new ArgumentException("Expecting a plugin type inheriting from ISitePlugin", nameof(pluginType));
             }
-
-            return null;
+            _containerBuilder.RegisterType(pluginType).AsSelf().As<ISitePlugin>();
         }
 
-        private static SiteObject TryFromFile(string configFilePath, ILoggerFactory loggerFactory)
+        public SiteObject Build()
         {
-            if (configFilePath == null) throw new ArgumentNullException(nameof(configFilePath));
-            if (!File.Exists(configFilePath))
-            {
-                return null;
-            }
-            var site = new SiteObject(loggerFactory) {BaseDirectory = Path.GetDirectoryName(configFilePath)};
-            return site;
+            _containerBuilder.RegisterType<LoggerFactory>().As<ILoggerFactory>().SingleInstance();
+            _containerBuilder.RegisterType<SiteObject>().SingleInstance();
+
+            var container = _containerBuilder.Build();
+            return container.Resolve<SiteObject>();
         }
     }
 }

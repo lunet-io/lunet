@@ -7,18 +7,17 @@ using System.Collections.Generic;
 using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
-using Lunet.Resources;
 using Scriban.Runtime;
 
 namespace Lunet.Scripts
 {
-    public class ScriptGlobalFunctions : DynamicObject<ScriptService>
+    public class ScriptGlobalFunctions : DynamicObject<ScriptingPlugin>
     {
         private delegate void CopyFunctionDelegate(params object[] args);
 
         private delegate void LogDelegate(string message);
 
-        public ScriptGlobalFunctions(ScriptService service) : base(service)
+        public ScriptGlobalFunctions(ScriptingPlugin service) : base(service)
         {
             if (service == null) throw new ArgumentNullException(nameof(service));
             this.Site = service.Site;
@@ -33,10 +32,10 @@ namespace Lunet.Scripts
             LogObject.Import("trace", (LogDelegate)(message => Site.Trace(message)));
             LogObject.Import("fatal", (LogDelegate)(message => Site.Fatal(message)));
 
-            // Import io object
-            var ioObject = new DynamicObject<ScriptGlobalFunctions>(this);
-            service.GlobalObject.SetValue("io", ioObject, true);
-            ioObject.Import("copy", (CopyFunctionDelegate) CopyFunction);
+            //// Import io object
+            //var ioObject = new DynamicObject<ScriptGlobalFunctions>(this);
+            //service.GlobalObject.SetValue("io", ioObject, true);
+            //ioObject.Import("copy", (CopyFunctionDelegate) CopyFunction);
 
             // Import global function
             service.GlobalObject.Import("absurl", new Func<string, string>(AbsoluteUrl));
@@ -102,7 +101,7 @@ namespace Lunet.Scripts
             return builder.ToString();
         }
 
-        public void Copy(List<string> fromFiles, string outputPath, ResourceObject resourceContext = null)
+        public void Copy(List<string> fromFiles, string outputPath, FolderInfo? rootFolder = null)
         {
             if (fromFiles == null) throw new ArgumentNullException(nameof(fromFiles));
             if (outputPath == null) throw new ArgumentNullException(nameof(outputPath));
@@ -113,7 +112,10 @@ namespace Lunet.Scripts
             }
 
             var isOutputDirectory = outputPath.EndsWith("\\") || outputPath.EndsWith("/");
-            var rootFolder = resourceContext?.AbsoluteDirectory ?? Site.BaseDirectory;
+            if (!rootFolder.HasValue)
+            {
+                rootFolder = Site.BaseFolder;
+            }
 
             var normalizedOutput = PathUtil.NormalizeRelativePath(outputPath, isOutputDirectory);
             if (Path.IsPathRooted(normalizedOutput))
@@ -126,7 +128,7 @@ namespace Lunet.Scripts
                 throw new LunetException($"Cannot output to a single file [{normalizedOutput}] when input has more than 1 file ({fromFiles.Count})");
             }
 
-            var normalizedOutputFull = Path.Combine(Site.OutputDirectory, normalizedOutput);
+            var normalizedOutputFull = Path.Combine(Site.OutputFolder, normalizedOutput);
 
             foreach (var inputFile in fromFiles)
             {
@@ -146,48 +148,48 @@ namespace Lunet.Scripts
                 var inputFullPath  = Path.Combine(rootFolder, inputFileFullPath);
 
                 var relativeOutputFile =
-                    PathUtil.NormalizeRelativePath(Site.OutputDirectory.GetRelativePath(isOutputDirectory
+                    PathUtil.NormalizeRelativePath(Site.OutputFolder.GetRelativePath(isOutputDirectory
                         ? Path.Combine(normalizedOutputFull, Path.GetFileName(inputFullPath))
                         : normalizedOutputFull, PathFlags.File), false);
 
-                Site.Builder.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
+                Site.Content.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
             }
         }
 
-        private void CopyFunction(params object[] args)
-        {
-            var files = new List<string>();
+        //private void CopyFunction(params object[] args)
+        //{
+        //    var files = new List<string>();
 
-            ResourceObject resourceContext = null;
+        //    ResourceObject resourceContext = null;
 
-            foreach (var arg in args)
-            {
-                if (arg is string)
-                {
-                    files.Add((string)arg);
-                }
-                else if (arg is ResourceObject)
-                {
-                    var resourceContextArg = (ResourceObject)arg;
-                    if (resourceContext != null)
-                    {
-                        throw new LunetException($"Invalid resource [{resourceContextArg.Name}] context. Only a single resource context can be used");
-                    }
-                    resourceContext = resourceContextArg;
-                }
-                else
-                {
-                    throw new LunetException($"Invalid parameter type [{arg}], expecting only string or resource");
-                }
-            }
+        //    foreach (var arg in args)
+        //    {
+        //        if (arg is string)
+        //        {
+        //            files.Add((string)arg);
+        //        }
+        //        else if (arg is ResourceObject)
+        //        {
+        //            var resourceContextArg = (ResourceObject)arg;
+        //            if (resourceContext != null)
+        //            {
+        //                throw new LunetException($"Invalid resource [{resourceContextArg.Name}] context. Only a single resource context can be used");
+        //            }
+        //            resourceContext = resourceContextArg;
+        //        }
+        //        else
+        //        {
+        //            throw new LunetException($"Invalid parameter type [{arg}], expecting only string or resource");
+        //        }
+        //    }
 
-            if (files.Count < 2)
-            {
-                throw new LunetException("Expecting at least one or multiple [input] and one [output]");
-            }
-            var toPath = files[files.Count - 1];
-            files.RemoveAt(files.Count - 1);
-            Copy(files, toPath, resourceContext);
-        }
+        //    if (files.Count < 2)
+        //    {
+        //        throw new LunetException("Expecting at least one or multiple [input] and one [output]");
+        //    }
+        //    var toPath = files[files.Count - 1];
+        //    files.RemoveAt(files.Count - 1);
+        //    Copy(files, toPath, resourceContext);
+        //}
     }
 }

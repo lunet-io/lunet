@@ -110,7 +110,7 @@ namespace Lunet.Extends
                         {
                             using (var stream = client.GetStreamAsync(fullVersion).Result)
                             {
-                                site.Builder.CreateDirectory(new DirectoryInfo(outputPath));
+                                site.Content.CreateDirectory(new DirectoryInfo(outputPath));
 
                                 using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
                                 {

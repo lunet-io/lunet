@@ -26,19 +26,19 @@ namespace Lunet.Core
         /// <exception cref="LunetException"></exception>
         public static string GetRelativePath(this SiteObject site, string fullFilePath, PathFlags flags)
         {
-            return site.BaseDirectory.GetRelativePath(fullFilePath, flags);
+            return site.BaseFolder.GetRelativePath(fullFilePath, flags);
         }
 
         public static bool IsFilePrivateOrMeta(this SiteObject site, string fullFilePath)
         {
             if (fullFilePath == null) throw new ArgumentNullException(nameof(fullFilePath));
 
-            if (fullFilePath.StartsWith(site.PrivateMetaDirectory.FullName))
+            if (fullFilePath.StartsWith(site.PrivateMetaFolder.FullName))
             {
                 return true;
             }
 
-            foreach (var meta in site.MetaDirectories)
+            foreach (var meta in site.MetaFolders)
             {
                 if (fullFilePath.StartsWith(meta.FullName))
                 {

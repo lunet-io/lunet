@@ -1,4 +1,5 @@
-﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+﻿
+// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
@@ -8,7 +9,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Lunet.Helpers;
-using Lunet.Plugins;
 using Lunet.Scripts;
 using Lunet.Statistics;
 using Microsoft.Extensions.Logging;
@@ -18,33 +18,29 @@ namespace Lunet.Core
 {
     public class SiteObject : DynamicObject
     {
-        public const string MetaDirectoryName = "_meta";
-        public const string SharedFilesName = "data";
-        public const string OutputDirectoryName = "www";
-        public const string PrivateDirectoryName = ".lunet";
+        public const string MetaFolderName = "_meta";
+        public const string SharedFolderName = "shared";
+        public const string OutputFolderName = "www";
+        public const string PrivateFolderName = ".lunet";
         public const string DefaultPageExtensionValue = ".html";
         public const string DefaultConfigFileName = "config.sban";
 
         private readonly Stopwatch clock;
-        private readonly Dictionary<Type, ISiteService> services;
-        internal readonly OrderedList<ISiteService> orderedServices;
-        private FolderInfo baseDirectory;
+        private FolderInfo _baseFolder;
         private bool isInitialized;
 
         public SiteObject() : this(null)
         {
         }
 
-        public SiteObject(ILoggerFactory loggerFactory)
+        public SiteObject(ILoggerFactory loggerFactory, IEnumerable<Func<ISitePlugin>> pluginFactory = null)
         {
             // Initialize by default with current directory
-            BaseDirectory = ".";
+            BaseFolder = ".";
 
-            BuiltinDirectory = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFilesName);
-            BuiltinMetaDirectory = Path.Combine(BuiltinDirectory, MetaDirectoryName);
+            SharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
+            SharedMetaFolder = Path.Combine(SharedFolder, MetaFolderName);
 
-            services = new Dictionary<Type, ISiteService>();
-            orderedServices = new OrderedList<ISiteService>();
             ContentProviders = new OrderedList<IContentProvider>();
             clock = new Stopwatch();
 
@@ -63,22 +59,19 @@ namespace Lunet.Core
             Html = new HtmlObject(this);
             SetValue(SiteVariables.Html, Html, true);
 
-            Watcher = new SiteWatcher(this);
-
             CommandLine = new LunetCommandLine(this);
 
             Statistics = new SiteStatistics();
 
-            Scripts = new ScriptService(this);
-            Register(Scripts);
+            Scripts = new ScriptingPlugin(this);
 
-            Builder = new ContentBuilder(this);
-            Register(Builder);
+            Content = new ContentPlugin(this);
 
-            Plugins = new PluginService(this);
-            Register(Plugins);
-
-            Plugins.ImportPluginsFromAssembly(typeof(SiteObject).GetTypeInfo().Assembly);
+            Plugins = new OrderedList<Func<ISitePlugin>>();
+            if (pluginFactory != null)
+            {
+                Plugins.AddRange(pluginFactory);
+            }
         }
 
         public FileInfo ConfigFile { get; private set; }
@@ -86,33 +79,35 @@ namespace Lunet.Core
         /// <summary>
         /// Gets or sets the base directory of the website (input files, config file)
         /// </summary>
-        public FolderInfo BaseDirectory
+        public FolderInfo BaseFolder
         {
-            get { return baseDirectory; }
+            get { return _baseFolder; }
 
             set
             {
                 // Update all 
-                baseDirectory = value;
-                PrivateBaseDirectory = Path.Combine(BaseDirectory.FullName, PrivateDirectoryName);
-                MetaDirectory = BaseDirectory.GetSubFolder(MetaDirectoryName);
-                PrivateMetaDirectory = PrivateBaseDirectory.GetSubFolder(MetaDirectoryName);
-                ConfigFile = new FileInfo(Path.Combine(BaseDirectory, DefaultConfigFileName));
-                OutputDirectory = PrivateBaseDirectory.GetSubFolder(OutputDirectoryName);
+                _baseFolder = value;
+                PrivateBaseFolder = Path.Combine(BaseFolder.FullName, PrivateFolderName);
+                MetaFolder = BaseFolder.GetSubFolder(MetaFolderName);
+                PrivateMetaFolder = PrivateBaseFolder.GetSubFolder(MetaFolderName);
+                ConfigFile = new FileInfo(Path.Combine(BaseFolder, DefaultConfigFileName));
+                OutputFolder = PrivateBaseFolder.GetSubFolder(OutputFolderName);
             }
         }
 
-        public FolderInfo PrivateBaseDirectory { get; private set; }
+        public OrderedList<Func<ISitePlugin>> Plugins { get; }
 
-        public FolderInfo MetaDirectory { get; private set; }
+        public FolderInfo PrivateBaseFolder { get; private set; }
 
-        public FolderInfo BuiltinDirectory { get; }
+        public FolderInfo MetaFolder { get; private set; }
 
-        public FolderInfo BuiltinMetaDirectory { get; }
+        public FolderInfo SharedFolder { get; }
 
-        public FolderInfo PrivateMetaDirectory { get; private set; }
+        public FolderInfo SharedMetaFolder { get; }
 
-        public FolderInfo OutputDirectory { get; set; }
+        public FolderInfo PrivateMetaFolder { get; private set; }
+
+        public FolderInfo OutputFolder { get; set; }
 
         /// <summary>
         /// Gets the logger factory that was used to create the site logger <see cref="Log"/>.
@@ -132,11 +127,9 @@ namespace Lunet.Core
 
         public bool HasErrors { get; set; }
 
-        public PluginService Plugins { get; }
+        public ContentPlugin Content { get; }
 
-        public ContentBuilder Builder { get; }
-
-        public ScriptService Scripts { get; }
+        public ScriptingPlugin Scripts { get; }
 
         public SiteStatistics Statistics { get; }
 
@@ -145,8 +138,6 @@ namespace Lunet.Core
         public LunetCommandLine CommandLine { get; }
 
         public HtmlObject Html { get; }
-
-        public SiteWatcher Watcher { get; }
 
         /// <summary>
         /// An event occured when the site has been updated.
@@ -185,22 +176,22 @@ namespace Lunet.Core
 
         public OrderedList<IContentProvider> ContentProviders { get; }
         
-        public IEnumerable<FolderInfo> ContentDirectories
+        public IEnumerable<FolderInfo> ContentFolders
         {
             get
             {
                 // The site input directory will override any existing content (from extend or builtin)
-                yield return BaseDirectory;
+                yield return BaseFolder;
 
                 foreach (var contentProvider in ContentProviders)
                 {
-                    foreach (var dir in contentProvider.GetDirectories())
+                    foreach (var dir in contentProvider.GetFolders())
                     {
                         yield return dir;
                     }
                 }
 
-                yield return BuiltinDirectory;
+                yield return SharedFolder;
             }
         }
 
@@ -237,8 +228,8 @@ namespace Lunet.Core
         {
             if (ConfigFile.Exists)
             {
-                FileUtil.DeleteDirectory(PrivateBaseDirectory);
-                this.Info($"Directory {PrivateBaseDirectory} deleted");
+                PrivateBaseFolder.Delete();
+                this.Info($"Directory {PrivateBaseFolder} deleted");
                 return 0;
             }
 
@@ -246,13 +237,13 @@ namespace Lunet.Core
             return 1;
         }
 
-        public IEnumerable<FolderInfo> MetaDirectories
+        public IEnumerable<FolderInfo> MetaFolders
         {
             get
             {
-                foreach (var directory in ContentDirectories)
+                foreach (var directory in ContentFolders)
                 {
-                    yield return directory.GetSubFolder(MetaDirectoryName);
+                    yield return directory.GetSubFolder(MetaFolderName);
                 }
             }
         }
@@ -278,15 +269,15 @@ namespace Lunet.Core
 
         public void Create(bool force)
         {
-            if (BaseDirectory.Info.Exists && BaseDirectory.Info.GetFileSystemInfos().Length != 0 && !force)
+            if (BaseFolder.Info.Exists && BaseFolder.Info.GetFileSystemInfos().Length != 0 && !force)
             {
-                this.Error($"The directory [{BaseDirectory.FullName}] is not empty. Use the --force option to force the creation of an empty website");
+                this.Error($"The directory [{BaseFolder.FullName}] is not empty. Use the --force option to force the creation of an empty website");
                 return;
             }
-            FolderInfo sourceNewSite = Path.Combine(BuiltinMetaDirectory, "newsite");
-            FolderInfo destinationDir = BaseDirectory;
+            FolderInfo sourceNewSite = Path.Combine(SharedMetaFolder, "newsite");
+            FolderInfo destinationDir = BaseFolder;
 
-            FileUtil.DirectoryCopy(sourceNewSite, destinationDir, true, false);
+            sourceNewSite.CopyTo(destinationDir, true, false);
 
             this.Info($"New website created at {destinationDir}");
         }
@@ -315,39 +306,8 @@ namespace Lunet.Core
         {
             if (Initialize())
             {
-                Builder.Run();
+                Content.Run();
             }
-        }
-
-        public void WatchForRebuild(Action<SiteObject> rebuild)
-        {
-            if (rebuild == null) throw new ArgumentNullException(nameof(rebuild));
-            Watcher.Start();
-
-            Watcher.FileSystemEvents += (sender, args) =>
-            {
-                if (this.CanTrace())
-                {
-                    this.Trace($"Received file events [{args.FileEvents.Count}]");
-                }
-
-                try
-                {
-                    // Regenerate website
-                    // NOTE: we are recreating a full new SiteObject here (not incremental)
-                    var siteObject = SiteFactory.FromDirectory(BaseDirectory, LoggerFactory);
-
-                    // Copy the plugins from the current site
-                    siteObject.Plugins.Factory.AddRange(Plugins.Factory);
-                    siteObject.Plugins.LoadPlugins();
-
-                    rebuild(siteObject);
-                }
-                catch (Exception ex)
-                {
-                    this.Error($"Unexpected error while reloading the site. Reason: {ex.GetReason()}");
-                }
-            };
         }
 
         public int Run(string[] args)
@@ -356,7 +316,10 @@ namespace Lunet.Core
 
             try
             {
-                Plugins.LoadPlugins();
+                foreach (var pluginFactory in Plugins)
+                {
+                    pluginFactory();
+                }
 
                 if (ConfigFile.Exists)
                 {
@@ -369,33 +332,6 @@ namespace Lunet.Core
             {
                 this.Error($"Unexpected error. Reason: {ex.GetReason()}");
                 return 1;
-            }
-        }
-
-        public T GetService<T>() where T : class, ISiteService
-        {
-            ISiteService instance;
-            services.TryGetValue(typeof(T), out instance);
-            return (T)instance;
-        }
-
-        public void Register<T>(T instance) where T : class, ISiteService
-        {
-            if (instance == null) throw new ArgumentNullException(nameof(instance));
-            RegisterAs<T, T>(instance);
-        }
-
-        public void RegisterAs<T, TInterface>(T instance) where T : class, TInterface where TInterface: ISiteService
-        {
-            if (instance == null) throw new ArgumentNullException(nameof(instance));
-
-            if (!services.ContainsKey(typeof(TInterface)))
-            {
-                services[typeof(TInterface)] = instance;
-                if (!orderedServices.Contains(instance))
-                {
-                    orderedServices.Add(instance);
-                }
             }
         }
 

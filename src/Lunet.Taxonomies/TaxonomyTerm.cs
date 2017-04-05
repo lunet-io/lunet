@@ -6,7 +6,7 @@ using System.Diagnostics;
 using Lunet.Core;
 using Markdig.Helpers;
 
-namespace Lunet.Plugins.Taxonomies
+namespace Lunet.Taxonomies
 {
     [DebuggerDisplay("{Name}, Page: {Pages.Count}")]
     public class TaxonomyTerm : DynamicObject<Taxonomy>

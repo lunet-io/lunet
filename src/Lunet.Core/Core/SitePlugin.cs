@@ -2,19 +2,18 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 using System.Diagnostics;
-using Lunet.Core;
 
-namespace Lunet.Plugins
+namespace Lunet.Core
 {
     /// <summary>
     /// Base class for a plugin.
     /// </summary>
-    /// <seealso cref="Lunet.Plugins.ISitePlugin" />
+    /// <seealso cref="Lunet.Core.ISitePlugin" />
     [DebuggerDisplay("Plugin: {Name}")]
-    public abstract class SitePlugin : ISitePlugin
+    public abstract class SitePlugin : SitePluginCore, ISitePlugin
     {
-        public abstract void Initialize(SiteObject site);
-
-        public virtual string Name => GetType().Name;
+        protected SitePlugin(SiteObject site) : base(site)
+        {
+        }
     }
 }

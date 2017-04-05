@@ -2,28 +2,21 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System;
 using Lunet.Bundles;
 using Lunet.Core;
-using Lunet.Plugins;
-using Lunet.Plugins.NUglify;
 using NUglify;
 
 // Register this plugin
-[assembly: SitePlugin(typeof(NUglifyPlugin))]
 
-namespace Lunet.Plugins.NUglify
+namespace Lunet.Minifiers
 {
-
-    public class NUglifyPlugin : ISitePlugin, IContentMinifier
+    public class MinifierPlugin : SitePlugin, IContentMinifier
     {
-        public string Name => "nuglify";
-        public void Initialize(SiteObject site)
+        public MinifierPlugin(SiteObject site, BundlePlugin bundlePlugin) : base(site)
         {
-            var bundleProcessor = site.Builder.Processors.Find<BundleProcessor>();
-            if (bundleProcessor != null)
-            {
-                bundleProcessor.Minifiers.AddIfNotAlready(this);
-            }
+            if (bundlePlugin == null) throw new ArgumentNullException(nameof(bundlePlugin));
+            bundlePlugin.BundleProcessor.Minifiers.AddIfNotAlready(this);
         }
 
         public string Minify(string type, string content)

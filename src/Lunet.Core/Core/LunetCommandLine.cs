@@ -36,7 +36,7 @@ namespace Lunet.Core
 
             // The defines to setup before initializing config.sban
             Defines = Option("-d|--define <variable=value>", "Defines a site variable", CommandOptionType.MultipleValue);
-            OutputDirectory = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{site.GetRelativePath(site.OutputDirectory.FullName, PathFlags.Directory)}'", CommandOptionType.SingleValue);
+            OutputDirectory = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{site.GetRelativePath(site.OutputFolder.FullName, PathFlags.Directory)}'", CommandOptionType.SingleValue);
             InputDirectory = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
 
             this.Invoke = () =>
@@ -71,7 +71,7 @@ namespace Lunet.Core
                 newApp.Invoke = () =>
                 {
                     HandleCommonOptions();
-                    site.BaseDirectory = folderArgument.Value ?? ".";
+                    site.BaseFolder = folderArgument.Value ?? ".";
                     try
                     {
                         site.Create(forceOption.HasValue());
@@ -155,7 +155,7 @@ namespace Lunet.Core
             // Setup a default directory if necessary
             if (InputDirectory.HasValue())
             {
-                site.BaseDirectory = InputDirectory.Value();
+                site.BaseFolder = InputDirectory.Value();
             }
 
             // Add defines
@@ -168,7 +168,7 @@ namespace Lunet.Core
             // as setting the InputDirectory will by default setup a default OutputDirectory
             if (OutputDirectory.HasValue())
             {
-                site.OutputDirectory = OutputDirectory.Value();
+                site.OutputFolder = OutputDirectory.Value();
             }
         }
     }

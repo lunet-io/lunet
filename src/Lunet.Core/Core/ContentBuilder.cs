@@ -11,45 +11,12 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Lunet.Helpers;
-using Lunet.Plugins;
 using Lunet.Scripts;
 using Scriban.Parsing;
 using Scriban.Runtime;
 
 namespace Lunet.Core
 {
-    public class PluginCollection<T> : OrderedList<T> where T : ISitePluginCore
-    {
-        private readonly SiteObject site;
-
-        public PluginCollection(SiteObject site)
-        {
-            if (site == null) throw new ArgumentNullException(nameof(site));
-            this.site = site;
-        }
-
-        protected override void InsertItem(int index, T item)
-        {
-            base.InsertItem(index, item);
-            Initialize(item);
-        }
-
-
-        protected override void SetItem(int index, T item)
-        {
-            base.SetItem(index, item);
-            Initialize(item);
-        }
-
-        protected virtual T Initialize(T item)
-        {
-            var clock = Stopwatch.StartNew();
-            item.Initialize(site);
-            site.Statistics.GetPluginStat(item).InitializeTime += clock.Elapsed;
-            return item;
-        }
-    }
-
     public interface IFrontMatterParser
     {
         bool CanHandle(byte[] header, int index);
@@ -57,7 +24,7 @@ namespace Lunet.Core
         bool TryParse(string text, ContentObject content, out TextPosition position);
     }
 
-    public class ContentBuilder : ServiceBase
+    public class ContentPlugin : SitePlugin
     {
         private readonly HashSet<string> previousOutputDirectories;
         private readonly HashSet<string> previousOutputFiles;
@@ -65,7 +32,7 @@ namespace Lunet.Core
         private bool isInitialized;
         private readonly Stopwatch totalDuration;
 
-        public ContentBuilder(SiteObject site) : base(site)
+        public ContentPlugin(SiteObject site) : base(site)
         {
             previousOutputDirectories = new HashSet<string>();
             previousOutputFiles = new HashSet<string>();
@@ -73,19 +40,22 @@ namespace Lunet.Core
             filesWritten = new Dictionary<string, FileInfo>();
             totalDuration = new Stopwatch();
 
-            PreProcessors = new PluginCollection<IContentProcessor>(Site);
+            BeforeLoadingProcessors = new OrderedList<ISiteProcessor>();
 
-            Processors = new PluginCollection<ISiteProcessor>(Site);
+            ContentProcessors = new OrderedList<IContentProcessor>();
+
+            AfterContentProcessors = new OrderedList<ISiteProcessor>();
 
             FrontMatterParsers = new OrderedList<IFrontMatterParser>();
         }
 
-        private ScriptService Scripts { get; }
+        private ScriptingPlugin Scripts { get; }
 
-        public PluginCollection<IContentProcessor> PreProcessors { get; }
+        public OrderedList<ISiteProcessor> BeforeLoadingProcessors { get; }
 
-        public PluginCollection<ISiteProcessor> Processors { get; }
+        public OrderedList<IContentProcessor> ContentProcessors { get; }
 
+        public OrderedList<ISiteProcessor> AfterContentProcessors { get; }
 
         public OrderedList<IFrontMatterParser> FrontMatterParsers { get; }
 
@@ -123,18 +93,16 @@ namespace Lunet.Core
             }
 
             // Start Loading and Preprocessing
-            BeginProcess(true);
+            RunProcess(BeforeLoadingProcessors);
             try
             {
                 LoadAllContent();
             }
             finally
             {
-                EndProcess(true);
+                RunProcess(AfterContentProcessors);
             }
 
-            // Start to process files
-            BeginProcess(false);
             try
             {
                 // Process static files
@@ -149,7 +117,7 @@ namespace Lunet.Core
             finally
             {
                 // End the process
-                EndProcess(false);
+                // TODO: Add
             }
 
             // Remove output files
@@ -167,7 +135,7 @@ namespace Lunet.Core
             if (outputPath == null) throw new ArgumentNullException(nameof(outputPath));
 
             fromFile = fromFile.Normalize();
-            var outputFile = Site.OutputDirectory.CombineToFile(outputPath);
+            var outputFile = Site.OutputFolder.CombineToFile(outputPath);
             TrackDestination(outputFile, fromFile);
 
             if (!outputFile.Exists || (fromFile.LastWriteTime > outputFile.LastWriteTime))
@@ -197,7 +165,7 @@ namespace Lunet.Core
 
             var clock = Stopwatch.StartNew();
 
-            var outputFile = Site.OutputDirectory.CombineToFile(relativePath);
+            var outputFile = Site.OutputFolder.CombineToFile(relativePath);
             var outputDir = outputFile.Directory;
             if (outputDir == null)
             {
@@ -292,12 +260,11 @@ namespace Lunet.Core
             previousOutputFiles.Remove(outputFilename);
         }
 
-        private void BeginProcess(bool preProcess)
+        private void RunProcess(IEnumerable<ISiteProcessor> processors)
         {
             var statistics = Site.Statistics;
 
             // Callback plugins once files have been initialized but not yet processed
-            var processors = preProcess ? PreProcessors.Cast<ISiteProcessor>() : Processors;
             int i = 0;
             var clock = Stopwatch.StartNew();
             foreach (var processor in processors)
@@ -306,29 +273,10 @@ namespace Lunet.Core
                 stat.Order = i;
 
                 clock.Restart();
-                processor.BeginProcess();
+                processor.Process();
                 clock.Stop();
                 stat.BeginProcessTime = clock.Elapsed;
                 i++;
-            }
-        }
-
-        private void EndProcess(bool preProcess)
-        {
-            var statistics = Site.Statistics;
-
-            // Callback plugins once files have been initialized but not yet processed
-            var processors = preProcess ? PreProcessors.Cast<ISiteProcessor>() : Processors;
-            var clock = Stopwatch.StartNew();
-            foreach (var processor in processors)
-            {
-                clock.Restart();
-
-                processor.EndProcess();
-
-                // Update statistics
-                clock.Stop();
-                statistics.GetPluginStat(processor).EndProcessTime += clock.Elapsed;
             }
         }
 
@@ -345,7 +293,7 @@ namespace Lunet.Core
                     }
 
                     var pendingPageProcessors = new OrderedList<IContentProcessor>();
-                    return TryProcessPage(page, PreProcessors, pendingPageProcessors, false);
+                    return TryProcessPage(page, BeforeLoadingProcessors.OfType<IContentProcessor>(), pendingPageProcessors, false);
                 }
             }
             return false;
@@ -356,11 +304,10 @@ namespace Lunet.Core
             if (pages == null) throw new ArgumentNullException(nameof(pages));
 
             // Process pages
-            var pageProcessors = new OrderedList<IContentProcessor>(Processors.OfType<IContentProcessor>());
             var pendingPageProcessors = new OrderedList<IContentProcessor>();
             foreach (var page in pages)
             {
-                TryProcessPage(page, pageProcessors, pendingPageProcessors, copyOutput);
+                TryProcessPage(page, ContentProcessors, pendingPageProcessors, copyOutput);
             }
         }
 
@@ -392,7 +339,7 @@ namespace Lunet.Core
             // We don't use a block for this part (annoying without struct tuples)
 
             // Get the list of root directories from themes
-            var rootDirectories = new List<FolderInfo>(Site.ContentDirectories);
+            var rootDirectories = new List<FolderInfo>(Site.ContentFolders);
 
             // Compute the list of files that we will actually process
             var filesLoaded = new HashSet<string>();
@@ -422,7 +369,7 @@ namespace Lunet.Core
         {
             foreach (var entry in directory.EnumerateFileSystemInfos())
             {
-                if (entry.Name == SiteFactory.DefaultConfigFilename)
+                if (entry.Name == SiteObject.DefaultConfigFileName)
                 {
                     continue;
                 }
@@ -439,7 +386,7 @@ namespace Lunet.Core
 
                     yield return new ContentReference(rootDirectory, (FileInfo)entry);
                 }
-                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.PrivateDirectoryName)
+                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.PrivateFolderName)
                 {
                     directoryQueue.Enqueue((FolderInfo)entry);
                 }
@@ -532,7 +479,7 @@ namespace Lunet.Core
                 };
 
                 var evalClock = Stopwatch.StartNew();
-                if (site.Builder.TryPreparePage(page))
+                if (site.Content.TryPreparePage(page))
                 {
                     evalClock.Stop();
 
@@ -554,7 +501,7 @@ namespace Lunet.Core
             return page;
         }
 
-        private bool TryProcessPage(ContentObject page, OrderedList<IContentProcessor> pageProcessors, OrderedList<IContentProcessor> pendingPageProcessors, bool copyOutput)
+        private bool TryProcessPage(ContentObject page, IEnumerable<IContentProcessor> pageProcessors, OrderedList<IContentProcessor> pendingPageProcessors, bool copyOutput)
         {
             // If page is discarded, skip it
             if (page.Discard)
@@ -594,7 +541,7 @@ namespace Lunet.Core
                         var statistics = Site.Statistics;
                         var stat = statistics.GetPluginStat(processor);
                         stat.PageCount++;
-                        stat.ProcessTime += clock.Elapsed;
+                        stat.ContentProcessTime += clock.Elapsed;
 
                         hasBeenProcessed = true;
                         pendingPageProcessors.RemoveAt(i);
@@ -608,7 +555,7 @@ namespace Lunet.Core
             // Copy only if the file are marked as include
             if (copyOutput && !breakProcessing && !page.Discard)
             {
-                Site.Builder.TryCopyContentToOutput(page, page.GetDestinationPath());
+                Site.Content.TryCopyContentToOutput(page, page.GetDestinationPath());
             }
 
             return true;
@@ -696,7 +643,7 @@ namespace Lunet.Core
 
         private void CollectPreviousFileEntries()
         {
-            var outputDirectoryInfo = new DirectoryInfo(Site.OutputDirectory);
+            var outputDirectoryInfo = new DirectoryInfo(Site.OutputFolder);
             previousOutputDirectories.Clear();
             previousOutputFiles.Clear();
 

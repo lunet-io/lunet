@@ -10,7 +10,7 @@ namespace Lunet.Helpers
 {
     public static class FileUtil
     {
-        public static void DirectoryCopy(FolderInfo sourcedir, FolderInfo destDir, bool copySubDirs, bool overwrite)
+        public static void CopyTo(this FolderInfo sourcedir, FolderInfo destDir, bool copySubDirs, bool overwrite)
         {
             // code from https://msdn.microsoft.com/en-us/library/bb762914%28v=vs.110%29.aspx
 
@@ -40,12 +40,12 @@ namespace Lunet.Helpers
                 foreach (DirectoryInfo subdir in dirs)
                 {
                     var temppath = Path.Combine(destDir, subdir.Name);
-                    DirectoryCopy(subdir, temppath, true, overwrite);
+                    CopyTo(subdir, temppath, true, overwrite);
                 }
             }
         }
 
-        public static void DeleteDirectory(FolderInfo directory)
+        public static void Delete(this FolderInfo directory)
         {
             if (!directory.Exists)
             {
@@ -68,7 +68,7 @@ namespace Lunet.Helpers
 
             foreach (DirectoryInfo subdir in dirs)
             {
-                DeleteDirectory(subdir);
+                Delete(subdir);
             }
 
             try
