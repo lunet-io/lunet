@@ -19,20 +19,19 @@ namespace Lunet
     {
         static int Main(string[] args)
         {
-            var siteFactory = new SiteFactory();
-
-            siteFactory.Register<BundlePlugin>();
-            siteFactory.Register<ExtendsPlugin>();
-            siteFactory.Register<LayoutPlugin>();
-            siteFactory.Register<ResourcePlugin>();
-            siteFactory.Register<DatasPlugin>();
-            siteFactory.Register<WatcherPlugin>();
-            siteFactory.Register<HostingPlugin>();
-            siteFactory.Register<MarkdownPlugin>();
-            siteFactory.Register<MinifierPlugin>();
-            siteFactory.Register<ScssPlugin>();
-            siteFactory.Register<TaxonomyPlugin>();
-            siteFactory.Register<YamlPlugin>();
+            var siteFactory = new SiteFactory()
+                .Register<BundlePlugin>()
+                .Register<ExtendsPlugin>()
+                .Register<LayoutPlugin>()
+                .Register<ResourcePlugin>()
+                .Register<DatasPlugin>()
+                .Register<WatcherPlugin>()
+                .Register<HostingPlugin>()
+                .Register<MarkdownPlugin>()
+                .Register<MinifierPlugin>()
+                .Register<ScssPlugin>()
+                .Register<TaxonomyPlugin>()
+                .Register<YamlPlugin>();
 
             var site = siteFactory.Build();
 

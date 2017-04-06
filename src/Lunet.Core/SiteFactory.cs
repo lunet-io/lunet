@@ -18,15 +18,22 @@ namespace Lunet
         public SiteFactory()
         {
             _containerBuilder = new ContainerBuilder();
+
+            // Pre-register some type
             _containerBuilder.RegisterInstance(this);
+            _containerBuilder.RegisterType<LoggerFactory>().As<ILoggerFactory>().SingleInstance();
+            _containerBuilder.RegisterType<SiteObject>().SingleInstance();
         }
 
-        public void Register<TPlugin>() where TPlugin : ISitePlugin
+        public ContainerBuilder ContainerBuilder => _containerBuilder;
+
+        public SiteFactory Register<TPlugin>() where TPlugin : ISitePlugin
         {
             Register(typeof(TPlugin));
+            return this;
         }
 
-        public void Register(Type pluginType)
+        public SiteFactory Register(Type pluginType)
         {
             if (pluginType == null) throw new ArgumentNullException(nameof(pluginType));
             if (!typeof(ISitePlugin).GetTypeInfo().IsAssignableFrom(pluginType))
@@ -34,13 +41,11 @@ namespace Lunet
                 throw new ArgumentException("Expecting a plugin type inheriting from ISitePlugin", nameof(pluginType));
             }
             _containerBuilder.RegisterType(pluginType).AsSelf().As<ISitePlugin>();
+            return this;
         }
 
         public SiteObject Build()
         {
-            _containerBuilder.RegisterType<LoggerFactory>().As<ILoggerFactory>().SingleInstance();
-            _containerBuilder.RegisterType<SiteObject>().SingleInstance();
-
             var container = _containerBuilder.Build();
             return container.Resolve<SiteObject>();
         }
