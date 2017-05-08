@@ -8,6 +8,7 @@ using System.IO;
 using Lunet.Core;
 using NUglify;
 using NUglify.Html;
+using Scriban.Functions;
 using Scriban.Helpers;
 using Scriban.Runtime;
 

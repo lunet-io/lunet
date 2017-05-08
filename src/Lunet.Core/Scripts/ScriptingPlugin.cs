@@ -8,6 +8,7 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Scriban;
+using Scriban.Model;
 using Scriban.Parsing;
 using Scriban.Runtime;
 

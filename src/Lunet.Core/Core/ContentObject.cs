@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using Lunet.Helpers;
+using Scriban.Functions;
 using Scriban.Helpers;
+using Scriban.Model;
 using Scriban.Runtime;
 
 namespace Lunet.Core
