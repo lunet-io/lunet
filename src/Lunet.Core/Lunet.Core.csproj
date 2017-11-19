@@ -7,7 +7,7 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <VersionPrefix>0.1.0</VersionPrefix>
     <Authors>Alexandre Mutel</Authors>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Lunet.Core</AssemblyName>
     <PackageId>Lunet.Core</PackageId>
     <PackageTags>website;jekyll;hugo;static</PackageTags>
@@ -15,7 +15,6 @@
     <PackageLicenseUrl>https://github.com/lunet-io/lunet/blob/master/license.txt</PackageLicenseUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>git://github.com/lunet-io/lunet</RepositoryUrl>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
     <RootNamespace>Lunet</RootNamespace>
     <DefineConstants>NTAR_PUBLIC</DefineConstants>
   </PropertyGroup>
@@ -27,18 +26,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="4.5.0" />
-    <PackageReference Include="Markdig" Version="0.11.0" />
-    <PackageReference Include="Scriban" Version="0.4.0" />
-    <PackageReference Include="NUglify" Version="1.5.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.1" />
+    <PackageReference Include="Autofac" Version="4.6.2" />
+    <PackageReference Include="Markdig" Version="0.14.4" />
+    <PackageReference Include="Scriban" Version="0.16.0" />
+    <PackageReference Include="NUglify" Version="1.5.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
-    <PackageReference Include="System.Net.Http" Version="4.3.1" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.7.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
-    <PackageReference Include="NuGet.Versioning" Version="4.0.0" />
+    <PackageReference Include="System.Net.Http" Version="4.3.3" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.8.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="NuGet.Versioning" Version="4.4.0" />
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+    <PackageReference Include="Zio" Version="0.3.2" />
   </ItemGroup>
 
 </Project>
