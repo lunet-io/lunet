@@ -159,7 +159,7 @@ namespace Lunet.Layouts
                 {
                     foreach (var layoutPath in layoutDelegate(Site, layoutName, layoutType, layoutExtension))
                     {
-                        var entry = Site.MetaFileSystem.GetFileEntry(layoutPath);
+                        var entry = new FileEntry(Site.MetaFileSystem, layoutPath);
                         if (entry.Exists)
                         {
                             var scriptLayoutText = entry.ReadAllText();
