@@ -21,9 +21,13 @@ namespace Lunet.Core
     public class SiteObject : DynamicObject
     {
         public const string MetaFolderName = "_meta";
-        public const string SharedFolderName = "shared";
-        public const string OutputFolderName = "www";
+        public readonly UPath MetaFolder = UPath.Root / MetaFolderName;
+
+        public const string SiteFolderName = "_site";
+        public readonly UPath SiteFolder = UPath.Root / SiteFolderName;
+
         public const string TempFolderName = ".lunet";
+        public const string DefaultOutputFolderName = "www";
         public const string DefaultPageExtensionValue = ".html";
         public const string DefaultConfigFileName = "config.scriban";
 
@@ -31,23 +35,25 @@ namespace Lunet.Core
         private readonly AggregateFileSystem _fileSystem;
         private readonly List<IFileSystem> _contentFileSystems;
         private IFileSystem _tempFileSystem;
+        private IFileSystem _siteFileSystem;
 
         public SiteObject(ILoggerFactory loggerFactory, IEnumerable<Func<ISitePlugin>> pluginFactory = null)
         {
-            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
+            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SiteFolderName);
 
             _contentFileSystems = new List<IFileSystem>();
 
             var sharedPhysicalFileSystem = new PhysicalFileSystem();
-            SharedFileSystem = new SubFileSystem(sharedPhysicalFileSystem, sharedPhysicalFileSystem.ConvertPathFromInternal(sharedFolder));
+
+            // Make sure that SharedFileSystem is a read-only filesystem
+            SharedFileSystem = new ReadOnlyFileSystem(new SubFileSystem(sharedPhysicalFileSystem, sharedPhysicalFileSystem.ConvertPathFromInternal(sharedFolder)));
+            SharedMetaFileSystem = SharedFileSystem.GetOrCreateSubFileSystem(MetaFolder);
 
             _fileSystem = new AggregateFileSystem(SharedFileSystem);
 
+            MetaFileSystem = new SubFileSystem(_fileSystem, MetaFolder);
+
             ConfigFile = new FileEntry(_fileSystem, UPath.Root / DefaultConfigFileName);
-
-            var metaPath = UPath.Root / MetaFolderName;
-
-            MetaFileSystem = new SubFileSystem(_fileSystem, metaPath);
 
             StaticFiles = new PageCollection();
             Pages = new PageCollection();
@@ -96,13 +102,22 @@ namespace Lunet.Core
         //        MetaFolder = BaseFolder / MetaFolderName;
         //        PrivateMetaFolder = PrivateBaseFolder / MetaFolderName;
         //        ConfigFile = BaseFolder / DefaultConfigFileName;
-        //        OutputFolder = PrivateBaseFolder / OutputFolderName;
+        //        OutputFolder = PrivateBaseFolder / DefaultOutputFolderName;
         //    }
         //}
 
         public IFileSystem SharedFileSystem { get; }
 
-        public IFileSystem InputFileSystem { get; set; }
+        public IFileSystem SiteFileSystem
+        {
+            get => _siteFileSystem;
+            set
+            {
+                _siteFileSystem = value;
+                SiteMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(MetaFolder);
+                UpdateFileSystem();
+            }
+        }
 
         public IFileSystem TempFileSystem
         {
@@ -110,17 +125,25 @@ namespace Lunet.Core
             set
             {
                 _tempFileSystem = value;
-                TempMetaFileSystem = _tempFileSystem == null ? new SubFileSystem(_tempFileSystem, UPath.Root / MetaFolderName) : null;
+                TempSiteFileSystem = _tempFileSystem?.GetOrCreateSubFileSystem(SiteFolder);
+                TempMetaFileSystem = TempSiteFileSystem?.GetOrCreateSubFileSystem(MetaFolder);
+                UpdateFileSystem();
             }
         }
+
+        public IFileSystem TempSiteFileSystem { get; private set; }
 
         public IFileSystem FileSystem => _fileSystem;
 
         public IFileSystem OutputFileSystem { get; set; }
 
+        public IFileSystem SharedMetaFileSystem { get; }
+
         public IFileSystem TempMetaFileSystem { get; private set; }
 
-        public IFileSystem MetaFileSystem { get; }
+        public IFileSystem SiteMetaFileSystem { get; private set; }
+
+        public IFileSystem MetaFileSystem { get; private set; }
 
         public OrderedList<Func<ISitePlugin>> Plugins { get; }
 
@@ -195,9 +218,24 @@ namespace Lunet.Core
             {
                 _contentFileSystems.Add(fileSystem);
             }
+            UpdateFileSystem();
+        }
 
-            _fileSystem.SetFileSystems(_contentFileSystems);
-            _fileSystem.AddFileSystem(InputFileSystem);
+        private void UpdateFileSystem()
+        {
+            _fileSystem.ClearFileSystems();
+            if (TempSiteFileSystem != null)
+            {
+                _fileSystem.AddFileSystem(TempSiteFileSystem);
+            }
+            foreach (var contentfs in _contentFileSystems)
+            {
+                _fileSystem.AddFileSystem(contentfs);
+            }
+            if (SiteFileSystem != null)
+            {
+                _fileSystem.AddFileSystem(SiteFileSystem);
+            }
         }
 
         public bool LogFilter(string category, LogLevel level)
@@ -333,11 +371,11 @@ namespace Lunet.Core
 
         private class LoggerProviderIntercept : ILoggerProvider
         {
-            private readonly SiteObject site;
+            private readonly SiteObject _site;
 
             public LoggerProviderIntercept(SiteObject site)
             {
-                this.site = site;
+                this._site = site;
             }
 
             public void Dispose()
@@ -346,24 +384,24 @@ namespace Lunet.Core
 
             public ILogger CreateLogger(string categoryName)
             {
-                return new LoggerIntercept(site);
+                return new LoggerIntercept(_site);
             }
         }
 
         private class LoggerIntercept : ILogger
         {
-            private readonly SiteObject site;
+            private readonly SiteObject _site;
 
             public LoggerIntercept(SiteObject site)
             {
-                this.site = site;
+                this._site = site;
             }
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
                 if (logLevel == LogLevel.Critical || logLevel == LogLevel.Error)
                 {
-                    site.HasErrors = true;
+                    _site.HasErrors = true;
                 }
             }
 

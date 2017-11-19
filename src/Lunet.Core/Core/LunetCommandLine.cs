@@ -38,7 +38,7 @@ namespace Lunet.Core
 
             // The defines to setup before initializing config.sban
             Defines = Option("-d|--define <variable=value>", "Defines a site variable", CommandOptionType.MultipleValue);
-            OutputDirectory = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteObject.OutputFolderName}'", CommandOptionType.SingleValue);
+            OutputDirectory = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteObject.DefaultOutputFolderName}'", CommandOptionType.SingleValue);
             InputDirectory = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
 
             this.Invoke = () =>
@@ -156,11 +156,12 @@ namespace Lunet.Core
 
         public void HandleCommonOptions()
         {
-            var baseFolder = Path.GetFullPath(InputDirectory.HasValue() ? InputDirectory.Value() : ".");
+            var baseFolder = Path.GetFullPath(InputDirectory.HasValue() ? InputDirectory.Value() : Environment.CurrentDirectory);
 
-            var fs = new PhysicalFileSystem();
-            var inputFileSystem = new SubFileSystem(fs, fs.ConvertPathFromInternal(baseFolder));
-            site.InputFileSystem = inputFileSystem;
+            var diskfs = new PhysicalFileSystem();
+
+            var siteFileSystem = new SubFileSystem(diskfs, diskfs.ConvertPathFromInternal(baseFolder));
+            site.SiteFileSystem = siteFileSystem;
 
             // Add defines
             foreach (var value in Defines.Values)
@@ -168,16 +169,13 @@ namespace Lunet.Core
                 site.AddDefine(value);
             }
 
-            const string DefaultTempFolder = ".lunet";
-            const string DefaultOutputFolder = DefaultTempFolder + "/www";
-
-            site.TempFileSystem = new SubFileSystem(inputFileSystem, UPath.Root / DefaultTempFolder);
+            site.TempFileSystem = new SubFileSystem(siteFileSystem, UPath.Root / SiteObject.TempFolderName);
 
             var outputFolder = OutputDirectory.HasValue()
                 ? OutputDirectory.Value()
-                : Path.Combine(baseFolder, DefaultOutputFolder);
+                : Path.Combine(baseFolder, SiteObject.TempFolderName + "/" +  SiteObject.DefaultOutputFolderName);
 
-            site.OutputFileSystem = new SubFileSystem(fs, fs.ConvertPathToInternal(outputFolder));
+            site.OutputFileSystem = new SubFileSystem(diskfs, diskfs.ConvertPathToInternal(outputFolder));
         }
     }
 }
