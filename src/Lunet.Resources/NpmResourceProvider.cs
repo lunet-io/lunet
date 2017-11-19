@@ -14,6 +14,7 @@ using Newtonsoft.Json.Linq;
 using NuGet.Versioning;
 using Scriban;
 using Scriban.Runtime;
+using Zio;
 
 namespace Lunet.Resources
 {
@@ -26,23 +27,21 @@ namespace Lunet.Resources
 
         public string RegistryUrl { get; set; }
 
-        protected override ResourceObject LoadFromDisk(string resourceName, string resourceVersion, string directory)
+        protected override ResourceObject LoadFromDisk(string resourceName, string resourceVersion, DirectoryEntry directory)
         {
             // Imports the json properties into the runtime object
-            var packageJson = Path.Combine(directory, "package.json");
-            if (!File.Exists(packageJson))
+            var packageJson = new FileEntry(directory.FileSystem, directory.Path / "package.json");
+            if (!packageJson.Exists)
             {
-                Plugin.Site.Error(
-                    $"The [{Name}] package doesn't contain the file package.json at [{Plugin.Site.GetRelativePath(directory, PathFlags.Directory)}package.json]");
+                Plugin.Site.Error($"The [{Name}] package doesn't contain the file `{packageJson}`");
                 return null;
             }
 
             var resource = new ResourceObject(this, resourceName, resourceVersion, directory);
 
-            var context = new TemplateContext(Plugin.Site.Scripts.GlobalObject);
-            Plugin.Site.Scripts.TryImportScriptFromFile(packageJson, resource, ScriptFlags.Expect, context);
-            var result = context.Result as ScriptObject;
-            if (result != null)
+            object result;
+            Plugin.Site.Scripts.TryImportScriptFromFile(packageJson, resource, ScriptFlags.Expect, out result);
+            if (result is ScriptObject)
             {
                 var dynamicObject = (DynamicObject) resource;
                 dynamicObject.Import(result);
@@ -56,8 +55,7 @@ namespace Lunet.Resources
             return resource;
         }
 
-        protected override ResourceObject InstallToDisk(string resourceName, string resourceVersion, string directory,
-            ResourceInstallFlags flags)
+        protected override ResourceObject InstallToDisk(string resourceName, string resourceVersion, DirectoryEntry directory, ResourceInstallFlags flags)
         {
             JObject resourceJson = null;
             var npmPackageUrl = RegistryUrl + resourceName;
@@ -153,7 +151,8 @@ namespace Lunet.Resources
                         using (var stream = client.GetStreamAsync(downloadUrl).Result)
                         using (var gzStream = new GZipStream(stream, CompressionMode.Decompress))
                         {
-                            gzStream.UntarTo(directory, "package");
+                            throw new NotImplementedException("To rework with Zio");
+                            //gzStream.UntarTo(directory, "package");
                         }
 
                         return LoadFromDisk(resourceName, selectedVersion, directory);

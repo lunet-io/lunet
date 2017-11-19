@@ -9,6 +9,7 @@ using System.IO;
 using System.Threading;
 using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
+using Zio;
 
 namespace Lunet.Core
 {
@@ -105,12 +106,13 @@ namespace Lunet.Core
             {
                 return;
             }
-            privateBaseDirectory = Site.PrivateBaseFolder;
-            baseDirectory = Site.BaseFolder;
-            rootDirectoryWatcher = CreateFileWatch(Site.BaseFolder, false);
-            privateMetaWatcher = CreateFileWatch(Site.PrivateMetaFolder, true);
+            throw new NotImplementedException();
+            //privateBaseDirectory = Site.PrivateBaseFolder;
+            //baseDirectory = Site.BaseFolder;
+            //rootDirectoryWatcher = CreateFileWatch(Site.BaseFolder, false);
+            //privateMetaWatcher = CreateFileWatch(Site.PrivateMetaFolder, true);
 
-            foreach (var directory in Site.BaseFolder.Info.EnumerateDirectories())
+            foreach (var directory in Site.FileSystem.EnumerateDirectories(UPath.Root))
             {
                 CreateFileWatch(directory.FullName, true);
             }

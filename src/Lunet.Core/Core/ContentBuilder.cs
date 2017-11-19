@@ -14,6 +14,7 @@ using Lunet.Helpers;
 using Lunet.Scripts;
 using Scriban.Parsing;
 using Scriban.Runtime;
+using Zio;
 
 namespace Lunet.Core
 {
@@ -26,18 +27,18 @@ namespace Lunet.Core
 
     public class ContentPlugin : SitePlugin
     {
-        private readonly HashSet<string> previousOutputDirectories;
-        private readonly HashSet<string> previousOutputFiles;
-        private readonly Dictionary<string, FileInfo> filesWritten;
+        private readonly HashSet<DirectoryEntry> previousOutputDirectories;
+        private readonly HashSet<FileEntry> previousOutputFiles;
+        private readonly Dictionary<FileEntry, FileEntry> filesWritten;
         private bool isInitialized;
         private readonly Stopwatch totalDuration;
 
         public ContentPlugin(SiteObject site) : base(site)
         {
-            previousOutputDirectories = new HashSet<string>();
-            previousOutputFiles = new HashSet<string>();
+            previousOutputDirectories = new HashSet<DirectoryEntry>();
+            previousOutputFiles = new HashSet<FileEntry>();
             Scripts = Site.Scripts;
-            filesWritten = new Dictionary<string, FileInfo>();
+            filesWritten = new Dictionary<FileEntry, FileEntry>();
             totalDuration = new Stopwatch();
 
             BeforeLoadingProcessors = new OrderedList<ISiteProcessor>();
@@ -129,13 +130,12 @@ namespace Lunet.Core
         }
 
         
-        public bool TryCopyFile(FileInfo fromFile, string outputPath)
+        public bool TryCopyFile(FileEntry fromFile, UPath outputPath)
         {
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
-            if (outputPath == null) throw new ArgumentNullException(nameof(outputPath));
+            outputPath.AssertAbsolute(nameof(outputPath));
 
-            fromFile = fromFile.Normalize();
-            var outputFile = Site.OutputFolder.CombineToFile(outputPath);
+            var outputFile = new FileEntry(Site.OutputFileSystem, outputPath);
             TrackDestination(outputFile, fromFile);
 
             if (!outputFile.Exists || (fromFile.LastWriteTime > outputFile.LastWriteTime))
@@ -144,7 +144,7 @@ namespace Lunet.Core
 
                 if (Site.CanTrace())
                 {
-                    Site.Trace($"Copy file from [{Site.GetRelativePath(fromFile.FullName, PathFlags.File|PathFlags.Normalize)} to [{outputPath}]");
+                    Site.Trace($"Copy file from [{fromFile} to [{outputPath}]");
                 }
 
                 fromFile.CopyTo(outputFile.FullName, true);
@@ -156,22 +156,20 @@ namespace Lunet.Core
             return false;
         }
 
-        public bool TryCopyContentToOutput(ContentObject fromFile, string relativePath)
+        public bool TryCopyContentToOutput(ContentObject fromFile, UPath outputPath)
         {
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
-            if (relativePath == null) throw new ArgumentNullException(nameof(relativePath));
-            relativePath = PathUtil.NormalizeRelativePath(relativePath, false);
-            if (Path.IsPathRooted(relativePath)) throw new ArgumentException($"Path [{relativePath}] cannot be rooted", nameof(relativePath));
+            outputPath.AssertAbsolute();
 
             var clock = Stopwatch.StartNew();
 
-            var outputFile = Site.OutputFolder.CombineToFile(relativePath);
+            var outputFile = new FileEntry(Site.OutputFileSystem, outputPath);
             var outputDir = outputFile.Directory;
             if (outputDir == null)
             {
-                throw new ArgumentException("Output directory cannot be empty", nameof(relativePath));
+                throw new ArgumentException("Output directory cannot be empty", nameof(outputPath));
             }
-            TrackDestination(outputFile, fromFile.SourceFileInfo);
+            TrackDestination(outputFile, fromFile.SourceFile);
 
             var stat = Site.Statistics.GetContentStat(fromFile);
 
@@ -184,7 +182,7 @@ namespace Lunet.Core
                 {
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize)}]");
+                        Site.Trace($"Write file [{outputFile}]");
                     }
 
                     using (var writer = new StreamWriter(new FileStream(outputFile.FullName, FileMode.Create, FileAccess.Write)))
@@ -198,14 +196,14 @@ namespace Lunet.Core
                     }
                 }
                 // If the source file is not newer than the destination file, don't overwrite it
-                else if (fromFile.SourceFileInfo != null && (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime)))
+                else if (fromFile.SourceFile != null && (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime)))
                 {
                     if (Site.CanTrace())
                     {
-                        Site.Trace($"Write file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize)}]");
+                        Site.Trace($"Write file [{outputFile}]");
                     }
 
-                    fromFile.SourceFileInfo.CopyTo(outputFile.FullName, true);
+                    fromFile.SourceFile.CopyTo(outputFile.FullName, true);
 
                     // Update statistics
                     stat.Static = true;
@@ -214,8 +212,8 @@ namespace Lunet.Core
             }
             catch (Exception ex)
             {
-                Site.Error(fromFile.SourceFileInfo != null
-                    ? $"Unable to copy file [{Site.GetRelativePath(fromFile.SourceFileInfo.FullName, PathFlags.File | PathFlags.Normalize)}] to [{outputFile}]. Reason:{ex.GetReason()}"
+                Site.Error(fromFile.SourceFile != null
+                    ? $"Unable to copy file [{fromFile}] to [{outputFile}]. Reason:{ex.GetReason()}"
                     : $"Unable to copy file to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
             }
@@ -227,24 +225,20 @@ namespace Lunet.Core
             return true;
         }
 
-        public void TrackDestination(FileInfo outputFile, FileInfo sourceFile)
+        public void TrackDestination(FileEntry outputFile, FileEntry sourceFile)
         {
             if (outputFile == null) throw new ArgumentNullException(nameof(outputFile));
 
-            var relativePath = Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize);
-            var outputFilename = outputFile.FullName;
-
             if (sourceFile != null)
             {
-                FileInfo previousSourceFile;
-                if (filesWritten.TryGetValue(outputFilename, out previousSourceFile))
+                FileEntry previousSourceFile;
+                if (filesWritten.TryGetValue(outputFile, out previousSourceFile))
                 {
-                    Site.Error(
-                        $"The content [{Site.GetRelativePath(previousSourceFile.FullName, PathFlags.File | PathFlags.Normalize)}] and [{Site.GetRelativePath(sourceFile.FullName, PathFlags.File | PathFlags.Normalize)}] have the same Url output [{relativePath}]");
+                    Site.Error($"The content [{previousSourceFile}] and [{sourceFile}] have the same Url output [{sourceFile}]");
                 }
                 else
                 {
-                    filesWritten.Add(outputFilename, sourceFile);
+                    filesWritten.Add(outputFile, sourceFile);
                 }
             }
 
@@ -254,10 +248,10 @@ namespace Lunet.Core
             var previousDir = outputFile.Directory;
             while (previousDir != null)
             {
-                previousOutputDirectories.Remove(previousDir.FullName);
+                previousOutputDirectories.Remove(previousDir);
                 previousDir = previousDir.Parent;
             }
-            previousOutputFiles.Remove(outputFilename);
+            previousOutputFiles.Remove(outputFile);
         }
 
         private void RunProcess(IEnumerable<ISiteProcessor> processors)
@@ -317,7 +311,7 @@ namespace Lunet.Core
             Site.Pages.Clear();
 
             // Load a content asynchronously
-            var contentLoaderBlock = new TransformBlock<ContentReference, ContentObject>(
+            var contentLoaderBlock = new TransformBlock<FileEntry, ContentObject>(
                 async reference => await LoadContent(reference),
                 new ExecutionDataflowBlockOptions()
                 {
@@ -338,22 +332,15 @@ namespace Lunet.Core
 
             // We don't use a block for this part (annoying without struct tuples)
 
-            // Get the list of root directories from themes
-            var rootDirectories = new List<FolderInfo>(Site.ContentFolders);
-
             // Compute the list of files that we will actually process
-            var filesLoaded = new HashSet<string>();
-            foreach (var rootDirectory in rootDirectories)
+            var directories = new Queue<DirectoryEntry>();
+            directories.Enqueue(new DirectoryEntry(Site.FileSystem, UPath.Root));
+            while (directories.Count > 0)
             {
-                var directories = new Queue<FolderInfo>();
-                directories.Enqueue(rootDirectory);
-                while (directories.Count > 0)
+                var nextDirectory = directories.Dequeue();
+                foreach (var contentReference in LoadDirectory(nextDirectory, directories))
                 {
-                    var nextDirectory = directories.Dequeue();
-                    foreach (var contentReference in LoadDirectory(rootDirectory, nextDirectory, directories, filesLoaded))
-                    {
-                        contentLoaderBlock.Post(contentReference);
-                    }
+                    contentLoaderBlock.Post(contentReference);
                 }
             }
 
@@ -365,41 +352,30 @@ namespace Lunet.Core
             Site.Pages.Sort();
         }
 
-        private IEnumerable<ContentReference> LoadDirectory(FolderInfo rootDirectory, DirectoryInfo directory, Queue<FolderInfo> directoryQueue, HashSet<string> loaded)
+        private IEnumerable<FileEntry> LoadDirectory(DirectoryEntry directory, Queue<DirectoryEntry> directoryQueue)
         {
-            foreach (var entry in directory.EnumerateFileSystemInfos())
+            foreach (var entry in directory.EnumerateEntries())
             {
                 if (entry.Name == SiteObject.DefaultConfigFileName)
                 {
                     continue;
                 }
 
-                if (entry is FileInfo)
+                if (entry is FileEntry)
                 {
-                    // If the relative path is already registered, we won't process this file
-                    var relativePath = rootDirectory.GetRelativePath(entry.FullName, PathFlags.Normalize);
-                    if (loaded.Contains(relativePath))
-                    {
-                        continue;
-                    }
-                    loaded.Add(relativePath);
-
-                    yield return new ContentReference(rootDirectory, (FileInfo)entry);
+                    yield return (FileEntry) entry;
                 }
-                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.PrivateFolderName)
+                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.TempFolderName)
                 {
-                    directoryQueue.Enqueue((FolderInfo)entry);
+                    directoryQueue.Enqueue(entry.Parent);
                 }
             }
         }
 
-        private async Task<ContentObject> LoadContent(ContentReference arg)
+        private async Task<ContentObject> LoadContent(FileEntry file)
         {
             ContentObject page = null;
             var buffer = new byte[16];
-
-            var file = arg.FileInfo;
-            var rootDirectory = arg.RootFolder;
 
             var clock = Stopwatch.StartNew();
             var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -440,12 +416,12 @@ namespace Lunet.Core
 
                 if (hasFrontMatter)
                 {
-                    page = await LoadPageScript(Site, stream, rootDirectory, file);
+                    page = await LoadPageScript(Site, stream, file);
                     stream = null;
                 }
                 else
                 {
-                    page = new ContentObject(Site, rootDirectory, file);
+                    page = new ContentObject(Site, file);
                 }
             }
             finally
@@ -459,7 +435,7 @@ namespace Lunet.Core
 
             return page;
         }
-        private static async Task<ContentObject> LoadPageScript(SiteObject site, Stream stream, DirectoryInfo rootDirectory, FileInfo file)
+        private static async Task<ContentObject> LoadPageScript(SiteObject site, Stream stream, FileEntry file)
         {
             // Read the stream
             var reader = new StreamReader(stream);
@@ -473,7 +449,7 @@ namespace Lunet.Core
             var scriptPage = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatterAndContent);
             if (!scriptPage.HasErrors)
             {
-                page = new ContentObject(site, rootDirectory, file)
+                page = new ContentObject(site, file)
                 {
                     Script = scriptPage.Page
                 };
@@ -571,7 +547,7 @@ namespace Lunet.Core
             var clock = Stopwatch.StartNew();
             try
             {
-                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile, page.ScriptObjectLocal);
+                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile.Path, page.ScriptObjectLocal);
             }
             finally
             {
@@ -580,13 +556,13 @@ namespace Lunet.Core
             }
         }
 
-        public void CreateDirectory(DirectoryInfo directory)
+        public void CreateDirectory(DirectoryEntry directory)
         {
             if (!directory.Exists)
             {
                 if (Site.CanTrace())
                 {
-                    Site.Trace($"Create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory | PathFlags.Normalize)}]");
+                    Site.Trace($"Create directory [{directory}]");
                 }
 
                 try
@@ -595,7 +571,7 @@ namespace Lunet.Core
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Unable to create directory [{Site.GetRelativePath(directory.FullName, PathFlags.Directory | PathFlags.Normalize)}]. Reason:{ex.GetReason()}");
+                    Site.Error($"Unable to create directory [{directory}]. Reason:{ex.GetReason()}");
                 }
             }
         }
@@ -603,16 +579,15 @@ namespace Lunet.Core
         private void CleanupOutputFiles()
         {
             // Remove all previous files that have not been generated
-            foreach (var outputFilename in previousOutputFiles)
+            foreach (var outputFile in previousOutputFiles)
             {
-                var outputFile = new FileInfo(outputFilename);
                 try
                 {
                     if (outputFile.Exists)
                     {
                         if (Site.CanTrace())
                         {
-                            Site.Trace($"Delete file [{Site.GetRelativePath(outputFile.FullName, PathFlags.File | PathFlags.Normalize)}]");
+                            Site.Trace($"Delete file [{outputFile}]");
                         }
                         outputFile.Delete();
                     }
@@ -626,13 +601,13 @@ namespace Lunet.Core
             {
                 try
                 {
-                    if (Directory.Exists(outputDirectory))
+                    if (outputDirectory.Exists)
                     {
                         if (Site.CanTrace())
                         {
-                            Site.Trace($"Delete directory [{Site.GetRelativePath(outputDirectory, PathFlags.Directory | PathFlags.Normalize)}]");
+                            Site.Trace($"Delete directory [{outputDirectory}]");
                         }
-                        Directory.Delete(outputDirectory);
+                        outputDirectory.Delete(true);
                     }
                 }
                 catch (Exception)
@@ -643,7 +618,7 @@ namespace Lunet.Core
 
         private void CollectPreviousFileEntries()
         {
-            var outputDirectoryInfo = new DirectoryInfo(Site.OutputFolder);
+            var outputDirectoryInfo = new DirectoryEntry(Site.OutputFileSystem, UPath.Root);
             previousOutputDirectories.Clear();
             previousOutputFiles.Clear();
 
@@ -652,43 +627,30 @@ namespace Lunet.Core
                 return;
             }
 
-            var directories = new Queue<DirectoryInfo>();
+            var directories = new Queue<DirectoryEntry>();
             directories.Enqueue(outputDirectoryInfo);
 
             while (directories.Count > 0)
             {
                 var nextDirectory = directories.Dequeue();
 
-                if (nextDirectory != outputDirectoryInfo)
+                if (!Equals(nextDirectory, outputDirectoryInfo))
                 {
-                    previousOutputDirectories.Add(nextDirectory.FullName);
+                    previousOutputDirectories.Add(nextDirectory);
                 }
 
-                foreach (var entry in nextDirectory.EnumerateFileSystemInfos())
+                foreach (var entry in nextDirectory.EnumerateEntries())
                 {
-                    if (entry is FileInfo)
+                    if (entry is FileEntry)
                     {
-                        previousOutputFiles.Add(((FileInfo)entry).FullName);
+                        previousOutputFiles.Add(((FileEntry)entry));
                     }
-                    else if (entry is DirectoryInfo)
+                    else if (entry is DirectoryEntry)
                     {
-                        directories.Enqueue((DirectoryInfo)entry);
+                        directories.Enqueue((DirectoryEntry)entry);
                     }
                 }
             }
-        }
-
-        internal struct ContentReference
-        {
-            public ContentReference(FolderInfo rootFolder, FileInfo fileInfo)
-            {
-                RootFolder = rootFolder;
-                FileInfo = fileInfo;
-            }
-
-            public readonly FolderInfo RootFolder;
-
-            public readonly FileInfo FileInfo;
         }
     }
 }

@@ -6,8 +6,9 @@ using System.Text.RegularExpressions;
 using Lunet.Helpers;
 using Scriban.Functions;
 using Scriban.Helpers;
-using Scriban.Model;
 using Scriban.Runtime;
+using Scriban.Syntax;
+using Zio;
 
 namespace Lunet.Core
 {
@@ -18,17 +19,12 @@ namespace Lunet.Core
 
         private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-        public ContentObject(SiteObject site, DirectoryInfo rootDirectoryInfo, FileInfo sourceFileInfo)
+        public ContentObject(SiteObject site, FileEntry sourceFileInfo)
         {
-            if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
-            if (sourceFileInfo == null) throw new ArgumentNullException(nameof(sourceFileInfo));
-            if (site == null) throw new ArgumentNullException(nameof(site));
-            RootDirectory = rootDirectoryInfo;
-            SourceFileInfo = sourceFileInfo.Normalize();
-            SourceFile = sourceFileInfo.FullName;
+            Site = site ?? throw new ArgumentNullException(nameof(site));
+            SourceFile = sourceFileInfo ?? throw new ArgumentNullException(nameof(sourceFileInfo));
             Dependencies = new List<ContentDependency>();
             ObjectType = ContentObjectType.File;
-            Site = site;
 
             // TODO: Make this part pluggable
             // Parse a standard blog text
@@ -47,25 +43,25 @@ namespace Lunet.Core
                 Date = DateTime.Now;
             }
 
-            Path = RootDirectory.GetRelativePath(SourceFile, PathFlags.Normalize);
-            Length = SourceFileInfo.Length;
-            Extension = SourceFileInfo.Extension.ToLowerInvariant();
-            ModifiedTime = SourceFileInfo.LastWriteTime;
+            Path = sourceFileInfo.Path;
+            Length = SourceFile.Length;
+            Extension = SourceFile.ExtensionWithDot?.ToLowerInvariant();
+            ModifiedTime = SourceFile.LastWriteTime;
             ContentType = Site.ContentTypes.GetContentType(Extension);
 
             var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
 
             // Extract the section of this content
-            var sectionIndex = Path.IndexOf('/');
-            if (sectionIndex >= 0)
-            {
-                Section = Path.Substring(0, sectionIndex);
-                PathInSection = Path.Substring(sectionIndex + 1);
-            }
-            else
+
+            Section = Path.GetFirstDirectory(out var pathInSection);
+            if (Section == null)
             {
                 Section = string.Empty;
                 PathInSection = Path;
+            }
+            else
+            {
+                PathInSection = pathInSection;
             }
             Layout = Section;
 
@@ -75,10 +71,11 @@ namespace Lunet.Core
 
             if (isHtml && !Site.UrlAsFile)
             {
-                var isIndex = System.IO.Path.GetFileNameWithoutExtension(urlAsPath) == "index";
+                var name = Path.GetNameWithoutExtension();
+                var isIndex = name == "index";
                 if (isIndex)
                 {
-                    urlAsPath = System.IO.Path.GetDirectoryName(urlAsPath);
+                    urlAsPath = name;
                 }
                 else if (!string.IsNullOrEmpty(Extension))
                 {
@@ -100,13 +97,10 @@ namespace Lunet.Core
         /// <param name="section"></param>
         /// <exception cref="System.ArgumentNullException">
         /// </exception>
-        public ContentObject(SiteObject site, DirectoryInfo rootDirectoryInfo, string section = null)
+        public ContentObject(SiteObject site, string section = null)
         {
-            if (rootDirectoryInfo == null) throw new ArgumentNullException(nameof(rootDirectoryInfo));
-            if (site == null) throw new ArgumentNullException(nameof(site));
-            RootDirectory = rootDirectoryInfo;
+            Site = site ?? throw new ArgumentNullException(nameof(site));
             Dependencies = new List<ContentDependency>();
-            Site = site;
 
             Section = section;
 
@@ -116,19 +110,15 @@ namespace Lunet.Core
             InitializeReadOnlyVariables();
         }
 
-        public FolderInfo RootDirectory { get; }
-
         public SiteObject Site { get; }
 
-        public FileInfo SourceFileInfo { get; }
-
-        public string SourceFile { get; }
+        public FileEntry SourceFile { get; }
 
         public long Length { get; }
 
         public ContentObjectType ObjectType { get; }
 
-        public string Path { get; }
+        public UPath Path { get; }
 
         public DateTime ModifiedTime { get; }
 
@@ -136,13 +126,13 @@ namespace Lunet.Core
 
         public string Section { get; }
 
-        public string PathInSection { get; }
+        public UPath PathInSection { get; }
 
 
         public bool Discard
         {
-            get { return GetSafeValue<bool>(FileVariables.Discard); }
-            set { this[FileVariables.Discard] = value; }
+            get => GetSafeValue<bool>(FileVariables.Discard);
+            set => this[FileVariables.Discard] = value;
         }
 
         /// <summary>
@@ -159,8 +149,8 @@ namespace Lunet.Core
         /// </summary>
         public string Content
         {
-            get { return GetSafeValue<string>(PageVariables.Content); }
-            set { this[PageVariables.Content] = value; }
+            get => GetSafeValue<string>(PageVariables.Content);
+            set => this[PageVariables.Content] = value;
         }
 
         /// <summary>
@@ -168,8 +158,8 @@ namespace Lunet.Core
         /// </summary>
         public string Summary
         {
-            get { return GetSafeValue<string>(PageVariables.Summary); }
-            set { this[PageVariables.Summary] = value; }
+            get => GetSafeValue<string>(PageVariables.Summary);
+            set => this[PageVariables.Summary] = value;
         }
 
         /// <summary>
@@ -189,38 +179,38 @@ namespace Lunet.Core
 
         public string Url
         {
-            get { return GetSafeValue<string>(PageVariables.Url); }
-            set { this[PageVariables.Url] = value; }
+            get => GetSafeValue<string>(PageVariables.Url);
+            set => this[PageVariables.Url] = value;
         }
 
         public DateTime Date
         {
-            get { return GetSafeValue<DateTime>(PageVariables.Date); }
-            set { this[PageVariables.Date] = value; }
+            get => GetSafeValue<DateTime>(PageVariables.Date);
+            set => this[PageVariables.Date] = value;
         }
 
         public int Weight
         {
-            get { return GetSafeValue<int>(PageVariables.Weight); }
-            set { this[PageVariables.Weight] = value; }
+            get => GetSafeValue<int>(PageVariables.Weight);
+            set => this[PageVariables.Weight] = value;
         }
 
         public string Title
         {
-            get { return GetSafeValue<string>(PageVariables.Title); }
-            set { this[PageVariables.Title] = value; }
+            get => GetSafeValue<string>(PageVariables.Title);
+            set => this[PageVariables.Title] = value;
         }
 
         public string Layout
         {
-            get { return GetSafeValue<string>(PageVariables.Layout); }
-            set { this[PageVariables.Layout] = value; }
+            get => GetSafeValue<string>(PageVariables.Layout);
+            set => this[PageVariables.Layout] = value;
         }
 
         public string LayoutType
         {
-            get { return GetSafeValue<string>(PageVariables.LayoutType); }
-            set { this[PageVariables.LayoutType] = value; }
+            get => GetSafeValue<string>(PageVariables.LayoutType);
+            set => this[PageVariables.LayoutType] = value;
         }
 
         public List<ContentDependency> Dependencies { get; }
@@ -239,7 +229,7 @@ namespace Lunet.Core
             }
         }
 
-        public string GetDestinationPath()
+        public UPath GetDestinationPath()
         {
             var urlAsPath = Url;
 
@@ -247,7 +237,7 @@ namespace Lunet.Core
             if (!Uri.TryCreate(urlAsPath, UriKind.Relative, out uri))
             {
                 Site.Warning($"Invalid Url [{urlAsPath}] for page [{Path}]. Reverting to page default.");
-                urlAsPath = Url = Path;
+                urlAsPath = Url = Path.FullName;
             }
 
             if (ContentType == ContentType.Html && !Site.UrlAsFile)
@@ -260,15 +250,9 @@ namespace Lunet.Core
                         urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - extension.Length);
                     }
                 }
-                urlAsPath = PathUtil.NormalizeRelativePath(urlAsPath, true);
                 urlAsPath += "index" + Site.GetSafeDefaultPageExtension();
             }
 
-            // Make sure that destination path does not start by a /
-            if (!uri.IsAbsoluteUri)
-            {
-                urlAsPath = PathUtil.NormalizeRelativePath(urlAsPath, false);
-            }
             return urlAsPath;
         }
 

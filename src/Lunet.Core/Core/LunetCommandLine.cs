@@ -7,6 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Lunet.Helpers;
+using Zio;
+using Zio.FileSystems;
 
 namespace Lunet.Core
 {
@@ -36,7 +38,7 @@ namespace Lunet.Core
 
             // The defines to setup before initializing config.sban
             Defines = Option("-d|--define <variable=value>", "Defines a site variable", CommandOptionType.MultipleValue);
-            OutputDirectory = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{site.GetRelativePath(site.OutputFolder.FullName, PathFlags.Directory)}'", CommandOptionType.SingleValue);
+            OutputDirectory = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteObject.OutputFolderName}'", CommandOptionType.SingleValue);
             InputDirectory = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
 
             this.Invoke = () =>
@@ -71,7 +73,9 @@ namespace Lunet.Core
                 newApp.Invoke = () =>
                 {
                     HandleCommonOptions();
-                    site.BaseFolder = folderArgument.Value ?? ".";
+
+                    throw new NotImplementedException("TODO: Implement BaseFolder");
+                    //site.BaseFolder = folderArgument.Value ?? ".";
                     try
                     {
                         site.Create(forceOption.HasValue());
@@ -152,11 +156,11 @@ namespace Lunet.Core
 
         public void HandleCommonOptions()
         {
-            // Setup a default directory if necessary
-            if (InputDirectory.HasValue())
-            {
-                site.BaseFolder = InputDirectory.Value();
-            }
+            var baseFolder = Path.GetFullPath(InputDirectory.HasValue() ? InputDirectory.Value() : ".");
+
+            var fs = new PhysicalFileSystem();
+            var inputFileSystem = new SubFileSystem(fs, fs.ConvertPathFromInternal(baseFolder));
+            site.InputFileSystem = inputFileSystem;
 
             // Add defines
             foreach (var value in Defines.Values)
@@ -164,12 +168,16 @@ namespace Lunet.Core
                 site.AddDefine(value);
             }
 
-            // Setup the output directory AFTER input directory
-            // as setting the InputDirectory will by default setup a default OutputDirectory
-            if (OutputDirectory.HasValue())
-            {
-                site.OutputFolder = OutputDirectory.Value();
-            }
+            const string DefaultTempFolder = ".lunet";
+            const string DefaultOutputFolder = DefaultTempFolder + "/www";
+
+            site.TempFileSystem = new SubFileSystem(inputFileSystem, UPath.Root / DefaultTempFolder);
+
+            var outputFolder = OutputDirectory.HasValue()
+                ? OutputDirectory.Value()
+                : Path.Combine(baseFolder, DefaultOutputFolder);
+
+            site.OutputFileSystem = new SubFileSystem(fs, fs.ConvertPathToInternal(outputFolder));
         }
     }
 }

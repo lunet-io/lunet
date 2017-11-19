@@ -22,7 +22,7 @@ namespace Lunet.Minifiers
         public string Minify(string type, string content)
         {
             // TODO: handle filenames, options...etc.
-            UgliflyResult? result;
+            UglifyResult? result;
             if (type == "js")
             {
                 result = Uglify.Js(content);

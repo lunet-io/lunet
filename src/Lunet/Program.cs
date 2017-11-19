@@ -49,7 +49,7 @@ namespace Lunet
                     continue;
                 }
 
-                Console.WriteLine($"Dependency {type} [{page.Path ?? page.Url}]");
+                Console.WriteLine($"Dependency {type} [{page.Path.FullName ?? page.Url}]");
                 foreach (var dep in page.Dependencies)
                 {
                     foreach (var file in dep.GetFiles())

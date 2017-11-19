@@ -101,6 +101,7 @@ namespace Lunet.Scripts
             return builder.ToString();
         }
 
+        /*
         public void Copy(List<string> fromFiles, string outputPath, FolderInfo? rootFolder = null)
         {
             if (fromFiles == null) throw new ArgumentNullException(nameof(fromFiles));
@@ -155,6 +156,7 @@ namespace Lunet.Scripts
                 Site.Content.TryCopyFile(new FileInfo(inputFullPath), relativeOutputFile);
             }
         }
+        */
 
         //private void CopyFunction(params object[] args)
         //{

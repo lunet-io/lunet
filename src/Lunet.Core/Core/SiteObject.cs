@@ -13,6 +13,8 @@ using Lunet.Scripts;
 using Lunet.Statistics;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
+using Zio;
+using Zio.FileSystems;
 
 namespace Lunet.Core
 {
@@ -21,28 +23,31 @@ namespace Lunet.Core
         public const string MetaFolderName = "_meta";
         public const string SharedFolderName = "shared";
         public const string OutputFolderName = "www";
-        public const string PrivateFolderName = ".lunet";
+        public const string TempFolderName = ".lunet";
         public const string DefaultPageExtensionValue = ".html";
-        public const string DefaultConfigFileName = "config.sban";
+        public const string DefaultConfigFileName = "config.scriban";
 
-        private readonly Stopwatch clock;
-        private FolderInfo _baseFolder;
-        private bool isInitialized;
-
-        public SiteObject() : this(null)
-        {
-        }
+        private bool _isInitialized;
+        private readonly AggregateFileSystem _fileSystem;
+        private readonly List<IFileSystem> _contentFileSystems;
+        private IFileSystem _tempFileSystem;
 
         public SiteObject(ILoggerFactory loggerFactory, IEnumerable<Func<ISitePlugin>> pluginFactory = null)
         {
-            // Initialize by default with current directory
-            BaseFolder = ".";
+            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
 
-            SharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
-            SharedMetaFolder = Path.Combine(SharedFolder, MetaFolderName);
+            _contentFileSystems = new List<IFileSystem>();
 
-            ContentProviders = new OrderedList<IContentProvider>();
-            clock = new Stopwatch();
+            var sharedPhysicalFileSystem = new PhysicalFileSystem();
+            SharedFileSystem = new SubFileSystem(sharedPhysicalFileSystem, sharedPhysicalFileSystem.ConvertPathFromInternal(sharedFolder));
+
+            _fileSystem = new AggregateFileSystem(SharedFileSystem);
+
+            ConfigFile = new FileEntry(_fileSystem, UPath.Root / DefaultConfigFileName);
+
+            var metaPath = UPath.Root / MetaFolderName;
+
+            MetaFileSystem = new SubFileSystem(_fileSystem, metaPath);
 
             StaticFiles = new PageCollection();
             Pages = new PageCollection();
@@ -74,40 +79,50 @@ namespace Lunet.Core
             }
         }
 
-        public FileInfo ConfigFile { get; private set; }
+        public FileEntry ConfigFile { get; }
 
-        /// <summary>
-        /// Gets or sets the base directory of the website (input files, config file)
-        /// </summary>
-        public FolderInfo BaseFolder
+        ///// <summary>
+        ///// Gets or sets the base directory of the website (input files, config file)
+        ///// </summary>
+        //public UPath BaseFolder
+        //{
+        //    get { return _baseFolder; }
+
+        //    set
+        //    {
+        //        // Update all 
+        //        _baseFolder = value;
+        //        PrivateBaseFolder = Path.Combine(BaseFolder.FullName, TempFolderName);
+        //        MetaFolder = BaseFolder / MetaFolderName;
+        //        PrivateMetaFolder = PrivateBaseFolder / MetaFolderName;
+        //        ConfigFile = BaseFolder / DefaultConfigFileName;
+        //        OutputFolder = PrivateBaseFolder / OutputFolderName;
+        //    }
+        //}
+
+        public IFileSystem SharedFileSystem { get; }
+
+        public IFileSystem InputFileSystem { get; set; }
+
+        public IFileSystem TempFileSystem
         {
-            get { return _baseFolder; }
-
+            get => _tempFileSystem;
             set
             {
-                // Update all 
-                _baseFolder = value;
-                PrivateBaseFolder = Path.Combine(BaseFolder.FullName, PrivateFolderName);
-                MetaFolder = BaseFolder.GetSubFolder(MetaFolderName);
-                PrivateMetaFolder = PrivateBaseFolder.GetSubFolder(MetaFolderName);
-                ConfigFile = new FileInfo(Path.Combine(BaseFolder, DefaultConfigFileName));
-                OutputFolder = PrivateBaseFolder.GetSubFolder(OutputFolderName);
+                _tempFileSystem = value;
+                TempMetaFileSystem = _tempFileSystem == null ? new SubFileSystem(_tempFileSystem, UPath.Root / MetaFolderName) : null;
             }
         }
 
+        public IFileSystem FileSystem => _fileSystem;
+
+        public IFileSystem OutputFileSystem { get; set; }
+
+        public IFileSystem TempMetaFileSystem { get; private set; }
+
+        public IFileSystem MetaFileSystem { get; }
+
         public OrderedList<Func<ISitePlugin>> Plugins { get; }
-
-        public FolderInfo PrivateBaseFolder { get; private set; }
-
-        public FolderInfo MetaFolder { get; private set; }
-
-        public FolderInfo SharedFolder { get; }
-
-        public FolderInfo SharedMetaFolder { get; }
-
-        public FolderInfo PrivateMetaFolder { get; private set; }
-
-        public FolderInfo OutputFolder { get; set; }
 
         /// <summary>
         /// Gets the logger factory that was used to create the site logger <see cref="Log"/>.
@@ -146,53 +161,43 @@ namespace Lunet.Core
 
         public string BasePath
         {
-            get { return this.GetSafeValue<string>(SiteVariables.BasePath); }
-            set { this[SiteVariables.BasePath] = value; }
+            get => GetSafeValue<string>(SiteVariables.BasePath);
+            set => this[SiteVariables.BasePath] = value;
         }
 
         public string BaseUrl
         {
-            get { return this.GetSafeValue<string>(SiteVariables.BaseUrl); }
-            set { this[SiteVariables.BaseUrl] = value; }
+            get => GetSafeValue<string>(SiteVariables.BaseUrl);
+            set => this[SiteVariables.BaseUrl] = value;
         }
 
         public bool BaseUrlForce
         {
-            get { return this.GetSafeValue<bool>(SiteVariables.BaseUrlForce); }
-            set { this[SiteVariables.BaseUrlForce] = value; }
+            get => GetSafeValue<bool>(SiteVariables.BaseUrlForce);
+            set => this[SiteVariables.BaseUrlForce] = value;
         }
 
         public bool UrlAsFile
         {
-            get { return GetSafeValue<bool>(SiteVariables.UrlAsFile); }
-            set { this[SiteVariables.UrlAsFile] = value; }
+            get => GetSafeValue<bool>(SiteVariables.UrlAsFile);
+            set => this[SiteVariables.UrlAsFile] = value;
         }
 
         public string DefaultPageExtension
         {
-            get { return GetSafeValue<string>(SiteVariables.DefaultPageExtension); }
-            set { this[SiteVariables.DefaultPageExtension] = value; }
+            get => GetSafeValue<string>(SiteVariables.DefaultPageExtension);
+            set => this[SiteVariables.DefaultPageExtension] = value;
         }
 
-        public OrderedList<IContentProvider> ContentProviders { get; }
-        
-        public IEnumerable<FolderInfo> ContentFolders
+        public void AddContentFileSystem(IFileSystem fileSystem)
         {
-            get
+            if (!_contentFileSystems.Contains(fileSystem))
             {
-                // The site input directory will override any existing content (from extend or builtin)
-                yield return BaseFolder;
-
-                foreach (var contentProvider in ContentProviders)
-                {
-                    foreach (var dir in contentProvider.GetFolders())
-                    {
-                        yield return dir;
-                    }
-                }
-
-                yield return SharedFolder;
+                _contentFileSystems.Add(fileSystem);
             }
+
+            _fileSystem.SetFileSystems(_contentFileSystems);
+            _fileSystem.AddFileSystem(InputFileSystem);
         }
 
         public bool LogFilter(string category, LogLevel level)
@@ -226,26 +231,15 @@ namespace Lunet.Core
 
         public int Clean()
         {
-            if (ConfigFile.Exists)
+            if (!ConfigFile.Exists)
             {
-                PrivateBaseFolder.Delete();
-                this.Info($"Directory {PrivateBaseFolder} deleted");
+                TempFileSystem.DeleteDirectory(UPath.Root / MetaFolderName, true);
+                this.Info($"Directory {UPath.Root / MetaFolderName} deleted");
                 return 0;
             }
 
             this.Error($"The config file [{ConfigFile.Name}] was not found");
             return 1;
-        }
-
-        public IEnumerable<FolderInfo> MetaFolders
-        {
-            get
-            {
-                foreach (var directory in ContentFolders)
-                {
-                    yield return directory.GetSubFolder(MetaFolderName);
-                }
-            }
         }
 
         public string GetSafeDefaultPageExtension()
@@ -264,38 +258,40 @@ namespace Lunet.Core
         public void AddDefine(string defineStatement)
         {
             if (defineStatement == null) throw new ArgumentNullException(nameof(defineStatement));
-            Scripts.TryImportScriptStatement(defineStatement, this, ScriptFlags.AllowSiteFunctions);
+            object result;
+            Scripts.TryImportScriptStatement(defineStatement, this, ScriptFlags.AllowSiteFunctions, out result);
         }
 
         public void Create(bool force)
         {
-            if (BaseFolder.Info.Exists && BaseFolder.Info.GetFileSystemInfos().Length != 0 && !force)
-            {
-                this.Error($"The directory [{BaseFolder.FullName}] is not empty. Use the --force option to force the creation of an empty website");
-                return;
-            }
-            FolderInfo sourceNewSite = Path.Combine(SharedMetaFolder, "newsite");
-            FolderInfo destinationDir = BaseFolder;
+            throw new NotImplementedException();
+            //if (BaseFolder.Info.Exists && BaseFolder.Info.GetFileSystemInfos().Length != 0 && !force)
+            //{
+            //    this.Error($"The directory [{BaseFolder.FullName}] is not empty. Use the --force option to force the creation of an empty website");
+            //    return;
+            //}
+            //FolderInfo sourceNewSite = Path.Combine(SharedMetaFolder, "newsite");
+            //FolderInfo destinationDir = BaseFolder;
 
-            sourceNewSite.CopyTo(destinationDir, true, false);
+            //sourceNewSite.CopyTo(destinationDir, true, false);
 
-            this.Info($"New website created at {destinationDir}");
+            //this.Info($"New website created at {destinationDir}");
         }
 
         public bool Initialize()
         {
             if (ConfigFile.Exists)
             {
-                if (isInitialized)
+                if (_isInitialized)
                 {
                     return true;
                 }
 
-                isInitialized = true;
-                 
+                _isInitialized = true;
+
+                object result;
                 // We then actually load the config
-                return Scripts.TryImportScriptFromFile(ConfigFile.FullName, this,
-                    ScriptFlags.Expect | ScriptFlags.AllowSiteFunctions);
+                return Scripts.TryImportScriptFromFile(ConfigFile, this, ScriptFlags.Expect | ScriptFlags.AllowSiteFunctions, out result);
             }
 
             this.Error($"The config file [{ConfigFile.Name}] was not found");

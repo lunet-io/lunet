@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Lunet.Core;
 using Lunet.Helpers;
 using Scriban.Runtime;
+using Zio;
 
 namespace Lunet.Resources
 {
@@ -24,8 +25,8 @@ namespace Lunet.Resources
 
         public ResourcePlugin(SiteObject site) : base(site)
         {
-            ResourceFolder = Path.Combine(Site.MetaFolder, ResourceFolderName);
-            PrivateResourceFolder = Path.Combine(Site.PrivateMetaFolder, ResourceFolderName);
+            ResourceFolder = Site.MetaFileSystem.GetDirectoryEntry(UPath.Root / ResourceFolderName);
+            PrivateResourceFolder = Site.TempMetaFileSystem.GetDirectoryEntry(UPath.Root / ResourceFolderName);
             Providers = new OrderedList<ResourceProvider>()
             {
                 new NpmResourceProvider(this)
@@ -34,9 +35,9 @@ namespace Lunet.Resources
             Site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
         }
 
-        public FolderInfo ResourceFolder { get; }
+        public DirectoryEntry ResourceFolder { get; }
 
-        public FolderInfo PrivateResourceFolder { get; }
+        public DirectoryEntry PrivateResourceFolder { get; }
 
         public OrderedList<ResourceProvider> Providers { get; }
 

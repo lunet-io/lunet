@@ -8,8 +8,9 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Scriban;
-using Scriban.Model;
+using Scriban.Syntax;
 using Scriban.Parsing;
+using Zio;
 
 namespace Lunet.Layouts
 {
@@ -23,7 +24,7 @@ namespace Lunet.Layouts
 
         public const string DefaultLayoutName = "_default";
 
-        public delegate IEnumerable<string> GetLayoutPathsDelegate(SiteObject site, string layoutName, string layoutType, string layoutExtension);
+        public delegate IEnumerable<UPath> GetLayoutPathsDelegate(SiteObject site, string layoutName, string layoutType, string layoutExtension);
 
         public LayoutProcessor(LayoutPlugin plugin) : base(plugin)
         {
@@ -89,7 +90,7 @@ namespace Lunet.Layouts
                 }
 
                 // Add dependency to the layout file
-                page.Dependencies.Add(new FileContentDependency(layoutScript.SourceFilePath));
+                page.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, layoutScript.SourceFilePath)));
 
                 // If we had any errors, the page is invalid, so we can't process it
                 if (layoutScript.HasErrors)
@@ -121,7 +122,7 @@ namespace Lunet.Layouts
                         {
                             if (layoutNames.Contains(nextLayout))
                             {
-                                Site.Error($"Invalid recursive layout [{nextLayout}] from script [{Site.GetRelativePath(layoutScript.SourceFilePath, PathFlags.File)}");
+                                Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutScript.SourceFilePath}`");
                                 result = ContentResult.Break;
                                 break;
                             }
@@ -158,9 +159,10 @@ namespace Lunet.Layouts
                 {
                     foreach (var layoutPath in layoutDelegate(Site, layoutName, layoutType, layoutExtension))
                     {
-                        if (File.Exists(layoutPath))
+                        var entry = Site.MetaFileSystem.GetFileEntry(layoutPath);
+                        if (entry.Exists)
                         {
-                            var scriptLayoutText = File.ReadAllText(layoutPath);
+                            var scriptLayoutText = entry.ReadAllText();
                             layoutPage = Site.Scripts.ParseScript(scriptLayoutText, layoutPath, ScriptMode.FrontMatterAndContent);
                             break;
                         }
@@ -172,45 +174,39 @@ namespace Lunet.Layouts
             return layoutPage;
         }
 
-        private static IEnumerable<string> SingleLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
+        private static IEnumerable<UPath> SingleLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.MetaFolders)
+            // try: _meta/layouts/{layoutName}/single.{layoutExtension}
+            yield return UPath.Root / LayoutFolderName / layoutName / (layoutType + layoutExtension);
+
+            // try: _meta/layouts/{layoutName}.{layoutExtension}
+            yield return UPath.Root / LayoutFolderName / (layoutName + layoutExtension);
+
+            if (layoutName != DefaultLayoutName)
             {
-                // try: _meta/layouts/{layoutName}/single.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName, layoutType + layoutExtension);
+                // try: _meta/layouts/_default/single.{layoutExtension}
+                yield return UPath.Root / LayoutFolderName / DefaultLayoutName / (layoutType + layoutExtension);
 
-                // try: _meta/layouts/{layoutName}.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName + layoutExtension);
-
-                if (layoutName != DefaultLayoutName)
-                {
-                    // try: _meta/layouts/_default/single.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName, layoutType + layoutExtension);
-
-                    // try: _meta/layouts/_default.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName + layoutExtension);
-                }
+                // try: _meta/layouts/_default.{layoutExtension}
+                yield return UPath.Root / LayoutFolderName / (DefaultLayoutName + layoutExtension);
             }
         }
 
-        private static IEnumerable<string> ListLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
+        private static IEnumerable<UPath> ListLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
         {
-            foreach (var metaDir in site.MetaFolders)
+            // try: _meta/layouts/{layoutName}/list.{layoutExtension}
+            yield return UPath.Root / LayoutFolderName / layoutName / (layoutType + layoutExtension);
+
+            // try: _meta/layouts/{layoutName}.list.{layoutExtension}
+            yield return UPath.Root / LayoutFolderName / (layoutName + "." + layoutType + layoutExtension);
+
+            if (layoutName != DefaultLayoutName)
             {
-                // try: _meta/layouts/{layoutName}/list.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName, layoutType + layoutExtension);
+                // try: _meta/layouts/_default/list.{layoutExtension}
+                yield return UPath.Root / LayoutFolderName / DefaultLayoutName / (layoutType + layoutExtension);
 
-                // try: _meta/layouts/{layoutName}.list.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName + "." + layoutType + layoutExtension);
-
-                if (layoutName != DefaultLayoutName)
-                {
-                    // try: _meta/layouts/_default/list.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName, layoutType + layoutExtension);
-
-                    // try: _meta/layouts/_default.list.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName + "." + layoutType + layoutExtension);
-                }
+                // try: _meta/layouts/_default.list.{layoutExtension}
+                yield return UPath.Root / LayoutFolderName / (DefaultLayoutName + "." + layoutType + layoutExtension);
             }
         }
 

@@ -68,10 +68,11 @@ namespace Lunet.Hosting
             BuildSite(Site, true);
             try
             {
+                throw new NotImplementedException("Add support for Zio in the hosting service");
                 var hostBuilder = new WebHostBuilder()
                     .UseKestrel()
-                    .UseContentRoot(Site.OutputFolder)
-                    .UseWebRoot(Site.OutputFolder)
+                    //.UseContentRoot(Site.OutputFolder)
+                    //.UseWebRoot(Site.OutputFolder)
                     .UseUrls(Site.BaseUrl)
                     .Configure(Configure);
 
@@ -82,7 +83,8 @@ namespace Lunet.Hosting
                 // Enable server log only if log.server = true
                 if (Site.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server"))
                 {
-                    hostBuilder.UseLoggerFactory(Site.LoggerFactory);
+                    throw new NotImplementedException("Check with new logging 2.0");
+                    //hostBuilder.ConfigureLogging(builder => Site.LoggerFactory);
                 }
 
                 var host = hostBuilder.Build();

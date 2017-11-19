@@ -7,6 +7,7 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
+using Zio;
 
 namespace Lunet.Datas
 {
@@ -22,39 +23,36 @@ namespace Lunet.Datas
         {
             // We first preload all data object into the site.data object
 
-            foreach (var directory in Site.MetaFolders)
+            var dataFolder = Site.MetaFileSystem.GetDirectoryEntry(UPath.Root/DataDirectory);
+            if (dataFolder.Exists)
             {
-                var dataFolder = directory.GetSubFolder(DataDirectory);
-                if (dataFolder.Exists)
+                foreach (var fileInfo in dataFolder.EnumerateFiles("*", SearchOption.AllDirectories))
                 {
-                    foreach (var fileInfo in dataFolder.Info.EnumerateFiles("*", SearchOption.AllDirectories))
+                    var dataObject = GetDataObject(fileInfo.Directory, dataFolder);
+
+                    foreach (var loader in Plugin.DataLoaders)
                     {
-                        var dataObject = GetDataObject(new FolderInfo(fileInfo.Directory), dataFolder);
-
-                        foreach (var loader in Plugin.DataLoaders)
+                        if (loader.CanHandle(fileInfo.ExtensionWithDot))
                         {
-                            if (loader.CanHandle(fileInfo.Extension))
+                            try
                             {
-                                try
-                                {
-                                    object result = loader.Load(fileInfo);
-                                    var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
+                                object result = loader.Load(fileInfo);
+                                var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
 
-                                    // If a datafile has been already loaded, we have probably something wrong 
-                                    // (Typically a folder or file loaded with the same name without the extension)
-                                    if (dataObject.ContainsKey(nameWithoutExtension))
-                                    {
-                                        Site.Warning($"Cannot load the data file [{Site.GetRelativePath(fileInfo.FullName, PathFlags.File)}] as there is already an entry with the same name [{nameWithoutExtension}]");
-                                    }
-                                    else
-                                    {
-                                        dataObject[nameWithoutExtension] = result;
-                                    }
-                                }
-                                catch (Exception ex)
+                                // If a datafile has been already loaded, we have probably something wrong 
+                                // (Typically a folder or file loaded with the same name without the extension)
+                                if (dataObject.ContainsKey(nameWithoutExtension))
                                 {
-                                    Site.Log.LogError((EventId)0, ex, $"Error while loading data file [{Site.GetRelativePath(fileInfo.FullName, PathFlags.File)}]. Reason: {ex.GetReason()}");
+                                    Site.Warning($"Cannot load the data file [{fileInfo}] as there is already an entry with the same name [{nameWithoutExtension}]");
                                 }
+                                else
+                                {
+                                    dataObject[nameWithoutExtension] = result;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Site.Log.LogError((EventId)0, ex, $"Error while loading data file [{fileInfo}]. Reason: {ex.GetReason()}");
                             }
                         }
                     }
@@ -62,7 +60,7 @@ namespace Lunet.Datas
             }
         }
 
-        private DataObject GetDataObject(FolderInfo folder, FolderInfo data)
+        private DataObject GetDataObject(DirectoryEntry folder, DirectoryEntry data)
         {
             if (data == folder)
             {

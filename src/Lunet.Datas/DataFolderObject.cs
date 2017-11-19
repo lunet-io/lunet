@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using Lunet.Core;
+using Zio;
 
 namespace Lunet.Datas
 {
@@ -15,12 +16,12 @@ namespace Lunet.Datas
 
     public class DataFolderObject : DataObject
     {
-        public DataFolderObject(DatasPlugin parent, FolderInfo folder) : base(parent)
+        public DataFolderObject(DatasPlugin parent, DirectoryEntry folder) : base(parent)
         {
             Folder = folder;
         }
 
-        public FolderInfo Folder { get; }
+        public DirectoryEntry Folder { get; }
 
         public override string ToString()
         {

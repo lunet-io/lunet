@@ -1,7 +1,9 @@
+using System;
 using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using SharpScss;
+using Zio;
 
 namespace Lunet.Scss
 {
@@ -25,7 +27,7 @@ namespace Lunet.Scss
 
             if (file.Content == null)
             {
-                file.Content = File.ReadAllText(file.SourceFile);
+                file.Content = file.SourceFile.ReadAllText();
             }
 
             var content = file.Content;
@@ -38,9 +40,8 @@ namespace Lunet.Scss
                 var path = pathObj as string;
                 if (path != null)
                 {
-                    path = PathUtil.NormalizeRelativePath(path, true);
-                    var includeDir = Site.BaseFolder.Combine(path);
-                    options.IncludePaths.Add(includeDir);
+                    throw new NotImplementedException("Need rework with Zio");
+                    //options.IncludePaths.Add((UPath)path);
                 }
             }
 
@@ -53,7 +54,8 @@ namespace Lunet.Scss
             {
                 foreach (var includeFile in result.IncludedFiles)
                 {
-                    file.Dependencies.Add(new FileContentDependency(includeFile));
+                    throw new NotImplementedException("Need rework with Zio");
+                    file.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, (UPath)includeFile)));
                 }
             }
 
