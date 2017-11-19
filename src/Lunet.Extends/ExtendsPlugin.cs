@@ -93,7 +93,7 @@ namespace Lunet.Extends
 
             if (Site.CanTrace())
             {
-                Site.Trace($"Using extension/theme `{extendName}` from `{extendObject.Directory}`");
+                Site.Trace($"Using extension/theme `{extendName}` from `{extendObject.FileSystem.ConvertPathToInternal(UPath.Root)}`");
             }
 
             return extendObject;
@@ -113,26 +113,27 @@ namespace Lunet.Extends
             }
 
             //var themePrivatePath = PrivateExtendsFolder / extendName;
-            var themePublicPath = Site.MetaFileSystem.GetDirectoryEntry(ExtendsFolder / extendName);
-            throw new NotSupportedException();
-            var themePrivatePath = themePublicPath;
+            var themeSiteDir = new DirectoryEntry(Site.SiteMetaFileSystem, ExtendsFolder / extendName);
+            var themeTempDir = new DirectoryEntry(Site.TempMetaFileSystem, ExtendsFolder / extendName);
             IFileSystem extendPath = null;
 
-            if (themePublicPath.Exists)
+            if (themeSiteDir.Exists)
             {
-                extendPath = new SubFileSystem(themePublicPath.FileSystem, themePublicPath.Path);
+                extendPath = new SubFileSystem(themeSiteDir.FileSystem, themeSiteDir.Path);
             }
-            //else if (Directory.Exists(themePrivatePath))
-            //{
-            //    extendPath = themePrivatePath;
-            //}
+            else if (themeTempDir.Exists)
+            {
+                extendPath = new SubFileSystem(themeTempDir.FileSystem, themeSiteDir.Path);
+            }
 
             if (extendPath != null)
             {
                 return new ExtendObject(Site, extendName, extend, version, null, null, extendPath);
             }
 
-            //extendPath = isPrivate ? themePrivatePath : themePublicPath;
+            extendPath = isPrivate
+                ? themeTempDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path)
+                : themeSiteDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path);
 
             if (Providers.Count == 0)
             {
@@ -152,7 +153,7 @@ namespace Lunet.Extends
                 }
             }
 
-            Site.Error($"Unable to find the extension/theme [{extend}] locally from [{themePublicPath}] or [{themePrivatePath}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
+            Site.Error($"Unable to find the extension/theme [{extend}] locally from [{themeSiteDir}] or [{themeTempDir}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
             return null;
         }
 

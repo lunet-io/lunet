@@ -24,10 +24,10 @@ namespace Lunet.Resources
             Version = version;
             AbsoluteDirectory = absoluteDirectory;
             Provider = provider;
-            Path = absoluteDirectory.FullName;
+            Path = absoluteDirectory.Path;
 
             SetValue("provider", Provider.Name, true);
-            SetValue("path", Path, true);
+            SetValue("path", (string)Path, true);
         }
 
         public string Name { get; }
@@ -36,7 +36,7 @@ namespace Lunet.Resources
 
         public ResourceProvider Provider { get; }
 
-        public string Path { get; }
+        public UPath Path { get; }
 
         public DirectoryEntry AbsoluteDirectory { get;  }
     }

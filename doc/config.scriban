@@ -4,6 +4,7 @@ basepath = ""
 baseurl = baseurl ?? "http://xoofx.com"
 
 resource "npm:prismjs"
+extend "jquery"
 
 ##
 # Testing local extension
@@ -19,7 +20,7 @@ with taxonomies
 end
 
 # Load jquery extension
-extend "jquery"
+
 
 with bundle
 	# tether

@@ -14,6 +14,6 @@ namespace Lunet.Extends
 
         IEnumerable<ExtendDescription> FindAll(SiteObject site);
 
-        bool TryInstall(SiteObject site, string extend, string version, IFileSystem outputPath);
+        bool TryInstall(SiteObject site, string extend, string version, IFileSystem outputFileSystem);
     }
 }

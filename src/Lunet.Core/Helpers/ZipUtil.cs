@@ -1,25 +1,27 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using Zio;
 
 namespace Lunet.Helpers
 {
     public static class ZipUtil
     {
-        public static void ExtractToDirectory(this ZipArchive source, string destinationDirectoryName, string filterPath = null)
+        public static void ExtractToDirectory(this ZipArchive source, DirectoryEntry outputDirectory, string filterPath = null)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
-            if (destinationDirectoryName == null)
-                throw new ArgumentNullException(nameof(destinationDirectoryName));
+            if (outputDirectory == null)
+                throw new ArgumentNullException(nameof(outputDirectory));
 
             // Rely on Directory.CreateDirectory for validation of destinationDirectoryName.
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
-            DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
-            String destinationDirectoryFullPath = di.FullName;
-
+            if (!outputDirectory.Exists)
+            {
+                outputDirectory.Create();
+            }
             if (filterPath != null && !filterPath.EndsWith("/"))
             {
                 filterPath = filterPath.Replace("\\", "/") + "/";
@@ -41,26 +43,31 @@ namespace Lunet.Helpers
                     }
                 }
 
-                var fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, entryName));
-
-                if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, StringComparison.OrdinalIgnoreCase))
-                    throw new IOException("Extracting Zip entry would have resulted in a file outside the specified destination directory");
-
-                if (Path.GetFileName(fileDestinationPath).Length == 0)
+                var destinationPath = UPath.Combine(outputDirectory.Path, entryName);
+                if (entryName.EndsWith("/") || entryName.EndsWith("\\"))
                 {
                     // If it is a directory:
 
                     if (entry.Length != 0)
                         throw new IOException("Zip entry name ends in directory separator character but contains data");
 
-                    Directory.CreateDirectory(fileDestinationPath);
+                    var destinationDir = new DirectoryEntry(outputDirectory.FileSystem, destinationPath);
+                    if (!destinationDir.Exists)
+                    {
+                        destinationDir.Create();
+                    }
                 }
                 else
                 {
                     // If it is a file:
                     // Create containing directory:
-                    Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath));
-                    entry.ExtractToFile(fileDestinationPath, true);
+                    var destinationFile = new FileEntry(outputDirectory.FileSystem, destinationPath);
+                    var destinationDir = destinationFile.Directory;
+                    if (!destinationDir.Exists)
+                    {
+                        destinationDir.Create();
+                    }
+                    entry.ExtractToFile(destinationFile, true);
                 }
             }
         }
@@ -88,12 +95,12 @@ namespace Lunet.Helpers
         /// -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         /// 
-        /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
+        /// <param name="destinationFile">The name of the file that will hold the contents of the entry.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, String destinationFileName)
+        public static void ExtractToFile(this ZipArchiveEntry source, FileEntry destinationFile)
         {
-            ExtractToFile(source, destinationFileName, false);
+            ExtractToFile(source, destinationFile, false);
         }
 
 
@@ -120,28 +127,29 @@ namespace Lunet.Helpers
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read
         /// -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
-        /// <param name="destinationFileName">The name of the file that will hold the contents of the entry.
+        /// <param name="destinationFile">The name of the file that will hold the contents of the entry.
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="overwrite">True to indicate overwrite.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source, String destinationFileName, Boolean overwrite)
+        public static void ExtractToFile(this ZipArchiveEntry source, FileEntry destinationFile, Boolean overwrite)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
+            if (destinationFile == null)
+                throw new ArgumentNullException(nameof(destinationFile));
 
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
-            using (Stream fs = new FileStream(destinationFileName, fMode, FileAccess.Write, FileShare.None, bufferSize: 0x1000, useAsync: false))
+            using (Stream fs = destinationFile.Open(fMode, FileAccess.Write))
             {
                 using (Stream es = source.Open())
+                {
                     es.CopyTo(fs);
+                }
             }
-
-            File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
+            destinationFile.LastWriteTime = source.LastWriteTime.DateTime;
         }
     }
 }

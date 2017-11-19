@@ -118,7 +118,7 @@ namespace Lunet.Bundles
                 {
                     path = ((UPath)path).FullName;
                     link.Path = path;
-                    var entry = new FileEntry(Site.FileSystem, (UPath)path);
+                    var entry = new FileEntry(Site.MetaFileSystem, path);
 
                     var outputUrlDirectory = bundle.UrlDestination[link.Type];
 
@@ -139,7 +139,7 @@ namespace Lunet.Bundles
                     {
                         if (entry.Exists)
                         {
-                            currentContent = new ContentObject(Site, new FileEntry(Site.FileSystem, path)) { Url = url };
+                            currentContent = new ContentObject(Site, entry) { Url = url };
                         }
                         else
                         {
@@ -158,7 +158,7 @@ namespace Lunet.Bundles
                         {
                             try
                             {
-                                link.Content = currentContent.Content ?? File.ReadAllText(entry.FullName);
+                                link.Content = currentContent.Content ?? entry.ReadAllText();
                             }
                             catch (Exception ex)
                             {

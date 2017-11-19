@@ -48,7 +48,8 @@ namespace Lunet.Resources
                 var main = dynamicObject.GetSafeValue<string>("main");
                 if (main != null)
                 {
-                    dynamicObject["main"] = PathUtil.NormalizeRelativePath(Path.Combine(resource.Path, main), false);
+                    var mainPath = UPath.Combine(resource.Path, main);
+                    dynamicObject["main"] = mainPath;
                 }
             }
 

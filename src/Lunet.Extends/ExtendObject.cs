@@ -38,7 +38,5 @@ namespace Lunet.Extends
         public string Description { get; }
 
         public string Url { get; }
-
-        public string Directory => FileSystem.ConvertPathToInternal(UPath.Root);
     }
 }

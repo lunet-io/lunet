@@ -22,11 +22,11 @@ namespace Lunet.Extends
 
         public DefaultExtendProvider()
         {
-            RegistryUrl = "https://raw.githubusercontent.com/lunet-io/lunet-registry/master/extends.sban";
+            RegistryUrl = "https://raw.githubusercontent.com/lunet-io/lunet-registry/master/extensions.scriban";
             cacheList = new List<ExtendDescription>();
         }
 
-        public string Name => "lunet-registry/extends";
+        public string Name => "lunet-registry/extensions";
 
         public string RegistryUrl { get; set; }
 
@@ -67,7 +67,7 @@ namespace Lunet.Extends
             object result;
             if (site.Scripts.TryImportScript(themeRegistryStr, Name, registryObject, ScriptFlags.None, out result))
             {
-                var themeList = registryObject["extends"] as ScriptArray;
+                var themeList = registryObject["extensions"] as ScriptArray;
                 if (themeList != null)
                 {
                     foreach (var theme in themeList)
@@ -89,7 +89,7 @@ namespace Lunet.Extends
             return cacheList;
         }
 
-        public bool TryInstall(SiteObject site, string extend, string version, IFileSystem outputPath)
+        public bool TryInstall(SiteObject site, string extend, string version, IFileSystem outputFileSystem)
         {
             if (string.IsNullOrWhiteSpace(version))
             {
@@ -105,22 +105,21 @@ namespace Lunet.Extends
                     {
                         if (site.CanInfo())
                         {
-                            site.Info($"Downloading and installing extension/theme `{extend}` to `{outputPath}`");
+                            site.Info($"Downloading and installing extension/theme `{extend}` to `{outputFileSystem.ConvertPathToInternal(UPath.Root)}`");
                         }
 
                         using (HttpClient client = new HttpClient())
                         {
                             using (var stream = client.GetStreamAsync(fullVersion).Result)
                             {
-                                //site.Content.CreateDirectory(new DirectoryEntry(site.FileSystem, outputPath));
+                                //site.Content.CreateDirectory(new DirectoryEntry(site.FileSystem, outputFileSystem));
 
                                 using (var zip = new ZipArchive(stream, ZipArchiveMode.Read))
                                 {
                                     var indexOfRepoName = themeDesc.Url.LastIndexOf('/');
                                     string repoName = themeDesc.Url.Substring(indexOfRepoName + 1);
                                     var directoryInZip = $"{repoName}-{version}/{themeDesc.Directory}";
-                                    throw new NotImplementedException("Rewrite outptu to ExtractToDirectory Zio");
-                                    //zip.ExtractToDirectory(outputPath, directoryInZip);
+                                    zip.ExtractToDirectory(new DirectoryEntry(outputFileSystem, UPath.Root), directoryInZip);
                                 }
                                 return true;
                             }
