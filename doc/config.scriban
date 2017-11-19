@@ -3,6 +3,7 @@ title = "Test site"
 basepath = ""
 baseurl = baseurl ?? "http://xoofx.com"
 
+##
 # Testing local extension
 extend "gold"
 
@@ -51,11 +52,11 @@ end
 
 # Defines the top-level toc
 # The doc can also be defined in a toc.sban file
-##
+
 toc "
 - tutorial/index.md
 - guideline/index.md
 - spec/index.md
 - docfxapi
 "
-
+##
