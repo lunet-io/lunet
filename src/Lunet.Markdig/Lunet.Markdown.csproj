@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Scriban" Version="0.16.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
   </ItemGroup>
 
