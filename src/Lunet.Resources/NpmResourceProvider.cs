@@ -151,8 +151,7 @@ namespace Lunet.Resources
                         using (var stream = client.GetStreamAsync(downloadUrl).Result)
                         using (var gzStream = new GZipStream(stream, CompressionMode.Decompress))
                         {
-                            throw new NotImplementedException("To rework with Zio");
-                            //gzStream.UntarTo(directory, "package");
+                            gzStream.UntarTo(directory, "package");
                         }
 
                         return LoadFromDisk(resourceName, selectedVersion, directory);

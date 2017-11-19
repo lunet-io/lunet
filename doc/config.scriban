@@ -3,6 +3,8 @@ title = "Test site"
 basepath = ""
 baseurl = baseurl ?? "http://xoofx.com"
 
+resource "npm:prismjs"
+
 ##
 # Testing local extension
 extend "gold"

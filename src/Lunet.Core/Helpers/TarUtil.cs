@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Zio;
 
 // ----------------------------------------------------------------------------
 // Latest version of this file is available at: https://github.com/xoofx/NTar
@@ -55,11 +56,9 @@ namespace Lunet.Helpers
         /// <param name="filterPath">The path inside the archive to filter entries from</param>
         /// <exception cref="System.ArgumentNullException">if outputDirectory is null</exception>
         /// <exception cref="InvalidDataException">If an invalid entry was found</exception>
-        public static void UntarTo(this Stream stream, string outputDirectory, string filterPath = null)
+        public static void UntarTo(this Stream stream, DirectoryEntry outputDirectory, string filterPath = null)
         {
             if (outputDirectory == null) throw new ArgumentNullException(nameof(outputDirectory));
-
-            outputDirectory = Path.GetFullPath(outputDirectory);
 
             if (filterPath != null && !filterPath.EndsWith("/"))
             {
@@ -88,17 +87,20 @@ namespace Lunet.Helpers
                     }
                 }
 
-                var outputFile = Path.Combine(outputDirectory, entryName);
-                var outputDir = Path.GetDirectoryName(outputFile);
-                Directory.CreateDirectory(outputDir);
-                using (var outputStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write))
+                var outputFilePath = UPath.Combine(outputDirectory.FullName, entryName);
+                var outputFileEntry = new FileEntry(outputDirectory.FileSystem, outputFilePath);
+                var outputDir = outputFileEntry.Directory;
+                if (!outputDir.Exists)
                 {
-                    entryStream.CopyTo(outputStream);
+                    outputDir.Create();                   
                 }
-                File.SetLastWriteTime(outputFile, entryStream.LastModifiedTime);
+                using (var outputStream = outputFileEntry.Open(FileMode.Create, FileAccess.Write))
+                {
+                    entryStream.CopyTo(outputStream);                   
+                }
+                outputFileEntry.LastWriteTime = entryStream.LastModifiedTime;
             }
         }
-
 
         /// <summary>
         /// Untars the specified input stream and returns a stream for each file entry. 
