@@ -169,13 +169,14 @@ namespace Lunet.Core
                 site.AddDefine(value);
             }
 
-            site.TempFileSystem = new SubFileSystem(siteFileSystem, UPath.Root / SiteObject.TempFolderName);
+            site.TempFileSystem = siteFileSystem.GetOrCreateSubFileSystem(SiteObject.TempFolder);
 
             var outputFolder = OutputDirectory.HasValue()
                 ? OutputDirectory.Value()
                 : Path.Combine(baseFolder, SiteObject.TempFolderName + "/" +  SiteObject.DefaultOutputFolderName);
 
-            site.OutputFileSystem = new SubFileSystem(diskfs, diskfs.ConvertPathToInternal(outputFolder));
+            var outputFolderForFs = diskfs.ConvertPathFromInternal(outputFolder);
+            site.OutputFileSystem = diskfs.GetOrCreateSubFileSystem(outputFolderForFs);
         }
     }
 }

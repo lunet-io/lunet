@@ -21,12 +21,14 @@ namespace Lunet.Core
     public class SiteObject : DynamicObject
     {
         public const string MetaFolderName = "_meta";
-        public readonly UPath MetaFolder = UPath.Root / MetaFolderName;
+        public static readonly UPath MetaFolder = UPath.Root / MetaFolderName;
 
         public const string SiteFolderName = "_site";
-        public readonly UPath SiteFolder = UPath.Root / SiteFolderName;
+        public static readonly UPath SiteFolder = UPath.Root / SiteFolderName;
 
         public const string TempFolderName = ".lunet";
+        public static readonly UPath TempFolder = UPath.Root / TempFolderName;
+
         public const string DefaultOutputFolderName = "www";
         public const string DefaultPageExtensionValue = ".html";
         public const string DefaultConfigFileName = "config.scriban";
