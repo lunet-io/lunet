@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="4.6.2" />
-    <PackageReference Include="Markdig" Version="0.14.4" />
+    <PackageReference Include="Markdig" Version="0.14.5" />
     <PackageReference Include="Scriban" Version="0.16.0" />
     <PackageReference Include="NUglify" Version="1.5.8" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
@@ -38,7 +38,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="NuGet.Versioning" Version="4.4.0" />
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    <PackageReference Include="Zio" Version="0.3.2" />
+    <PackageReference Include="Zio" Version="0.3.3" />
   </ItemGroup>
 
 </Project>
