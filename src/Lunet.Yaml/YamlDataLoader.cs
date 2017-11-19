@@ -14,8 +14,7 @@ namespace Lunet.Yaml
 
         public object Load(FileEntry file)
         {
-            // TODO: Add ReadAllText Methods to FileEntry
-            var text = file.FileSystem.ReadAllText(file.Path);
+            var text = file.ReadAllText();
             return YamlUtil.FromYaml(text);
         }
     }

@@ -13,7 +13,9 @@ namespace Lunet.Datas
 {
     public class DatasProcessor : ProcessorBase<DatasPlugin>
     {
-        public const string DataDirectory = "data";
+        public const string DataFolderName = "data";
+
+        public static readonly UPath DataFolder = UPath.Root / DataFolderName;
 
         public DatasProcessor(DatasPlugin plugin) : base(plugin)
         {
@@ -23,7 +25,7 @@ namespace Lunet.Datas
         {
             // We first preload all data object into the site.data object
 
-            var dataFolder = Site.MetaFileSystem.GetDirectoryEntry(UPath.Root/DataDirectory);
+            var dataFolder = Site.MetaFileSystem.GetDirectoryEntry(DataFolder);
             if (dataFolder.Exists)
             {
                 foreach (var fileInfo in dataFolder.EnumerateFiles("*", SearchOption.AllDirectories))
