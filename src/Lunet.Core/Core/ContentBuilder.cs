@@ -185,7 +185,7 @@ namespace Lunet.Core
                         Site.Trace($"Write file [{outputFile}]");
                     }
 
-                    using (var writer = new StreamWriter(new FileStream(outputFile.FullName, FileMode.Create, FileAccess.Write)))
+                    using (var writer = new StreamWriter(outputFile.Open(FileMode.Create, FileAccess.Write)))
                     {
                         writer.Write(fromFile.Content);
                         writer.Flush();
@@ -203,7 +203,7 @@ namespace Lunet.Core
                         Site.Trace($"Write file [{outputFile}]");
                     }
 
-                    fromFile.SourceFile.CopyTo(outputFile.FullName, true);
+                    fromFile.SourceFile.CopyTo(outputFile, true);
 
                     // Update statistics
                     stat.Static = true;
