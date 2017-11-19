@@ -20,13 +20,13 @@ namespace Lunet.Resources
     public sealed class ResourcePlugin : SitePlugin
     {
         private const string ResourceFolderName = "resources";
+        public static readonly UPath ResourceFolder = UPath.Root / ResourceFolderName;
 
         private delegate object ResourceFunctionDelegate(object o);
 
         public ResourcePlugin(SiteObject site) : base(site)
         {
-            ResourceFolder = Site.MetaFileSystem.GetDirectoryEntry(UPath.Root / ResourceFolderName);
-            PrivateResourceFolder = Site.TempMetaFileSystem.GetDirectoryEntry(UPath.Root / ResourceFolderName);
+            var folder = UPath.Root / ResourceFolderName;
             Providers = new OrderedList<ResourceProvider>()
             {
                 new NpmResourceProvider(this)
@@ -34,10 +34,6 @@ namespace Lunet.Resources
             Site.SetValue(SiteVariables.Resources, this, true);
             Site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
         }
-
-        public DirectoryEntry ResourceFolder { get; }
-
-        public DirectoryEntry PrivateResourceFolder { get; }
 
         public OrderedList<ResourceProvider> Providers { get; }
 
