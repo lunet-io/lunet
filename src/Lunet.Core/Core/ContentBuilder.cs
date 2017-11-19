@@ -204,6 +204,7 @@ namespace Lunet.Core
                     }
 
                     fromFile.SourceFile.CopyTo(outputFile, true);
+                    //CopyFileCross(fromFile.SourceFile.FileSystem, outputFile.FileSystem, fromFile.SourceFile.Path, outputFile.Path, true);
 
                     // Update statistics
                     stat.Static = true;
@@ -223,6 +224,68 @@ namespace Lunet.Core
             }
 
             return true;
+        }
+
+        private static void CopyFileCross(IFileSystem fs, IFileSystem destFileSystem, UPath srcPath, UPath destPath, bool overwrite)
+        {
+            if (destFileSystem == null) throw new ArgumentNullException(nameof(destFileSystem));
+
+            // If this is the same filesystem, use the file system directly to perform the action
+            if (fs == destFileSystem)
+            {
+                fs.CopyFile(srcPath, destPath, overwrite);
+                return;
+            }
+
+            srcPath.AssertAbsolute(nameof(srcPath));
+            if (!fs.FileExists(srcPath))
+            {
+                throw new FileNotFoundException(srcPath.FullName);
+            }
+
+            destPath.AssertAbsolute(nameof(destPath));
+            var destDirectory = destPath.GetDirectory();
+            if (!destFileSystem.DirectoryExists(destDirectory))
+            {
+                throw new DirectoryNotFoundException(destDirectory.FullName);
+            }
+
+            if (destFileSystem.FileExists(destPath) && !overwrite)
+            {
+                throw new IOException($"The destination file path `{destPath}` already exist and overwrite is false");
+            }
+
+            using (var sourceStream = fs.OpenFile(srcPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                var copied = false;
+                try
+                {
+                    using (var destStream = destFileSystem.OpenFile(destPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    {
+                        sourceStream.CopyTo(destStream);
+                    }
+
+                    // Preserve attributes and LastWriteTime as a regular File.Copy
+                    destFileSystem.SetLastWriteTime(destPath, fs.GetLastWriteTime(srcPath));
+                    destFileSystem.SetAttributes(destPath, fs.GetAttributes(srcPath));
+
+                    copied = true;
+                }
+                finally
+                {
+                    if (!copied)
+                    {
+                        try
+                        {
+                            destFileSystem.DeleteFile(destPath);
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                    }
+                }
+            }
         }
 
         public void TrackDestination(FileEntry outputFile, FileEntry sourceFile)
@@ -367,7 +430,7 @@ namespace Lunet.Core
                 }
                 else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.TempFolderName)
                 {
-                    directoryQueue.Enqueue(entry.Parent);
+                    directoryQueue.Enqueue((DirectoryEntry)entry);
                 }
             }
         }

@@ -10,13 +10,13 @@ namespace Lunet.Core
 {
     public class ContentTypeManager
     {
-        private readonly Dictionary<string, ContentType> extensionToContentType;
-        private readonly HashSet<ContentType> htmlContentType;
+        private readonly Dictionary<string, ContentType> _extensionToContentType;
+        private readonly HashSet<ContentType> _htmlContentType;
 
         public ContentTypeManager()
         {
-            extensionToContentType = new Dictionary<string, ContentType>(StringComparer.OrdinalIgnoreCase);
-            htmlContentType = new HashSet<ContentType>();
+            _extensionToContentType = new Dictionary<string, ContentType>(StringComparer.OrdinalIgnoreCase);
+            _htmlContentType = new HashSet<ContentType>();
             AddBuiltins();
         }
 
@@ -25,19 +25,19 @@ namespace Lunet.Core
             if (extension == null) throw new ArgumentNullException(nameof(extension));
             if (contentType == null) throw new ArgumentNullException(nameof(contentType));
             extension = PathUtil.NormalizeExtension(extension);
-            extensionToContentType[extension] = contentType;
+            _extensionToContentType[extension] = contentType;
         }
 
         public bool IsHtmlContentType(ContentType contentType)
         {
             if (contentType == null) throw new ArgumentNullException(nameof(contentType));
-            return htmlContentType.Contains(contentType);
+            return _htmlContentType.Contains(contentType);
         }
 
         public void RegisterHtmlContentType(ContentType contentType)
         {
             if (contentType == null) throw new ArgumentNullException(nameof(contentType));
-            htmlContentType.Add(contentType);
+            _htmlContentType.Add(contentType);
         }
 
         public ContentType GetContentType(string extension)
@@ -46,23 +46,43 @@ namespace Lunet.Core
 
             extension = PathUtil.NormalizeExtension(extension);
             ContentType contentType;
-            return extensionToContentType.TryGetValue(extension, out contentType)
+            return _extensionToContentType.TryGetValue(extension, out contentType)
                 ? contentType
                 : new ContentType(extension.TrimStart(new[] {'.'}));
         }
 
+        public HashSet<string> GetExtensionsByContentType(ContentType type)
+        {
+            var exts = new HashSet<string>();
+            foreach (var extAndType in _extensionToContentType)
+            {
+                if (extAndType.Value == type)
+                {
+                    exts.Add(extAndType.Key);
+                }
+            }
+            return exts;
+        }
+
         private void AddBuiltins()
         {
-            extensionToContentType[".htm"] = ContentType.Html;
-            extensionToContentType[".html"] = ContentType.Html;
-            extensionToContentType[".markdown"] = ContentType.Markdown;
-            extensionToContentType[".md"] = ContentType.Markdown;
+            
+            _extensionToContentType[".htm"] = ContentType.Html;
+            _extensionToContentType[".html"] = ContentType.Html;
+            _extensionToContentType[".scriban-html"] = ContentType.Html;
+            _extensionToContentType[".scriban-htm"] = ContentType.Html;
+            _extensionToContentType[".sbn-html"] = ContentType.Html;
+            _extensionToContentType[".sbn-htm"] = ContentType.Html;
+            _extensionToContentType[".sbnhtml"] = ContentType.Html;
+            _extensionToContentType[".sbnhtm"] = ContentType.Html;
+            _extensionToContentType[".markdown"] = ContentType.Markdown;
+            _extensionToContentType[".md"] = ContentType.Markdown;
             // Not used, but for example
-            extensionToContentType[".jpg"] = ContentType.Jpeg;
-            extensionToContentType[".jpeg"] = ContentType.Jpeg;
+            _extensionToContentType[".jpg"] = ContentType.Jpeg;
+            _extensionToContentType[".jpeg"] = ContentType.Jpeg;
 
-            htmlContentType.Add(ContentType.Html);
-            htmlContentType.Add(ContentType.Markdown);
+            _htmlContentType.Add(ContentType.Html);
+            _htmlContentType.Add(ContentType.Markdown);
         }
     }
 }

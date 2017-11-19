@@ -2,7 +2,7 @@
 +++
 <html>
 <head>
-{{ include "head.html" }}
+{{~ include "head.scriban-html" ~}}
 </head>
 <body>
 {{ $$ }}

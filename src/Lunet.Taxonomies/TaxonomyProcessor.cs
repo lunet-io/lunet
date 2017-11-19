@@ -168,52 +168,51 @@ namespace Lunet.Taxonomies
             }
         }
 
-
-        private static IEnumerable<UPath> TermsLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
+        private static IEnumerable<UPath> TermsLayout(SiteObject site, string layoutName, string layoutType)
         {
             // try: _meta/layouts/{layoutName}/terms.{layoutExtension}
-            yield return UPath.Root / LayoutProcessor.LayoutFolderName / layoutName / (layoutType + layoutExtension);
+            yield return (UPath)layoutName / (layoutType);
 
             // try: _meta/layouts/{layoutName}.terms.{layoutExtension}
-            yield return UPath.Root / LayoutProcessor.LayoutFolderName / (layoutName + "." + layoutType + layoutExtension);
+            yield return (UPath)(layoutName + "." + layoutType);
 
             if (layoutName != LayoutProcessor.DefaultLayoutName)
             {
                 // try: _meta/layouts/_default/terms.{layoutExtension}
-                yield return UPath.Root / LayoutProcessor.LayoutFolderName / LayoutProcessor.DefaultLayoutName / (layoutType + layoutExtension);
+                yield return (UPath)LayoutProcessor.DefaultLayoutName / (layoutType);
 
                 // try: _meta/layouts/_default.terms.{layoutExtension}
-                yield return UPath.Root / LayoutProcessor.LayoutFolderName / (LayoutProcessor.DefaultLayoutName + "." + layoutType + layoutExtension);
+                yield return (UPath)(LayoutProcessor.DefaultLayoutName + "." + layoutType);
             }
         }
 
-        private static IEnumerable<UPath> TermPagesLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
+        private static IEnumerable<UPath> TermPagesLayout(SiteObject site, string layoutName, string layoutType)
         {
             // try: _meta/layouts/{layoutName}/{layoutType}.{layoutExtension}
-            yield return UPath.Root / LayoutProcessor.LayoutFolderName / layoutName / (layoutType + layoutExtension);
+            yield return (UPath)layoutName / (layoutType);
 
             // try: _meta/layouts/{layoutName}.{layoutType}.{layoutExtension}
-            yield return UPath.Root / LayoutProcessor.LayoutFolderName / (layoutName + "." + layoutType + layoutExtension);
+            yield return (UPath)(layoutName + "." + layoutType);
 
             // try: _meta/layouts/{layoutName}/list.{layoutExtension}
-            yield return UPath.Root / LayoutProcessor.LayoutFolderName / layoutName / (LayoutTypes.List + layoutExtension);
+            yield return (UPath)layoutName / (LayoutTypes.List);
 
             // try: _meta/layouts/{layoutName}.list.{layoutExtension}
-            yield return UPath.Root / LayoutProcessor.LayoutFolderName / (layoutName + "." + LayoutTypes.List + layoutExtension);
+            yield return (UPath)(layoutName + "." + LayoutTypes.List);
 
             if (layoutName != LayoutProcessor.DefaultLayoutName)
             {
                 // try: _meta/layouts/_default/{layoutType}.{layoutExtension}
-                yield return UPath.Root / LayoutProcessor.LayoutFolderName / LayoutProcessor.DefaultLayoutName / (layoutType + layoutExtension);
+                yield return (UPath)LayoutProcessor.DefaultLayoutName / (layoutType);
 
                 // try: _meta/layouts/_default.{layoutType}.{layoutExtension}
-                yield return UPath.Root / LayoutProcessor.LayoutFolderName / (LayoutProcessor.DefaultLayoutName + "." + layoutType + layoutExtension);
+                yield return (UPath)(LayoutProcessor.DefaultLayoutName + "." + layoutType);
 
                 // try: _meta/layouts/_default/list.{layoutExtension}
-                yield return UPath.Root / LayoutProcessor.LayoutFolderName / LayoutProcessor.DefaultLayoutName / (LayoutTypes.List + layoutExtension);
+                yield return (UPath)LayoutProcessor.DefaultLayoutName / (LayoutTypes.List);
 
                 // try: _meta/layouts/_default.list.{layoutExtension}
-                yield return UPath.Root / LayoutProcessor.LayoutFolderName / (LayoutProcessor.DefaultLayoutName + "." + LayoutTypes.List + layoutExtension);
+                yield return (UPath)(LayoutProcessor.DefaultLayoutName + "." + LayoutTypes.List);
             }
         }
     }
