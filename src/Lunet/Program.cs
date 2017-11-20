@@ -20,7 +20,7 @@ namespace Lunet
     {
         static int Main(string[] args)
         {
-            var siteFactory = new SiteFactory()
+            var site = new SiteObject()
                 .Register<BundlePlugin>()
                 .Register<ExtendsPlugin>()
                 .Register<LayoutPlugin>()
@@ -33,8 +33,6 @@ namespace Lunet
                 .Register<ScssPlugin>()
                 .Register<TaxonomyPlugin>()
                 .Register<YamlPlugin>();
-
-            var site = siteFactory.Build();
 
             site.AddConsoleLogger();
 

@@ -28,11 +28,8 @@ namespace Lunet.Core
 
             HelpOption("-h|--help");
 
-            var list = typeof(SiteFactory).GetTypeInfo().Assembly.CustomAttributes.ToList();
-
-
-            var versionText = typeof(SiteFactory).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
-            var infoVersionText = typeof(SiteFactory).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            var versionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
+            var infoVersionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
             var version = VersionOption("-v|--version", versionText, infoVersionText);
 

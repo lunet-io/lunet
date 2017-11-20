@@ -7,7 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using Autofac;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Lunet.Statistics;
@@ -38,13 +40,14 @@ namespace Lunet.Core
         private readonly List<IFileSystem> _contentFileSystems;
         private IFileSystem _tempFileSystem;
         private IFileSystem _siteFileSystem;
+        private bool _pluginInitialized;
+        private readonly ContainerBuilder _pluginBuilders;
 
-        public SiteObject(ILoggerFactory loggerFactory, IEnumerable<Func<ISitePlugin>> pluginFactory = null)
+        public SiteObject(ILoggerFactory loggerFactory = null)
         {
             var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SiteFolderName);
 
             _contentFileSystems = new List<IFileSystem>();
-
             var sharedPhysicalFileSystem = new PhysicalFileSystem();
 
             // Make sure that SharedFileSystem is a read-only filesystem
@@ -72,6 +75,7 @@ namespace Lunet.Core
             Html = new HtmlObject(this);
             SetValue(SiteVariables.Html, Html, true);
 
+
             CommandLine = new LunetCommandLine(this);
 
             Statistics = new SiteStatistics();
@@ -80,11 +84,11 @@ namespace Lunet.Core
 
             Content = new ContentPlugin(this);
 
-            Plugins = new OrderedList<Func<ISitePlugin>>();
-            if (pluginFactory != null)
-            {
-                Plugins.AddRange(pluginFactory);
-            }
+            Plugins = new OrderedList<ISitePlugin>();
+
+            _pluginBuilders = new ContainerBuilder();
+            _pluginBuilders.RegisterInstance(LoggerFactory).As<ILoggerFactory>();
+            _pluginBuilders.RegisterInstance(this);
         }
 
         public FileEntry ConfigFile { get; }
@@ -147,7 +151,7 @@ namespace Lunet.Core
 
         public IFileSystem MetaFileSystem { get; private set; }
 
-        public OrderedList<Func<ISitePlugin>> Plugins { get; }
+        public OrderedList<ISitePlugin> Plugins { get; }
 
         /// <summary>
         /// Gets the logger factory that was used to create the site logger <see cref="Log"/>.
@@ -318,6 +322,38 @@ namespace Lunet.Core
             //this.Info($"New website created at {destinationDir}");
         }
 
+        public SiteObject Register<TPlugin>() where TPlugin : ISitePlugin
+        {
+            Register(typeof(TPlugin));
+            return this;
+        }
+
+        public SiteObject Register(Type pluginType)
+        {
+            if (pluginType == null) throw new ArgumentNullException(nameof(pluginType));
+            if (!typeof(ISitePlugin).GetTypeInfo().IsAssignableFrom(pluginType))
+            {
+                throw new ArgumentException("Expecting a plugin type inheriting from ISitePlugin", nameof(pluginType));
+            }
+            _pluginBuilders.RegisterType(pluginType).As<ISitePlugin>().AsSelf().SingleInstance();
+            return this;
+        }
+
+        public SiteObject Clone()
+        {
+            var siteObject = new SiteObject(LoggerFactory);
+            foreach (var plugin in Plugins)
+            {
+                siteObject.Register(plugin.GetType());
+            }
+            siteObject.TempFileSystem = TempFileSystem;
+            siteObject.SiteFileSystem = SiteFileSystem;
+            siteObject.OutputFileSystem = OutputFileSystem;
+            siteObject.InitializePlugins();
+
+            return siteObject;
+        }
+
         public bool Initialize()
         {
             if (ConfigFile.Exists)
@@ -340,9 +376,22 @@ namespace Lunet.Core
 
         public void Build()
         {
+            InitializePlugins();
+
             if (Initialize())
             {
                 Content.Run();
+            }
+        }
+
+        private void InitializePlugins()
+        {
+            if (!_pluginInitialized)
+            {
+                var container = _pluginBuilders.Build();
+                var plugins = container.Resolve<IEnumerable<ISitePlugin>>().ToList();
+                Plugins.AddRange(plugins);
+                _pluginInitialized = true;
             }
         }
 
@@ -352,10 +401,7 @@ namespace Lunet.Core
 
             try
             {
-                foreach (var pluginFactory in Plugins)
-                {
-                    pluginFactory();
-                }
+                InitializePlugins();
 
                 if (ConfigFile.Exists)
                 {

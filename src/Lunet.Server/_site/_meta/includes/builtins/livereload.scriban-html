@@ -2,10 +2,10 @@
     (function() {
         var ws = new WebSocket("{{site.livereload_url}}");
         ws.onclose = function() {
-            // console.log("websocket connection closed");
+            // console.log("livereload: websocket connection closed");
         };
         ws.onmessage = function(event) {
-            // console.log("evt " + event.data);
+            // console.log("livereload: evt " + event.data);
             if (event.data === "reload") {
                 location.reload();
             }

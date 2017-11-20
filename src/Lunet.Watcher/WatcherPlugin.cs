@@ -102,24 +102,23 @@ namespace Lunet.Watcher
 
         public void Start()
         {
-            /*
             if (processEventsThread.IsAlive)
             {
                 return;
             }
-            //privateBaseDirectory = Site.PrivateBaseFolder;
-            //baseDirectory = Site.BaseFolder;
-            //rootDirectoryWatcher = CreateFileWatch(Site.BaseFolder, false);
-            //privateMetaWatcher = CreateFileWatch(Site.PrivateMetaFolder, true);
+            privateBaseDirectory = Site.TempFileSystem.ConvertPathToInternal(UPath.Root);
+            baseDirectory = new DirectoryInfo(Site.SiteFileSystem.ConvertPathToInternal(UPath.Root));
+            rootDirectoryWatcher = CreateFileWatch(baseDirectory.FullName, false);
+            privateMetaWatcher = CreateFileWatch(privateBaseDirectory, true);
 
-            foreach (var directory in Site.FileSystem.EnumerateDirectories(UPath.Root))
+            foreach (var directory in Site.SiteFileSystem.EnumerateDirectories(UPath.Root))
             {
-                CreateFileWatch(directory.FullName, true);
+                var directoryOnDisk = Site.SiteFileSystem.ConvertPathToInternal(directory);
+                CreateFileWatch(directoryOnDisk, true);
             }
 
             // Starts the thread
             processEventsThread.Start();
-            */
         }
 
         public void Stop()
@@ -139,37 +138,6 @@ namespace Lunet.Watcher
                 }
                 watchers.Clear();
             }
-        }
-
-        public void WatchForRebuild(Action<SiteObject> rebuild)
-        {
-            if (rebuild == null) throw new ArgumentNullException(nameof(rebuild));
-            Start();
-
-            FileSystemEvents += (sender, args) =>
-            {
-                if (Site.CanTrace())
-                {
-                    Site.Trace($"Received file events [{args.FileEvents.Count}]");
-                }
-
-                try
-                {
-                    // Regenerate website
-                    // NOTE: we are recreating a full new SiteObject here (not incremental)
-                    var siteObject = new SiteObject(Site.LoggerFactory, Site.Plugins);
-
-                    // Copy the plugins from the current site
-                    //siteObject.Plugins.Factory.AddRange(Plugins.Factory);
-                    //siteObject.Plugins.LoadPlugins();
-
-                    rebuild(siteObject);
-                }
-                catch (Exception ex)
-                {
-                    Site.Error($"Unexpected error while reloading the site. Reason: {ex.GetReason()}");
-                }
-            };
         }
 
         private bool IsPrivateDirectory(string directory)

@@ -129,15 +129,30 @@ namespace Lunet.Server
 
                 if (server)
                 {
-                    _watcher.Value.WatchForRebuild(siteToRebuild =>
+                    var watcher = _watcher.Value;
+                    watcher.Start();
+                    watcher.FileSystemEvents += (sender, args) =>
                     {
-                        BuildSite(siteToRebuild, false);
-
-                        if (siteToRebuild.GetLiveReload())
+                        var newSite = site.Clone();
+                        if (site.CanTrace())
                         {
-                            OnSiteRebuildLiveReload(siteToRebuild);
+                            site.Trace($"Received file events [{args.FileEvents.Count}]");
                         }
-                    });
+
+                        try
+                        {
+                            BuildSite(newSite, false);
+
+                            if (newSite.GetLiveReload())
+                            {
+                                OnSiteRebuildLiveReload(newSite);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            site.Error($"Unexpected error while reloading the site. Reason: {ex.GetReason()}");
+                        }
+                    };
                 }
             }
 
@@ -223,7 +238,7 @@ namespace Lunet.Server
                         }
                     }
 
-                    await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("test")), WebSocketMessageType.Text, true, CancellationToken.None);
+                    await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("hello")), WebSocketMessageType.Text, true, CancellationToken.None);
                     while (webSocket.State == WebSocketState.Open)
                     {
                         await webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), CancellationToken.None);
