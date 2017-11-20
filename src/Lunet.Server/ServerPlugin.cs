@@ -14,6 +14,8 @@ using Lunet.Watcher;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Zio;
 
 namespace Lunet.Server
@@ -85,8 +87,7 @@ namespace Lunet.Server
                 // Enable server log only if log.server = true
                 if (Site.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server"))
                 {
-                    throw new NotImplementedException("Check with new logging 2.0");
-                    //hostBuilder.ConfigureLogging(builder => Site.LoggerFactory);
+                    hostBuilder.ConfigureServices(collection => collection.Add(ServiceDescriptor.Singleton(Site.LoggerFactory)));
                 }
 
                 var host = hostBuilder.Build();
