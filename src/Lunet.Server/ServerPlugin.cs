@@ -14,6 +14,7 @@ using Lunet.Watcher;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Zio;
 
 namespace Lunet.Server
 {
@@ -69,8 +70,11 @@ namespace Lunet.Server
             BuildSite(Site, true);
             try
             {
+                var wwwDirectory = Site.OutputFileSystem.ConvertPathToInternal(UPath.Root);
                 var hostBuilder = new WebHostBuilder()
                     .UseKestrel()
+                    .UseWebRoot(wwwDirectory)
+                    .UseContentRoot(wwwDirectory)
                     .UseUrls(Site.BaseUrl)
                     .Configure(Configure);
 
