@@ -68,11 +68,8 @@ namespace Lunet.Hosting
             BuildSite(Site, true);
             try
             {
-                throw new NotImplementedException("Add support for Zio in the hosting service");
                 var hostBuilder = new WebHostBuilder()
                     .UseKestrel()
-                    //.UseContentRoot(Site.OutputFolder)
-                    //.UseWebRoot(Site.OutputFolder)
                     .UseUrls(Site.BaseUrl)
                     .Configure(Configure);
 
@@ -152,12 +149,12 @@ namespace Lunet.Hosting
             }
 
             // By default we always serve files at last
-            builder.UseFileServer();
+            builder.UseFileServer(new FileServerOptions() {FileProvider = new SiteFileProvider(Site)});
         }
 
         private void SetupLiveReloadClient(SiteObject site)
         {
-            const string builtinsLiveReloadHtml = "builtins/livereload.html";
+            const string builtinsLiveReloadHtml = "builtins/livereload.scriban-html";
             site.Html.HeadIncludes.Add(builtinsLiveReloadHtml);
 
             var liveReloadUrl = new Uri(new Uri(site.BaseUrl.Replace("http:", "ws:")), LiveReloadBasePath).ToString();

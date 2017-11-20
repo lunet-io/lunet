@@ -102,11 +102,11 @@ namespace Lunet.Core
 
         public void Start()
         {
+            /*
             if (processEventsThread.IsAlive)
             {
                 return;
             }
-            throw new NotImplementedException();
             //privateBaseDirectory = Site.PrivateBaseFolder;
             //baseDirectory = Site.BaseFolder;
             //rootDirectoryWatcher = CreateFileWatch(Site.BaseFolder, false);
@@ -119,6 +119,7 @@ namespace Lunet.Core
 
             // Starts the thread
             processEventsThread.Start();
+            */
         }
 
         public void Stop()

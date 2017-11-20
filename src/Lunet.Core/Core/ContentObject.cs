@@ -75,13 +75,16 @@ namespace Lunet.Core
                 var isIndex = name == "index";
                 if (isIndex)
                 {
-                    urlAsPath = name;
+                    urlAsPath = (string)Path.GetDirectory();
                 }
-                else if (!string.IsNullOrEmpty(Extension))
+                else 
                 {
-                    urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
+                    if (!string.IsNullOrEmpty(Extension))
+                    {
+                        urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
+                    }
+                    urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
                 }
-                urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
             }
             Url = urlAsPath;
 
