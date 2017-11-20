@@ -10,11 +10,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Helpers;
+using Lunet.Watcher;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 
-namespace Lunet.Hosting
+namespace Lunet.Server
 {
     public static class SiteObjectExtensions
     {
@@ -31,7 +32,7 @@ namespace Lunet.Hosting
         }
     }
 
-    public class HostingPlugin : SitePlugin
+    public class ServerPlugin : SitePlugin
     {
         private const string LiveReloadBasePath = "/__livereload__";
         private readonly CommandOption noWatchOption;
@@ -40,7 +41,7 @@ namespace Lunet.Hosting
 
         public const string DefaultBaseUrl = "http://localhost:4000";
 
-        public HostingPlugin(SiteObject site, Lazy<WatcherPlugin> watcher) : base(site)
+        public ServerPlugin(SiteObject site, Lazy<WatcherPlugin> watcher) : base(site)
         {
             _watcher = watcher;
             AppBuilders = new OrderedList<Action<IApplicationBuilder>>();

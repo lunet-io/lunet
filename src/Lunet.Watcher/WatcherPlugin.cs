@@ -7,13 +7,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using Lunet.Core;
 using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
 using Zio;
 
-namespace Lunet.Core
+namespace Lunet.Watcher
 {
-
     public class FileSystemEventBatchArgs : EventArgs
     {
         public FileSystemEventBatchArgs()
