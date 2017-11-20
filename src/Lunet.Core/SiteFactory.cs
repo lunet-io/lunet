@@ -40,7 +40,7 @@ namespace Lunet
             {
                 throw new ArgumentException("Expecting a plugin type inheriting from ISitePlugin", nameof(pluginType));
             }
-            _containerBuilder.RegisterType(pluginType).AsSelf().As<ISitePlugin>();
+            _containerBuilder.RegisterType(pluginType).SingleInstance().AsSelf().As<ISitePlugin>();
             return this;
         }
 

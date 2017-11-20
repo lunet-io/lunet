@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 using System;
 using Lunet.Core;
+using Zio;
 
 namespace Lunet.Resources
 {
@@ -12,7 +13,7 @@ namespace Lunet.Resources
     /// <seealso cref="DynamicObject" />
     public class ResourceObject : DynamicObject
     {
-        public ResourceObject(ResourceProvider provider, string name, string version, string absoluteDirectory)
+        public ResourceObject(ResourceProvider provider, string name, string version, DirectoryEntry absoluteDirectory)
         {
             if (provider == null) throw new ArgumentNullException(nameof(provider));
             if (name == null) throw new ArgumentNullException(nameof(name));
@@ -23,10 +24,10 @@ namespace Lunet.Resources
             Version = version;
             AbsoluteDirectory = absoluteDirectory;
             Provider = provider;
-            Path = provider.Plugin.Site.GetRelativePath(AbsoluteDirectory, PathFlags.Directory|PathFlags.Normalize);
+            Path = absoluteDirectory.Path;
 
             SetValue("provider", Provider.Name, true);
-            SetValue("path", Path, true);
+            SetValue("path", (string)Path, true);
         }
 
         public string Name { get; }
@@ -35,8 +36,8 @@ namespace Lunet.Resources
 
         public ResourceProvider Provider { get; }
 
-        public string Path { get; }
+        public UPath Path { get; }
 
-        public FolderInfo AbsoluteDirectory { get;  }
+        public DirectoryEntry AbsoluteDirectory { get;  }
     }
 }

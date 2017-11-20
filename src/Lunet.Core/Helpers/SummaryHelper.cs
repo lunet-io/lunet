@@ -37,7 +37,7 @@ namespace Lunet.Helpers
                 MinifyCssAttributes = false
             };
 
-            var parser = new HtmlParser(page.Content, page.SourceFile, settings);
+            var parser = new HtmlParser(page.Content, (string)page.SourceFile.Path, settings);
             var document = parser.Parse();
 
             var errors = new List<UglifyError>(parser.Errors);
@@ -65,8 +65,7 @@ namespace Lunet.Helpers
 
                 var readMoreIndex = fullText.IndexOf("<!--more-->", StringComparison.Ordinal);
                 
-                var summary = readMoreIndex >= 0 ? fullText.Substring(0, readMoreIndex) :
-                    StringFunctions.Truncatewords(70, fullText);
+                var summary = readMoreIndex >= 0 ? fullText.Substring(0, readMoreIndex) : StringFunctions.Truncatewords(fullText, 70);
 
                 page.Summary = summary;
             }

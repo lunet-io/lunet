@@ -1,0 +1,8 @@
+﻿{{~ # Generates bundle links ~}}
+{{~ for $link in (bundle page.bundle).links ~}}
+    {{~ if $link.type == "css" ~}}
+<link rel="stylesheet" href="{{$link.url}}">
+    {{~ else if $link.type == "js" ~}}
+<script src="{{$link.url}}" type="text/javascript"></script>
+    {{~ end ~}}
+{{~ end }}

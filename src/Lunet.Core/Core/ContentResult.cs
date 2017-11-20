@@ -19,7 +19,7 @@ namespace Lunet.Core
 
         /// <summary>
         /// The page was processed by the <see cref="IContentProcessor.TryProcess"/> 
-        /// but we break the any further processing of this page
+        /// but the current processor breaks any further processing of this page
         /// </summary>
         Break,
     }

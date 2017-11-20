@@ -7,12 +7,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using Lunet.Core;
 using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
+using Zio;
 
-namespace Lunet.Core
+namespace Lunet.Watcher
 {
-
     public class FileSystemEventBatchArgs : EventArgs
     {
         public FileSystemEventBatchArgs()
@@ -101,22 +102,24 @@ namespace Lunet.Core
 
         public void Start()
         {
+            /*
             if (processEventsThread.IsAlive)
             {
                 return;
             }
-            privateBaseDirectory = Site.PrivateBaseFolder;
-            baseDirectory = Site.BaseFolder;
-            rootDirectoryWatcher = CreateFileWatch(Site.BaseFolder, false);
-            privateMetaWatcher = CreateFileWatch(Site.PrivateMetaFolder, true);
+            //privateBaseDirectory = Site.PrivateBaseFolder;
+            //baseDirectory = Site.BaseFolder;
+            //rootDirectoryWatcher = CreateFileWatch(Site.BaseFolder, false);
+            //privateMetaWatcher = CreateFileWatch(Site.PrivateMetaFolder, true);
 
-            foreach (var directory in Site.BaseFolder.Info.EnumerateDirectories())
+            foreach (var directory in Site.FileSystem.EnumerateDirectories(UPath.Root))
             {
                 CreateFileWatch(directory.FullName, true);
             }
 
             // Starts the thread
             processEventsThread.Start();
+            */
         }
 
         public void Stop()

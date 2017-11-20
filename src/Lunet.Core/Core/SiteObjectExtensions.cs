@@ -13,38 +13,23 @@ namespace Lunet.Core
     /// </summary>
     public static class SiteObjectExtensions
     {
-        /// <summary>
-        /// Gets a relative path to the site base directory from the specified absolute path.
-        /// </summary>
-        /// <param name="site">The site.</param>
-        /// <param name="fullFilePath">The full file path.</param>
-        /// <param name="flags">The path flags.</param>
-        /// <returns>
-        /// A relative path
-        /// </returns>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <exception cref="LunetException"></exception>
-        public static string GetRelativePath(this SiteObject site, string fullFilePath, PathFlags flags)
-        {
-            return site.BaseFolder.GetRelativePath(fullFilePath, flags);
-        }
-
         public static bool IsFilePrivateOrMeta(this SiteObject site, string fullFilePath)
         {
             if (fullFilePath == null) throw new ArgumentNullException(nameof(fullFilePath));
+            throw new NotImplementedException();
 
-            if (fullFilePath.StartsWith(site.PrivateMetaFolder.FullName))
-            {
-                return true;
-            }
+            //if (fullFilePath.StartsWith(site.PrivateMetaFolder.FullName))
+            //{
+            //    return true;
+            //}
 
-            foreach (var meta in site.MetaFolders)
-            {
-                if (fullFilePath.StartsWith(meta.FullName))
-                {
-                    return true;
-                }
-            }
+            //foreach (var meta in site.MetaFolders)
+            //{
+            //    if (fullFilePath.StartsWith(meta.FullName))
+            //    {
+            //        return true;
+            //    }
+            //}
 
             return false;
         }
@@ -126,9 +111,7 @@ namespace Lunet.Core
 
         private static string GetSpanMessage(SiteObject site, SourceSpan span, string message)
         {
-            var fileRelative = span.FileName != null
-                ? site.GetRelativePath(span.FileName, PathFlags.File)
-                : string.Empty;
+            var fileRelative = span.FileName ?? string.Empty;
             return $"In {fileRelative}({span.Start.ToStringSimple()}): {message}";
         }
     }

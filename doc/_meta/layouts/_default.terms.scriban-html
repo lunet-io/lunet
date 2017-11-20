@@ -1,0 +1,15 @@
++++
++++
+<html>
+<head>
+{{~ include "head.scriban-html" ~}}
+</head>
+<body>
+{{ $$ }}
+<ul>
+{{ for $term in taxonomy.terms.by_name }}
+<li><a href="{{$term.url}}">{{$term.name}}</a></li>
+{{ end }}
+</ul>
+</body>
+</html>

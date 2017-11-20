@@ -8,14 +8,15 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Scriban;
-using Scriban.Model;
+using Scriban.Syntax;
 using Scriban.Parsing;
+using Zio;
 
 namespace Lunet.Layouts
 {
     public class LayoutProcessor : ContentProcessor<LayoutPlugin>
     {
-        private readonly Dictionary<string, Template> _layouts;
+        private readonly Dictionary<LayoutKey, Template> _layouts;
 
         private readonly List<KeyValuePair<string, GetLayoutPathsDelegate>> _layoutPathProviders;
 
@@ -23,11 +24,11 @@ namespace Lunet.Layouts
 
         public const string DefaultLayoutName = "_default";
 
-        public delegate IEnumerable<string> GetLayoutPathsDelegate(SiteObject site, string layoutName, string layoutType, string layoutExtension);
+        public delegate IEnumerable<UPath> GetLayoutPathsDelegate(SiteObject site, string layoutName, string layoutType);
 
         public LayoutProcessor(LayoutPlugin plugin) : base(plugin)
         {
-            _layouts = new Dictionary<string, Template>();
+            _layouts = new Dictionary<LayoutKey, Template>();
             _layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
             RegisterLayoutPathProvider(LayoutTypes.Single, SingleLayout);
             RegisterLayoutPathProvider(LayoutTypes.List, ListLayout);
@@ -77,8 +78,7 @@ namespace Lunet.Layouts
             {
                 continueLayout = false;
                 // TODO: We are using content type here with the layout extension, is it ok?
-                var layoutExtension = PathUtil.NormalizeExtension(page.ContentType.Name) ?? Site.GetSafeDefaultPageExtension();
-                var layoutScript = GetLayout(layoutName, page.LayoutType, layoutExtension);
+                var layoutScript = GetLayout(layoutName, page.LayoutType, page.ContentType);
 
                 // If we haven't found any layout, this is not an error, so we let the 
                 // content as-is
@@ -89,7 +89,7 @@ namespace Lunet.Layouts
                 }
 
                 // Add dependency to the layout file
-                page.Dependencies.Add(new FileContentDependency(layoutScript.SourceFilePath));
+                page.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, layoutScript.SourceFilePath)));
 
                 // If we had any errors, the page is invalid, so we can't process it
                 if (layoutScript.HasErrors)
@@ -121,7 +121,7 @@ namespace Lunet.Layouts
                         {
                             if (layoutNames.Contains(nextLayout))
                             {
-                                Site.Error($"Invalid recursive layout [{nextLayout}] from script [{Site.GetRelativePath(layoutScript.SourceFilePath, PathFlags.File)}");
+                                Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutScript.SourceFilePath}`");
                                 result = ContentResult.Break;
                                 break;
                             }
@@ -143,74 +143,75 @@ namespace Lunet.Layouts
             return result;
         }
 
-        private Template GetLayout(string layoutName, string layoutType, string layoutExtension)
+        private Template GetLayout(string layoutName, string layoutType, ContentType contentType)
         {
             Template layoutPage;
-
             layoutType = layoutType ?? LayoutTypes.Single;
-            var layoutKey = layoutName + "/" + layoutType + layoutExtension;
-
-            if (!_layouts.TryGetValue(layoutKey, out layoutPage))
+            var layoutKey = new LayoutKey(layoutName, layoutType, contentType);
+            if (_layouts.TryGetValue(layoutKey, out layoutPage))
             {
-                var layoutDelegate = FindLayoutPaths(layoutType);
+                return layoutPage;
+            }
 
-                if (layoutDelegate != null)
+            var layoutDelegate = FindLayoutPaths(layoutType);
+            if (layoutDelegate != null)
+            {
+                // Get all possible extensions for the specific content type
+                var extensions = Site.ContentTypes.GetExtensionsByContentType(contentType);
+                var layoutRoot = UPath.Root / LayoutFolderName;
+                foreach (var layoutPath in layoutDelegate(Site, layoutName, layoutType))
                 {
-                    foreach (var layoutPath in layoutDelegate(Site, layoutName, layoutType, layoutExtension))
+                    foreach (var extension in extensions)
                     {
-                        if (File.Exists(layoutPath))
+                        var fullLayoutPath = layoutRoot / layoutPath.FullName + extension;
+                        var entry = new FileEntry(Site.MetaFileSystem, fullLayoutPath);
+                        if (entry.Exists)
                         {
-                            var scriptLayoutText = File.ReadAllText(layoutPath);
-                            layoutPage = Site.Scripts.ParseScript(scriptLayoutText, layoutPath, ScriptMode.FrontMatterAndContent);
-                            break;
+                            var scriptLayoutText = entry.ReadAllText();
+                            layoutPage = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
+                            _layouts.Add(layoutKey, layoutPage);
+                            return layoutPage;
                         }
                     }
                 }
-                _layouts.Add(layoutKey, layoutPage);
             }
 
-            return layoutPage;
+            return null;
         }
 
-        private static IEnumerable<string> SingleLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
+        private static IEnumerable<UPath> SingleLayout(SiteObject site, string layoutName, string layoutType)
         {
-            foreach (var metaDir in site.MetaFolders)
+            // try: _meta/layouts/{layoutName}/single.{layoutExtension}
+            yield return (UPath)layoutName / layoutType;
+
+            // try: _meta/layouts/{layoutName}.{layoutExtension}
+            yield return layoutName;
+
+            if (layoutName != DefaultLayoutName)
             {
-                // try: _meta/layouts/{layoutName}/single.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName, layoutType + layoutExtension);
+                // try: _meta/layouts/_default/single.{layoutExtension}
+                yield return (UPath)DefaultLayoutName / layoutType;
 
-                // try: _meta/layouts/{layoutName}.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName + layoutExtension);
-
-                if (layoutName != DefaultLayoutName)
-                {
-                    // try: _meta/layouts/_default/single.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName, layoutType + layoutExtension);
-
-                    // try: _meta/layouts/_default.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName + layoutExtension);
-                }
+                // try: _meta/layouts/_default.{layoutExtension}
+                yield return (DefaultLayoutName);
             }
         }
 
-        private static IEnumerable<string> ListLayout(SiteObject site, string layoutName, string layoutType, string layoutExtension)
+        private static IEnumerable<UPath> ListLayout(SiteObject site, string layoutName, string layoutType)
         {
-            foreach (var metaDir in site.MetaFolders)
+            // try: _meta/layouts/{layoutName}/list.{layoutExtension}
+            yield return (UPath)layoutName / layoutType;
+
+            // try: _meta/layouts/{layoutName}.list.{layoutExtension}
+            yield return layoutName + "." + layoutType;
+
+            if (layoutName != DefaultLayoutName)
             {
-                // try: _meta/layouts/{layoutName}/list.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName, layoutType + layoutExtension);
+                // try: _meta/layouts/_default/list.{layoutExtension}
+                yield return (UPath)DefaultLayoutName / (layoutType);
 
-                // try: _meta/layouts/{layoutName}.list.{layoutExtension}
-                yield return Path.Combine(metaDir, LayoutFolderName, layoutName + "." + layoutType + layoutExtension);
-
-                if (layoutName != DefaultLayoutName)
-                {
-                    // try: _meta/layouts/_default/list.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName, layoutType + layoutExtension);
-
-                    // try: _meta/layouts/_default.list.{layoutExtension}
-                    yield return Path.Combine(metaDir, LayoutFolderName, DefaultLayoutName + "." + layoutType + layoutExtension);
-                }
+                // try: _meta/layouts/_default.list.{layoutExtension}
+                yield return (DefaultLayoutName + "." + layoutType);
             }
         }
 
@@ -238,6 +239,49 @@ namespace Lunet.Layouts
             }
 
             return layoutName;
+        }
+
+        struct LayoutKey : IEquatable<LayoutKey>
+        {
+            public LayoutKey(string name, string type, ContentType contentType)
+            {
+                Name = name;
+                Type = type;
+                ContentType = contentType;
+            }
+
+            public string Name;
+
+            public string Type;
+
+            public ContentType ContentType;
+
+            public bool Equals(LayoutKey other)
+            {
+                return string.Equals(Name, other.Name) && string.Equals(Type, other.Type) && ContentType.Equals(other.ContentType);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                return obj is LayoutKey && Equals((LayoutKey)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    var hashCode = Name.GetHashCode();
+                    hashCode = (hashCode * 397) ^ Type.GetHashCode();
+                    hashCode = (hashCode * 397) ^ ContentType.GetHashCode();
+                    return hashCode;
+                }
+            }
+
+            public override string ToString()
+            {
+                return $"{nameof(Name)}: {Name}, {nameof(Type)}: {Type}, {nameof(ContentType)}: {ContentType}";
+            }
         }
     }
 }

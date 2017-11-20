@@ -3,7 +3,7 @@
   <PropertyGroup>
     <VersionPrefix>0.1.0</VersionPrefix>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeIdentifiers>win7-x64;osx.10.10-x64;ubuntu.14.04-x64</RuntimeIdentifiers>
     <AssemblyName>Lunet</AssemblyName>
     <PackageId>Lunet</PackageId>
@@ -14,7 +14,7 @@
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
     <ProjectReference Include="..\Lunet.Datas\Lunet.Datas.csproj" />
     <ProjectReference Include="..\Lunet.Extends\Lunet.Extends.csproj" />
-    <ProjectReference Include="..\Lunet.Hosting\Lunet.Hosting.csproj" />
+    <ProjectReference Include="..\Lunet.Server\Lunet.Server.csproj" />
     <ProjectReference Include="..\Lunet.Layouts\Lunet.Layouts.csproj" />
     <ProjectReference Include="..\Lunet.Markdig\Lunet.Markdown.csproj" />
     <ProjectReference Include="..\Lunet.NUglify\Lunet.Minifiers.csproj" />
@@ -25,8 +25,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.1" />
-    <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR" Version="1.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
+    <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR" Version="2.0.3" />
   </ItemGroup>
 
 </Project>

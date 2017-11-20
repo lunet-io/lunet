@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Lunet.Core;
+using Zio;
 
 namespace Lunet.Resources
 {
@@ -56,23 +57,7 @@ namespace Lunet.Resources
             return null;
         }
 
-        public string FindFromDirectory(string resourceName, string resourceVersion)
-        {
-            var resourcePrivatePath = Path.Combine(Plugin.PrivateResourceFolder, Name, resourceName, resourceVersion);
-            var resourcePublicPath = Path.Combine(Plugin.ResourceFolder, Name, resourceName, resourceVersion);
-            string directory = null;
-            if (Directory.Exists(resourcePublicPath))
-            {
-                directory = resourcePublicPath;
-            }
-            else if (Directory.Exists(resourcePrivatePath))
-            {
-                directory = resourcePrivatePath;
-            }
-            return directory;
-        }
-
-        private void LoadFromDirectory(DirectoryInfo resourceDirectory)
+        private void LoadFromDirectory(DirectoryEntry resourceDirectory)
         {
             foreach (var resourceNameDir in resourceDirectory.EnumerateDirectories())
             {
@@ -81,7 +66,7 @@ namespace Lunet.Resources
                     var resource = Find(resourceNameDir.Name, versionNameDir.Name);
                     if (resource == null)
                     {
-                        resource = LoadFromDisk(resourceNameDir.Name, versionNameDir.Name, versionNameDir.FullName);
+                        resource = LoadFromDisk(resourceNameDir.Name, versionNameDir.Name, versionNameDir);
                         if (resource != null)
                         {
                             Resources.Add(resource);
@@ -104,16 +89,14 @@ namespace Lunet.Resources
             }
 
             // Otherwise we are going to check if it is already on the disk
-
-            var resourcePrivatePath = Path.Combine(Plugin.PrivateResourceFolder, Name, resourceName, resourceVersion);
-            var resourcePublicPath = Path.Combine(Plugin.ResourceFolder, Name, resourceName, resourceVersion);
-
-            string resourcePath = FindFromDirectory(resourceName, resourceVersion);
-            if (Directory.Exists(resourcePublicPath))
+            var resourcePrivatePath = new DirectoryEntry(Plugin.Site.TempMetaFileSystem, ResourcePlugin.ResourceFolder / Name / resourceName / resourceVersion);
+            var resourcePublicPath = new DirectoryEntry(Plugin.Site.MetaFileSystem, ResourcePlugin.ResourceFolder / Name / resourceName / resourceVersion);
+            DirectoryEntry resourcePath = null;
+            if (resourcePublicPath.Exists)
             {
                 resourcePath = resourcePublicPath;
             }
-            else if (Directory.Exists(resourcePrivatePath))
+            else if (resourcePrivatePath.Exists)
             {
                 resourcePath = resourcePrivatePath;
             }
@@ -136,8 +119,8 @@ namespace Lunet.Resources
         }
 
 
-        protected abstract ResourceObject LoadFromDisk(string resourceName, string resourceVersion, string directory);
+        protected abstract ResourceObject LoadFromDisk(string resourceName, string resourceVersion, DirectoryEntry directory);
 
-        protected abstract ResourceObject InstallToDisk(string resourceName, string resourceVersion, string directory, ResourceInstallFlags flags);
+        protected abstract ResourceObject InstallToDisk(string resourceName, string resourceVersion, DirectoryEntry directory, ResourceInstallFlags flags);
     }
 }

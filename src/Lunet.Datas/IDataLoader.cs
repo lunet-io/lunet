@@ -1,4 +1,5 @@
 using System.IO;
+using Zio;
 
 namespace Lunet.Datas
 {
@@ -6,6 +7,6 @@ namespace Lunet.Datas
     {
         bool CanHandle(string fileExtension);
 
-        object Load(FileInfo file);
+        object Load(FileEntry file);
     }
 }

@@ -4,13 +4,14 @@ using Lunet.Core;
 using Lunet.Datas;
 using Lunet.Logging;
 using Lunet.Extends;
-using Lunet.Hosting;
 using Lunet.Layouts;
 using Lunet.Markdown;
 using Lunet.Minifiers;
 using Lunet.Resources;
 using Lunet.Taxonomies;
 using Lunet.Scss;
+using Lunet.Server;
+using Lunet.Watcher;
 using Lunet.Yaml;
 
 namespace Lunet
@@ -26,7 +27,7 @@ namespace Lunet
                 .Register<ResourcePlugin>()
                 .Register<DatasPlugin>()
                 .Register<WatcherPlugin>()
-                .Register<HostingPlugin>()
+                .Register<ServerPlugin>()
                 .Register<MarkdownPlugin>()
                 .Register<MinifierPlugin>()
                 .Register<ScssPlugin>()
@@ -49,7 +50,7 @@ namespace Lunet
                     continue;
                 }
 
-                Console.WriteLine($"Dependency {type} [{page.Path ?? page.Url}]");
+                Console.WriteLine($"Dependency {type} [{page.Path.FullName ?? page.Url}]");
                 foreach (var dep in page.Dependencies)
                 {
                     foreach (var file in dep.GetFiles())

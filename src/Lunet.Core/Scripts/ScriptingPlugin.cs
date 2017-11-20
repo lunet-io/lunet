@@ -8,9 +8,10 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Scriban;
-using Scriban.Model;
+using Scriban.Syntax;
 using Scriban.Parsing;
 using Scriban.Runtime;
+using Zio;
 
 namespace Lunet.Scripts
 {
@@ -47,13 +48,13 @@ namespace Lunet.Scripts
         /// <remarks>
         /// If there are any parsing errors, the errors will be logged to the <see cref="Log" /> and <see cref="HasErrors" /> will be set to <c>true</c>.
         /// </remarks>
-        public Template ParseScript(string scriptContent, string scriptPath, ScriptMode parsingMode)
+        public Template ParseScript(string scriptContent, UPath scriptPath, ScriptMode parsingMode)
         {
             if (scriptContent == null) throw new ArgumentNullException(nameof(scriptContent));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
             // Load parse the template
-            var template = Template.Parse(scriptContent, scriptPath, null, new LexerOptions() { Mode = parsingMode });
+            var template = Template.Parse(scriptContent, scriptPath.FullName, null, new LexerOptions() { Mode = parsingMode });
 
             // If we have any errors, log them and set the errors flag on this instance
             if (template.HasErrors)
@@ -64,15 +65,16 @@ namespace Lunet.Scripts
             return template;
         }
 
-        public bool TryImportScript(string scriptText, string scriptPath, IDynamicObject scriptObject, ScriptFlags flags, TemplateContext context = null)
+        public bool TryImportScript(string scriptText, UPath scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, TemplateContext context = null)
         {
             if (scriptText == null) throw new ArgumentNullException(nameof(scriptText));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
+            result = null;
             context = context ?? new TemplateContext(GlobalObject);
 
-            var scriptConfig = ParseScript(scriptText, scriptPath, ScriptMode.ScriptOnly);
+            var scriptConfig = ParseScript(scriptText, scriptPath.FullName, ScriptMode.ScriptOnly);
             if (!scriptConfig.HasErrors)
             {
                 if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
@@ -81,13 +83,13 @@ namespace Lunet.Scripts
                 }
 
                 context.PushGlobal((ScriptObject)scriptObject);
-                context.PushSourceFile(scriptPath);
+                context.PushSourceFile(scriptPath.FullName);
                 context.EnableOutput = false;
                 context.TemplateLoader =  (flags & ScriptFlags.AllowSiteFunctions) != 0 ? unauthorizedTemplateLoader : new TemplateLoaderFromIncludes(Site);
 
                 try
                 {
-                    scriptConfig.Page.Evaluate(context);
+                    result = scriptConfig.Page.Evaluate(context);
                 }
                 catch (ScriptRuntimeException exception)
                 {
@@ -102,26 +104,26 @@ namespace Lunet.Scripts
                     {
                         context.PopGlobal();
                     }
-                    context.Output.Clear();
                 }
                 return true;
             }
             return false;
         }
 
-        public bool TryImportScriptStatement(string scriptStatement, IDynamicObject scriptObject, ScriptFlags flags, TemplateContext context = null)
+        public bool TryImportScriptStatement(string scriptStatement, IDynamicObject scriptObject, ScriptFlags flags, out object result, TemplateContext context = null)
         {
             if (scriptStatement == null) throw new ArgumentNullException(nameof(scriptStatement));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
-            return TryImportScript(scriptStatement, "__script__", scriptObject, flags, context);
+            return TryImportScript(scriptStatement, "__script__", scriptObject, flags, out result, context);
         }
 
-        public bool TryImportScriptFromFile(string scriptPath, IDynamicObject scriptObject, ScriptFlags flags, TemplateContext context = null)
+        public bool TryImportScriptFromFile(FileEntry scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, TemplateContext context = null)
         {
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
+            result = null;
 
-            var scriptExist = File.Exists(scriptPath);
+            var scriptExist = scriptPath.Exists;
             if ((flags & ScriptFlags.Expect) != 0)
             {
                 if (!scriptExist)
@@ -133,8 +135,8 @@ namespace Lunet.Scripts
 
             if (scriptExist)
             {
-                var configAsText = File.ReadAllText(scriptPath);
-                return TryImportScript(configAsText, scriptPath, scriptObject, flags, context);
+                var configAsText = scriptPath.ReadAllText();
+                return TryImportScript(configAsText, scriptPath.Path, scriptObject, flags, out result, context);
             }
             return true;
         }
@@ -181,7 +183,7 @@ namespace Lunet.Scripts
         /// <summary>
         /// Initializes this instance.
         /// </summary>
-        public bool TryEvaluate(ContentObject page, ScriptPage script, string scriptPath, ScriptObject obj = null, TemplateContext context = null)
+        public bool TryEvaluate(ContentObject page, ScriptPage script, UPath scriptPath, ScriptObject obj = null, TemplateContext context = null)
         {
             if (page == null) throw new ArgumentNullException(nameof(page));
             if (script == null) throw new ArgumentNullException(nameof(script));
@@ -192,10 +194,9 @@ namespace Lunet.Scripts
             {
                 context.PushGlobal(obj);
             }
-            context.PushSourceFile(scriptPath);
-            context.Output.Clear();
+            context.PushSourceFile((string)scriptPath);
 
-            var currentScriptObject = context.CurrentGlobal;
+            var currentScriptObject = (ScriptObject)context.CurrentGlobal;
 
             try
             {
@@ -276,11 +277,15 @@ namespace Lunet.Scripts
                 this.site = site;
             }
 
-            public string Load(TemplateContext context, SourceSpan callerSpan, string templateName, out string templateFilePath)
+            public string GetPath(TemplateContext context, SourceSpan callerSpan, string templateName)
             {
-                templateFilePath = null;
                 site.Error(callerSpan, $"The include statement is not allowed from this context. The include [{templateName}] cannot be loaded");
                 return null;
+            }
+
+            public string Load(TemplateContext context, SourceSpan callerSpan, string templatePath)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -291,34 +296,28 @@ namespace Lunet.Scripts
             public TemplateLoaderFromIncludes(SiteObject site)
             {
                 this.site = site;
-                IncludeFiles = new List<string>();
+                IncludeFiles = new HashSet<FileEntry>();
             }
 
-            public List<string> IncludeFiles { get; }
+            public HashSet<FileEntry> IncludeFiles { get; }
 
-            public string Load(TemplateContext context, SourceSpan callerSpan, string templateName, out string templateFilePath)
+            public string GetPath(TemplateContext context, SourceSpan callerSpan, string templateName)
             {
-                templateFilePath = null;
                 templateName = templateName.Trim();
                 if (templateName.Contains("..") || templateName.StartsWith("/") || templateName.StartsWith("\\"))
                 {
                     site.Error(callerSpan, $"The include [{templateName}] cannot contain '..' or start with '/' or '\\'");
                     return null;
                 }
+                var templatePath = UPath.Root / IncludesDirectoryName / templateName;
+                return (string) templatePath;
+            }
 
-                foreach (var directory in site.MetaFolders)
-                {
-                    var includePath = Path.Combine(directory, IncludesDirectoryName, templateName);
-                    var file = new FileInfo(includePath);
-                    if (file.Exists)
-                    {
-                        IncludeFiles.Add(file.FullName);
-                        templateFilePath = includePath;
-                        return File.ReadAllText(includePath);
-                    }
-                }
-
-                return null;
+            public string Load(TemplateContext context, SourceSpan callerSpan, string templatePath)
+            {
+                var templateFile = new FileEntry(site.MetaFileSystem, templatePath);
+                IncludeFiles.Add(templateFile);
+                return templateFile.ReadAllText();
             }
         }
     }

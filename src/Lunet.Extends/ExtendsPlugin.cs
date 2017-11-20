@@ -10,13 +10,15 @@ using Lunet.Core;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Scriban.Runtime;
+using Zio;
+using Zio.FileSystems;
 
 namespace Lunet.Extends
 {
     /// <summary>
     /// Manages themes.
     /// </summary>
-    public sealed class ExtendsPlugin : SitePlugin, IContentProvider
+    public sealed class ExtendsPlugin : SitePlugin
     {
         private const string ExtendsFolderName = "extends";
 
@@ -24,8 +26,8 @@ namespace Lunet.Extends
 
         public ExtendsPlugin(SiteObject site) : base(site)
         {
-            ExtendsFolder = Path.Combine(Site.MetaFolder, ExtendsFolderName);
-            PrivateExtendsFolder = Path.Combine(Site.PrivateMetaFolder, ExtendsFolderName);
+            ExtendsFolder = UPath.Root / ExtendsFolderName;
+            PrivateExtendsFolder = UPath.Root / ExtendsFolderName;
             Providers = new OrderedList<IExtendProvider>()
             {
                 new DefaultExtendProvider()
@@ -35,19 +37,11 @@ namespace Lunet.Extends
             Site.Scripts.SiteFunctions.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
         }
 
-        public FolderInfo ExtendsFolder { get; }
+        public UPath ExtendsFolder { get; }
 
-        public FolderInfo PrivateExtendsFolder { get; }
+        public UPath PrivateExtendsFolder { get; }
 
         public OrderedList<IExtendProvider> Providers { get; }
-
-        public IEnumerable<FolderInfo> GetFolders()
-        {
-            foreach (var extend in CurrentList)
-            {
-                yield return extend.Directory;
-            }
-        }
 
         /// <summary>
         /// Gets the list of themes currently used.
@@ -70,28 +64,37 @@ namespace Lunet.Extends
         public ExtendObject LoadExtend(string extendName, bool isPrivate)
         {
             if (extendName == null) throw new ArgumentNullException(nameof(extendName));
+            ExtendObject extendObject = null;
             foreach (var existingExtend in CurrentList)
             {
                 if (existingExtend.Name == extendName)
                 {
-                    return existingExtend;
+                    extendObject = existingExtend;
+                    break;
                 }
             }
 
-            var extendObject = TryInstall(extendName, isPrivate);
             if (extendObject == null)
             {
-                return null;
+                extendObject = TryInstall(extendName, isPrivate);
+                if (extendObject == null)
+                {
+                    return null;
+                }
+                CurrentList.Add(extendObject);
+
+                var configPath = new FileEntry(extendObject.FileSystem, UPath.Root / SiteObject.DefaultConfigFileName);
+                object result;
+                Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions, out result);
             }
-            CurrentList.Add(extendObject);
+
+            // Register the extensions as a content FileSystem
+            Site.AddContentFileSystem(extendObject.FileSystem);
 
             if (Site.CanTrace())
             {
-                Site.Trace($"Using extension/theme [{extendName}] from [{extendObject.Path}]");
+                Site.Trace($"Using extension/theme `{extendName}` from `{extendObject.FileSystem.ConvertPathToInternal(UPath.Root)}`");
             }
-
-            var configPath = Path.Combine(extendObject.Directory, SiteObject.DefaultConfigFileName);
-            Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions);
 
             return extendObject;
         }
@@ -109,16 +112,18 @@ namespace Lunet.Extends
                 version = extend.Substring(indexOfVersion + 1);
             }
 
-            var themePrivatePath = Path.Combine(PrivateExtendsFolder, extendName);
-            var themePublicPath = Path.Combine(ExtendsFolder, extendName);
-            string extendPath = null;
-            if (Directory.Exists(themePublicPath))
+            //var themePrivatePath = PrivateExtendsFolder / extendName;
+            var themeSiteDir = new DirectoryEntry(Site.SiteMetaFileSystem, ExtendsFolder / extendName);
+            var themeTempDir = new DirectoryEntry(Site.TempMetaFileSystem, ExtendsFolder / extendName);
+            IFileSystem extendPath = null;
+
+            if (themeSiteDir.Exists)
             {
-                extendPath = themePublicPath;
+                extendPath = new SubFileSystem(themeSiteDir.FileSystem, themeSiteDir.Path);
             }
-            else if (Directory.Exists(themePrivatePath))
+            else if (themeTempDir.Exists)
             {
-                extendPath = themePrivatePath;
+                extendPath = new SubFileSystem(themeTempDir.FileSystem, themeSiteDir.Path);
             }
 
             if (extendPath != null)
@@ -126,7 +131,9 @@ namespace Lunet.Extends
                 return new ExtendObject(Site, extendName, extend, version, null, null, extendPath);
             }
 
-            extendPath = isPrivate ? themePrivatePath : themePublicPath;
+            extendPath = isPrivate
+                ? themeTempDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path)
+                : themeSiteDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path);
 
             if (Providers.Count == 0)
             {
@@ -146,7 +153,7 @@ namespace Lunet.Extends
                 }
             }
 
-            Site.Error($"Unable to find the extension/theme [{extend}] locally from [{Site.GetRelativePath(themePublicPath, PathFlags.File)}] or [{Site.GetRelativePath(themePrivatePath, PathFlags.File)}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
+            Site.Error($"Unable to find the extension/theme [{extend}] locally from [{themeSiteDir}] or [{themeTempDir}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
             return null;
         }
 

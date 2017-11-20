@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using Lunet.Core;
 using Lunet.Helpers;
+using Zio;
 
 namespace Lunet.Bundles
 {
@@ -40,10 +41,10 @@ namespace Lunet.Bundles
             }
 
             // Compute a cache of current static files
-            var staticFiles = new Dictionary<string, ContentObject>();
+            var staticFiles = new Dictionary<UPath, ContentObject>();
             foreach (var staticFile in Site.StaticFiles)
             {
-                staticFiles.Add(staticFile.SourceFile, staticFile);
+                staticFiles.Add(staticFile.SourceFile.Path, staticFile);
             }
 
             // Process bundle
@@ -53,7 +54,7 @@ namespace Lunet.Bundles
             }
         }
 
-        private void ProcessBundle(BundleObject bundle, Dictionary<string, ContentObject> staticFiles)
+        private void ProcessBundle(BundleObject bundle, Dictionary<UPath, ContentObject> staticFiles)
         {
             // Sanitize url destination for the bundle
             foreach (var urlDestType in bundle.UrlDestination.Keys.ToList())
@@ -84,7 +85,7 @@ namespace Lunet.Bundles
             ProcessBundleLinks(bundle, staticFiles);
         }
 
-        private void ProcessBundleLinks(BundleObject bundle, Dictionary<string, ContentObject> staticFiles)
+        private void ProcessBundleLinks(BundleObject bundle, Dictionary<UPath, ContentObject> staticFiles)
         {
             Dictionary<string, ConcatGroup> concatBuilders = null;
             if (bundle.Concat)
@@ -115,9 +116,9 @@ namespace Lunet.Bundles
                 }
                 else if (path != null)
                 {
-                    path = PathUtil.NormalizeRelativePath(path, false);
+                    path = ((UPath)path).FullName;
                     link.Path = path;
-                    var entry = Site.BaseFolder.CombineToFile(path);
+                    var entry = new FileEntry(Site.MetaFileSystem, path);
 
                     var outputUrlDirectory = bundle.UrlDestination[link.Type];
 
@@ -138,11 +139,11 @@ namespace Lunet.Bundles
                     {
                         if (entry.Exists)
                         {
-                            currentContent = new ContentObject(Site, Site.BaseFolder, entry) { Url = url };
+                            currentContent = new ContentObject(Site, entry) { Url = url };
                         }
                         else
                         {
-                            Site.Error($"Unable to find content [{Site.GetRelativePath(entry.FullName, PathFlags.File | PathFlags.Normalize)}] in bundle [{bundle.Name}]");
+                            Site.Error($"Unable to find content [{path}] in bundle [{bundle.Name}]");
                         }
                     }
 
@@ -157,12 +158,12 @@ namespace Lunet.Bundles
                         {
                             try
                             {
-                                link.Content = currentContent.Content ?? File.ReadAllText(entry.FullName);
+                                link.Content = currentContent.Content ?? entry.ReadAllText();
                             }
                             catch (Exception ex)
                             {
                                 Site.Error(
-                                    $"Unable to load content [{Site.GetRelativePath(entry.FullName, PathFlags.File | PathFlags.Normalize)}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
+                                    $"Unable to load content [{path}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
                             }
                         }
 
@@ -201,7 +202,7 @@ namespace Lunet.Bundles
                         // If the file is private or meta, we need to copy to the output
                         // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
                         var url = outputUrlDirectory + bundle.Name + "." + type;
-                        var newStaticFile = new ContentObject(Site, Site.BaseFolder)
+                        var newStaticFile = new ContentObject(Site)
                         {
                             Url = url,
                             Content = builder.ToString()

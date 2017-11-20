@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Lunet.Helpers;
+using Zio;
 
 namespace Lunet.Core
 {
@@ -15,7 +16,7 @@ namespace Lunet.Core
     /// </summary>
     public abstract class ContentDependency
     {
-        public abstract IEnumerable<FileInfo> GetFiles();
+        public abstract IEnumerable<FileEntry> GetFiles();
     }
 
     [DebuggerDisplay("Page: {Page.Path}")]
@@ -23,17 +24,16 @@ namespace Lunet.Core
     {
         public PageContentDependency(ContentObject page)
         {
-            if (page == null) throw new ArgumentNullException(nameof(page));
-            Page = page;
+            Page = page ?? throw new ArgumentNullException(nameof(page));
         }
 
         public ContentObject Page { get; }
 
-        public override IEnumerable<FileInfo> GetFiles()
+        public override IEnumerable<FileEntry> GetFiles()
         {
-            if (Page.SourceFileInfo != null)
+            if (Page.SourceFile != null)
             {
-                yield return Page.SourceFileInfo;
+                yield return Page.SourceFile;
             }
             foreach (var dep in Page.Dependencies)
             {
@@ -48,22 +48,14 @@ namespace Lunet.Core
     [DebuggerDisplay("File: {File}")]
     public class FileContentDependency : ContentDependency
     {
-        public FileContentDependency(string file)
+        public FileContentDependency(FileEntry file)
         {
-            if (file == null) throw new ArgumentNullException(nameof(file));
-            File = new FileInfo(file).Normalize();
+            File = file;
         }
 
+        public FileEntry File { get; }
 
-        public FileContentDependency(FileInfo file)
-        {
-            if (file == null) throw new ArgumentNullException(nameof(file));
-            File = file.Normalize(); ;
-        }
-
-        public FileInfo File { get; }
-
-        public override IEnumerable<FileInfo> GetFiles()
+        public override IEnumerable<FileEntry> GetFiles()
         {
             yield return File;
         }

@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 using System.Collections.Generic;
 using System.Linq;
+using Scriban.Parsing;
 using Scriban.Runtime;
 
 namespace Lunet.Core
@@ -50,7 +51,7 @@ namespace Lunet.Core
                 {
                     groupCollection.Add(item);
                 }
-                groupCollection.SetValue("key", key, true);
+                groupCollection.SetValue(null, new SourceSpan(), "key", key, true);
                 yield return groupCollection;
             }
         }

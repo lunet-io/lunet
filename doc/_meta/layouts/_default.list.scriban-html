@@ -1,0 +1,15 @@
++++
++++
+<html>
+<head>
+{{~ include "head.scriban-html" ~}}
+</head>
+<body>
+{{ $$ }}
+<ul>
+{{ for $page in pages }}
+<li><a href="{{$page.url}}">{{$page.title}}</a><br>Summary: {{$page.summary}}</li>
+{{ end }}
+</ul>
+</body>
+</html>

@@ -1,0 +1,10 @@
++++
++++
+<html>
+<head>
+{{~ include "head.scriban-html" ~}}
+</head>
+<body>
+{{ $$ }}
+</body>
+</html>

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Lunet.Datas;
+using Zio;
 
 namespace Lunet.Yaml
 {
@@ -11,9 +12,9 @@ namespace Lunet.Yaml
             return fileExt == ".yml" || fileExt == ".yaml";
         }
 
-        public object Load(FileInfo file)
+        public object Load(FileEntry file)
         {
-            var text = File.ReadAllText(file.FullName);
+            var text = file.ReadAllText();
             return YamlUtil.FromYaml(text);
         }
     }
