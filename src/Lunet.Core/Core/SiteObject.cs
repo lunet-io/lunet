@@ -28,8 +28,11 @@ namespace Lunet.Core
         public const string TempSiteFolderName = "tmp";
         public static readonly UPath TempSiteFolder = UPath.Root / TempSiteFolderName;
 
-        public const string TempFolderName = ".lunet";
-        public static readonly UPath TempFolder = UPath.Root / TempFolderName;
+        public const string SharedFolderName = "shared";
+        public static readonly UPath SharedFolder = UPath.Root / SharedFolderName;
+
+        public const string LunetFolderName = ".lunet";
+        public static readonly UPath LunetFolder = UPath.Root / LunetFolderName;
 
         public const string DefaultOutputFolderName = "www";
         public const string DefaultPageExtensionValue = ".html";
@@ -45,7 +48,7 @@ namespace Lunet.Core
 
         public SiteObject(ILoggerFactory loggerFactory = null)
         {
-            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), TempSiteFolderName);
+            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
 
             _contentFileSystems = new List<IFileSystem>();
             var sharedPhysicalFileSystem = new PhysicalFileSystem();
@@ -129,11 +132,11 @@ namespace Lunet.Core
                 AddDefine(value);
             }
 
-            TempFileSystem = siteFileSystem.GetOrCreateSubFileSystem(SiteObject.TempFolder);
+            TempFileSystem = siteFileSystem.GetOrCreateSubFileSystem(SiteObject.LunetFolder);
 
             var outputFolder = outputDirectory != null
                 ? Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, outputDirectory))
-                : Path.Combine(rootFolder, SiteObject.TempFolderName + "/" + SiteObject.DefaultOutputFolderName);
+                : Path.Combine(rootFolder, SiteObject.LunetFolderName + "/" + SiteObject.DefaultOutputFolderName);
 
             var outputFolderForFs = diskfs.ConvertPathFromInternal(outputFolder);
             OutputFileSystem = diskfs.GetOrCreateSubFileSystem(outputFolderForFs);

@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="_site\**\*">
+    <Content Include="shared\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -38,7 +38,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="NuGet.Versioning" Version="4.5.0" />
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
-    <PackageReference Include="Zio" Version="0.8.0" />
+    <PackageReference Include="Zio" Version="0.9.0" />
   </ItemGroup>
 
 </Project>

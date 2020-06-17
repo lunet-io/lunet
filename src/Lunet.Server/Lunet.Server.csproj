@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="_site\**\*">
+    <Content Include="shared\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

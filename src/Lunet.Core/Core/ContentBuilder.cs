@@ -374,7 +374,7 @@ namespace Lunet.Core
                 {
                     yield return (FileEntry) entry;
                 }
-                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.TempFolderName)
+                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.LunetFolderName)
                 {
                     directoryQueue.Enqueue((DirectoryEntry)entry);
                 }

@@ -135,7 +135,7 @@ namespace Lunet.Watcher
 
         private bool IsOutputDirectory(UPath path)
         {
-            return path.IsInDirectory(SiteObject.TempFolder, true);
+            return path.IsInDirectory(SiteObject.LunetFolder, true);
         }
 
         private void CreateFileWatch(DirectoryEntry directory, bool recursive)

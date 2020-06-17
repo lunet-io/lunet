@@ -55,7 +55,7 @@ namespace Lunet.Server
             Site.SetLiveReload(true);
 
             // Adds the server command
-            ServerCommand = Site.CommandLine.Command("server", newApp =>
+            ServerCommand = Site.CommandLine.Command("serve", newApp =>
             {
                 newApp.Description = "Builds the website, runs a web server and watches for changes";
                 newApp.HelpOption("-h|--help");
@@ -175,7 +175,7 @@ namespace Lunet.Server
 
         private void SetupLiveReloadClient(SiteObject site)
         {
-            const string builtinsLiveReloadHtml = "builtins/livereload.scriban-html";
+            const string builtinsLiveReloadHtml = "builtins/livereload.sbhtml";
             site.Html.HeadIncludes.Add(builtinsLiveReloadHtml);
 
             var liveReloadUrl = new Uri(new Uri(site.BaseUrl.Replace("http:", "ws:")), LiveReloadBasePath).ToString();
