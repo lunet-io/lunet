@@ -25,7 +25,7 @@ namespace Lunet.Datas
         {
             // We first preload all data object into the site.data object
 
-            var dataFolder = Site.MetaFileSystem.GetDirectoryEntry(DataFolder);
+            var dataFolder = new DirectoryEntry(Site.MetaFileSystem, DataFolder);
             if (dataFolder.Exists)
             {
                 foreach (var fileInfo in dataFolder.EnumerateFiles("*", SearchOption.AllDirectories))

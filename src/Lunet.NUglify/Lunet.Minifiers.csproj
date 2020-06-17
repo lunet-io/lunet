@@ -7,7 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Lunet.Bundles\Lunet.Bundles.csproj" />
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
-    <PackageReference Include="NUglify" Version="1.5.8" />
+    <PackageReference Include="NUglify" Version="1.6.3" />
   </ItemGroup>
 
 </Project>

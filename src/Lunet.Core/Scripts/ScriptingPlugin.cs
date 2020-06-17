@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Helpers;
 using Scriban;
@@ -287,6 +288,11 @@ namespace Lunet.Scripts
             {
                 throw new NotImplementedException();
             }
+
+            public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
+            {
+                return new ValueTask<string>(Load(context, callerSpan, templatePath));
+            }
         }
 
         private class TemplateLoaderFromIncludes : ITemplateLoader
@@ -318,6 +324,11 @@ namespace Lunet.Scripts
                 var templateFile = new FileEntry(site.MetaFileSystem, templatePath);
                 IncludeFiles.Add(templateFile);
                 return templateFile.ReadAllText();
+            }
+
+            public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
+            {
+                return new ValueTask<string>(Load(context, callerSpan, templatePath));
             }
         }
     }

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Threading;
 using Lunet.Core;
 using Lunet.Helpers;
@@ -18,39 +17,36 @@ namespace Lunet.Watcher
     {
         public FileSystemEventBatchArgs()
         {
-            FileEvents = new List<FileSystemEventArgs>();
+            FileEvents = new List<FileChangedEventArgs>();
         }
 
-        public List<FileSystemEventArgs> FileEvents { get; }
+        public List<FileChangedEventArgs> FileEvents { get; }
     }
 
     public class WatcherPlugin : SitePlugin
     {
-        private DirectoryInfo baseDirectory;
-        private FileSystemWatcher rootDirectoryWatcher;
-        private FileSystemWatcher privateMetaWatcher;
-        private string privateBaseDirectory;
+        private DirectoryEntry _siteDirectory;
 
         private const int SleepForward = 48;
         private const int MillisTimeout = 200;
 
-        private readonly ILogger log;
-        private readonly Dictionary<string, FileSystemWatcher> watchers;
-        private bool isDisposing;
-        private readonly Thread processEventsThread;
-        private readonly object batchLock;
-        private readonly Stopwatch clock;
-        private FileSystemEventBatchArgs batchEvents;
-        private readonly ManualResetEvent onClosingEvent;
+        private readonly ILogger _log;
+        private readonly Dictionary<DirectoryEntry, IFileSystemWatcher> _watchers;
+        private bool _isDisposing;
+        private readonly Thread _processEventsThread;
+        private readonly object _batchLock;
+        private readonly Stopwatch _clock;
+        private FileSystemEventBatchArgs _batchEvents;
+        private readonly ManualResetEvent _onClosingEvent;
 
         public WatcherPlugin(SiteObject site) : base(site)
         {
-            watchers = new Dictionary<string, FileSystemWatcher>();
-            log = site.Log;
-            batchLock = new object();
-            processEventsThread = new Thread(ProcessEvents) {IsBackground = true};
-            clock = new Stopwatch();
-            onClosingEvent = new ManualResetEvent(false);
+            _watchers = new Dictionary<DirectoryEntry, IFileSystemWatcher>();
+            _log = site.Log;
+            _batchLock = new object();
+            _processEventsThread = new Thread(ProcessEvents) {IsBackground = true};
+            _clock = new Stopwatch();
+            _onClosingEvent = new ManualResetEvent(false);
         }
 
         private void ProcessEvents()
@@ -59,22 +55,22 @@ namespace Lunet.Watcher
             {
                 FileSystemEventBatchArgs batchEventsCopy = null;
 
-                if (onClosingEvent.WaitOne(SleepForward))
+                if (_onClosingEvent.WaitOne(SleepForward))
                 {
                     break;
                 }
 
-                lock (batchLock)
+                lock (_batchLock)
                 {
-                    if (clock.ElapsedMilliseconds <= MillisTimeout)
+                    if (_clock.ElapsedMilliseconds <= MillisTimeout)
                     {
                         continue;
                     }
 
-                    if (batchEvents != null && batchEvents.FileEvents.Count > 0)
+                    if (_batchEvents != null && _batchEvents.FileEvents.Count > 0)
                     {
-                        batchEventsCopy = batchEvents;
-                        batchEvents = null;
+                        batchEventsCopy = _batchEvents;
+                        _batchEvents = null;
                     }
                     else
                     {
@@ -91,94 +87,88 @@ namespace Lunet.Watcher
                 }
                 catch (Exception ex)
                 {
-                    log.LogError($"Unexpected error on SiteWatcher callback. Reason: {ex.GetReason()}");
+                    _log.LogError($"Unexpected error on SiteWatcher callback. Reason: {ex.GetReason()}");
                 }
             }
 
-            onClosingEvent.Reset();
+            _onClosingEvent.Reset();
         }
 
         public event EventHandler<FileSystemEventBatchArgs> FileSystemEvents;
 
         public void Start()
         {
-            if (processEventsThread.IsAlive)
+            if (_processEventsThread.IsAlive)
             {
                 return;
             }
-            privateBaseDirectory = Site.TempFileSystem.ConvertPathToInternal(UPath.Root);
-            baseDirectory = new DirectoryInfo(Site.SiteFileSystem.ConvertPathToInternal(UPath.Root));
-            rootDirectoryWatcher = CreateFileWatch(baseDirectory.FullName, false);
-            privateMetaWatcher = CreateFileWatch(privateBaseDirectory, true);
+            _siteDirectory = new DirectoryEntry(Site.FileSystem, UPath.Root);
+            CreateFileWatch(_siteDirectory, false);
 
-            foreach (var directory in Site.SiteFileSystem.EnumerateDirectories(UPath.Root))
+            foreach (var directory in Site.SiteFileSystem.EnumerateDirectoryEntries(UPath.Root))
             {
-                var directoryOnDisk = Site.SiteFileSystem.ConvertPathToInternal(directory);
-                CreateFileWatch(directoryOnDisk, true);
+                CreateFileWatch(directory, true);
             }
 
             // Starts the thread
-            processEventsThread.Start();
+            _processEventsThread.Start();
         }
 
         public void Stop()
         {
-            if (processEventsThread.IsAlive)
+            if (_processEventsThread.IsAlive)
             {
-                onClosingEvent.Set();
-                processEventsThread.Join();
+                _onClosingEvent.Set();
+                _processEventsThread.Join();
             }
 
-            lock (watchers)
+            lock (_watchers)
             {
-                isDisposing = true;
-                foreach (var watcher in watchers)
+                _isDisposing = true;
+                foreach (var watcher in _watchers)
                 {
                     DisposeWatcher(watcher.Value);
                 }
-                watchers.Clear();
+                _watchers.Clear();
             }
         }
 
-        private bool IsPrivateDirectory(string directory)
+        private bool IsOutputDirectory(UPath path)
         {
-            return directory.StartsWith(privateBaseDirectory);
+            return path.IsInDirectory(SiteObject.TempFolder, true);
         }
 
-        private FileSystemWatcher CreateFileWatch(string directory, bool recursive)
+        private void CreateFileWatch(DirectoryEntry directory, bool recursive)
         {
-            // We don't track changes in PrivateBaseDirectory
-            if (IsPrivateDirectory(directory))
+            if (IsOutputDirectory(directory.Path))
             {
-                return null;
+                Console.WriteLine($"Discard directory {directory}");
+                return;
             }
-            FileSystemWatcher watcher;
-            lock (watchers)
+
+            lock (_watchers)
             {
-                if (isDisposing)
+                if (_isDisposing)
                 {
-                    return null;
+                    return;
                 }
 
-                if (watchers.TryGetValue(directory, out watcher))
+                IFileSystemWatcher watcher;
+                if (_watchers.TryGetValue(directory, out watcher))
                 {
-                    return watcher;
+                    return;
                 }
 
-                if (log.IsEnabled(LogLevel.Trace))
+                if (_log.IsEnabled(LogLevel.Trace))
                 {
-                    log.LogTrace($"Tracking file system changed for directory [{directory}]");
+                    _log.LogTrace($"Tracking file system changed for directory [{directory}]");
                 }
 
-                watcher = new FileSystemWatcher
-                {
-                    Path = directory,
-                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName,
-                    Filter = "",
-                    InternalBufferSize = 64*1024,
-                    IncludeSubdirectories = recursive
-                };
-
+                watcher = directory.FileSystem.Watch(directory.Path);
+                watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
+                watcher.Filter = "";
+                watcher.InternalBufferSize = 64 * 1024;
+                watcher.IncludeSubdirectories = recursive;
                 watcher.Changed += OnFileSystemEvent;
                 watcher.Created += OnFileSystemEvent;
                 watcher.Deleted += OnFileSystemEvent;
@@ -187,27 +177,27 @@ namespace Lunet.Watcher
 
                 watcher.EnableRaisingEvents = true;
 
-                watchers.Add(watcher.Path, watcher);
-            }
-
-            return watcher;
-        }
-
-        private void DisposeWatcher(string fullPath)
-        {
-            FileSystemWatcher watcher;
-            if (watchers.TryGetValue(fullPath, out watcher))
-            {
-                DisposeWatcher(watcher);
-                watchers.Remove(fullPath);
+                _watchers.Add(directory, watcher);
             }
         }
 
-        private void DisposeWatcher(FileSystemWatcher watcher)
+        private void DisposeWatcher(DirectoryEntry entry)
         {
-            if (log.IsEnabled(LogLevel.Trace))
+            lock (_watchers)
             {
-                log.LogTrace($"Untrack changes from [{watcher.Path}]");
+                if (_watchers.TryGetValue(entry, out var watcher))
+                {
+                    DisposeWatcher(watcher);
+                    _watchers.Remove(entry);
+                }
+            }
+        }
+
+        private void DisposeWatcher(IFileSystemWatcher watcher)
+        {
+            if (_log.IsEnabled(LogLevel.Trace))
+            {
+                _log.LogTrace($"Untrack changes from [{watcher.Path}]");
             }
 
             watcher.EnableRaisingEvents = false;
@@ -219,47 +209,52 @@ namespace Lunet.Watcher
             watcher.Dispose();
         }
 
-        private void OnFileSystemEvent(object sender, FileSystemEventArgs e)
+        private void OnFileSystemEvent(object sender, FileChangedEventArgs e)
         {
-            var dir = new DirectoryInfo(e.FullPath);
-            if (IsPrivateDirectory(dir.FullName))
+            var dir = new DirectoryEntry(e.FileSystem, e.FullPath);
+
+            if (IsOutputDirectory(e.FullPath))
             {
                 return;
             }
 
-            if (log.IsEnabled(LogLevel.Trace))
+            //if (_log.IsEnabled(LogLevel.Trace))
             {
-                log.LogTrace($"File event occured: {e.ChangeType} -> {e.FullPath}");
+                Console.WriteLine($"File event occured: {e.ChangeType} -> {e.FullPath}");
+                _log.LogInformation($"File event occured: {e.ChangeType} -> {e.FullPath}");
             }
 
-            lock (watchers)
+            lock (_watchers)
             {
                 var isDirectory = dir.Exists;
                 switch (e.ChangeType)
                 {
                     case WatcherChangeTypes.Deleted:
-                        DisposeWatcher(e.FullPath);
+                        if (isDirectory)
+                        {
+                            DisposeWatcher(dir);
+                        }
                         break;
                     case WatcherChangeTypes.Created:
                         // Create watcher only for top-level directories
-                        if (isDirectory && dir.Parent != null && dir.Parent.FullName == baseDirectory.FullName)
+                        if (isDirectory && dir.Parent != null && dir.Parent == _siteDirectory)
                         {
-                            CreateFileWatch(dir.FullName, true);
+                            CreateFileWatch(dir, true);
                         }
                         break;
                     case WatcherChangeTypes.Renamed:
-                        var renamed = (RenamedEventArgs) e;
+                        var renamed = (FileRenamedEventArgs) e;
                         if (isDirectory)
                         {
-                            FileSystemWatcher watcher;
-                            if (watchers.TryGetValue(renamed.OldFullPath, out watcher))
+                            var previousDirectory = new DirectoryEntry(renamed.FileSystem, renamed.OldFullPath);
+                            if (_watchers.TryGetValue(previousDirectory, out _))
                             {
-                                DisposeWatcher(renamed.OldFullPath);
+                                DisposeWatcher(previousDirectory);
 
                                 // Create watcher only for top-level directories
-                                if (dir.Parent != null && dir.Parent.FullName == baseDirectory.FullName)
+                                if (dir.Parent != null && dir.Parent == _siteDirectory)
                                 {
-                                    CreateFileWatch(renamed.FullPath, true);
+                                    CreateFileWatch(dir, true);
                                 }
                             }
                         }
@@ -267,23 +262,23 @@ namespace Lunet.Watcher
                 }
             }
 
-            lock (batchLock)
+            lock (_batchLock)
             {
-                clock.Restart();
+                _clock.Restart();
 
-                if (batchEvents == null)
+                if (_batchEvents == null)
                 {
-                    batchEvents = new FileSystemEventBatchArgs();
+                    _batchEvents = new FileSystemEventBatchArgs();
                 }
 
-                batchEvents.FileEvents.Add(e);
+                _batchEvents.FileEvents.Add(e);
             }
         }
         
-        private void WatcherOnError(object sender, ErrorEventArgs errorEventArgs)
+        private void WatcherOnError(object sender, FileSystemErrorEventArgs errorEventArgs)
         {
             // Not sure if we have something to do with the errors, so don't log them for now
-            var watcher = sender as FileSystemWatcher;
+            var watcher = sender as IFileSystemWatcher;
             // Site.Trace($"Expection occured for directory watcher [{watcher?.Path}]: {errorEventArgs.GetException().GetReason()}");
         }
     }

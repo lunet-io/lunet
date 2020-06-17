@@ -19,10 +19,11 @@ namespace Lunet.Core
 
         private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-        public ContentObject(SiteObject site, FileEntry sourceFileInfo)
+        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptPage script = null)
         {
             Site = site ?? throw new ArgumentNullException(nameof(site));
             SourceFile = sourceFileInfo ?? throw new ArgumentNullException(nameof(sourceFileInfo));
+            Script = script;
             Dependencies = new List<ContentDependency>();
             ObjectType = ContentObjectType.File;
 
@@ -49,12 +50,9 @@ namespace Lunet.Core
             ModifiedTime = SourceFile.LastWriteTime;
             ContentType = Site.ContentTypes.GetContentType(Extension);
 
-            var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
-
             // Extract the section of this content
-
             Section = Path.GetFirstDirectory(out var pathInSection);
-            if (Section == null)
+            if (pathInSection.IsEmpty)
             {
                 Section = string.Empty;
                 PathInSection = Path;
@@ -67,24 +65,22 @@ namespace Lunet.Core
 
             // Extract the default Url of this content
             // By default, for html content, we don't output a file but a directory
-            var urlAsPath = "/" + Path;
+            var urlAsPath = (string)Path;
 
-            if (isHtml && !Site.UrlAsFile)
+            var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
+            var name = Path.GetNameWithoutExtension();
+            var isIndex = name == "index";
+            if (isIndex)
             {
-                var name = Path.GetNameWithoutExtension();
-                var isIndex = name == "index";
-                if (isIndex)
+                urlAsPath = (string)Path.GetDirectory();
+            }
+            else if (HasFrontMatter && isHtml && !Site.UrlAsFile)
+            {
+                if (!string.IsNullOrEmpty(Extension))
                 {
-                    urlAsPath = (string)Path.GetDirectory();
+                    urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
                 }
-                else 
-                {
-                    if (!string.IsNullOrEmpty(Extension))
-                    {
-                        urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
-                    }
-                    urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
-                }
+                urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
             }
             Url = urlAsPath;
 
@@ -141,7 +137,7 @@ namespace Lunet.Core
         /// <summary>
         /// Gets or sets the script attached to this page if any.
         /// </summary>
-        public ScriptPage Script { get; set; }
+        public ScriptPage Script { get; }
 
         public ScriptObject ScriptObjectLocal { get; set; }
 

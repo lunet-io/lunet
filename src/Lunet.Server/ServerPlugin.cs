@@ -136,7 +136,7 @@ namespace Lunet.Server
                         var newSite = site.Clone();
                         if (site.CanTrace())
                         {
-                            site.Trace($"Received file events [{args.FileEvents.Count}]");
+                            site.Info($"Received file events [{args.FileEvents.Count}]");
                         }
 
                         try

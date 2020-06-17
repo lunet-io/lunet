@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="NuGet.Versioning" Version="4.4.0" />
+    <PackageReference Include="NuGet.Versioning" Version="4.5.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -25,8 +25,8 @@ namespace Lunet.Core
         public const string MetaFolderName = "_meta";
         public static readonly UPath MetaFolder = UPath.Root / MetaFolderName;
 
-        public const string SiteFolderName = "_site";
-        public static readonly UPath SiteFolder = UPath.Root / SiteFolderName;
+        public const string TempSiteFolderName = "tmp";
+        public static readonly UPath TempSiteFolder = UPath.Root / TempSiteFolderName;
 
         public const string TempFolderName = ".lunet";
         public static readonly UPath TempFolder = UPath.Root / TempFolderName;
@@ -45,7 +45,7 @@ namespace Lunet.Core
 
         public SiteObject(ILoggerFactory loggerFactory = null)
         {
-            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SiteFolderName);
+            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), TempSiteFolderName);
 
             _contentFileSystems = new List<IFileSystem>();
             var sharedPhysicalFileSystem = new PhysicalFileSystem();
@@ -74,7 +74,6 @@ namespace Lunet.Core
 
             Html = new HtmlObject(this);
             SetValue(SiteVariables.Html, Html, true);
-
 
             CommandLine = new LunetCommandLine(this);
 
@@ -114,6 +113,32 @@ namespace Lunet.Core
 
         public IFileSystem SharedFileSystem { get; }
 
+
+        public void Setup(string inputDirectory, string outputDirectory, params string[] defines)
+        {
+            var rootFolder = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, inputDirectory ?? "."));
+
+            var diskfs = new PhysicalFileSystem();
+
+            var siteFileSystem = new SubFileSystem(diskfs, diskfs.ConvertPathFromInternal(rootFolder));
+            SiteFileSystem = siteFileSystem;
+
+            // Add defines
+            foreach (var value in defines)
+            {
+                AddDefine(value);
+            }
+
+            TempFileSystem = siteFileSystem.GetOrCreateSubFileSystem(SiteObject.TempFolder);
+
+            var outputFolder = outputDirectory != null
+                ? Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, outputDirectory))
+                : Path.Combine(rootFolder, SiteObject.TempFolderName + "/" + SiteObject.DefaultOutputFolderName);
+
+            var outputFolderForFs = diskfs.ConvertPathFromInternal(outputFolder);
+            OutputFileSystem = diskfs.GetOrCreateSubFileSystem(outputFolderForFs);
+        }
+
         public IFileSystem SiteFileSystem
         {
             get => _siteFileSystem;
@@ -131,7 +156,7 @@ namespace Lunet.Core
             set
             {
                 _tempFileSystem = value;
-                TempSiteFileSystem = _tempFileSystem?.GetOrCreateSubFileSystem(SiteFolder);
+                TempSiteFileSystem = _tempFileSystem?.GetOrCreateSubFileSystem(TempSiteFolder);
                 TempMetaFileSystem = TempSiteFileSystem?.GetOrCreateSubFileSystem(MetaFolder);
                 UpdateFileSystem();
             }
@@ -227,7 +252,8 @@ namespace Lunet.Core
             UpdateFileSystem();
         }
 
-        private void UpdateFileSystem()
+        private void 
+            UpdateFileSystem()
         {
             _fileSystem.ClearFileSystems();
             if (TempSiteFileSystem != null)
@@ -308,18 +334,16 @@ namespace Lunet.Core
 
         public void Create(bool force)
         {
-            throw new NotImplementedException();
-            //if (BaseFolder.Info.Exists && BaseFolder.Info.GetFileSystemInfos().Length != 0 && !force)
-            //{
-            //    this.Error($"The directory [{BaseFolder.FullName}] is not empty. Use the --force option to force the creation of an empty website");
-            //    return;
-            //}
-            //FolderInfo sourceNewSite = Path.Combine(SharedMetaFolder, "newsite");
-            //FolderInfo destinationDir = BaseFolder;
+            if (!force && SiteFileSystem.EnumerateFiles(UPath.Root).Any())
+            {
+                this.Error($"The destination directory is not empty. Use the --force option to force the creation of an empty website");
+                return;
+            }
 
-            //sourceNewSite.CopyTo(destinationDir, true, false);
+            SharedMetaFileSystem.CopyDirectory("/newsite", SiteFileSystem,UPath.Root, true);
 
-            //this.Info($"New website created at {destinationDir}");
+            // TODO: Add created at "folder"
+            this.Info($"New website created.");
         }
 
         public SiteObject Register<TPlugin>() where TPlugin : ISitePlugin

@@ -69,10 +69,16 @@ namespace Lunet.Core
 
                 newApp.Invoke = () =>
                 {
+                    var inputFolder = folderArgument.Value ?? ".";
+                    if (InputDirectory.Values.Count > 0)
+                    {
+                        InputDirectory.Values[0] = inputFolder;
+                    }
+                    else
+                    {
+                        InputDirectory.Values.Add(inputFolder);
+                    }
                     HandleCommonOptions();
-
-                    throw new NotImplementedException("TODO: Implement BaseFolder");
-                    //site.BaseFolder = folderArgument.Value ?? ".";
                     try
                     {
                         site.Create(forceOption.HasValue());
@@ -153,27 +159,7 @@ namespace Lunet.Core
 
         public void HandleCommonOptions()
         {
-            var baseFolder = Path.GetFullPath(InputDirectory.HasValue() ? InputDirectory.Value() : Environment.CurrentDirectory);
-
-            var diskfs = new PhysicalFileSystem();
-
-            var siteFileSystem = new SubFileSystem(diskfs, diskfs.ConvertPathFromInternal(baseFolder));
-            site.SiteFileSystem = siteFileSystem;
-
-            // Add defines
-            foreach (var value in Defines.Values)
-            {
-                site.AddDefine(value);
-            }
-
-            site.TempFileSystem = siteFileSystem.GetOrCreateSubFileSystem(SiteObject.TempFolder);
-
-            var outputFolder = OutputDirectory.HasValue()
-                ? OutputDirectory.Value()
-                : Path.Combine(baseFolder, SiteObject.TempFolderName + "/" +  SiteObject.DefaultOutputFolderName);
-
-            var outputFolderForFs = diskfs.ConvertPathFromInternal(outputFolder);
-            site.OutputFileSystem = diskfs.GetOrCreateSubFileSystem(outputFolderForFs);
+            site.Setup(InputDirectory.Value(), OutputDirectory.Value(), Defines.Values.ToArray());
         }
     }
 }
