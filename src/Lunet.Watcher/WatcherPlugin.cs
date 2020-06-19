@@ -30,7 +30,6 @@ namespace Lunet.Watcher
         private const int SleepForward = 48;
         private const int MillisTimeout = 200;
 
-        private readonly ILogger _log;
         private readonly Dictionary<DirectoryEntry, IFileSystemWatcher> _watchers;
         private bool _isDisposing;
         private readonly Thread _processEventsThread;
@@ -42,7 +41,6 @@ namespace Lunet.Watcher
         public WatcherPlugin(SiteObject site) : base(site)
         {
             _watchers = new Dictionary<DirectoryEntry, IFileSystemWatcher>();
-            _log = site.Log;
             _batchLock = new object();
             _processEventsThread = new Thread(ProcessEvents) {IsBackground = true};
             _clock = new Stopwatch();
@@ -88,7 +86,7 @@ namespace Lunet.Watcher
                 }
                 catch (Exception ex)
                 {
-                    _log.LogError($"Unexpected error on SiteWatcher callback. Reason: {ex.GetReason()}");
+                    Site.Error(ex, $"Unexpected error on SiteWatcher callback. Reason: {ex.GetReason()}");
                 }
             }
 
@@ -115,9 +113,9 @@ namespace Lunet.Watcher
             {
                 var e = change.Args;
                 args.FileEvents.Add(e);
-                if (_log != null && _log.IsEnabled(LogLevel.Information))
+                if (Site.CanInfo())
                 {
-                    _log.LogInformation($"File event occured: {e.ChangeType} -> {e.FullPath}");
+                    Site.Info($"File event occured: {e.ChangeType} -> {e.FullPath}");
                 }
             }
         }
@@ -202,9 +200,9 @@ namespace Lunet.Watcher
                 {
                     if (directory.Path.IsInDirectory(SiteObject.BuildFolder, true) || directory.Name.StartsWith("new"))
                     {
-                        if (_log.IsEnabled(LogLevel.Trace))
+                        if (Site.CanTrace())
                         {
-                            _log.LogTrace($"Skipping {directory.FullName}");
+                            Site.Trace($"Skipping {directory.FullName}");
                         }
                         continue;
                     }
@@ -253,9 +251,9 @@ namespace Lunet.Watcher
                     return;
                 }
 
-                if (_log.IsEnabled(LogLevel.Trace))
+                if (Site.CanTrace())
                 {
-                    _log.LogTrace($"Tracking file system changed for directory [{directory}]");
+                    Site.Trace($"Tracking file system changed for directory [{directory}]");
                 }
 
                 watcher = directory.FileSystem.Watch(directory.Path);
@@ -289,9 +287,9 @@ namespace Lunet.Watcher
 
         private void DisposeWatcher(IFileSystemWatcher watcher)
         {
-            if (_log.IsEnabled(LogLevel.Trace))
+            if (Site.CanTrace())
             {
-                _log.LogTrace($"Untrack changes from [{watcher.Path}]");
+                Site.Trace($"Untrack changes from [{watcher.Path}]");
             }
 
             watcher.EnableRaisingEvents = false;

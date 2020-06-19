@@ -54,7 +54,7 @@ namespace Lunet.Datas
                             }
                             catch (Exception ex)
                             {
-                                Site.Log.LogError((EventId)0, ex, $"Error while loading data file [{fileInfo}]. Reason: {ex.GetReason()}");
+                                Site.Error(ex, $"Error while loading data file [{fileInfo}]. Reason: {ex.GetReason()}");
                             }
                         }
                     }

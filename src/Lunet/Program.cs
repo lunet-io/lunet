@@ -2,7 +2,6 @@
 using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Datas;
-using Lunet.Logging;
 using Lunet.Extends;
 using Lunet.Layouts;
 using Lunet.Markdown;
@@ -33,8 +32,6 @@ namespace Lunet
                 .Register<ScssPlugin>()
                 .Register<TaxonomyPlugin>()
                 .Register<YamlPlugin>();
-
-            site.AddConsoleLogger();
 
             return site.Run(args);
         }

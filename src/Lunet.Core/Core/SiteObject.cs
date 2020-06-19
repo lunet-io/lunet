@@ -14,6 +14,7 @@ using Lunet.Helpers;
 using Lunet.Scripts;
 using Lunet.Statistics;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using Scriban.Parsing;
 using Zio;
 using Zio.FileSystems;
@@ -67,8 +68,12 @@ namespace Lunet.Core
             DynamicPages = new PageCollection();
             
             // Create the logger
-            LoggerFactory = loggerFactory ?? new LoggerFactory();
-            LoggerFactory.AddProvider(new LoggerProviderIntercept(this));
+            LoggerFactory = loggerFactory ?? Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
+            {
+                builder.AddProvider(new LoggerProviderIntercept(this));
+                builder.AddConsole();
+            });
+            
             Log = LoggerFactory.CreateLogger("lunet");
             ContentTypes = new ContentTypeManager();
 
@@ -177,6 +182,8 @@ namespace Lunet.Core
         /// Gets the site logger.
         /// </summary>
         public ILogger Log { get; }
+        
+        internal int LogEventId { get; set; }
 
         public PageCollection StaticFiles { get; }
 
@@ -354,6 +361,8 @@ namespace Lunet.Core
             {
                 siteObject.Register(plugin.GetType());
             }
+
+            siteObject.LogEventId = LogEventId;
             siteObject.SiteFileSystem = SiteFileSystem;
             siteObject.OutputFileSystem = OutputFileSystem;
             siteObject.InitializePlugins();
@@ -393,9 +402,9 @@ namespace Lunet.Core
             clock.Stop();
             var elapsed = clock.Elapsed.TotalMilliseconds;
 
-            if (Log.IsEnabled(LogLevel.Information))
+            if (this.CanInfo())
             {
-                Log.LogInformation($"Build finished in {elapsed}ms. {Statistics.GetSummary()}");
+                this.Info($"Build finished in {elapsed}ms. {Statistics.GetSummary()}");
             }
         }
 

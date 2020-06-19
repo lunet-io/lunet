@@ -30,62 +30,67 @@ namespace Lunet.Core
 
         public static void Info(this SiteObject site, string message, params object[] args)
         {
-            site.Log.LogInformation(message, args);
+            site.Log.LogInformation(new EventId(site.LogEventId++), message, args);
         }
 
         public static void Error(this SiteObject site, string message, params object[] args)
         {
-            site.Log.LogError(message, args);
+            site.Log.LogError(new EventId(site.LogEventId++), message, args);
+        }
+        
+        public static void Error(this SiteObject site, Exception exception, string message, params object[] args)
+        {
+            site.Log.LogError(new EventId(site.LogEventId++), exception,  message, args);
         }
 
         public static void Warning(this SiteObject site, string message, params object[] args)
         {
-            site.Log.LogWarning(message, args);
+            site.Log.LogWarning(new EventId(site.LogEventId++), message, args);
         }
 
         public static void Fatal(this SiteObject site, string message, params object[] args)
         {
-            site.Log.LogCritical(message, args);
+            site.Log.LogCritical(new EventId(site.LogEventId++), message, args);
         }
 
         public static void Trace(this SiteObject site, string message, params object[] args)
         {
-            site.Log.LogTrace(message, args);
+            site.Log.LogTrace(new EventId(site.LogEventId++), message, args);
         }
 
         public static void Debug(this SiteObject site, string message, params object[] args)
         {
-            site.Log.LogDebug(message, args);
+            site.Log.LogDebug(new EventId(site.LogEventId++), message, args);
         }
 
         public static void Info(this SiteObject site, SourceSpan span, string message, params object[] args)
         {
-            site.Log.LogInformation(GetSpanMessage(site, span, message), args);
+            site.Log.LogInformation(new EventId(site.LogEventId++), GetSpanMessage(site, span, message), args);
         }
 
         public static void Error(this SiteObject site, SourceSpan span, string message, params object[] args)
         {
-            site.Log.LogError(GetSpanMessage(site, span, message), args);
+            site.Log.LogError(new EventId(site.LogEventId++), GetSpanMessage(site, span, message), args);
         }
 
         public static void Warning(this SiteObject site, SourceSpan span, string message, params object[] args)
         {
-            site.Log.LogWarning(GetSpanMessage(site, span, message), args);
+            site.Log.LogWarning(new EventId(site.LogEventId++), GetSpanMessage(site, span, message), args);
         }
 
         public static void Fatal(this SiteObject site, SourceSpan span, string message, params object[] args)
         {
-            site.Log.LogCritical(GetSpanMessage(site, span, message), args);
+            site.Log.LogCritical(new EventId(site.LogEventId++), GetSpanMessage(site, span, message), args);
         }
 
         public static void Trace(this SiteObject site, SourceSpan span, string message, params object[] args)
         {
-            site.Log.LogTrace(GetSpanMessage(site, span, message), args);
+            site.Log.LogTrace(new EventId(site.LogEventId++), GetSpanMessage(site, span, message), args);
         }
 
         public static void Debug(this SiteObject site, SourceSpan span, string message, params object[] args)
         {
-            site.Log.LogDebug(GetSpanMessage(site, span, message), args);
+            site.Log.LogDebug(new EventId(site.LogEventId++), GetSpanMessage(site, span, message), args);
         }
 
         private static string GetSpanMessage(SiteObject site, SourceSpan span, string message)
