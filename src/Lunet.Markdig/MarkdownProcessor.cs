@@ -23,7 +23,7 @@ namespace Lunet.Markdown
 
             // Add a global markdown object 
             // with the markdown.to_html function
-            Site.Scripts.GlobalObject.SetValue("markdown", markdownHelper, true);
+            Site.Scripts.Builtins.SetValue("markdown", markdownHelper, true);
             markdownHelper.Import("to_html", new Func<string, string>(ToHtmlFunction));
         }
 

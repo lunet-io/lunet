@@ -14,6 +14,7 @@ namespace Lunet.Yaml
         {
             if (datasPlugin == null) throw new ArgumentNullException(nameof(datasPlugin));
             datasPlugin.DataLoaders.Add(new YamlDataLoader());
+            site.Scripts.FrontMatterParsers.Add(new YamlFrontMatterParser());
         }
     }
 }

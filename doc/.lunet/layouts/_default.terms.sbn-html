@@ -1,11 +1,9 @@
-+++
-+++
 <html>
 <head>
-{{~ include "head.scriban-html" ~}}
+{{~ include "head.sbn-html" ~}}
 </head>
 <body>
-{{ $$ }}
+{{ content }}
 <ul>
 {{ for $term in taxonomy.terms.by_name }}
 <li><a href="{{$term.url}}">{{$term.name}}</a></li>

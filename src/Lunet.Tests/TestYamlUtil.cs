@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Lunet.Yaml;
+using NUnit.Framework;
 using Scriban.Parsing;
-using Xunit;
 using Scriban.Runtime;
 
 namespace Lunet.Tests
 {
     public class TestYamlUtil
     {
-        [Fact]
+        [Test]
         public void TestYamlFrontMatter()
         {
             TextPosition position;
@@ -27,13 +27,14 @@ Yo
 ";
             var result = YamlUtil.FromYamlFrontMatter(input, out position);
 
-            Assert.Equal(new TextPosition(89, 9, 0), position);
+            Assert.AreEqual(new TextPosition(89, 9, 0), position);
 
-            var scriptObject = Assert.IsType<ScriptObject>(result);
-            Assert.Equal(4, scriptObject.Keys.Count);
+            Assert.IsInstanceOf<ScriptObject>(result);
+            var scriptObject = (ScriptObject)result;
+            Assert.AreEqual(4, scriptObject.Keys.Count);
             var keys = scriptObject.Keys.ToList();
             keys.Sort();
-            Assert.Equal(new List<string>()
+            Assert.AreEqual(new List<string>()
             {
                 "boooo",
                 "floatvalue",
@@ -41,10 +42,10 @@ Yo
                 "name"                
             }, keys);
 
-            Assert.Equal(true, scriptObject["name"]);
-            Assert.Equal(12351235, scriptObject["intvalue"]);
-            Assert.Equal(12.3, scriptObject["floatvalue"]);
-            Assert.Equal(new ScriptArray()
+            Assert.AreEqual(true, scriptObject["name"]);
+            Assert.AreEqual(12351235, scriptObject["intvalue"]);
+            Assert.AreEqual(12.3, scriptObject["floatvalue"]);
+            Assert.AreEqual(new ScriptArray()
             {
                 "a",
                 "b",
@@ -52,7 +53,7 @@ Yo
             }, scriptObject["boooo"]);
 
             var remaining = input.Substring(position.Offset).Trim();
-            Assert.Equal("Yo", remaining);
+            Assert.AreEqual("Yo", remaining);
         }
     }
 }

@@ -175,7 +175,7 @@ namespace Lunet.Server
 
         private void SetupLiveReloadClient(SiteObject site)
         {
-            const string builtinsLiveReloadHtml = "builtins/livereload.sbhtml";
+            const string builtinsLiveReloadHtml = "builtins/livereload.sbn-html";
             site.Html.HeadIncludes.Add(builtinsLiveReloadHtml);
 
             var liveReloadUrl = new Uri(new Uri(site.BaseUrl.Replace("http:", "ws:")), LiveReloadBasePath).ToString();

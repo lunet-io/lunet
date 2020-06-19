@@ -33,7 +33,7 @@ namespace Lunet.Extends
                 new DefaultExtendProvider()
             };
             CurrentList = new List<ExtendObject>();
-            Site.Scripts.GlobalObject.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
+            Site.Scripts.Builtins.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
             Site.Scripts.SiteFunctions.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
         }
 

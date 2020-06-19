@@ -22,17 +22,17 @@ namespace Lunet.Core
 {
     public class SiteObject : DynamicObject
     {
-        public const string MetaFolderName = "_meta";
-        public static readonly UPath MetaFolder = UPath.Root / MetaFolderName;
-
         public const string TempSiteFolderName = "tmp";
         public static readonly UPath TempSiteFolder = UPath.Root / TempSiteFolderName;
 
         public const string SharedFolderName = "shared";
-        public static readonly UPath SharedFolder = UPath.Root / SharedFolderName;
+        public static readonly UPath SiteFolder = UPath.Root / SharedFolderName;
 
         public const string LunetFolderName = ".lunet";
         public static readonly UPath LunetFolder = UPath.Root / LunetFolderName;
+
+        public const string BuildFolderName = "build";
+        public static readonly UPath BuildFolder = LunetFolder / BuildFolderName;
 
         public const string DefaultOutputFolderName = "www";
         public const string DefaultPageExtensionValue = ".html";
@@ -41,7 +41,6 @@ namespace Lunet.Core
         private bool _isInitialized;
         private readonly AggregateFileSystem _fileSystem;
         private readonly List<IFileSystem> _contentFileSystems;
-        private IFileSystem _tempFileSystem;
         private IFileSystem _siteFileSystem;
         private bool _pluginInitialized;
         private readonly ContainerBuilder _pluginBuilders;
@@ -55,11 +54,11 @@ namespace Lunet.Core
 
             // Make sure that SharedFileSystem is a read-only filesystem
             SharedFileSystem = new ReadOnlyFileSystem(new SubFileSystem(sharedPhysicalFileSystem, sharedPhysicalFileSystem.ConvertPathFromInternal(sharedFolder)));
-            SharedMetaFileSystem = SharedFileSystem.GetOrCreateSubFileSystem(MetaFolder);
+            SharedMetaFileSystem = SharedFileSystem.GetOrCreateSubFileSystem(LunetFolder);
 
             _fileSystem = new AggregateFileSystem(SharedFileSystem);
 
-            MetaFileSystem = new SubFileSystem(_fileSystem, MetaFolder);
+            MetaFileSystem = new SubFileSystem(_fileSystem, LunetFolder);
 
             ConfigFile = new FileEntry(_fileSystem, UPath.Root / DefaultConfigFileName);
 
@@ -132,11 +131,9 @@ namespace Lunet.Core
                 AddDefine(value);
             }
 
-            TempFileSystem = siteFileSystem.GetOrCreateSubFileSystem(SiteObject.LunetFolder);
-
             var outputFolder = outputDirectory != null
                 ? Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, outputDirectory))
-                : Path.Combine(rootFolder, SiteObject.LunetFolderName + "/" + SiteObject.DefaultOutputFolderName);
+                : Path.Combine(rootFolder, LunetFolderName + "/build/" + DefaultOutputFolderName);
 
             var outputFolderForFs = diskfs.ConvertPathFromInternal(outputFolder);
             OutputFileSystem = diskfs.GetOrCreateSubFileSystem(outputFolderForFs);
@@ -148,19 +145,9 @@ namespace Lunet.Core
             set
             {
                 _siteFileSystem = value;
-                SiteMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(MetaFolder);
-                UpdateFileSystem();
-            }
-        }
-
-        public IFileSystem TempFileSystem
-        {
-            get => _tempFileSystem;
-            set
-            {
-                _tempFileSystem = value;
-                TempSiteFileSystem = _tempFileSystem?.GetOrCreateSubFileSystem(TempSiteFolder);
-                TempMetaFileSystem = TempSiteFileSystem?.GetOrCreateSubFileSystem(MetaFolder);
+                SiteMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder);
+                TempSiteFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder / BuildFolderName / TempSiteFolderName);
+                TempMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder / BuildFolderName / LunetFolderName);
                 UpdateFileSystem();
             }
         }
@@ -211,11 +198,6 @@ namespace Lunet.Core
 
         public HtmlObject Html { get; }
 
-        /// <summary>
-        /// An event occured when the site has been updated.
-        /// </summary>
-        public event EventHandler<EventArgs> Updated;
-
         public string BasePath
         {
             get => GetSafeValue<string>(SiteVariables.BasePath);
@@ -255,8 +237,7 @@ namespace Lunet.Core
             UpdateFileSystem();
         }
 
-        private void 
-            UpdateFileSystem()
+        private void UpdateFileSystem()
         {
             _fileSystem.ClearFileSystems();
             if (TempSiteFileSystem != null)
@@ -306,8 +287,8 @@ namespace Lunet.Core
         {
             if (!ConfigFile.Exists)
             {
-                TempFileSystem.DeleteDirectory(UPath.Root / MetaFolderName, true);
-                this.Info($"Directory {UPath.Root / MetaFolderName} deleted");
+                SiteFileSystem.DeleteDirectory(BuildFolder, true);
+                this.Info($"Directory {BuildFolder} deleted");
                 return 0;
             }
 
@@ -373,7 +354,6 @@ namespace Lunet.Core
             {
                 siteObject.Register(plugin.GetType());
             }
-            siteObject.TempFileSystem = TempFileSystem;
             siteObject.SiteFileSystem = SiteFileSystem;
             siteObject.OutputFileSystem = OutputFileSystem;
             siteObject.InitializePlugins();
@@ -403,11 +383,19 @@ namespace Lunet.Core
 
         public void Build()
         {
+            var clock = Stopwatch.StartNew();
             InitializePlugins();
 
             if (Initialize())
             {
                 Content.Run();
+            }
+            clock.Stop();
+            var elapsed = clock.Elapsed.TotalMilliseconds;
+
+            if (Log.IsEnabled(LogLevel.Information))
+            {
+                Log.LogInformation($"Build finished in {elapsed}ms");
             }
         }
 

@@ -22,36 +22,9 @@ namespace Lunet.Core
         {
         }
 
-        public new bool IsReadOnly { get; set; }
-
-        public override void SetValue(TemplateContext context, SourceSpan span, string member, object value, bool readOnly)
+        public T GetSafeValue<T>(string name)
         {
-            AssertNotReadOnly(span);
-            base.SetValue(context, span, member, value, readOnly);
-        }
-
-        public override bool Remove(string member)
-        {
-            AssertNotReadOnly(new SourceSpan());
-            return base.Remove(member);
-        }
-
-        public override object this[string key]
-        {
-            get => base[key];
-            set
-            {
-                AssertNotReadOnly(new SourceSpan());
-                base[key] = value;
-            }
-        }
-
-        private void AssertNotReadOnly(SourceSpan span)
-        {
-            if (IsReadOnly)
-            {
-                throw new ScriptRuntimeException(span, "This object is readonly");
-            }
+            return this[name] is T tvalue ? tvalue : default;
         }
     }
 

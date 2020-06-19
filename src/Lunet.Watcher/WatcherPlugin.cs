@@ -79,10 +79,11 @@ namespace Lunet.Watcher
                 }
 
                 // TODO: squash events here (to avoid having duplicated events)
-
                 // Invoke listeners
                 try
                 {
+                    SquashAndLogChanges(batchEventsCopy);
+
                     FileSystemEvents?.Invoke(this, batchEventsCopy);
                 }
                 catch (Exception ex)
@@ -94,6 +95,82 @@ namespace Lunet.Watcher
             _onClosingEvent.Reset();
         }
 
+        private void SquashAndLogChanges(FileSystemEventBatchArgs args)
+        {
+            var list = new List<SimpleFileChangedEventArgs>();
+            foreach (var arg in args.FileEvents)
+            {
+                var simpleArg = new SimpleFileChangedEventArgs(arg);
+                var index = list.IndexOf(simpleArg);
+                if (index >= 0)
+                {
+                    list.RemoveAt(index);
+                }
+                list.Add(simpleArg);
+            }
+
+            args.FileEvents.Clear();
+
+            foreach (var change in list)
+            {
+                var e = change.Args;
+                args.FileEvents.Add(e);
+                if (_log != null && _log.IsEnabled(LogLevel.Information))
+                {
+                    _log.LogInformation($"File event occured: {e.ChangeType} -> {e.FullPath}");
+                }
+            }
+        }
+
+        private struct SimpleFileChangedEventArgs : IEquatable<SimpleFileChangedEventArgs>
+        {
+            public SimpleFileChangedEventArgs(FileChangedEventArgs args) : this()
+            {
+                FileSystem = args.FileSystem;
+                FullPath = args.FullPath;
+                Args = args;
+            }
+            
+            /// <summary>
+            /// The filesystem originating this change.
+            /// </summary>
+            public IFileSystem FileSystem { get; }
+
+            /// <summary>
+            /// Absolute path to the file or directory.
+            /// </summary>
+            public UPath FullPath { get; }
+
+            public FileChangedEventArgs Args { get; }
+
+            public bool Equals(SimpleFileChangedEventArgs other)
+            {
+                return Equals(FileSystem, other.FileSystem) && FullPath.Equals(other.FullPath);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is SimpleFileChangedEventArgs other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(FileSystem, FullPath);
+            }
+
+            public static bool operator ==(SimpleFileChangedEventArgs left, SimpleFileChangedEventArgs right)
+            {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(SimpleFileChangedEventArgs left, SimpleFileChangedEventArgs right)
+            {
+                return !left.Equals(right);
+            }
+        }
+
+
+
         public event EventHandler<FileSystemEventBatchArgs> FileSystemEvents;
 
         public void Start()
@@ -103,15 +180,38 @@ namespace Lunet.Watcher
                 return;
             }
             _siteDirectory = new DirectoryEntry(Site.FileSystem, UPath.Root);
-            CreateFileWatch(_siteDirectory, false);
 
-            foreach (var directory in Site.SiteFileSystem.EnumerateDirectoryEntries(UPath.Root))
-            {
-                CreateFileWatch(directory, true);
-            }
+            WatchFolder(_siteDirectory);
 
             // Starts the thread
             _processEventsThread.Start();
+        }
+
+        private void WatchFolder(DirectoryEntry entry)
+        {
+            bool isEntryLunet = entry.Name == SiteObject.LunetFolderName;
+
+            if (!isEntryLunet)
+            {
+                CreateFileWatch(entry);
+            }
+
+            foreach (var directory in entry.EnumerateDirectories())
+            {
+                if (isEntryLunet)
+                {
+                    if (directory.Path.IsInDirectory(SiteObject.BuildFolder, true) || directory.Name.StartsWith("new"))
+                    {
+                        if (_log.IsEnabled(LogLevel.Trace))
+                        {
+                            _log.LogTrace($"Skipping {directory.FullName}");
+                        }
+                        continue;
+                    }
+                }
+
+                WatchFolder(directory);
+            }
         }
 
         public void Stop()
@@ -135,17 +235,11 @@ namespace Lunet.Watcher
 
         private bool IsOutputDirectory(UPath path)
         {
-            return path.IsInDirectory(SiteObject.LunetFolder, true);
+            return path.IsInDirectory(SiteObject.BuildFolder, true);
         }
 
-        private void CreateFileWatch(DirectoryEntry directory, bool recursive)
+        private void CreateFileWatch(DirectoryEntry directory)
         {
-            if (IsOutputDirectory(directory.Path))
-            {
-                Console.WriteLine($"Discard directory {directory}");
-                return;
-            }
-
             lock (_watchers)
             {
                 if (_isDisposing)
@@ -168,7 +262,7 @@ namespace Lunet.Watcher
                 watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
                 watcher.Filter = "";
                 watcher.InternalBufferSize = 64 * 1024;
-                watcher.IncludeSubdirectories = recursive;
+                watcher.IncludeSubdirectories = false;
                 watcher.Changed += OnFileSystemEvent;
                 watcher.Created += OnFileSystemEvent;
                 watcher.Deleted += OnFileSystemEvent;
@@ -218,12 +312,6 @@ namespace Lunet.Watcher
                 return;
             }
 
-            //if (_log.IsEnabled(LogLevel.Trace))
-            {
-                Console.WriteLine($"File event occured: {e.ChangeType} -> {e.FullPath}");
-                _log.LogInformation($"File event occured: {e.ChangeType} -> {e.FullPath}");
-            }
-
             lock (_watchers)
             {
                 var isDirectory = dir.Exists;
@@ -239,7 +327,7 @@ namespace Lunet.Watcher
                         // Create watcher only for top-level directories
                         if (isDirectory && dir.Parent != null && dir.Parent == _siteDirectory)
                         {
-                            CreateFileWatch(dir, true);
+                            WatchFolder(dir);
                         }
                         break;
                     case WatcherChangeTypes.Renamed:
@@ -254,7 +342,7 @@ namespace Lunet.Watcher
                                 // Create watcher only for top-level directories
                                 if (dir.Parent != null && dir.Parent == _siteDirectory)
                                 {
-                                    CreateFileWatch(dir, true);
+                                    WatchFolder(dir);
                                 }
                             }
                         }

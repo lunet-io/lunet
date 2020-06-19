@@ -24,7 +24,7 @@ namespace Lunet.Scripts
 
             // Add log object
             LogObject = new DynamicObject<ScriptGlobalFunctions>(this);
-            service.GlobalObject.SetValue("log", LogObject, true);
+            service.Builtins.SetValue("log", LogObject, true);
             LogObject.Import("info", (LogDelegate)(message => Site.Info(message)));
             LogObject.Import("error", (LogDelegate)(message => Site.Error(message)));
             LogObject.Import("warn", (LogDelegate)(message => Site.Warning(message)));
@@ -38,11 +38,11 @@ namespace Lunet.Scripts
             //ioObject.Import("copy", (CopyFunctionDelegate) CopyFunction);
 
             // Import global function
-            service.GlobalObject.Import("absurl", new Func<string, string>(AbsoluteUrl));
+            service.Builtins.Import("absurl", new Func<string, string>(AbsoluteUrl));
 
             // Setup global Lunet object
             LunetObject = new LunetObject(Site);
-            service.GlobalObject.SetValue("lunet", LunetObject, true);
+            service.Builtins.SetValue("lunet", LunetObject, true);
         }
 
         public SiteObject Site { get; }

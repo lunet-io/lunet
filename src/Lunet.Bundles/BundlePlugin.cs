@@ -28,7 +28,7 @@ namespace Lunet.Bundles
             Site.Html.HeadIncludes.Add("builtins/bundle.sbhtml");
 
             // The "bundle" function is global as it is used inside scripts and inside
-            Site.Scripts.GlobalObject.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
+            Site.Scripts.Builtins.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
 
             BundleProcessor = new BundleProcessor(this);
 

@@ -2,14 +2,36 @@
 
   <PropertyGroup>
     <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>alpha.1</VersionSuffix>
+    <Description>Core library for Lunet, a fast &amp; powerful Static Website Engine</Description>
+    <Copyright>Alexandre Mutel</Copyright>
+    <AssemblyTitle>Lunet.Core</AssemblyTitle>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <Authors>Alexandre Mutel</Authors>
+    <AssemblyName>Lunet.Core</AssemblyName>
+    <PackageId>lunet</PackageId>
+    <PackageIcon>lunet.png</PackageIcon>
+    <PackageTags>website;jekyll;hugo;static</PackageTags>
+    <PackageReleaseNotes>https://github.com/lunet-io/lunet/blob/master/changelog.md</PackageReleaseNotes>
+    <PackageProjectUrl>https://github.com/lunet-io/lunet</PackageProjectUrl>
+    <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>git://github.com/lunet-io/lunet</RepositoryUrl>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RuntimeIdentifiers>win7-x64;osx.10.10-x64;ubuntu.14.04-x64</RuntimeIdentifiers>
     <AssemblyName>lunet</AssemblyName>
-    <PackageId>lunet</PackageId>
+    <!-- Package as tool -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>lunet</ToolCommandName>
+    <!--Add support for sourcelink-->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../../doc/images/lunet.png" Pack="true" PackagePath="" />
     <ProjectReference Include="..\Lunet.Bundles\Lunet.Bundles.csproj" />
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
     <ProjectReference Include="..\Lunet.Datas\Lunet.Datas.csproj" />

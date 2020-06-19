@@ -4,7 +4,7 @@ basepath = ""
 baseurl = baseurl ?? "http://xoofx.com"
 
 resource "npm:prismjs"
-extend "jquery"
+# extend "jquery"
 
 ##
 # Testing local extension

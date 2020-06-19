@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Core", "Lunet.Core\Lunet.Core.csproj", "{3E82658E-3E57-4B3D-8093-1AFDD658A2DE}"
 EndProject
@@ -34,6 +34,14 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Resources", "Lunet.Resources\Lunet.Resources.csproj", "{16B01731-3AB7-41EC-A201-1AA5CD32EC73}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Watcher", "Lunet.Watcher\Lunet.Watcher.csproj", "{59247D07-E8D7-45EF-B566-DE77F19E5685}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{46B38F3E-7B35-4D5A-8136-01D635D6EA0F}"
+ProjectSection(SolutionItems) = preProject
+	..\.gitignore = ..\.gitignore
+	..\readme.md = ..\readme.md
+	..\changelog.md = ..\changelog.md
+	..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
+EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

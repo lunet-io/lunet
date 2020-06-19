@@ -1,11 +1,9 @@
-+++
-+++
 <html>
 <head>
-{{~ include "head.scriban-html" ~}}
+{{~ include "head.sbn-html" ~}}
 </head>
 <body>
-{{ $$ }}
+{{ content }}
 <ul>
 {{ for $page in pages }}
 <li><a href="{{$page.url}}">{{$page.title}}</a><br>Summary: {{$page.summary}}</li>

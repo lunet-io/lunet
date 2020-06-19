@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
+using Lunet.Scripts;
 using Scriban;
 using Scriban.Syntax;
 using Scriban.Parsing;
@@ -16,9 +17,11 @@ namespace Lunet.Layouts
 {
     public class LayoutProcessor : ContentProcessor<LayoutPlugin>
     {
-        private readonly Dictionary<LayoutKey, Template> _layouts;
+        private readonly Dictionary<LayoutKey, ScriptInstance> _layouts;
 
         private readonly List<KeyValuePair<string, GetLayoutPathsDelegate>> _layoutPathProviders;
+
+        public static readonly ScriptVariableGlobal ContentVariable = new ScriptVariableGlobal("content");
 
         public const string LayoutFolderName = "layouts";
 
@@ -28,7 +31,7 @@ namespace Lunet.Layouts
 
         public LayoutProcessor(LayoutPlugin plugin) : base(plugin)
         {
-            _layouts = new Dictionary<LayoutKey, Template>();
+            _layouts = new Dictionary<LayoutKey, ScriptInstance>();
             _layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
             RegisterLayoutPathProvider(LayoutTypes.Single, SingleLayout);
             RegisterLayoutPathProvider(LayoutTypes.List, ListLayout);
@@ -99,7 +102,7 @@ namespace Lunet.Layouts
                 }
 
                 // We run first the front matter on the layout
-                if (!Site.Scripts.TryRunFrontMatter(layoutScript.Page, page))
+                if (layoutScript.FrontMatter != null && !Site.Scripts.TryRunFrontMatter(layoutScript.FrontMatter, page))
                 {
                     result = ContentResult.Break;
                     break;
@@ -108,13 +111,13 @@ namespace Lunet.Layouts
                 page.ScriptObjectLocal.SetValue(PageVariables.Page, page, true);
 
                 // We manage global locally here as we need to push the local variable ScriptVariable.BlockDelegate
-                var context = new TemplateContext(Site.Scripts.GlobalObject);
+                var context = new TemplateContext(Site.Scripts.Builtins);
                 context.PushGlobal(page.ScriptObjectLocal);
                 try
                 {
-                    context.SetValue(ScriptVariable.BlockDelegate, page.Content);
+                    context.SetValue(ContentVariable, page.Content);
 
-                    if (Site.Scripts.TryEvaluate(page, layoutScript.Page, layoutScript.SourceFilePath, null, context))
+                    if (Site.Scripts.TryEvaluate(page, layoutScript.Template, layoutScript.SourceFilePath, null, context))
                     {
                         var nextLayout = NormalizeLayoutName(page.Layout, false);
                         if (nextLayout != layoutName && nextLayout != null)
@@ -143,14 +146,15 @@ namespace Lunet.Layouts
             return result;
         }
 
-        private Template GetLayout(string layoutName, string layoutType, ContentType contentType)
+        private ScriptInstance GetLayout(string layoutName, string layoutType, ContentType contentType)
         {
-            Template layoutPage;
-            layoutType = layoutType ?? LayoutTypes.Single;
+            ScriptInstance scriptResult;
+
+            layoutType ??= LayoutTypes.Single;
             var layoutKey = new LayoutKey(layoutName, layoutType, contentType);
-            if (_layouts.TryGetValue(layoutKey, out layoutPage))
+            if (_layouts.TryGetValue(layoutKey, out scriptResult))
             {
-                return layoutPage;
+                return scriptResult;
             }
 
             var layoutDelegate = FindLayoutPaths(layoutType);
@@ -168,9 +172,9 @@ namespace Lunet.Layouts
                         if (entry.Exists)
                         {
                             var scriptLayoutText = entry.ReadAllText();
-                            layoutPage = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
-                            _layouts.Add(layoutKey, layoutPage);
-                            return layoutPage;
+                            scriptResult = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
+                            _layouts.Add(layoutKey, scriptResult);
+                            return scriptResult;
                         }
                     }
                 }

@@ -18,13 +18,6 @@ using Zio;
 
 namespace Lunet.Core
 {
-    public interface IFrontMatterParser
-    {
-        bool CanHandle(byte[] header, int index);
-
-        bool TryParse(string text, ContentObject content, out TextPosition position);
-    }
-
     public class ContentPlugin : SitePlugin
     {
         private readonly HashSet<DirectoryEntry> previousOutputDirectories;
@@ -46,8 +39,6 @@ namespace Lunet.Core
             ContentProcessors = new OrderedList<IContentProcessor>();
 
             AfterContentProcessors = new OrderedList<ISiteProcessor>();
-
-            FrontMatterParsers = new OrderedList<IFrontMatterParser>();
         }
 
         private ScriptingPlugin Scripts { get; }
@@ -57,8 +48,6 @@ namespace Lunet.Core
         public OrderedList<IContentProcessor> ContentProcessors { get; }
 
         public OrderedList<ISiteProcessor> AfterContentProcessors { get; }
-
-        public OrderedList<IFrontMatterParser> FrontMatterParsers { get; }
 
         public void Initialize()
         {
@@ -285,20 +274,23 @@ namespace Lunet.Core
 
         public bool TryPreparePage(ContentObject page)
         {
-            if (Scripts.TryRunFrontMatter(page.Script, page))
+            if (page.FrontMatter != null && !Scripts.TryRunFrontMatter(page.FrontMatter, page))
             {
-                if (page.Script != null && TryEvaluate(page))
-                {
-                    // If page is discarded, skip it
-                    if (page.Discard)
-                    {
-                        return false;
-                    }
-
-                    var pendingPageProcessors = new OrderedList<IContentProcessor>();
-                    return TryProcessPage(page, BeforeLoadingProcessors.OfType<IContentProcessor>(), pendingPageProcessors, false);
-                }
+                return false;
             }
+
+            if (page.Script != null && TryEvaluate(page))
+            {
+                // If page is discarded, skip it
+                if (page.Discard)
+                {
+                    return false;
+                }
+
+                var pendingPageProcessors = new OrderedList<IContentProcessor>();
+                return TryProcessPage(page, BeforeLoadingProcessors.OfType<IContentProcessor>(), pendingPageProcessors, false);
+            }
+
             return false;
         }
 
@@ -455,10 +447,10 @@ namespace Lunet.Core
             ContentObject page = null;
 
             // Parse the page, using front-matter mode
-            var scriptPage = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatterAndContent);
-            if (!scriptPage.HasErrors)
+            var scriptInstance = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatterAndContent);
+            if (!scriptInstance.HasErrors)
             {
-                page = new ContentObject(site, file, scriptPage.Page);
+                page = new ContentObject(site, file, scriptInstance);
 
                 var evalClock = Stopwatch.StartNew();
                 if (site.Content.TryPreparePage(page))

@@ -1,0 +1,8 @@
+<html>
+<head>
+{{~ include "head.sbn-html" ~}}
+</head>
+<body>
+{{ content }}
+</body>
+</html>

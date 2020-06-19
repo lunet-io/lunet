@@ -25,11 +25,15 @@ namespace Lunet.Scripts
         internal ScriptingPlugin(SiteObject site) : base(site)
         {
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
-            GlobalObject = TemplateContext.GetDefaultBuiltinObject();
+            Builtins = TemplateContext.GetDefaultBuiltinObject();
             SiteFunctions = new ScriptGlobalFunctions(this);
+            // Add default scriban frontmatter parser
+            FrontMatterParsers = new OrderedList<IFrontMatterParser> {new ScribanFrontMatterParser(this)};
         }
 
-        public ScriptObject GlobalObject { get; }
+        public ScriptObject Builtins { get; }
+        
+        public OrderedList<IFrontMatterParser> FrontMatterParsers { get; }
 
         /// <summary>
         /// Gets the functions that are only accessible from a sban/script file (and not from a page)
@@ -49,13 +53,29 @@ namespace Lunet.Scripts
         /// <remarks>
         /// If there are any parsing errors, the errors will be logged to the <see cref="Log" /> and <see cref="HasErrors" /> will be set to <c>true</c>.
         /// </remarks>
-        public Template ParseScript(string scriptContent, UPath scriptPath, ScriptMode parsingMode)
+        public ScriptInstance ParseScript(string scriptContent, UPath scriptPath, ScriptMode parsingMode)
         {
             if (scriptContent == null) throw new ArgumentNullException(nameof(scriptContent));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
+            IFrontMatter frontmatter = null;
+            TextPosition startPosition = default;
+            if (parsingMode == ScriptMode.FrontMatterAndContent && scriptContent.Length > 3)
+            {
+                var span = scriptContent.AsSpan();
+                foreach (var parser in FrontMatterParsers)
+                {
+                    if (parser.CanHandle(span))
+                    {
+                        frontmatter = parser.TryParse(scriptContent, (string) scriptPath, out startPosition);
+                        break;
+                    }
+                }
+                parsingMode = ScriptMode.Default;
+            }
+
             // Load parse the template
-            var template = Template.Parse(scriptContent, scriptPath.FullName, null, new LexerOptions() { Mode = parsingMode });
+            var template = Template.Parse(scriptContent, scriptPath.FullName, null, new LexerOptions() { StartPosition = startPosition, Mode = parsingMode });
 
             // If we have any errors, log them and set the errors flag on this instance
             if (template.HasErrors)
@@ -63,7 +83,7 @@ namespace Lunet.Scripts
                 LogScriptMessages(template.Messages);
             }
 
-            return template;
+            return new ScriptInstance(template.HasErrors, (string)scriptPath, frontmatter, template.Page);
         }
 
         public bool TryImportScript(string scriptText, UPath scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, TemplateContext context = null)
@@ -73,10 +93,10 @@ namespace Lunet.Scripts
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
             result = null;
-            context = context ?? new TemplateContext(GlobalObject);
+            context = context ?? new TemplateContext(Builtins);
 
-            var scriptConfig = ParseScript(scriptText, scriptPath.FullName, ScriptMode.ScriptOnly);
-            if (!scriptConfig.HasErrors)
+            var scriptResult = ParseScript(scriptText, scriptPath.FullName, ScriptMode.ScriptOnly);
+            if (!scriptResult.HasErrors)
             {
                 if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
                 {
@@ -90,7 +110,7 @@ namespace Lunet.Scripts
 
                 try
                 {
-                    result = scriptConfig.Page.Evaluate(context);
+                    result = scriptResult.Template.Evaluate(context);
                 }
                 catch (ScriptRuntimeException exception)
                 {
@@ -145,25 +165,20 @@ namespace Lunet.Scripts
         /// <summary>
         /// Initializes this instance.
         /// </summary>
-        public bool TryRunFrontMatter(ScriptPage script, IDynamicObject obj)
+        public bool TryRunFrontMatter(IFrontMatter frontMatter, ContentObject obj)
         {
-            if (script == null) throw new ArgumentNullException(nameof(script));
+            if (frontMatter == null) throw new ArgumentNullException(nameof(frontMatter));
             if (obj == null) throw new ArgumentNullException(nameof(obj));
-
-            if (script.FrontMatter == null)
-            {
-                return false;
-            }
-
-            var context = new TemplateContext(GlobalObject);
-            context.PushGlobal((ScriptObject)obj);
+            
+            var context = new TemplateContext(Builtins);
+            context.PushGlobal(obj);
             try
             {
                 context.EnableOutput = false;
                 context.TemplateLoader = new TemplateLoaderFromIncludes(Site);
 
                 Site.SetValue(PageVariables.Site, this, true);
-                script.FrontMatter.Evaluate(context);
+                frontMatter.Evaluate(context);
             }
             catch (ScriptRuntimeException exception)
             {
@@ -190,7 +205,7 @@ namespace Lunet.Scripts
             if (script == null) throw new ArgumentNullException(nameof(script));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
-            context = context ?? new TemplateContext(GlobalObject);
+            context = context ?? new TemplateContext(Builtins);
             if (obj != null)
             {
                 context.PushGlobal(obj);
@@ -249,7 +264,7 @@ namespace Lunet.Scripts
             }
         }
 
-        private void LogScriptMessages(List<LogMessage> logMessages)
+        private void LogScriptMessages(LogMessageBag logMessages)
         {
             foreach (var logMessage in logMessages)
             {
@@ -329,6 +344,49 @@ namespace Lunet.Scripts
             public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
             {
                 return new ValueTask<string>(Load(context, callerSpan, templatePath));
+            }
+        }
+        
+        private class ScribanFrontMatter : IFrontMatter
+        {
+            public ScribanFrontMatter(ScriptFrontMatter frontmatter)
+            {
+                Value = frontmatter;
+            }
+
+            public ScriptFrontMatter Value { get; }
+
+            public void Evaluate(TemplateContext context)
+            {
+                context.Evaluate(Value);
+            }
+        }
+        
+        private class ScribanFrontMatterParser : IFrontMatterParser
+        {
+            private readonly ScriptingPlugin _scripting;
+
+            public ScribanFrontMatterParser(ScriptingPlugin scripting)
+            {
+                _scripting = scripting;
+            }
+            
+            public bool CanHandle(ReadOnlySpan<char> header)
+            {
+                return header[0] == '+' && header[1] == '+' && header[2] == '+';
+            }
+
+            public IFrontMatter TryParse(string text, string sourceFilePath, out TextPosition position)
+            {
+                position = default;
+                var frontMatter = Template.Parse(text, sourceFilePath, lexerOptions: new LexerOptions() {FrontMatterMarker = "+++", Mode = ScriptMode.FrontMatterOnly});
+                if (frontMatter.HasErrors || frontMatter.Page.FrontMatter == null)
+                {
+                    _scripting.LogScriptMessages(frontMatter.Messages);
+                    return null;
+                }
+                position = frontMatter.Page.FrontMatter.TextPositionAfterEndMarker;
+                return new ScribanFrontMatter(frontMatter.Page.FrontMatter);
             }
         }
     }

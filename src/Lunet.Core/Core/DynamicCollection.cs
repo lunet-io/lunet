@@ -51,7 +51,7 @@ namespace Lunet.Core
                 {
                     groupCollection.Add(item);
                 }
-                groupCollection.SetValue(null, new SourceSpan(), "key", key, true);
+                groupCollection.SetValue("key", key, true);
                 yield return groupCollection;
             }
         }

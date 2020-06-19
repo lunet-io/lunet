@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using Lunet.Helpers;
+using Lunet.Scripts;
 using Scriban.Functions;
 using Scriban.Helpers;
 using Scriban.Runtime;
@@ -19,11 +20,12 @@ namespace Lunet.Core
 
         private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptPage script = null)
+        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null)
         {
             Site = site ?? throw new ArgumentNullException(nameof(site));
             SourceFile = sourceFileInfo ?? throw new ArgumentNullException(nameof(sourceFileInfo));
-            Script = script;
+            FrontMatter = scriptInstance?.FrontMatter;
+            Script = scriptInstance?.Template;
             Dependencies = new List<ContentDependency>();
             ObjectType = ContentObjectType.File;
 
@@ -117,6 +119,8 @@ namespace Lunet.Core
 
         public ContentObjectType ObjectType { get; }
 
+        public IFrontMatter FrontMatter { get; set; }
+
         public UPath Path { get; }
 
         public DateTime ModifiedTime { get; }
@@ -141,7 +145,7 @@ namespace Lunet.Core
 
         public ScriptObject ScriptObjectLocal { get; set; }
 
-        public bool HasFrontMatter => Script?.FrontMatter != null;
+        public bool HasFrontMatter => FrontMatter != null;
 
         /// <summary>
         /// Gets or sets the output of the script.

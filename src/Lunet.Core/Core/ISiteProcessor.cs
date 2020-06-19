@@ -1,3 +1,6 @@
+using System;
+using Scriban.Runtime;
+
 namespace Lunet.Core
 {
     /// <summary>

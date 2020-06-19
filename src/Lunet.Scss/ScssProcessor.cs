@@ -40,7 +40,7 @@ namespace Lunet.Scss
                 var path = pathObj as string;
                 if (path != null)
                 {
-                    throw new NotImplementedException("Need rework with Zio");
+                    // TODO: rewrite for zio
                     //options.IncludePaths.Add((UPath)path);
                 }
             }
@@ -54,8 +54,8 @@ namespace Lunet.Scss
             {
                 foreach (var includeFile in result.IncludedFiles)
                 {
-                    throw new NotImplementedException("Need rework with Zio");
-                    file.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, (UPath)includeFile)));
+                    // TODO: rewrite for zio
+                    //file.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, (UPath)includeFile)));
                 }
             }
 

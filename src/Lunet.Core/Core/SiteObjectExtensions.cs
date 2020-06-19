@@ -13,27 +13,6 @@ namespace Lunet.Core
     /// </summary>
     public static class SiteObjectExtensions
     {
-        public static bool IsFilePrivateOrMeta(this SiteObject site, string fullFilePath)
-        {
-            if (fullFilePath == null) throw new ArgumentNullException(nameof(fullFilePath));
-            throw new NotImplementedException();
-
-            //if (fullFilePath.StartsWith(site.PrivateMetaFolder.FullName))
-            //{
-            //    return true;
-            //}
-
-            //foreach (var meta in site.MetaFolders)
-            //{
-            //    if (fullFilePath.StartsWith(meta.FullName))
-            //    {
-            //        return true;
-            //    }
-            //}
-
-            return false;
-        }
-
         public static bool CanTrace(this SiteObject site)
         {
             return site.Log.IsEnabled(LogLevel.Trace);
