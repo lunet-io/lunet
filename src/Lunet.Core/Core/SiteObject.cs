@@ -70,8 +70,9 @@ namespace Lunet.Core
             // Create the logger
             LoggerFactory = loggerFactory ?? Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
             {
-                builder.AddProvider(new LoggerProviderIntercept(this));
-                builder.AddConsole();
+                builder.AddProvider(new LoggerProviderIntercept(this))
+                    .AddFilter(LogFilter)
+                    .AddConsole();
             });
             
             Log = LoggerFactory.CreateLogger("lunet");
@@ -156,7 +157,7 @@ namespace Lunet.Core
                 UpdateFileSystem();
             }
         }
-
+        
         public IFileSystem TempSiteFileSystem { get; private set; }
 
         public IFileSystem FileSystem => _fileSystem;
@@ -438,6 +439,11 @@ namespace Lunet.Core
             {
                 this.Error($"Unexpected error. Reason: {ex.GetReason()}");
                 return 1;
+            }
+            finally
+            {
+                // Force a dispose to make sure the ConsoleLogger is flushed
+                LoggerFactory.Dispose();
             }
         }
 
