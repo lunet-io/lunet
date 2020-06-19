@@ -22,6 +22,19 @@ namespace Lunet.Statistics
 
         public TimeSpan TotalTime { get; set; }
 
+        public string GetSummary()
+        {
+            long totalBytes = 0;
+            int contentFiles = 0;
+            contentFiles = Content.Count;
+            foreach (var content in Content)
+            {
+                totalBytes += content.Value.OutputBytes;
+            }
+
+            return $"{contentFiles} files processed. {totalBytes} bytes written.";
+        }
+
         public ContentStat GetContentStat(ContentObject page)
         {
             if (page == null) throw new ArgumentNullException(nameof(page));

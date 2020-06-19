@@ -395,7 +395,7 @@ namespace Lunet.Core
 
             if (Log.IsEnabled(LogLevel.Information))
             {
-                Log.LogInformation($"Build finished in {elapsed}ms");
+                Log.LogInformation($"Build finished in {elapsed}ms. {Statistics.GetSummary()}");
             }
         }
 
