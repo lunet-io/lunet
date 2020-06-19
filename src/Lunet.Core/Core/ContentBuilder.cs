@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Lunet.Helpers;
@@ -400,20 +401,27 @@ namespace Lunet.Core
                     startFrontMatter = 3;
                 }
 
-                if (buffer[startFrontMatter] == '+' && buffer[startFrontMatter + 1] == '+' && buffer[startFrontMatter + 2] == '+')
+                // TODO: avoid the chars alloc
+                var charBuffer = Encoding.UTF8.GetChars(buffer, startFrontMatter, buffer.Length - startFrontMatter);
+                foreach (var frontParser in Scripts.FrontMatterParsers)
                 {
-                    for (int i = startFrontMatter + 3; i < count; i++)
+                    if (frontParser.CanHandle(charBuffer))
                     {
-                        if (buffer[i] == 0)
+                        for (int i = startFrontMatter + 3; i < count; i++)
                         {
-                            isBinary = true;
-                            break;
+                            if (buffer[i] == 0)
+                            {
+                                isBinary = true;
+                                break;
+                            }
                         }
-                    }
 
-                    if (!isBinary)
-                    {
-                        hasFrontMatter = true;
+                        if (!isBinary)
+                        {
+                            hasFrontMatter = true;
+                        }
+
+                        break;
                     }
                 }
 
