@@ -74,7 +74,7 @@ namespace Lunet.Core
             var isIndex = name == "index";
             if (isIndex)
             {
-                urlAsPath = (string)Path.GetDirectory();
+                urlAsPath = Path.FullName;
             }
             else if (HasFrontMatter && isHtml && !Site.UrlAsFile)
             {
@@ -82,7 +82,7 @@ namespace Lunet.Core
                 {
                     urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
                 }
-                urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
+                urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true) + "index" + Site.GetSafeDefaultPageExtension();
             }
             Url = urlAsPath;
 
@@ -243,18 +243,8 @@ namespace Lunet.Core
                 urlAsPath = Url = Path.FullName;
             }
 
-            bool isIndex = System.IO.Path.GetFileNameWithoutExtension(urlAsPath) == "index";
-            if (!isIndex && HasFrontMatter && ContentType == ContentType.Html && !Site.UrlAsFile)
+            if (HasFrontMatter && ContentType == ContentType.Html && !Site.UrlAsFile && urlAsPath.EndsWith("/"))
             {
-                if (!urlAsPath.EndsWith("/"))
-                {
-                    var extension = System.IO.Path.GetExtension(urlAsPath);
-                    if (!string.IsNullOrEmpty(extension))
-                    {
-                        urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - extension.Length);
-                    }
-                }
-
                 urlAsPath += "index" + Site.GetSafeDefaultPageExtension();
             }
 
