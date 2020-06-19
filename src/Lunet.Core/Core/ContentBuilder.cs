@@ -317,7 +317,9 @@ namespace Lunet.Core
                 new ExecutionDataflowBlockOptions()
                 {
                     EnsureOrdered = false,
-                    MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded
+                    // Uncomment to dispatch on multithread
+                    //MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded
+                    MaxDegreeOfParallelism = 1 
                 });
 
             // Add the content loaded to the correct list (static vs pages)
