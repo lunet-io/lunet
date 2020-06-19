@@ -41,6 +41,8 @@ ProjectSection(SolutionItems) = preProject
 	..\readme.md = ..\readme.md
 	..\changelog.md = ..\changelog.md
 	..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
+	Directory.Build.targets = Directory.Build.targets
+	Directory.Build.props = Directory.Build.props
 EndProjectSection
 EndProject
 Global
