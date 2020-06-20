@@ -313,8 +313,17 @@ namespace Lunet.Core
             Site.Pages.Clear();
 
             // Load a content asynchronously
-            var contentLoaderBlock = new TransformBlock<FileEntry, ContentObject>(
-                async reference => await LoadContent(reference),
+            var contentLoaderBlock = new TransformBlock<(FileEntry, int), ContentObject>(
+                async reference =>
+                {
+                    var content = await LoadContent(reference.Item1);
+                    // We transfer the weight to the content
+                    if (content[PageVariables.Weight] == null)
+                    {
+                        content.Weight = reference.Item2;
+                    }
+                    return content;
+                },
                 new ExecutionDataflowBlockOptions()
                 {
                     EnsureOrdered = false,
@@ -342,9 +351,12 @@ namespace Lunet.Core
             while (directories.Count > 0)
             {
                 var nextDirectory = directories.Dequeue();
-                foreach (var contentReference in LoadDirectory(nextDirectory, directories))
+                // The weight is the order in the directory by name
+                int weight = 10;
+                foreach (var contentReference in LoadDirectory(nextDirectory, directories).OrderBy(x => x.Name))
                 {
-                    contentLoaderBlock.Post(contentReference);
+                    contentLoaderBlock.Post((contentReference, weight));
+                    weight += 10;
                 }
             }
 
