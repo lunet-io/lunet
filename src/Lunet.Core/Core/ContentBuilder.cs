@@ -528,20 +528,29 @@ namespace Lunet.Core
                     // Note that page.ContentType can be changed by a processor 
                     // while processing a page
                     clock.Restart();
-                    var result = processor.TryProcess(page);
-                    clock.Stop();
-
-                    if (result != ContentResult.None)
+                    try
                     {
-                        // Update statistics per plugin
-                        var statistics = Site.Statistics;
-                        var stat = statistics.GetPluginStat(processor);
-                        stat.PageCount++;
-                        stat.ContentProcessTime += clock.Elapsed;
+                        var result = processor.TryProcess(page);
 
+                        if (result != ContentResult.None)
+                        {
+                            // Update statistics per plugin
+                            var statistics = Site.Statistics;
+                            var stat = statistics.GetPluginStat(processor);
+                            stat.PageCount++;
+                            stat.ContentProcessTime += clock.Elapsed;
+
+                            hasBeenProcessed = true;
+                            pendingPageProcessors.RemoveAt(i);
+                            breakProcessing = result == ContentResult.Break;
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Site.Error(ex, $"Error while processing {page.Path}.");
+                        breakProcessing = true;
                         hasBeenProcessed = true;
-                        pendingPageProcessors.RemoveAt(i);
-                        breakProcessing = result == ContentResult.Break;
                         break;
                     }
                 }
