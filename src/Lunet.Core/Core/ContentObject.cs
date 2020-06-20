@@ -70,19 +70,22 @@ namespace Lunet.Core
             var urlAsPath = (string)Path;
 
             var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
-            var name = Path.GetNameWithoutExtension();
-            var isIndex = name == "index";
-            if (isIndex)
+            if (isHtml)
             {
-                urlAsPath = Path.FullName;
-            }
-            else if (HasFrontMatter && isHtml && !Site.UrlAsFile)
-            {
-                if (!string.IsNullOrEmpty(Extension))
+                var name = Path.GetNameWithoutExtension();
+                var isIndex = name == "index";
+                if (isIndex)
                 {
-                    urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
+                    urlAsPath = Path.GetDirectory().FullName + "/";
                 }
-                urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true) + "index" + Site.GetSafeDefaultPageExtension();
+                else if (HasFrontMatter && !Site.UrlAsFile)
+                {
+                    if (!string.IsNullOrEmpty(Extension))
+                    {
+                        urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
+                    }
+                    urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
+                }
             }
             Url = urlAsPath;
 
