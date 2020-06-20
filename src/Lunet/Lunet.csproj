@@ -35,6 +35,7 @@
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
     <ProjectReference Include="..\Lunet.Datas\Lunet.Datas.csproj" />
     <ProjectReference Include="..\Lunet.Extends\Lunet.Extends.csproj" />
+    <ProjectReference Include="..\Lunet.Menus\Lunet.Menus.csproj" />
     <ProjectReference Include="..\Lunet.Server\Lunet.Server.csproj" />
     <ProjectReference Include="..\Lunet.Layouts\Lunet.Layouts.csproj" />
     <ProjectReference Include="..\Lunet.Markdig\Lunet.Markdown.csproj" />

@@ -5,6 +5,7 @@ using Lunet.Datas;
 using Lunet.Extends;
 using Lunet.Layouts;
 using Lunet.Markdown;
+using Lunet.Menus;
 using Lunet.Minifiers;
 using Lunet.Resources;
 using Lunet.Taxonomies;
@@ -21,6 +22,7 @@ namespace Lunet
         {
             var site = new SiteObject()
                 .Register<BundlePlugin>()
+                .Register<MenuPlugin>()
                 .Register<ExtendsPlugin>()
                 .Register<LayoutPlugin>()
                 .Register<ResourcePlugin>()
@@ -32,7 +34,7 @@ namespace Lunet
                 .Register<ScssPlugin>()
                 .Register<TaxonomyPlugin>()
                 .Register<YamlPlugin>();
-
+                
             return site.Run(args);
         }
 
