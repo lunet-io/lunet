@@ -8,7 +8,7 @@ using Scriban.Runtime;
 
 namespace Lunet.Core
 {
-    public abstract class DynamicCollection<T, TInstance> : ScriptArray<T> where T : DynamicObject where TInstance: DynamicCollection<T, TInstance>, new()
+    public abstract class DynamicCollection<T, TInstance> : ScriptArray<T> where T : IScriptObject where TInstance: DynamicCollection<T, TInstance>, new()
     {
         private delegate int CountDelegate();
 
@@ -44,9 +44,13 @@ namespace Lunet.Core
         public virtual IEnumerable<TInstance> GroupBy(string key)
         {
             // Query object in natural order
-            foreach (var group in OrderByDefault().GroupBy(obj => obj[key], o => o))
+            foreach (var group in OrderByDefault().GroupBy(obj =>
             {
-                var groupCollection = new TInstance();
+                obj.TryGetValue(key, out var value);
+                return value;
+            }, o => o))
+            {
+                var groupCollection = Clone();
                 foreach (var item in group)
                 {
                     groupCollection.Add(item);
@@ -54,6 +58,21 @@ namespace Lunet.Core
                 groupCollection.SetValue("key", key, true);
                 yield return groupCollection;
             }
+        }
+
+        protected virtual TInstance Clone()
+        {
+            return new TInstance();
+        }
+        
+        public TItem GetSafeValue<TItem>(string name)
+        {
+            return this.ScriptObject[name] is TItem tvalue ? tvalue : default;
+        }
+
+        public void SetValue(string name, object value, bool isReadOnly = false)
+        {
+            ScriptObject.SetValue(name, value, isReadOnly);
         }
 
         private void InitializeBuiltins()
