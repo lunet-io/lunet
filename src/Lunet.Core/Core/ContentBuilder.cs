@@ -212,7 +212,7 @@ namespace Lunet.Core
             catch (Exception ex)
             {
                 Site.Error(fromFile.SourceFile != null
-                    ? $"Unable to copy file [{fromFile}] to [{outputFile}]. Reason:{ex.GetReason()}"
+                    ? $"Unable to copy file [{fromFile.SourceFile}] to [{outputFile}]. Reason:{ex.GetReason()}"
                     : $"Unable to copy file to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
             }
