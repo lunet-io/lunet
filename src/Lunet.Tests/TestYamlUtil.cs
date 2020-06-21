@@ -27,7 +27,7 @@ Yo
 ";
             var result = YamlUtil.FromYamlFrontMatter(input, out position);
 
-            Assert.AreEqual(new TextPosition(89, 9, 0), position);
+            Assert.AreEqual(new TextPosition(87, 8, 3), position);
 
             Assert.IsInstanceOf<ScriptObject>(result);
             var scriptObject = (ScriptObject)result;
