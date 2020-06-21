@@ -4,16 +4,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
+using Lunet.Resources;
 using Scriban.Runtime;
+using Zio;
 
 namespace Lunet.Bundles
 {
     public class BundleObject : DynamicObject<BundlePlugin>
     {
-        private delegate void StringFunctionDelegate(string filepath);
-
         public BundleObject(BundlePlugin plugin, string name) : base(plugin)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
@@ -31,14 +32,15 @@ namespace Lunet.Bundles
             SetValue(BundleObjectProperties.UrlDestination, UrlDestination, true);
             MinifyExtension = ".min";
 
-            this.Import(BundleObjectProperties.JsType, (StringFunctionDelegate)FunctionJs);
-            this.Import(BundleObjectProperties.CssType, (StringFunctionDelegate)FunctionCss);
+            this.Import(BundleObjectProperties.JsType, (Action<object, string>)FunctionJs);
+            this.Import(BundleObjectProperties.CssType, (Action<object, string>)FunctionCss);
+            this.Import(BundleObjectProperties.ContentType, (Action<object, string, string>)FunctionContent);
         }
 
         public string Name { get; }
 
         public List<BundleLink> Links { get; }
-
+        
         public ScriptObject UrlDestination { get; }
 
         public bool Concat
@@ -65,30 +67,87 @@ namespace Lunet.Bundles
             set { this[BundleObjectProperties.Minifier] = value; }
         }
 
-        public void AddLink(string type, string url)
+        public void AddLink(string type, string path, string url = null)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            if (url == null) throw new ArgumentNullException(nameof(url));
-            Uri uri;
-            if (!Uri.TryCreate(url, UriKind.RelativeOrAbsolute, out uri))
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            if (!UPath.TryParse(path, out _))
             {
-                throw new LunetException($"Invalid url [{url}]");
+                throw new ArgumentException($"Invalid path [{path}]", nameof(path));
             }
 
-            var link = new BundleLink(this, type, uri.IsAbsoluteUri ? null : uri.ToString(), uri.IsAbsoluteUri ? uri.ToString() : null);
+            if (url != null)
+            {
+                if (!UPath.TryParse(url, out _))
+                {
+                    throw new ArgumentException($"Invalid url [{url}]", nameof(url));
+                }
+            }
+
+            if (path.Contains("*") && (url == null || !url.EndsWith("/")))
+            {
+                throw new ArgumentException($"Invalid url [{path}]. Must end with a `/` if the path contains a wildcard.", nameof(url));
+            }
+
+            var link = new BundleLink(this, type, path, url);
             Links.Add(link);
         }
 
-        private void FunctionJs(string fileArg)
+        private void FunctionJs(object resourceOrPath, string path = null)
         {
-            if (fileArg == null) throw new ArgumentNullException(nameof(fileArg));
-            AddLink(BundleObjectProperties.JsType, fileArg);
+            AddLink(BundleObjectProperties.JsType, resourceOrPath, path);
         }
 
-        private void FunctionCss(string fileArg)
+        private void FunctionCss(object resourceOrPath, string path = null)
         {
-            if (fileArg == null) throw new ArgumentNullException(nameof(fileArg));
-            AddLink(BundleObjectProperties.CssType, fileArg);
+            if (resourceOrPath == null) throw new ArgumentNullException(nameof(resourceOrPath));
+            AddLink(BundleObjectProperties.CssType, resourceOrPath, path);
+        }
+
+        private void FunctionContent(object resourceOrPath, string pathOrUrl, string url = null)
+        {
+            AddLink(BundleObjectProperties.ContentType, resourceOrPath, resourceOrPath is string ? null : pathOrUrl, resourceOrPath is string ? pathOrUrl : url);
+        }
+        
+        private void AddLink(string kind, object resourceOrPath, string path, string url = null)
+        {
+            if (resourceOrPath == null) throw new ArgumentNullException(nameof(resourceOrPath));
+            if (resourceOrPath is ResourceObject resource)
+            {
+                if (path != null)
+                {
+                    if (!UPath.TryParse(path, out var relativePath))
+                    {
+                        throw new ArgumentException($"Invalid path {path}.", nameof(path));
+                    }
+                    
+                    path = (string)(resource.Path / relativePath.ToRelative());
+                }
+                else
+                {
+                    path ??= resource["main"]?.ToString();
+                    if (path == null)
+                    {
+                        throw new ArgumentNullException(nameof(path), "path cannot be null with a resource");
+                    }
+                }
+            }
+            else if (resourceOrPath is string str)
+            {
+                if (path != null)
+                {
+                    throw new ArgumentException("Parameter must be null if first argument is already a path.", nameof(path));
+                }
+                
+                path = str;
+            }
+            else
+            {
+                throw new ArgumentException( $"Invalid parameter type ({resourceOrPath?.GetType()}) for {kind} function.", nameof(resourceOrPath));
+            }
+            
+            AddLink(kind, path, url);
         }
     }
 }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using Lunet.Core;
 using Lunet.Helpers;
@@ -22,8 +23,6 @@ namespace Lunet.Resources
         private const string ResourceFolderName = "resources";
         public static readonly UPath ResourceFolder = UPath.Root / ResourceFolderName;
 
-        private delegate object ResourceFunctionDelegate(object o);
-
         public ResourcePlugin(SiteObject site) : base(site)
         {
             var folder = UPath.Root / ResourceFolderName;
@@ -32,7 +31,7 @@ namespace Lunet.Resources
                 new NpmResourceProvider(this)
             };
             Site.SetValue(SiteVariables.Resources, this, true);
-            Site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (ResourceFunctionDelegate)ResourceFunction);
+            Site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (Func<object, string, object>)ResourceFunction);
         }
 
         public OrderedList<ResourceProvider> Providers { get; }
@@ -60,15 +59,15 @@ namespace Lunet.Resources
         /// The `resource` function accessible from scripts.
         /// </summary>
         /// <param name="query">The query.</param>
+        /// <param name="version">The version to load.</param>
         /// <returns>A ScriptObject </returns>
         /// <exception cref="LunetException">Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \providerName/packageName[/packageVersion]\ }</exception>
-        private object ResourceFunction(object query)
+        private object ResourceFunction(object query, string version = null)
         {
             var packageFullName = query as string;
 
             string providerName = null;
             string packageName = null;
-            string packageVersion = null;
 
             var resourceObj = query as ScriptObject;
             var flags = ResourceInstallFlags.Private;
@@ -76,7 +75,7 @@ namespace Lunet.Resources
             {
                 packageName = resourceObj.GetSafeValue<string>("name");
                 providerName = resourceObj.GetSafeValue<string>("provider");
-                packageVersion = resourceObj.GetSafeValue<string>("version") ?? "latest";
+                version = resourceObj.GetSafeValue<string>("version");
 
                 if (resourceObj.GetSafeValue<bool>("public"))
                 {
@@ -90,19 +89,21 @@ namespace Lunet.Resources
             }
             else if (packageFullName != null)
             {
-                ParseQuery(packageFullName, out providerName, out packageName, out packageVersion);
+                ParseQuery(packageFullName, out providerName, out packageName);
             }
+
+            version ??= "latest";
 
             if (string.IsNullOrEmpty(providerName) || string.IsNullOrEmpty(packageName))
             {
                 throw new LunetException($"Unsupported resource parameter found [{query}]. Supports either a plain string or an object with at least the properties like {{ provider: \"npm\", name: \"jquery\" }}");
             }
 
-            var resource = TryLoadResource(providerName, packageName, packageVersion, flags);
+            var resource = TryLoadResource(providerName, packageName, version, flags);
             return resource;
         }
 
-        private void ParseQuery(string resourceQuery, out string providerName, out string packageName, out string packageVersion)
+        private void ParseQuery(string resourceQuery, out string providerName, out string packageName)
         {
             if (resourceQuery == null) throw new ArgumentNullException(nameof(resourceQuery));
 
@@ -114,14 +115,6 @@ namespace Lunet.Resources
 
             providerName = resourceQuery.Substring(0, providerIndex);
             packageName = resourceQuery.Substring(providerIndex + 1);
-            packageVersion = "latest";
-
-            var indexOfVersion = packageName.LastIndexOf("@", StringComparison.OrdinalIgnoreCase);
-            if (indexOfVersion > 0)
-            {
-                packageVersion = packageName.Substring(indexOfVersion + 1);
-                packageName = packageName.Substring(0, indexOfVersion);
-            }
         }
     }
 }

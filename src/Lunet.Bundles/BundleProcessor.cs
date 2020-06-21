@@ -100,6 +100,28 @@ namespace Lunet.Bundles
                 }
             }
 
+            // Expand wildcard * links
+            for (int i = 0; i < bundle.Links.Count; i++)
+            {
+                var link = bundle.Links[i];
+                var path = link.Path;
+                var url = link.Url;
+                if (!path.Contains("*")) continue;
+
+                // Always remove the link
+                bundle.Links.RemoveAt(i);
+
+                var upath = (UPath) path;
+                foreach (var file in Site.MetaFileSystem.EnumerateFileSystemEntries(upath.GetDirectory(), upath.GetName()))
+                {
+                    var newLink = new BundleLink(bundle, link.Type, (string) file.Path, url + file.Path.GetName());
+                    bundle.Links.Insert(i++, newLink);
+                }
+
+                // Cancel the double i++
+                i--;
+            }
+
             // Process links
             for (int i = 0; i < bundle.Links.Count; i++)
             {
@@ -108,38 +130,36 @@ namespace Lunet.Bundles
                 var url = link.Url;
                 if (url != null)
                 {
-                    Uri result;
-                    if (!Uri.TryCreate(url, UriKind.Absolute, out result))
+                    if (!UPath.TryParse(url, out _))
                     {
                         Site.Error($"Invalid absolute url [{url}] in bundle [{bundle.Name}]");
                     }
                 }
-                else if (path != null)
+                
+                if (path != null)
                 {
                     path = ((UPath)path).FullName;
                     link.Path = path;
                     var entry = new FileEntry(Site.MetaFileSystem, path);
 
-                    var outputUrlDirectory = bundle.UrlDestination[link.Type];
-
                     ContentObject currentContent;
-                    bool isExistingContent = false;
-                    if (staticFiles.TryGetValue(entry.FullName, out currentContent))
+                    var  isExistingContent = staticFiles.TryGetValue(entry.FullName, out currentContent);
+
+                    if (url == null)
                     {
-                        isExistingContent = true;
-                        currentContent.Url = outputUrlDirectory + Path.GetFileName(currentContent.Url);
+                        var outputUrlDirectory = bundle.UrlDestination[link.Type];
+                        // If the file is private or meta, we need to copy to the output
+                        // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
+                        url = outputUrlDirectory + Path.GetFileName(path);
+                        link.Url = url;
                     }
-                    // If the file is private or meta, we need to copy to the output
-                    // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
-                    url = outputUrlDirectory + Path.GetFileName(path);
-                    link.Url = url;
 
                     // Process file by existing processors
                     if (currentContent == null)
                     {
                         if (entry.Exists)
                         {
-                            currentContent = new ContentObject(Site, entry) { Url = url };
+                            currentContent = new ContentObject(Site, entry);
                         }
                         else
                         {
@@ -149,12 +169,16 @@ namespace Lunet.Bundles
 
                     if (currentContent != null)
                     {
+                        currentContent.Url = url;
+                        
                         var listTemp = new PageCollection() { currentContent };
                         Site.Content.ProcessPages(listTemp, false);
                         link.ContentObject = currentContent;
 
+                        bool isRawContent = link.Type == BundleObjectProperties.ContentType;
+                        
                         // If we require concat and/or minify, we preload the content of the file
-                        if (bundle.Concat || bundle.Minify)
+                        if (!isRawContent && (bundle.Concat || bundle.Minify))
                         {
                             try
                             {
@@ -168,7 +192,7 @@ namespace Lunet.Bundles
                         }
 
                         // If we are concatenating
-                        if (concatBuilders != null)
+                        if (!isRawContent && concatBuilders != null)
                         {
                             currentContent.Discard = true;
 

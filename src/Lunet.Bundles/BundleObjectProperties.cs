@@ -13,6 +13,8 @@ namespace Lunet.Bundles
 
         public const string CssType = "css";
 
+        public const string ContentType = "content";
+
         public const string UrlDestination = "url_dest";
 
         public const string Concat = "concat";
