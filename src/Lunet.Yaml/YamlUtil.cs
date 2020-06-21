@@ -86,8 +86,9 @@ namespace Lunet.Yaml
 
                     if (expectOnlyFrontMatter)
                     {
-                        reader.Allow<DocumentStart>();
-                        endPosition = reader.Parser.Current.Start;
+                        reader.Accept<DocumentStart>();
+                        var nextDocStart = reader.Expect<DocumentStart>();
+                        endPosition = nextDocStart.End;
                         break;
                     }
                     continue;
