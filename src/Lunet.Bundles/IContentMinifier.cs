@@ -4,6 +4,6 @@
     {
         string Name { get; }
 
-        string Minify(string type, string content);
+        string Minify(string type, string content, string contentPath = null);
     }
 }

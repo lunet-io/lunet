@@ -19,24 +19,35 @@ namespace Lunet.Minifiers
             bundlePlugin.BundleProcessor.Minifiers.AddIfNotAlready(this);
         }
 
-        public string Minify(string type, string content)
+        public string Minify(string type, string content, string contentPath)
         {
             // TODO: handle filenames, options...etc.
-            UglifyResult? result;
+            UglifyResult result;
             if (type == "js")
             {
-                result = Uglify.Js(content);
+                result = Uglify.Js(content, contentPath);
             }
             else if (type == "css")
             {
-                result = Uglify.Css(content);
+                result = Uglify.Css(content, contentPath);
             }
             else
             {
                 return content;
             }
 
-            return !result.Value.HasErrors ? result.Value.Code : content;
+            if (result.HasErrors)
+            {
+                foreach (var error in result.Errors)
+                {
+                    error.Message = $"Minifying error: {error.Message}";
+                    Site.Warning(error.ToString());
+                }
+
+                return content;
+            }
+
+            return result.Code;
         }
     }
 }

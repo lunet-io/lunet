@@ -121,7 +121,27 @@ namespace Lunet.Bundles
                 // Cancel the double i++
                 i--;
             }
+            
+            // Collect minifier
+            IContentMinifier minifier = null;
+            if (bundle.Minify)
+            {
+                var minifierName = bundle.Minifier;
+                foreach (var min in Minifiers)
+                {
+                    if (minifierName == null || min.Name == minifierName)
+                    {
+                        minifier = min;
+                        break;
+                    }
+                }
 
+                if (minifier == null)
+                {
+                    Site.Warning($"Minify is setup for bundle [{bundle.Name}] but no minifiers are registered (Minified requested: {minifierName ?? "default"})");
+                }
+            }            
+            
             // Process links
             for (int i = 0; i < bundle.Links.Count; i++)
             {
@@ -183,6 +203,12 @@ namespace Lunet.Bundles
                             try
                             {
                                 link.Content = currentContent.Content ?? entry.ReadAllText();
+
+                                // Minify content separately
+                                if (bundle.Minify && minifier != null)
+                                {
+                                    Minify(minifier, link, bundle.MinifyExtension);
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -250,50 +276,31 @@ namespace Lunet.Bundles
                 }
             }
 
-            // Minify entries
-            if (bundle.Minify)
-            {
-                var minifierName = bundle.Minifier;
-                IContentMinifier minifier = null;
-                foreach (var min in Minifiers)
-                {
-                    if (minifierName == null || min.Name == minifierName)
-                    {
-                        minifier = min;
-                        break;
-                    }
-                }
-
-                if (minifier == null)
-                {
-                    Site.Warning($"Minify is setup for bundle [{bundle.Name}] but no minifiers are registered (Minified requested: {minifierName ?? "default"})");
-                }
-                else
-                {
-                    foreach (var link in bundle.Links)
-                    {
-                        var contentObject = link.ContentObject;
-                        if (contentObject != null)
-                        {
-                            contentObject.Content = minifier.Minify(link.Type, link.Content);
-
-                            var minExtension = (bundle.MinifyExtension ?? string.Empty) + "." + link.Type;
-                            if (!contentObject.Url.EndsWith(minExtension))
-                            {
-                                var url = Path.ChangeExtension(contentObject.Url, minExtension);
-                                contentObject.Url = url;
-                            }
-                        }
-                    }
-                }
-            }
-
             foreach (var link in bundle.Links)
             {
                 var contentObject = link.ContentObject;
                 if (contentObject != null)
                 {
                     link.Url = contentObject.Url;
+                }
+            }
+        }
+
+        private static void Minify(IContentMinifier minifier, BundleLink link, string minifyExtension)
+        {
+            var contentObject = link.ContentObject;
+            // Don't try to minify content that is already minified
+            if (contentObject != null && !link.Path.EndsWith($".min.{link.Type}"))
+            {
+                var minifiedResult = minifier.Minify(link.Type, link.Content, link.Path);
+                contentObject.Content = minifiedResult;
+                link.Content = minifiedResult;
+
+                var minExtension = (minifyExtension ?? string.Empty) + "." + link.Type;
+                if (!contentObject.Url.EndsWith(minExtension))
+                {
+                    var url = Path.ChangeExtension(contentObject.Url, minExtension);
+                    contentObject.Url = url;
                 }
             }
         }
