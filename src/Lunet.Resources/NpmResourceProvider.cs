@@ -142,7 +142,7 @@ namespace Lunet.Resources
                     }
                 }
 
-                // Otherwise, we have to donwload the package and unzip it
+                // Otherwise, we have to download the package and unzip it
                 var downloadUrl = downloads[selectedVersion];
                 try
                 {
