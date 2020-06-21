@@ -113,7 +113,7 @@ namespace Lunet.Extends
             }
 
             //var themePrivatePath = PrivateExtendsFolder / extendName;
-            var themeSiteDir = new DirectoryEntry(Site.SiteMetaFileSystem, ExtendsFolder / extendName);
+            var themeSiteDir = new DirectoryEntry(Site.MetaFileSystem, ExtendsFolder / extendName);
             var themeTempDir = new DirectoryEntry(Site.TempMetaFileSystem, ExtendsFolder / extendName);
             IFileSystem extendPath = null;
 

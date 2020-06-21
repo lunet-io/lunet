@@ -151,9 +151,8 @@ namespace Lunet.Core
             set
             {
                 _siteFileSystem = value;
-                SiteMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder);
                 TempSiteFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder / BuildFolderName / TempSiteFolderName);
-                TempMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder / BuildFolderName / LunetFolderName);
+                TempMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder / BuildFolderName / TempSiteFolderName / LunetFolderName);
                 UpdateFileSystem();
             }
         }
@@ -167,8 +166,6 @@ namespace Lunet.Core
         public IFileSystem SharedMetaFileSystem { get; }
 
         public IFileSystem TempMetaFileSystem { get; private set; }
-
-        public IFileSystem SiteMetaFileSystem { get; private set; }
 
         public IFileSystem MetaFileSystem { get; private set; }
 
