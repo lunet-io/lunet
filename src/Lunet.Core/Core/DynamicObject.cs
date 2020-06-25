@@ -26,6 +26,11 @@ namespace Lunet.Core
         {
             return this[name] is T tvalue ? tvalue : default;
         }
+        
+        public void SetValue(string name, object value)
+        {
+            base.SetValue(name, value, false);
+        }
     }
 
     /// <summary>
