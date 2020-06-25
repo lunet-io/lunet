@@ -445,6 +445,10 @@ namespace Lunet.Core
                 else
                 {
                     page = new ContentObject(Site, file);
+                    
+                    // Run pre-processing on static content as well
+                    var pendingPageProcessors = new OrderedList<IContentProcessor>();
+                    TryProcessPage(page, BeforeLoadingProcessors.OfType<IContentProcessor>(), pendingPageProcessors, false);
                 }
             }
             finally
