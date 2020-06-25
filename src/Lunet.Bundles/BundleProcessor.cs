@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Lunet.Core;
 using Lunet.Helpers;
 using Zio;
@@ -217,6 +218,9 @@ namespace Lunet.Bundles
                             }
                         }
 
+                        // Remove sourcemaps (TODO: make this configurable)
+                        RemoveSourceMaps(link);
+
                         // If we are concatenating
                         if (!isRawContent && concatBuilders != null)
                         {
@@ -284,6 +288,20 @@ namespace Lunet.Bundles
                     link.Url = contentObject.Url;
                 }
             }
+        }
+
+
+        private static readonly Regex RegexSourceMapSimple = new Regex(@"^//#\s*sourceMappingURL=(.|\r|\n)*", RegexOptions.Multiline);
+        private static readonly Regex RegexSourceMapMulti = new Regex(@"^/\*#\s*sourceMappingURL=(.|\r|\n)*\*/", RegexOptions.Multiline);
+
+        private static void RemoveSourceMaps(BundleLink link)
+        {
+            var content = link.Content;
+            if (content == null) return;
+            content = RegexSourceMapSimple.Replace(content, string.Empty);
+            content = RegexSourceMapMulti.Replace(content, string.Empty);
+            link.Content = content;
+            link.ContentObject.Content = content;
         }
 
         private static void Minify(IContentMinifier minifier, BundleLink link, string minifyExtension)
