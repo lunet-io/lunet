@@ -2,7 +2,7 @@
 
 <img align="right" width="96px" height="96px" src="doc/images/lunet.png">
 
-A fast and powerfull static website generator written in C#
+A fast and powerful static website generator written in C#
 
 > NOTE: This repository is under development and not ready for public!
 
