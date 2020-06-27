@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Lunet.Core;
 using Scriban.Parsing;
 using Scriban.Runtime;
 using SharpYaml;
@@ -22,9 +23,9 @@ namespace Lunet.Yaml
         /// <param name="yamlText">The input YAML expected to be a frontmatter, starting with a `---`</param>
         /// <param name="position">the index of a string after the `---` end of the YAML frontmatter</param>
         /// <returns>The parsed YAML frontmatter to a Scriban <see cref="ScriptObject"/></returns>
-        public static object FromYamlFrontMatter(string yamlText, out TextPosition position)
+        public static object FromYamlFrontMatter(string yamlText, out TextPosition position, string yamlFile = null)
         {
-            return FromYaml(yamlText, true, out position);
+            return FromYaml(yamlText, yamlFile, true, out position);
         }
 
         /// <summary>
@@ -32,93 +33,102 @@ namespace Lunet.Yaml
         /// </summary>
         /// <param name="yamlText">An input yaml text</param>
         /// <returns>The parsed YAML object to a Scriban <see cref="ScriptObject"/> or <see cref="ScriptArray"/></returns>
-        public static object FromYaml(string yamlText)
+        public static object FromYaml(string yamlText, string yamlFile = null)
         {
             TextPosition position;
-            return FromYaml(yamlText, false, out position);
+            return FromYaml(yamlText, yamlFile, false, out position);
         }
 
-        private static object FromYaml(string yamlText, bool expectOnlyFrontMatter, out TextPosition position)
+        private static object FromYaml(string yamlText, string yamlFile, bool expectOnlyFrontMatter, out TextPosition position)
         {
-            position = new TextPosition();
-            if (yamlText == null)
+            try
             {
-                return null;
-            }
-
-            var parser = new Parser(new StringReader(yamlText));
-            var reader = new EventReader(parser);
-
-            if (!reader.Accept<StreamStart>())
-            {
-                return null;
-            }
-
-            reader.Expect<StreamStart>();
-            var docStart = reader.Expect<DocumentStart>();
-            var hasDocumentStart = true;
-
-            object result = null;
-            ScriptArray objects = null;
-
-            // If we expect to read multiple documents, we will return an array of result
-            if (expectOnlyFrontMatter && docStart.IsImplicit) 
-            {
-                return null;
-            }
-
-            Mark endPosition;
-
-            while (true)
-            {
-                if (reader.Accept<StreamEnd>())
+                position = new TextPosition();
+                if (yamlText == null)
                 {
-                    var evt = reader.Expect<StreamEnd>();
-                    endPosition = evt.End;
-                    break;
+                    return null;
                 }
 
-                if (hasDocumentStart && reader.Accept<DocumentEnd>())
+                var parser = new Parser(new StringReader(yamlText));
+                var reader = new EventReader(parser);
+
+                if (!reader.Accept<StreamStart>())
                 {
-                    reader.Expect<DocumentEnd>();
+                    return null;
+                }
 
-                    hasDocumentStart = false;
+                reader.Expect<StreamStart>();
+                var docStart = reader.Expect<DocumentStart>();
+                var hasDocumentStart = true;
 
-                    if (expectOnlyFrontMatter)
+                object result = null;
+                ScriptArray objects = null;
+
+                // If we expect to read multiple documents, we will return an array of result
+                if (expectOnlyFrontMatter && docStart.IsImplicit)
+                {
+                    return null;
+                }
+
+                Mark endPosition;
+
+                while (true)
+                {
+                    if (reader.Accept<StreamEnd>())
                     {
-                        reader.Accept<DocumentStart>();
-                        var nextDocStart = reader.Expect<DocumentStart>();
-                        endPosition = nextDocStart.End;
+                        var evt = reader.Expect<StreamEnd>();
+                        endPosition = evt.End;
                         break;
                     }
-                    continue;
-                }
 
-                if (reader.Accept<DocumentStart>())
-                {
-                    reader.Expect<DocumentStart>();
-                    hasDocumentStart = true;
-                }
-
-                var obj = ReadEvent(reader);
-
-                if (result == null)
-                {
-                    result = obj;
-                }
-                else 
-                {
-                    if (objects == null)
+                    if (hasDocumentStart && reader.Accept<DocumentEnd>())
                     {
-                        objects = new ScriptArray {result};
-                        result = objects;
-                    }
-                    objects.Add(obj);
-                }
-            }
+                        reader.Expect<DocumentEnd>();
 
-            position = new TextPosition(endPosition.Index, endPosition.Line, endPosition.Column);
-            return result;
+                        hasDocumentStart = false;
+
+                        if (expectOnlyFrontMatter)
+                        {
+                            reader.Accept<DocumentStart>();
+                            var nextDocStart = reader.Expect<DocumentStart>();
+                            endPosition = nextDocStart.End;
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    if (reader.Accept<DocumentStart>())
+                    {
+                        reader.Expect<DocumentStart>();
+                        hasDocumentStart = true;
+                    }
+
+                    var obj = ReadEvent(reader);
+
+                    if (result == null)
+                    {
+                        result = obj;
+                    }
+                    else
+                    {
+                        if (objects == null)
+                        {
+                            objects = new ScriptArray {result};
+                            result = objects;
+                        }
+
+                        objects.Add(obj);
+                    }
+                }
+
+                position = new TextPosition(endPosition.Index, endPosition.Line, endPosition.Column);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new LunetException($"Error while parsing {yamlFile}. {ex.Message}");
+            }
         }
 
         private static object ReadEvent(EventReader reader)
