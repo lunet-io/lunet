@@ -31,6 +31,27 @@ namespace Lunet.Core
         {
             base.SetValue(name, value, false);
         }
+
+        private bool _toStringing = false;
+
+        public override string ToString(string format, IFormatProvider formatProvider)
+        {
+            // protect against recursive content
+            if (_toStringing)
+            {
+                return "<recurse>";
+            }
+
+            _toStringing = true;
+            try
+            {
+                return base.ToString(format, formatProvider);
+            }
+            finally
+            {
+                _toStringing = false;
+            }
+        }
     }
 
     /// <summary>
