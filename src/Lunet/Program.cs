@@ -10,6 +10,7 @@ using Lunet.Minifiers;
 using Lunet.Resources;
 using Lunet.Taxonomies;
 using Lunet.Scss;
+using Lunet.Search;
 using Lunet.Server;
 using Lunet.Watcher;
 using Lunet.Yaml;
@@ -33,6 +34,7 @@ namespace Lunet
                 .Register<MinifierPlugin>()
                 .Register<ScssPlugin>()
                 .Register<TaxonomyPlugin>()
+                .Register<SearchPlugin>()
                 .Register<YamlPlugin>();
                 
             return site.Run(args);

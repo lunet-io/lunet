@@ -36,16 +36,20 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Watcher", "Lunet.Watcher\Lunet.Watcher.csproj", "{59247D07-E8D7-45EF-B566-DE77F19E5685}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{46B38F3E-7B35-4D5A-8136-01D635D6EA0F}"
-ProjectSection(SolutionItems) = preProject
-	..\.gitignore = ..\.gitignore
-	..\readme.md = ..\readme.md
-	..\changelog.md = ..\changelog.md
-	..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
-	Directory.Build.targets = Directory.Build.targets
-	Directory.Build.props = Directory.Build.props
-EndProjectSection
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\changelog.md = ..\changelog.md
+		..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
+		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		..\readme.md = ..\readme.md
+	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Menus", "Lunet.Menus\Lunet.Menus.csproj", "{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Menus", "Lunet.Menus\Lunet.Menus.csproj", "{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TryLucene", "TryLucene\TryLucene.csproj", "{2A9524B0-B9CA-49E5-967D-11970B02CFE7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Search", "Lunet.Search\Lunet.Search.csproj", "{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -121,6 +125,14 @@ Global
 		{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
