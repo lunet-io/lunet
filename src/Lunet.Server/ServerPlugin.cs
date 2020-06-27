@@ -79,16 +79,22 @@ namespace Lunet.Server
                     .UseContentRoot(wwwDirectory)
                     .UseUrls(Site.BaseUrl)
                     .Configure(Configure);
-
+                
                 // Setup the environment
                 // TODO: access to Site.Scripts.SiteFunctions.LunetObject is too long!
                 hostBuilder.UseEnvironment(Site.Scripts.SiteFunctions.LunetObject.Environment ?? "Development");
 
-                // Enable server log only if log.server = true
-                if (Site.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server"))
+                // Active compression
+                hostBuilder.ConfigureServices(services =>
                 {
-                    hostBuilder.ConfigureServices(collection => collection.Add(ServiceDescriptor.Singleton(Site.LoggerFactory)));
-                }
+                    services.AddResponseCompression();
+
+                    // Enable server log only if log.server = true
+                    if (Site.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server"))
+                    {
+                        services.Add(ServiceDescriptor.Singleton(Site.LoggerFactory));
+                    }
+                });
 
                 var host = hostBuilder.Build();
 
@@ -161,18 +167,20 @@ namespace Lunet.Server
 
         public OrderedList<Action<IApplicationBuilder>> AppBuilders { get; }
 
-        public void Configure(IApplicationBuilder builder)
+        public void Configure(IApplicationBuilder app)
         {
             // Allow to configure the pipeline
             foreach (var appBuilderAction in AppBuilders)
             {
-                appBuilderAction(builder);
+                appBuilderAction(app);
             }
 
-            builder.UseStatusCodePagesWithReExecute(Site.ErrorRedirect);
+            app.UseStatusCodePagesWithReExecute(Site.ErrorRedirect);
+
+            app.UseResponseCompression();
 
             // By default we always serve files at last
-            builder.UseFileServer(new FileServerOptions()
+            app.UseFileServer(new FileServerOptions()
             {
                 StaticFileOptions =
                 {
