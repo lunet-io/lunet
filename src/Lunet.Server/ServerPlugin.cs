@@ -169,8 +169,18 @@ namespace Lunet.Server
                 appBuilderAction(builder);
             }
 
+            builder.UseStatusCodePagesWithReExecute(Site.ErrorRedirect);
+
             // By default we always serve files at last
-            builder.UseFileServer(new FileServerOptions() {FileProvider = new SiteFileProvider(Site)});
+            builder.UseFileServer(new FileServerOptions()
+            {
+                StaticFileOptions =
+                {
+                    ServeUnknownFileTypes = true,
+                    DefaultContentType = "application/octet-stream",
+                },
+                FileProvider = new SiteFileProvider(Site)
+            });
         }
 
         private void SetupLiveReloadClient(SiteObject site)
