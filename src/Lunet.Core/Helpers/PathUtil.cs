@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using Zio;
 
 namespace Lunet.Helpers
 {
@@ -8,6 +9,39 @@ namespace Lunet.Helpers
     {
         private static readonly char[] TrimCharStart = new[] {'/'};
 
+        public static SearchPattern SearchPattern(this UPath path)
+        {
+            var rootPath = UPath.Root;
+            string searchPath = null;
+            var items = path.Split();
+            foreach (var item in items)
+            {
+                if (searchPath != null || (item.Contains("*") || item.Contains("?")))
+                {
+                    if (searchPath == null)
+                    {
+                        searchPath = "";
+                    }
+                    else
+                    {
+                        searchPath += "/";
+                    }
+                    searchPath += item;
+                }
+                else
+                {
+                    rootPath = rootPath / item;
+                }
+            }
+
+            if (searchPath == null)
+            {
+                searchPath = rootPath.GetName();
+                rootPath = rootPath.GetDirectory();
+            }
+
+            return Zio.SearchPattern.Parse(ref rootPath, ref searchPath);
+        }
 
         public static string NormalizeExtension(string extension)
         {
