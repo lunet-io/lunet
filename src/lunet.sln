@@ -47,8 +47,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{46B38F3E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Menus", "Lunet.Menus\Lunet.Menus.csproj", "{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TryLucene", "TryLucene\TryLucene.csproj", "{2A9524B0-B9CA-49E5-967D-11970B02CFE7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Search", "Lunet.Search\Lunet.Search.csproj", "{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}"
 EndProject
 Global
@@ -125,10 +123,6 @@ Global
 		{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F0992F6F-9523-43FC-85B4-AC2F56B3E0E0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2A9524B0-B9CA-49E5-967D-11970B02CFE7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
