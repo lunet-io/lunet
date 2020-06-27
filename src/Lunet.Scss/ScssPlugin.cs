@@ -10,11 +10,14 @@ namespace Lunet.Scss
     {
         public ScssPlugin(SiteObject site) : base(site)
         {
-            ScssObject = new ScssObject(this);
-            site.SetValue("scss", ScssObject, true);
+            Includes = new PathCollection();
+            SetValue("includes", Includes, true);
+            site.SetValue("scss", this, true);
             site.Content.ContentProcessors.Add(new ScssProcessor(this));
         }
 
-        public ScssObject ScssObject { get; }
+        public override string Name => "scss";
+
+        public PathCollection Includes { get; }
     }
 }

@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using Lunet.Core;
-using Lunet.Helpers;
 using SharpScss;
 using Zio;
 
@@ -33,14 +30,12 @@ namespace Lunet.Scss
 
             var content = file.Content;
 
-            var scss = Plugin.ScssObject;
-
             var options = new ScssOptions();
             options.InputFile = (string)file.Path;
 
             var includePaths = new List<DirectoryEntry>();
 
-            foreach (var pathObj in scss.Includes)
+            foreach (var pathObj in Plugin.Includes)
             {
                 var path = pathObj as string;
                 if (path != null && UPath.TryParse(path, out var validPath) && Site.MetaFileSystem.DirectoryExists(validPath))
@@ -139,11 +134,6 @@ namespace Lunet.Scss
             }
 
             return ContentResult.Continue;
-        }
-
-        private bool TryImport(string file, string parentpath, out string scss, out string map)
-        {
-            throw new NotImplementedException();
         }
     }
 }

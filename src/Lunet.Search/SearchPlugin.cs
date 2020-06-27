@@ -2,9 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
-using System;
 using Lunet.Core;
-using Scriban.Runtime;
 using Zio;
 
 namespace Lunet.Search
@@ -18,11 +16,11 @@ namespace Lunet.Search
             Enable = false;
             Url = (string)DefaultUrl;
 
-            Excludes = new ScriptArray();
-            Excludes.ScriptObject.Import("add", (Action<object>)AddExclude);
+            Excludes = new PathCollection();
             SetValue("excludes", Excludes, true);
 
             site.SetValue("search", this, true);
+
             var processor = new SearchProcessor(this);
             site.Content.BeforeLoadingProcessors.Add(processor);
             site.Content.BeforeProcessingProcessors.Add(processor);
@@ -35,43 +33,12 @@ namespace Lunet.Search
             set => SetValue("enable", value);
         }
 
-        public ScriptArray Excludes { get; }
+        public PathCollection Excludes { get; }
 
         public string Url
         {
             get => GetSafeValue<string>("url");
             set => SetValue("url", value);
-        }
-
-        private void AddExclude(object item)
-        {
-            if (item == null) return;
-
-            if (item is string str)
-            {
-                if (!UPath.TryParse(str, out var path))
-                {
-                    throw new ArgumentException($"Invalid path `{str}`. The path is malformed.", nameof(item));
-                }
-
-                if (!path.IsAbsolute)
-                {
-                    throw new ArgumentException($"Invalid path `{str}`. Expecting an absolute path.", nameof(item));
-                }
-
-                Excludes.Add(item);
-            }
-            else if (item is ScriptArray array)
-            {
-                foreach (var itemToAdd in array)
-                {
-                    AddExclude(itemToAdd);
-                }
-            }
-            else
-            {
-                throw new ArgumentException($"Invalid path. Expecting a string instead of `{item.GetType().FullName}`.", nameof(item));
-            }
         }
     }
 }
