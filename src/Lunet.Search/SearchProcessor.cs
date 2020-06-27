@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Helpers;
 using Markdig;
@@ -51,25 +53,62 @@ namespace Lunet.Search
 
                     _dbPathOnDisk = Path.GetTempFileName();
                     _connection = new SqliteConnection($"Data Source={_dbPathOnDisk}");
-                    _connection.Open();
 
-                    using (var command = _connection.CreateCommand())
+                    try
                     {
-                        command.CommandText = $"CREATE VIRTUAL TABLE pages USING fts5(url, title, content);";
-                        command.ExecuteNonQuery();
-                    }
+                        _connection.Open();
 
-                    _currentTransaction = _connection.BeginTransaction();
+                        using (var command = _connection.CreateCommand())
+                        {
+                            command.CommandText = $"PRAGMA page_size = 512; PRAGMA JOURNAL_MODE = memory;";
+                            command.ExecuteNonQuery();
+
+                            command.CommandText = $"CREATE VIRTUAL TABLE pages USING fts5(url, title, content, tokenize = porter);";
+                            command.ExecuteNonQuery();
+                        }
+
+                        _currentTransaction = _connection.BeginTransaction();
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            _connection.Dispose();
+                        }
+                        finally
+                        {
+                            _connection = null;
+                            _currentTransaction = null;
+                        }
+
+                        // re-throw
+                        throw;
+                    }
                 }
             }
             else if (stage == ProcessingStage.BeforeProcessingContent)
             {
                 if (_connection != null)
                 {
+                    // Last pass by optimizing the b-tree
+                    using (var command = _connection.CreateCommand())
+                    {
+                        command.CommandText = "INSERT INTO pages(pages) VALUES('optimize');";
+                        command.ExecuteNonQuery();
+                    }
+
                     // Commit all changes generated during loading
-                    _currentTransaction?.Commit();
-                    _connection?.Close();
-                    _connection?.Dispose();
+                    _currentTransaction.Commit();
+
+                    // Final compaction of the DB
+                    using (var command = _connection.CreateCommand())
+                    {
+                        command.CommandText = "VACUUM;";
+                        command.ExecuteNonQuery();
+                    }
+
+                    _connection.Close();
+                    _connection.Dispose();
 
                     // Add our dynamic content to the output
                     var fs = new PhysicalFileSystem();
@@ -79,6 +118,14 @@ namespace Lunet.Search
 
                     _currentTransaction = null;
                     _connection = null;
+
+                    // TODO: make it configurable by selecting which bundle will receive the search/db
+                    var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
+
+                    // Insert content before the others to make sure they are loaded async ASAP
+                    defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
+                    defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/lunet-search.js");
+                    defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/lunet-sql-wasm.js");
                 }
             }
         }

@@ -32,9 +32,9 @@ namespace Lunet.Bundles
             SetValue(BundleObjectProperties.UrlDestination, UrlDestination, true);
             MinifyExtension = ".min";
 
-            this.Import(BundleObjectProperties.JsType, (Action<object, string>)FunctionJs);
-            this.Import(BundleObjectProperties.CssType, (Action<object, string>)FunctionCss);
-            this.Import(BundleObjectProperties.ContentType, (Action<object, string, string>)FunctionContent);
+            this.Import(BundleObjectProperties.JsType, (Action<object, string>)AddJs);
+            this.Import(BundleObjectProperties.CssType, (Action<object, string>)AddCss);
+            this.Import(BundleObjectProperties.ContentType, (Action<object, string, string>)AddContent);
         }
 
         public string Name { get; }
@@ -69,6 +69,11 @@ namespace Lunet.Bundles
 
         public void AddLink(string type, string path, string url = null)
         {
+            InsertLink(Links.Count, type, path, url);
+        }
+
+        public void InsertLink(int index, string type, string path, string url = null)
+        {
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (path == null) throw new ArgumentNullException(nameof(path));
 
@@ -91,21 +96,21 @@ namespace Lunet.Bundles
             }
 
             var link = new BundleLink(this, type, path, url);
-            Links.Add(link);
+            Links.Insert(index, link);
         }
 
-        private void FunctionJs(object resourceOrPath, string path = null)
+        public void AddJs(object resourceOrPath, string path = null)
         {
             AddLink(BundleObjectProperties.JsType, resourceOrPath, path);
         }
 
-        private void FunctionCss(object resourceOrPath, string path = null)
+        public void AddCss(object resourceOrPath, string path = null)
         {
             if (resourceOrPath == null) throw new ArgumentNullException(nameof(resourceOrPath));
             AddLink(BundleObjectProperties.CssType, resourceOrPath, path);
         }
 
-        private void FunctionContent(object resourceOrPath, string pathOrUrl, string url = null)
+        public void AddContent(object resourceOrPath, string pathOrUrl, string url = null)
         {
             AddLink(BundleObjectProperties.ContentType, resourceOrPath, resourceOrPath is string ? null : pathOrUrl, resourceOrPath is string ? pathOrUrl : url);
         }

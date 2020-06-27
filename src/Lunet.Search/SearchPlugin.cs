@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using Lunet.Bundles;
 using Lunet.Core;
 using Zio;
 
@@ -9,10 +10,11 @@ namespace Lunet.Search
 {
     public class SearchPlugin : SitePlugin
     {
-        public static readonly UPath DefaultUrl = UPath.Root / "js" / "search.db";
+        public static readonly UPath DefaultUrl = UPath.Root / "js" / "lunet-search.db";
 
-        public SearchPlugin(SiteObject site) : base(site)
+        public SearchPlugin(SiteObject site, BundlePlugin bundlePlugin) : base(site)
         {
+            BundlePlugin = bundlePlugin;
             Enable = false;
             Url = (string)DefaultUrl;
 
@@ -23,7 +25,9 @@ namespace Lunet.Search
 
             var processor = new SearchProcessor(this);
             site.Content.BeforeLoadingProcessors.Add(processor);
-            site.Content.BeforeProcessingProcessors.Add(processor);
+            // It is important to insert the processor at the beginning 
+            // because we output values used by the BundlePlugin
+            site.Content.BeforeProcessingProcessors.Insert(0, processor);
             site.Content.AfterLoadingProcessors.Add(processor);
         }
 
@@ -32,6 +36,8 @@ namespace Lunet.Search
             get => GetSafeValue<bool>("enable");
             set => SetValue("enable", value);
         }
+
+        internal BundlePlugin BundlePlugin { get; }
 
         public PathCollection Excludes { get; }
 
