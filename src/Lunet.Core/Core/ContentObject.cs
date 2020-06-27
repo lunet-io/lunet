@@ -20,7 +20,7 @@ namespace Lunet.Core
 
         private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null)
+        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null)
         {
             Site = site ?? throw new ArgumentNullException(nameof(site));
             SourceFile = sourceFileInfo ?? throw new ArgumentNullException(nameof(sourceFileInfo));
@@ -46,7 +46,7 @@ namespace Lunet.Core
                 Date = DateTime.Now;
             }
 
-            Path = sourceFileInfo.Path;
+            Path = path ?? sourceFileInfo.Path;
             Length = SourceFile.Length;
             Extension = SourceFile.ExtensionWithDot?.ToLowerInvariant();
             ModifiedTime = SourceFile.LastWriteTime;
@@ -157,6 +157,18 @@ namespace Lunet.Core
         {
             get => GetSafeValue<string>(PageVariables.Content);
             set => this[PageVariables.Content] = value;
+        }
+
+        public string GetOrLoadContent()
+        {
+            var content = Content;
+            if (content == null)
+            {
+                content = SourceFile.ReadAllText();
+                Content = content;
+            }
+
+            return content;
         }
 
         /// <summary>

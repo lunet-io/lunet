@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
@@ -62,8 +63,10 @@ namespace Lunet.Layouts
             return null;
         }
 
-        public override ContentResult TryProcess(ContentObject page)
+        public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
         {
+            Debug.Assert(stage == ContentProcessingStage.Processing);
+            
             if (page.ScriptObjectLocal == null)
             {
                 return ContentResult.None;

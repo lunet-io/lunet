@@ -7,6 +7,6 @@ namespace Lunet.Core
         {
         }
 
-        public abstract ContentResult TryProcess(ContentObject file);
+        public abstract ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage);
     }
 }

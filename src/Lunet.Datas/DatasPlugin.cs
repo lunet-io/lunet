@@ -15,7 +15,7 @@ namespace Lunet.Datas
             DataLoaders = new OrderedList<IDataLoader>();
 
             Site.SetValue("data", RootDataObject, true);
-            site.Content.BeforeLoadingProcessors.Add(new DatasProcessor(this));
+            site.Content.BeforeInitializingProcessors.Add(new DatasProcessor(this));
         }
 
         public DataObject RootDataObject { get; }

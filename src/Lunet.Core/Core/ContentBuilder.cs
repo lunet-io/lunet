@@ -35,22 +35,29 @@ namespace Lunet.Core
             filesWritten = new Dictionary<FileEntry, FileEntry>();
             totalDuration = new Stopwatch();
 
+            BeforeInitializingProcessors = new OrderedList<ISiteProcessor>();
             BeforeLoadingProcessors = new OrderedList<ISiteProcessor>();
-
+            AfterLoadingProcessors = new OrderedList<IContentProcessor>();
+            BeforeProcessingProcessors = new OrderedList<ISiteProcessor>();
             ContentProcessors = new OrderedList<IContentProcessor>();
-
-            AfterContentProcessors = new OrderedList<ISiteProcessor>();
+            AfterProcessingProcessors = new OrderedList<ISiteProcessor>();
         }
 
         private ScriptingPlugin Scripts { get; }
 
+        public OrderedList<ISiteProcessor> BeforeInitializingProcessors { get; }
+
         public OrderedList<ISiteProcessor> BeforeLoadingProcessors { get; }
 
+        public OrderedList<IContentProcessor> AfterLoadingProcessors { get; }
+
+        public OrderedList<ISiteProcessor> BeforeProcessingProcessors { get; }
+
         public OrderedList<IContentProcessor> ContentProcessors { get; }
+        
+        public OrderedList<ISiteProcessor> AfterProcessingProcessors { get; }
 
-        public OrderedList<ISiteProcessor> AfterContentProcessors { get; }
-
-        public void Initialize()
+        private void Initialize()
         {
             totalDuration.Restart();
 
@@ -65,60 +72,65 @@ namespace Lunet.Core
                 return;
             }
             isInitialized = true;
+        }
 
-            // If we have any errors, early exit
-            if (Site.HasErrors)
-            {
-                return;
-            }
+        public void PreInitialize()
+        {
+            // Before loading content
+            TryRunProcess(BeforeInitializingProcessors, ProcessingStage.BeforeInitializing);
         }
 
         public void Run()
         {
             Initialize();
 
-            // If we have any errors, early exit
-            if (Site.HasErrors)
-            {
-                return;
-            }
-
-            // Start Loading and Preprocessing
-            RunProcess(BeforeLoadingProcessors);
             try
             {
+                // If we have any errors, early exit
+                if (Site.HasErrors)
+                {
+                    return;
+                }
+
+                // Before loading content
+                if (!TryRunProcess(BeforeLoadingProcessors, ProcessingStage.BeforeLoadingContent))
+                {
+                    // If we have any errors during processing, early exit
+                    return;
+                }
+
+                // Load content
                 LoadAllContent();
-            }
-            finally
-            {
-                RunProcess(AfterContentProcessors);
-            }
 
-            try
-            {
-                // Process static files
+                // Before processing content
+                if (!TryRunProcess(BeforeProcessingProcessors, ProcessingStage.BeforeProcessingContent))
+                {
+                    // If we have any errors during processing, early exit
+                    return;
+                }
+
+                // Process static content files
                 ProcessPages(Site.StaticFiles, true);
 
-                // Process pages (files with front matter)
+                // Process pages content (files with front matter)
                 ProcessPages(Site.Pages, true);
 
-                // Process pages (files with front matter)
+                // Process dynamic pages content (files with front matter)
                 ProcessPages(Site.DynamicPages, true);
+
+                // End processing content
+                TryRunProcess(AfterProcessingProcessors, ProcessingStage.AfterProcessingContent);
+
+                // Remove output files
+                CleanupOutputFiles();
             }
             finally
             {
-                // End the process
-                // TODO: Add
+                // Update statistics
+                totalDuration.Stop();
+                Site.Statistics.TotalTime = totalDuration.Elapsed;
             }
-
-            // Remove output files
-            CleanupOutputFiles();
-
-            // Update statistics
-            totalDuration.Stop();
-            Site.Statistics.TotalTime = totalDuration.Elapsed;
         }
-
         
         public bool TryCopyFile(FileEntry fromFile, UPath outputPath)
         {
@@ -253,7 +265,7 @@ namespace Lunet.Core
             previousOutputFiles.Remove(outputFile);
         }
 
-        private void RunProcess(IEnumerable<ISiteProcessor> processors)
+        private bool TryRunProcess(IEnumerable<ISiteProcessor> processors, ProcessingStage stage)
         {
             var statistics = Site.Statistics;
 
@@ -266,11 +278,31 @@ namespace Lunet.Core
                 stat.Order = i;
 
                 clock.Restart();
-                processor.Process();
-                clock.Stop();
-                stat.BeginProcessTime = clock.Elapsed;
+                try
+                {
+                    processor.Process(stage);
+                }
+                catch (Exception exception)
+                {
+                    if (exception is LunetException)
+                    {
+                        Site.Error($"Unexpected error in processor {processor.Name}. Reason: {exception.Message}");
+                    }
+                    else
+                    {
+                        Site.Error(exception, $"Unexpected error in processor {processor.Name}. Reason: {exception.Message}");
+                    }
+                    return false;
+                }
+                finally
+                {
+                    clock.Stop();
+                    stat.BeginProcessTime = clock.Elapsed;
+                }
                 i++;
             }
+
+            return true;
         }
 
         public bool TryPreparePage(ContentObject page)
@@ -289,7 +321,7 @@ namespace Lunet.Core
                 }
 
                 var pendingPageProcessors = new OrderedList<IContentProcessor>();
-                return TryProcessPage(page, BeforeLoadingProcessors.OfType<IContentProcessor>(), pendingPageProcessors, false);
+                return TryProcessPage(page, ContentProcessingStage.AfterLoading, AfterLoadingProcessors, pendingPageProcessors, false);
             }
 
             return false;
@@ -303,7 +335,7 @@ namespace Lunet.Core
             var pendingPageProcessors = new OrderedList<IContentProcessor>();
             foreach (var page in pages)
             {
-                TryProcessPage(page, ContentProcessors, pendingPageProcessors, copyOutput);
+                TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
             }
         }
 
@@ -394,7 +426,7 @@ namespace Lunet.Core
             var buffer = new byte[16];
 
             var clock = Stopwatch.StartNew();
-            var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+            var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             try
             {
                 var count = await stream.ReadAsync(buffer, 0, buffer.Length);
@@ -448,7 +480,7 @@ namespace Lunet.Core
                     
                     // Run pre-processing on static content as well
                     var pendingPageProcessors = new OrderedList<IContentProcessor>();
-                    TryProcessPage(page, BeforeLoadingProcessors.OfType<IContentProcessor>(), pendingPageProcessors, false);
+                    TryProcessPage(page, ContentProcessingStage.AfterLoading, AfterLoadingProcessors, pendingPageProcessors, false);
                 }
             }
             finally
@@ -501,7 +533,7 @@ namespace Lunet.Core
             return page;
         }
 
-        private bool TryProcessPage(ContentObject page, IEnumerable<IContentProcessor> pageProcessors, OrderedList<IContentProcessor> pendingPageProcessors, bool copyOutput)
+        private bool TryProcessPage(ContentObject page, ContentProcessingStage stage, IEnumerable<IContentProcessor> pageProcessors, OrderedList<IContentProcessor> pendingPageProcessors, bool copyOutput)
         {
             // If page is discarded, skip it
             if (page.Discard)
@@ -534,7 +566,7 @@ namespace Lunet.Core
                     clock.Restart();
                     try
                     {
-                        var result = processor.TryProcess(page);
+                        var result = processor.TryProcessContent(page, stage);
 
                         if (result != ContentResult.None)
                         {
@@ -552,7 +584,14 @@ namespace Lunet.Core
                     }
                     catch (Exception ex)
                     {
-                        Site.Error(ex, $"Error while processing {page.Path}.");
+                        if (ex is LunetException lunetEx)
+                        {
+                            Site.Error($"Error while processing {page.Path} by {processor.Name} processor. {lunetEx.Message}");
+                        }
+                        else
+                        {
+                            Site.Error(ex, $"Error while processing {page.Path} by {processor.Name} processor.");
+                        }
                         breakProcessing = true;
                         hasBeenProcessed = true;
                         break;

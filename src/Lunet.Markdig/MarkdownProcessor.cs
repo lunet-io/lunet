@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using Lunet.Core;
 using Markdig;
 using Scriban.Runtime;
@@ -27,8 +28,10 @@ namespace Lunet.Markdown
             markdownHelper.Import("to_html", new Func<string, string>(ToHtmlFunction));
         }
 
-        public override ContentResult TryProcess(ContentObject page)
+        public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
         {
+            Debug.Assert(stage == ContentProcessingStage.AfterLoading);
+
             var contentType = page.ContentType;
 
             // This plugin is only working on files with a frontmatter and the markdown extension

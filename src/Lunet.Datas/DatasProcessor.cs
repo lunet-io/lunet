@@ -3,10 +3,10 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
-using Microsoft.Extensions.Logging;
 using Zio;
 
 namespace Lunet.Datas
@@ -21,10 +21,11 @@ namespace Lunet.Datas
         {
         }
 
-        public override void Process()
+        public override void Process(ProcessingStage stage)
         {
-            // We first preload all data object into the site.data object
+            Debug.Assert(stage == ProcessingStage.BeforeInitializing);
 
+            // We first pre-load all data object into the site.data object
             var dataFolder = new DirectoryEntry(Site.MetaFileSystem, DataFolder);
             if (dataFolder.Exists)
             {

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using Lunet.Core;
 using Scriban;
@@ -19,21 +18,16 @@ namespace Lunet.Menus
     /// A menu
     /// </summary>
     [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-    [DebuggerTypeProxy(typeof(DebuggerProxy))]
-    public class MenuObject : DynamicCollection<MenuObject, MenuObject>
+    public class MenuObject : DynamicObject
     {
         public MenuObject()
         {
-            InitializeBuiltins();
-        }
-
-        public MenuObject(IEnumerable<MenuObject> values) : base(values)
-        {
+            Children = new MenuCollection();
             InitializeBuiltins();
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Menu: {Menu}, Name: {Name}, Parent: {Parent}, Children = {Count}";
+        private string DebuggerDisplay => $"{(Url != null ? $"Url: {Url}" : $"Path: {Path}")} Name: {Name}, Parent: {Parent?.Name}, Children = {Children.Count}";
 
         public string Name
         {
@@ -41,22 +35,16 @@ namespace Lunet.Menus
             set => SetValue("name", value, true);
         }
         
-        public string Key
+        public string Path
         {
-            get => GetSafeValue<string>("key");
-            set => SetValue("key", value);
+            get => GetSafeValue<string>("path");
+            set => SetValue("path", value, true);
         }
-        
+       
         public string Title
         {
             get => GetSafeValue<string>("title");
             set => SetValue("title", value);
-        }
-
-        public string Menu
-        {
-            get => GetSafeValue<string>("menu");
-            set => SetValue("menu", value);
         }
         
         public string Pre
@@ -82,18 +70,10 @@ namespace Lunet.Menus
             get => GetSafeValue<string>("target");
             set => SetValue("target", value);
         }
+        
+        public MenuCollection Children { get; }
 
-        public int? Weight
-        {
-            get => GetSafeValue<object>("weight") is int tvalue ? (int?) tvalue : null;
-            set => SetValue("weight", value.HasValue ? (object)value.Value : null);
-        }
-
-        public MenuObject Parent
-        {
-            get => GetSafeValue<MenuObject>("parent");
-            set => SetValue("parent", value, true);
-        }
+        public MenuObject Parent { get; set; }
 
         public string ParentAsString
         {
@@ -106,56 +86,32 @@ namespace Lunet.Menus
             get => GetSafeValue<ContentObject>("page");
             set => SetValue("page", value);
         }        
-        
-        protected override IEnumerable<MenuObject> OrderByDefault()
-        {
-            return OrderByWeight();
-        }
-        
-        public MenuObject OrderByWeight()
-        {
-            return new MenuObject(this.OrderBy(o => o.Weight ?? o.Page?.Weight ?? 0));
-        }
 
         public bool HasChildren() => this.Count > 0;
         
-        protected override MenuObject Clone()
-        {
-            var menuObject = new MenuObject
-            {
-                Name = Name,
-                Weight = Weight,
-                Parent = Parent,
-                Page = Page,
-            };
-            foreach (var subItem in this)
-            {
-                menuObject.Add(subItem);
-            }
-            return menuObject;
-        }
-        
         private void InitializeBuiltins()
         {
-            this.ScriptObject.Import("by_weight", (OrderDelegate)OrderByWeight);
-            this.ScriptObject.SetValue("has_children", DelegateCustomFunction.CreateFunc(HasChildren), true);
-            this.ScriptObject.Import("render", (Func<TemplateContext, SourceSpan, string>)(Render));
-            this.ScriptObject.Import("breadcrumb", (Func<TemplateContext, SourceSpan, string>)(RenderBreadcrumb));
+            this.SetValue("has_children", DelegateCustomFunction.CreateFunc(HasChildren), true);
+            this.SetValue("children", Children, true);
+            this.Import("render", (Func<TemplateContext, SourceSpan, ScriptObject, string>)(Render));
+            this.Import("breadcrumb", (Func<TemplateContext, SourceSpan, ScriptObject, string>)(RenderBreadcrumb));
         }
 
-        public string Render(TemplateContext context, SourceSpan span)
+        public string Render(TemplateContext context, SourceSpan span, ScriptObject options = null)
         {
             var builder = new StringBuilder();
+
             if (!context.CurrentGlobal.TryGetValue(context, span, "page", out var pageObject) || !(pageObject is ContentObject))
             {
                 throw new ScriptRuntimeException(span, "Invalid usage of menu. There is no active page.");
             }
 
-            Render((ContentObject) pageObject, builder, 0);
+            int index = 0;
+            Render((ContentObject) pageObject, builder, 0, options ?? new ScriptObject(), null, this, ref index);
             return builder.ToString();
         }
         
-        public string RenderBreadcrumb(TemplateContext context, SourceSpan span)
+        public string RenderBreadcrumb(TemplateContext context, SourceSpan span, ScriptObject options = null)
         {
             var builder = new StringBuilder();
             if (!context.CurrentGlobal.TryGetValue(context, span, "page", out var pageObject) || !(pageObject is ContentObject))
@@ -163,31 +119,57 @@ namespace Lunet.Menus
                 throw new ScriptRuntimeException(span, "Invalid usage of menu. There is no active page.");
             }
 
-            RenderBreadcrumb((ContentObject) pageObject, builder);
+            RenderBreadcrumb((ContentObject) pageObject, builder, options ?? new ScriptObject());
             return builder.ToString();
         }
         
         private const int IndentSize = 2;
         
        
-        private void Render(ContentObject page, StringBuilder builder, int level)
+        private void Render(ContentObject page, StringBuilder builder, int level, ScriptObject options, MenuObject parent, MenuObject root, ref int index)
         {
-            if (level > 0)
+            // Don't process further if we are only looking at a certain level
+            int maxDepth = int.MaxValue;
+            if (options.TryGetValue("depth", out var maxDepthObj) && maxDepthObj is int tempMaxDepth)
             {
-                RenderItem(page, builder, level, "menu-item");
+                maxDepth = tempMaxDepth;
             }
 
-            if (this.Count > 0)
+            var kind = options["kind"]?.ToString() ?? "menu";
+            var collapsible = options["collapsible"] is bool v && v;
+            
+            bool hasChildren = Children.Count > 0 && this != parent; // Don't render recursively
+            string menuId = $"{kind}-id-{root.Name}-{index}";
+
+            bool isCurrentPageInMenuPath = false;
+            var currentMenu = page["menu"] as MenuObject;
+            while (currentMenu != null)
+            {
+                if (currentMenu.Page == Page)
+                {
+                    isCurrentPageInMenuPath = true;
+                    break;
+                }
+                currentMenu = currentMenu.Parent;
+            }
+
+            if (level > 0)
+            {
+                RenderItem(page, builder, level, kind, options, level >= maxDepth, hasChildren, menuId, isCurrentPageInMenuPath, collapsible);
+            }
+
+            if (hasChildren && level < maxDepth) 
             {
                 builder.Append(' ', level * IndentSize);
-                builder.AppendLine($"<ul class='{(level == 0 ? "menu" : $"submenu submenu-{level}")}'>");
-                foreach (var item in this.OrderByWeight())
+                builder.AppendLine($"<ol id='{menuId}' class='{(kind == "nav" ? "navbar-nav" : kind)} {(collapsible? $"collapse {(isCurrentPageInMenuPath ? " show" : string.Empty)}": string.Empty)} {options["list_class"]}'>");
+                foreach (var item in this.Children)
                 {
-                    item.Render(page, builder, level + 1);
+                    item.Render(page, builder, level + 1, options, this, root, ref index);
+                    index++;
                 }
 
                 builder.Append(' ', level * IndentSize);
-                builder.AppendLine("</ul>");
+                builder.AppendLine("</ol>");
             }
 
             if (level > 0)
@@ -197,56 +179,111 @@ namespace Lunet.Menus
             }
         }
 
-        private void RenderItem(ContentObject page, StringBuilder builder, int level, string classKind)
+        private bool RenderItem(ContentObject page, StringBuilder builder, int level, string kind, ScriptObject options, bool isCappingDepth, bool hasChildren, string subMenuId, bool isInCurrentPath, bool showCollapse)
         {
             builder.Append(' ', level * IndentSize);
-            builder.AppendLine($"<li class='{classKind}{(Page == page ? " active" : string.Empty)}'>");
+
+            var currentPage = page;
+            bool isActive = false;
+            while (currentPage != null)
+            {
+                if (currentPage == Page)
+                {
+                    isActive = true;
+                }
+
+                if (isCappingDepth && currentPage["menu"] is MenuObject menuObject)
+                {
+                    var nextPage = menuObject?.Parent?.Page;
+                    // TODO: remove recursive
+                    if (nextPage == currentPage) break;
+                    currentPage = nextPage;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            bool isBreadcrumb = kind == "breadcrumb";
+            
+            builder.AppendLine($"<li class='{kind}-item {options["list_item_class"]}{(isActive ? " active" : string.Empty)}'>");
 
             builder.Append(' ', (level + 1) * IndentSize);
-            if (page != Page)
+
+            if (page == Page)
             {
-                builder.Append($"<a href='{(Url ?? Page?.Url ?? "#")}'{(Target != null ? $" target='{Target}'" : string.Empty)}>");
+                builder.Append(options["pre_active"]);
             }
-            
-            builder.Append($"{Pre}<span>{Title ?? Page?.Title}</span>{Post}");
-            
-            if (page != Page)
+
+            if (!isBreadcrumb)
             {
-                builder.Append("</a>");
+                builder.Append($"<span class='{kind}-item-row'>");
             }
+
+            var linkClassFromOptions = (isActive ? options?["link_class_active"] : null) ?? options?["link_class"];
+            var linkClassFromMenu = (isActive ? this["link_class_active"] : null) ?? this["link_class"];
+            if (!isActive || !isBreadcrumb)
+            {
+                builder.Append($"<a href='{(Url ?? Page?.Url ?? "#")}'{(Target != null ? $" target='{Target}'" : string.Empty)} class='{kind}-link {linkClassFromOptions} {linkClassFromMenu}'>");
+            }
+            builder.Append($"{Pre}{Title ?? Page?.Title}{Post}");
+
+            if (!isActive || !isBreadcrumb)
+            {
+                builder.Append($"</a>");
+            }
+
+            if (hasChildren && showCollapse)
+            {
+                builder.Append(@$"<a href='#{subMenuId}' role='button'  data-toggle='collapse' aria-expanded='{(isInCurrentPath ? "true" : "false")}' aria-controls='{subMenuId}' class='{kind}-link-show{(isInCurrentPath ? "" : " collapsed")}'></a>");
+            }
+
+            if (!isBreadcrumb)
+            {
+                builder.Append("</span>");
+            }
+
+            if (page == Page)
+            {
+                builder.Append(options["post_active"]);
+            }
+
+
+
+            return isActive;
         }
-        
-        private void RenderBreadcrumb(ContentObject page, StringBuilder builder)
+
+        private void RenderBreadcrumb(ContentObject page, StringBuilder builder, ScriptObject options)
         {
             var menus = new Stack<MenuObject>();
             var menu = page.GetSafeValue<MenuObject>("menu");
 
+            ContentObject previousPage = null;
             while (menu != null)
             {
-                menus.Push(menu);
+                // Because the same page can be declared
+                // as a a menu and (usually the first) submenu-item
+                // we filter that case here to print only the page once
+                if (menu.Page != previousPage)
+                {
+                    menus.Push(menu);
+                }
+                previousPage = menu.Page;
                 menu = menu.Parent;
             }
-            builder.AppendLine($"<ol class='breadcrumb'>");
-            foreach (var item in menus)
+
+            if (menus.Count > 0)
             {
-                item.RenderItem(page, builder, 1, "breadcrumb-item");
-                builder.Append(' ', 1 * IndentSize);
-                builder.AppendLine("</li>");
+                builder.AppendLine($"<ol class='breadcrumb'>");
+                foreach (var item in menus)
+                {
+                    item.RenderItem(page, builder, 1, "breadcrumb", options, false, false, null, true, false);
+                    builder.Append(' ', 1 * IndentSize);
+                    builder.AppendLine("</li>");
+                }
+                builder.AppendLine("</ol>");
             }
-            builder.AppendLine("</ol>");
-        }
-
-        private class DebuggerProxy
-        {
-            private readonly MenuObject _menu;
-
-            public DebuggerProxy(MenuObject menu)
-            {
-                _menu = menu;
-            }
-
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public MenuObject[] Items => _menu.ToArray();
         }
     }
 }

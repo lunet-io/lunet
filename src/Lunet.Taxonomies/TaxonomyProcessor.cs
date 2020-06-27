@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Lunet.Core;
@@ -42,8 +43,10 @@ namespace Lunet.Taxonomies
             return null;
         }
 
-        public override void Process()
+        public override void Process(ProcessingStage stage)
         {
+            Debug.Assert(stage == ProcessingStage.BeforeProcessingContent);
+
             foreach (var taxonomy in List.ScriptObject)
             {
                 var name = taxonomy.Key;

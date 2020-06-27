@@ -15,7 +15,7 @@ namespace Lunet.Core
 
         public TPlugin Plugin { get; }
 
-        public virtual void Process()
+        public virtual void Process(ProcessingStage stage)
         {
         }
 

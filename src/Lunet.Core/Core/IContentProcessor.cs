@@ -2,6 +2,6 @@
 {
     public interface IContentProcessor : ISiteProcessor
     {
-        ContentResult TryProcess(ContentObject file);
+        ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage);
     }
 }

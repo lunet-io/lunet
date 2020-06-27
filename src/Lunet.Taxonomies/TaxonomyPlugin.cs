@@ -15,7 +15,7 @@ namespace Lunet.Taxonomies
         public TaxonomyPlugin(SiteObject site, LayoutPlugin layoutPlugin) : base(site)
         {
             if (layoutPlugin == null) throw new ArgumentNullException(nameof(layoutPlugin));
-            site.Content.AfterContentProcessors.Add(new TaxonomyProcessor(this, layoutPlugin));
+            site.Content.BeforeProcessingProcessors.Add(new TaxonomyProcessor(this, layoutPlugin));
         }
     }
 }

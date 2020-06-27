@@ -1,6 +1,3 @@
-using System;
-using Scriban.Runtime;
-
 namespace Lunet.Core
 {
     /// <summary>
@@ -8,6 +5,6 @@ namespace Lunet.Core
     /// </summary>
     public interface ISiteProcessor : ISitePluginCore
     {
-        void Process();
+        void Process(ProcessingStage stage);
     }
 }

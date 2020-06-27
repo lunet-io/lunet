@@ -32,7 +32,7 @@ namespace Lunet.Bundles
 
             BundleProcessor = new BundleProcessor(this);
 
-            Site.Content.AfterContentProcessors.Add(BundleProcessor);
+            Site.Content.BeforeProcessingProcessors.Add(BundleProcessor);
         }
 
         public BundleProcessor BundleProcessor { get; }

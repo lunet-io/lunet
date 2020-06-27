@@ -48,6 +48,7 @@ namespace Lunet.Core
 
         public SiteObject(ILoggerFactory loggerFactory = null)
         {
+            ErrorRedirect = "/404.html";
             var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
 
             _contentFileSystems = new List<IFileSystem>();
@@ -120,8 +121,7 @@ namespace Lunet.Core
         //}
 
         public IFileSystem SharedFileSystem { get; }
-
-
+        
         public void Setup(string inputDirectory, string outputDirectory, params string[] defines)
         {
             var rootFolder = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, inputDirectory ?? "."));
@@ -231,6 +231,12 @@ namespace Lunet.Core
         {
             get => GetSafeValue<string>(SiteVariables.DefaultPageExtension);
             set => this[SiteVariables.DefaultPageExtension] = value;
+        }
+
+        public string ErrorRedirect
+        {
+            get => GetSafeValue<string>(SiteVariables.ErrorRedirect);
+            set => this[SiteVariables.ErrorRedirect] = value;
         }
 
         public void AddContentFileSystem(IFileSystem fileSystem)
@@ -392,6 +398,9 @@ namespace Lunet.Core
         {
             var clock = Stopwatch.StartNew();
             InitializePlugins();
+
+            // Pre-initialize stage (running before we initialize site object)
+            Content.PreInitialize();
 
             if (Initialize())
             {

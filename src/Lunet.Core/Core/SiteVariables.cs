@@ -1,3 +1,5 @@
+using System.Data;
+
 namespace Lunet.Core
 {
     public static class SiteVariables
@@ -25,5 +27,7 @@ namespace Lunet.Core
         public const string UrlAsFile = "url_as_file";
 
         public const string Html = "html";
+
+        public const string ErrorRedirect = "error_redirect";
     }
 }

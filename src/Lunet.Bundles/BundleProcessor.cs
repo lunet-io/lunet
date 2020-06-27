@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -23,8 +24,10 @@ namespace Lunet.Bundles
 
         public OrderedList<IContentMinifier> Minifiers { get; }
 
-        public override void Process()
+        public override void Process(ProcessingStage stage)
         {
+            Debug.Assert(stage == ProcessingStage.BeforeProcessingContent);
+
             // If we don't have any bundles, early exit
             if (Plugin.List.Count == 0)
             {
