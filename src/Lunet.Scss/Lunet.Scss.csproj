@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SharpScss" Version="1.5.0" />
+    <PackageReference Include="SharpScss" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>

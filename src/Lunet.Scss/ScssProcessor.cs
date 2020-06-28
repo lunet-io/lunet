@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Lunet.Core;
 using SharpScss;
 using Zio;
@@ -50,12 +51,10 @@ namespace Lunet.Scss
 
             var tempIncludePaths = new List<DirectoryEntry>();
 
-            var extensions = new string[] {"", ".scss", ".sass", ".css"};
-
+            var extensions = new string[] {".scss", ".sass", ".css"};
 
             var includedFiles = new List<FileEntry>();
-
-            options.TryImport = (string file, string parentpath, out string scss, out string map) =>
+            options.TryImport = (ref string file, string parentpath, out string scss, out string map) =>
             {
                 scss = null;
                 map = null;
@@ -73,51 +72,73 @@ namespace Lunet.Scss
                     if (Site.FileSystem.DirectoryExists(directoryName))
                     {
                         localDirEntry = new DirectoryEntry(Site.FileSystem, directoryName);
-                    }
-                    else if (Site.MetaFileSystem.DirectoryExists(directoryName))
-                    {
-                        localDirEntry = new DirectoryEntry(Site.MetaFileSystem, directoryName);
+                        if (!tempIncludePaths.Contains(localDirEntry))
+                        {
+                            tempIncludePaths.Add(localDirEntry);
+                        }
                     }
 
-                    if (localDirEntry != null && tempIncludePaths.Contains(localDirEntry))
+                    if (Site.MetaFileSystem.DirectoryExists(directoryName))
                     {
-                        tempIncludePaths.Add(localDirEntry);
+                        localDirEntry = new DirectoryEntry(Site.MetaFileSystem, directoryName);
+                        if (!tempIncludePaths.Contains(localDirEntry))
+                        {
+                            tempIncludePaths.Add(localDirEntry);
+                        }
                     }
                 }
 
                 tempIncludePaths.AddRange(includePaths);
 
+                // From libsass, order for ambiguous import:
+                // (1) filename as given
+                // (2) underscore + given
+                // (3) underscore + given + extension
+                // (4) given + extension
+                // (5) given + _index.scss
+                // (6) given + _index.sass
+                var ufile = (UPath) file;
+                var relativeFolder = ufile.GetDirectory();
+                var filename = ufile.GetName();
+
+                bool Resolve(FileEntry entry, out string scss, out string file)
+                {
+                    scss = null;
+                    file = null;
+                    if (entry.Exists)
+                    {
+                        scss = entry.ReadAllText();
+                        file = (string)entry.Path;
+                        includedFiles.Add(entry);
+                        return true;
+                    }
+
+                    return false;
+                }
+
                 foreach (var dirEntry in tempIncludePaths)
                 {
-                    foreach (var extension in extensions)
-                    {
-                        var localFile = file + extension;
-                        var newFilePath = dirEntry.Path / localFile;
-                        if (dirEntry.FileSystem.FileExists(newFilePath))
-                        {
-                            scss = dirEntry.FileSystem.ReadAllText(newFilePath);
-                            includedFiles.Add(new FileEntry(dirEntry.FileSystem, newFilePath));
-                            return true;
-                        }
+                    var rootFolder = dirEntry.Path / relativeFolder;
 
-                        // Try for partials _
-                        var localFileUPath = (UPath) localFile;
-                        if (!localFileUPath.GetDirectory().IsNull)
-                        {
-                            localFileUPath = localFileUPath.GetDirectory() / ("_" + localFileUPath.GetName());
-                        }
-                        else
-                        {
-                            localFileUPath = "_" + localFile;
-                        }
-                        newFilePath = dirEntry.Path / localFileUPath;
-                        if (dirEntry.FileSystem.FileExists(newFilePath))
-                        {
-                            scss = dirEntry.FileSystem.ReadAllText(newFilePath);
-                            includedFiles.Add(new FileEntry(dirEntry.FileSystem, newFilePath));
-                            return true;
-                        }
-                    }
+                    // (1) filename as given
+                    if (Resolve(new FileEntry(dirEntry.FileSystem, rootFolder / filename), out scss, out file)) return true;
+
+                    // (2) underscore + given
+                    if (Resolve(new FileEntry(dirEntry.FileSystem, rootFolder / $"_{filename}"), out scss, out file)) return true;
+
+                    // (3) underscore + given + extension
+                    foreach (var extension in extensions)
+                        if (Resolve(new FileEntry(dirEntry.FileSystem, rootFolder / $"_{filename}{extension}"), out scss, out file)) return true;
+
+                    // (4) given + extension
+                    foreach (var extension in extensions)
+                        if (Resolve(new FileEntry(dirEntry.FileSystem, rootFolder / $"{filename}{extension}"), out scss, out file)) return true;
+
+                    // (5) given + _index.scss
+                    if (Resolve(new FileEntry(dirEntry.FileSystem, rootFolder / $"{filename}" / "_index.scss"), out scss, out file)) return true;
+
+                    // (6) given + _index.sass
+                    if (Resolve(new FileEntry(dirEntry.FileSystem, rootFolder / $"{filename}" / "_index.sass"), out scss, out file)) return true;
                 }
 
                 return false;
