@@ -10,16 +10,10 @@
 // However, that function might be called multiple times, and on subsequent calls, we don't actually want it to instantiate a new instance of the Module
 // Instead, we want to return the previously loaded module
 
-// TODO: Make this not declare a global if used in the browser
-var initSqlJsPromise = undefined;
-
 var lunetInitSqlJs = function (moduleConfig) {
 
-    if (initSqlJsPromise){
-      return initSqlJsPromise;
-    }
     // If we're here, we've never called this function before
-    initSqlJsPromise = new Promise(function (resolveModule, reject) {
+    const initSqlJsPromise = new Promise(function (resolveModule, reject) {
 
         // We are modularizing this manually because the current modularize setting in Emscripten has some issues:
         // https://github.com/kripken/emscripten/issues/5820
