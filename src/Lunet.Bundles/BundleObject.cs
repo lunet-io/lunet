@@ -32,7 +32,7 @@ namespace Lunet.Bundles
             SetValue(BundleObjectProperties.UrlDestination, UrlDestination, true);
             MinifyExtension = ".min";
 
-            this.Import(BundleObjectProperties.JsType, (Action<object, string>)AddJs);
+            this.Import(BundleObjectProperties.JsType, (Action<object, string, string>)AddJs);
             this.Import(BundleObjectProperties.CssType, (Action<object, string>)AddCss);
             this.Import(BundleObjectProperties.ContentType, (Action<object, string, string>)AddContent);
         }
@@ -67,12 +67,12 @@ namespace Lunet.Bundles
             set { this[BundleObjectProperties.Minifier] = value; }
         }
 
-        public void AddLink(string type, string path, string url = null)
+        public void AddLink(string type, string path, string url = null, string mode = null)
         {
-            InsertLink(Links.Count, type, path, url);
+            InsertLink(Links.Count, type, path, url, mode);
         }
 
-        public void InsertLink(int index, string type, string path, string url = null)
+        public void InsertLink(int index, string type, string path, string url = null, string mode = null)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -95,13 +95,13 @@ namespace Lunet.Bundles
                 throw new ArgumentException($"Invalid url [{path}]. Must end with a `/` if the path contains a wildcard.", nameof(url));
             }
 
-            var link = new BundleLink(this, type, path, url);
+            var link = new BundleLink(this, type, path, url, mode);
             Links.Insert(index, link);
         }
 
-        public void AddJs(object resourceOrPath, string path = null)
+        public void AddJs(object resourceOrPath, string path = null, string mode = "defer")
         {
-            AddLink(BundleObjectProperties.JsType, resourceOrPath, path);
+            AddLink(BundleObjectProperties.JsType, resourceOrPath, path, mode: mode);
         }
 
         public void AddCss(object resourceOrPath, string path = null)
@@ -115,7 +115,7 @@ namespace Lunet.Bundles
             AddLink(BundleObjectProperties.ContentType, resourceOrPath, resourceOrPath is string ? null : pathOrUrl, resourceOrPath is string ? pathOrUrl : url);
         }
         
-        private void AddLink(string kind, object resourceOrPath, string path, string url = null)
+        private void AddLink(string kind, object resourceOrPath, string path, string url = null, string mode = null)
         {
             if (resourceOrPath == null) throw new ArgumentNullException(nameof(resourceOrPath));
             if (resourceOrPath is ResourceObject resource)
@@ -152,7 +152,7 @@ namespace Lunet.Bundles
                 throw new ArgumentException( $"Invalid parameter type ({resourceOrPath?.GetType()}) for {kind} function.", nameof(resourceOrPath));
             }
             
-            AddLink(kind, path, url);
+            AddLink(kind, path, url, mode);
         }
     }
 }

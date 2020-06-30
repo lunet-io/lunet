@@ -118,7 +118,7 @@ namespace Lunet.Bundles
                 var upath = (UPath) path;
                 foreach (var file in Site.MetaFileSystem.EnumerateFileSystemEntries(upath.GetDirectory(), upath.GetName()))
                 {
-                    var newLink = new BundleLink(bundle, link.Type, (string) file.Path, url + file.Path.GetName());
+                    var newLink = new BundleLink(bundle, link.Type, (string) file.Path, url + file.Path.GetName(), link.Mode);
                     bundle.Links.Insert(i++, newLink);
                 }
 
@@ -234,7 +234,7 @@ namespace Lunet.Bundles
                             i--;
 
                             concatBuilders[link.Type].Pages.Add(currentContent);
-                            concatBuilders[link.Type].Builder.AppendLine(link.Content);
+                            concatBuilders[link.Type].AppendContent(link.Mode, link.Content);
                         }
                         else if (!isExistingContent)
                         {
@@ -250,35 +250,39 @@ namespace Lunet.Bundles
             {
                 foreach (var builderGroup in concatBuilders)
                 {
-                    var builder = builderGroup.Value.Builder;
-                    if (builder.Length > 0)
+                    foreach(var contentPerMode in builderGroup.Value.ModeToBuilders)
                     {
-                        var type = builderGroup.Key;
-                        var outputUrlDirectory = bundle.UrlDestination[type];
-
-                        // If the file is private or meta, we need to copy to the output
-                        // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
-                        var url = outputUrlDirectory + bundle.Name + "." + type;
-                        var newStaticFile = new ContentObject(Site)
+                        var mode = contentPerMode.Key;
+                        var builder = contentPerMode.Value;
+                        if (builder.Length > 0)
                         {
-                            Url = url,
-                            Content = builder.ToString()
-                        };
-                        Site.DynamicPages.Add(newStaticFile);
+                            var type = builderGroup.Key;
+                            var outputUrlDirectory = bundle.UrlDestination[type];
 
-                        // Add file dependencies
-                        foreach (var page in builderGroup.Value.Pages)
-                        {
-                            newStaticFile.Dependencies.Add(new PageContentDependency(page));
+                            // If the file is private or meta, we need to copy to the output
+                            // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
+                            var url = outputUrlDirectory + bundle.Name + (string.IsNullOrEmpty(mode) ? $".{type}" : $"-{mode}.{type}");
+                            var newStaticFile = new ContentObject(Site)
+                            {
+                                Url = url,
+                                Content = builder.ToString()
+                            };
+                            Site.DynamicPages.Add(newStaticFile);
+
+                            // Add file dependencies
+                            foreach (var page in builderGroup.Value.Pages)
+                            {
+                                newStaticFile.Dependencies.Add(new PageContentDependency(page));
+                            }
+
+                            var link = new BundleLink(bundle, type, null, url, mode)
+                            {
+                                Content = newStaticFile.Content,
+                                ContentObject = newStaticFile
+                            };
+
+                            bundle.Links.Add(link);
                         }
-
-                        var link = new BundleLink(bundle, type, null, url)
-                        {
-                            Content = newStaticFile.Content,
-                            ContentObject = newStaticFile
-                        };
-
-                        bundle.Links.Add(link);
                     }
                 }
             }
@@ -331,11 +335,25 @@ namespace Lunet.Bundles
             public ConcatGroup()
             {
                 Pages = new List<ContentObject>();
-                Builder = new StringBuilder();
+                ModeToBuilders = new Dictionary<string, StringBuilder> {{string.Empty, new StringBuilder()}};
             }
             public List<ContentObject> Pages { get; }
 
-            public StringBuilder Builder { get; }
+            public Dictionary<string, StringBuilder> ModeToBuilders { get; }
+
+            public void AppendContent(string mode, string content)
+            {
+                if (content == null) throw new ArgumentNullException(nameof(content));
+                mode ??= string.Empty;
+                if (!ModeToBuilders.TryGetValue(mode, out var builder))
+                {
+                    builder = new StringBuilder();
+                    ModeToBuilders.Add(mode, builder);
+                }
+
+                builder.Append(content);
+                builder.Append('\n');
+            }
         }
     }
 }
