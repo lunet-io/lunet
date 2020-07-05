@@ -116,10 +116,22 @@ namespace Lunet.Bundles
                 bundle.Links.RemoveAt(i);
 
                 var upath = (UPath) path;
-                foreach (var file in Site.MetaFileSystem.EnumerateFileSystemEntries(upath.GetDirectory(), upath.GetName()))
+
+                bool matchingInFileSystem = false;
+                foreach (var file in Site.FileSystem.EnumerateFileSystemEntries(upath.GetDirectory(), upath.GetName()))
                 {
-                    var newLink = new BundleLink(bundle, link.Type, (string) file.Path, url + file.Path.GetName(), link.Mode);
+                    var newLink = new BundleLink(bundle, link.Type, (string)file.Path, url + file.Path.GetName(), link.Mode);
                     bundle.Links.Insert(i++, newLink);
+                    matchingInFileSystem = true;
+                }
+
+                if (!matchingInFileSystem)
+                {
+                    foreach (var file in Site.MetaFileSystem.EnumerateFileSystemEntries(upath.GetDirectory(), upath.GetName()))
+                    {
+                        var newLink = new BundleLink(bundle, link.Type, (string)file.Path, url + file.Path.GetName(), link.Mode);
+                        bundle.Links.Insert(i++, newLink);
+                    }
                 }
 
                 // Cancel the double i++
@@ -164,10 +176,9 @@ namespace Lunet.Bundles
                 {
                     path = ((UPath)path).FullName;
                     link.Path = path;
-                    var entry = new FileEntry(Site.MetaFileSystem, path);
 
                     ContentObject currentContent;
-                    var  isExistingContent = staticFiles.TryGetValue(entry.FullName, out currentContent);
+                    var  isExistingContent = staticFiles.TryGetValue(path, out currentContent);
 
                     if (url == null)
                     {
@@ -178,9 +189,18 @@ namespace Lunet.Bundles
                         link.Url = url;
                     }
 
+                    FileEntry entry = null;
+
                     // Process file by existing processors
                     if (currentContent == null)
                     {
+                        // Check first site, then meta
+                        entry = new FileEntry(Site.FileSystem, path);
+                        if (!entry.Exists)
+                        {
+                            entry = new FileEntry(Site.MetaFileSystem, path);
+                        }
+
                         if (entry.Exists)
                         {
                             currentContent = new ContentObject(Site, entry);
@@ -216,8 +236,7 @@ namespace Lunet.Bundles
                             }
                             catch (Exception ex)
                             {
-                                Site.Error(
-                                    $"Unable to load content [{path}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
+                                Site.Error($"Unable to load content [{path}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
                             }
                         }
 
@@ -239,7 +258,7 @@ namespace Lunet.Bundles
                         else if (!isExistingContent)
                         {
                             Site.StaticFiles.Add(currentContent);
-                            staticFiles.Add(entry.FullName, currentContent);
+                            staticFiles.Add(path, currentContent);
                         }
                     }
                 }
