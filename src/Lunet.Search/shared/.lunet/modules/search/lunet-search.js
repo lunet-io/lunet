@@ -27,10 +27,10 @@ class LunetSearch {
     initialize(dbUrl = "/js/lunet-search.db", locateSqliteWasm = (file) => `/js/lunet-${file}`)
     {
         const thisInstance = this;
-        if ("caches" in window) {
+        if ("caches" in self) {
             return new Promise(function(resolve, reject) {
                 caches.open("lunet.cache").then((lunetCache) => {
-                    const sqlLoader = window.lunetInitSqlJs({locateFile: function(file, prefix){ return locateSqliteWasm(file);} });
+                    const sqlLoader = self.lunetInitSqlJs({locateFile: function(file, prefix){ return locateSqliteWasm(file);} });
                     lunetCache.add(dbUrl);
                     thisInstance._reason = "Please wait, initializing search database.";
                     lunetCache.match(dbUrl).then((cachedResponse) => {
@@ -61,31 +61,54 @@ class LunetSearch {
                     });
                 });
             });
-        }
-        else {
+        } else {
             thisInstance._reason = "Browser does not support cache required by search.";
+            return new Promise(function(resolve, reject) { resolve() });
         }
     }
 
     query(text) {
-        if (!this.available) return [];
-
-        const escapeText = text.replace("'", " ");
-        const sqlQuery = `SELECT pages.url, pages.title, snippet(pages, 2, '<b>', '</b>', '', ${this.snipped_words}) FROM pages WHERE pages MATCH '${escapeText}' ORDER BY bm25(pages, ${this.url_weight}, ${this.title_weight}, ${this.content_weight});`;
-        const results = [];
-        const dbResults = this.db.exec(sqlQuery);
-        if (dbResults.length > 0) {
-            const rows = dbResults[0].values;
-            for(let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const url = row[0];
-                const title = row[1];
-                const snippet = row[2];
-
-                results.push({url: url, title: title, snippet: snippet });
-            }
+        var thisInstance = this;
+        if (!this.available) {
+            return new Promise(function (resolve, failure) {
+                failure(thisInstance.reason);
+            });
         }
-        return results;
+        else if (!text) {
+            return new Promise(function (resolve, failure) {
+                resolve([]);
+            });
+        }
+
+        var escapeText = text.replace("'", " ");
+        // Make sure that any " is closed by "
+        if (((escapeText.match(/"/g) || []).length % 2) !== 0) {
+            escapeText = escapeText + "\"";
+        }
+        var sqlQuery = `SELECT pages.url, pages.title, snippet(pages, 2, '<b>', '</b>', '', ${this.snipped_words}) FROM pages WHERE pages MATCH '${escapeText}' ORDER BY bm25(pages, ${this.url_weight}, ${this.title_weight}, ${this.content_weight});`;
+        var results = [];
+
+        try {
+            const dbResults = this.db.exec(sqlQuery);
+            if (dbResults.length > 0) {
+                const rows = dbResults[0].values;
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const url = row[0];
+                    const title = row[1];
+                    const snippet = row[2];
+
+                    results.push({ url: url, title: title, snippet: snippet });
+                }
+            }
+            return new Promise(function (resolve, failure) {
+                resolve(results);
+            });
+        } catch (err) {
+            return new Promise(function (resolve, failure) {
+                failure(err);
+            });
+        }
     }
 }
 

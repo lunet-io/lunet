@@ -21,10 +21,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="shared\.lunet\modules\search\lunet-sql-wasm.js">
+    <Content Include="shared\.lunet\modules\search\lunet-sql-wasm.wasm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="shared\.lunet\modules\search\lunet-sql-wasm.wasm">
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="shared\.lunet\modules\search\lunet-sql-wasm.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
