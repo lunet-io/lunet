@@ -122,10 +122,20 @@ namespace Lunet.Search
                     // TODO: make it configurable by selecting which bundle will receive the search/db
                     var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
 
-                    // Insert content before the others to make sure they are loaded async ASAP
-                    defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
-                    defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/lunet-search.js");
-                    defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/lunet-sql-wasm.js");
+                    if (Plugin.Worker)
+                    {
+                        defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
+                        defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/lunet-search.js", "/js/lunet-search.js");
+                        defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/lunet-sql-wasm.js", "/js/lunet-sql-wasm.js");
+                        defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/lunet-search-ws-client.js");
+                    }
+                    else
+                    {
+                        // Insert content before the others to make sure they are loaded async ASAP
+                        defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
+                        defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/lunet-search.js");
+                        defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/lunet-sql-wasm.js");
+                    }
                 }
             }
         }

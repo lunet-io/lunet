@@ -41,6 +41,12 @@ namespace Lunet.Search
 
         public PathCollection Excludes { get; }
 
+        public bool Worker
+        {
+            get => GetSafeValue<bool>("worker");
+            set => SetValue("worker", value);
+        }
+
         public string Url
         {
             get => GetSafeValue<string>("url");

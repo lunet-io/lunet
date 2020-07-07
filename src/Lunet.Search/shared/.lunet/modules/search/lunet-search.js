@@ -1,3 +1,8 @@
+// Case of web-worker, we pre-initialize sql.js
+if (typeof importScripts === 'function') {
+    importScripts("lunet-sql-wasm.js");
+}
+
 class LunetSearch {
     constructor() {
 	    performance.mark("lunet-search-start");
@@ -8,7 +13,7 @@ class LunetSearch {
         this.url_weight = 3.0;
         this.title_weight = 2.0;
         this.content_weight = 1.0;
-        this.snipped_words = 20;
+        this.snippet_words = 20;
     }
 
     get available() {
@@ -32,12 +37,12 @@ class LunetSearch {
                 caches.open("lunet.cache").then((lunetCache) => {
                     const sqlLoader = self.lunetInitSqlJs({locateFile: function(file, prefix){ return locateSqliteWasm(file);} });
                     lunetCache.add(dbUrl);
-                    thisInstance._reason = "Please wait, initializing search database.";
+                    thisInstance._reason = "Please wait, initializing search database...";
                     lunetCache.match(dbUrl).then((cachedResponse) => {
                         if (cachedResponse) {
                             cachedResponse.arrayBuffer().then((buffer) => {
                                 const u8Buffer = new Uint8Array(buffer);
-                                thisInstance._reason = "Please wait, initializing search engine.";
+                                thisInstance._reason = "Please wait, initializing search engine...";
                                 sqlLoader.then((sql) => {
                                     thisInstance.db = new sql.Database(u8Buffer);
                                     try {
@@ -56,7 +61,7 @@ class LunetSearch {
                                 });
                             });
                         } else {
-                            thisInstance._reason = "Error, search database not found";
+                            thisInstance._reason = "Error, search database not found.";
                         }
                     });
                 });
@@ -85,7 +90,7 @@ class LunetSearch {
         if (((escapeText.match(/"/g) || []).length % 2) !== 0) {
             escapeText = escapeText + "\"";
         }
-        var sqlQuery = `SELECT pages.url, pages.title, snippet(pages, 2, '<b>', '</b>', '', ${this.snipped_words}) FROM pages WHERE pages MATCH '${escapeText}' ORDER BY bm25(pages, ${this.url_weight}, ${this.title_weight}, ${this.content_weight});`;
+        var sqlQuery = `SELECT pages.url, pages.title, snippet(pages, 2, '<b>', '</b>', '', ${this.snippet_words}) FROM pages WHERE pages MATCH '${escapeText}' ORDER BY bm25(pages, ${this.url_weight}, ${this.title_weight}, ${this.content_weight});`;
         var results = [];
 
         try {
@@ -114,3 +119,16 @@ class LunetSearch {
 
 const DefaultLunetSearch = new LunetSearch();
 const DefaultLunetSearchPromise = DefaultLunetSearch.initialize();
+
+// Case of web-worker
+if (typeof importScripts === 'function') {
+    onmessage = function (e) {
+        if (e.ports.length > 0 && e.data.command === "query") {
+            DefaultLunetSearch.query(e.data.args).catch(err => {
+                e.ports[0].postMessage({ reason: err });
+            }).then(results => {
+                e.ports[0].postMessage({results: results });
+            });
+        }
+    };
+}
