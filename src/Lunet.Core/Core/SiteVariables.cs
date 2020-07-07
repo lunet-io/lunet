@@ -28,6 +28,8 @@ namespace Lunet.Core
 
         public const string Html = "html";
 
+        public const string Helpers = "helpers";
+
         public const string ErrorRedirect = "error_redirect";
     }
 }

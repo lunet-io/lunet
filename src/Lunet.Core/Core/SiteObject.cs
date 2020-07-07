@@ -81,8 +81,7 @@ namespace Lunet.Core
 
             DefaultPageExtension = DefaultPageExtensionValue;
 
-            Html = new HtmlObject(this);
-            SetValue(SiteVariables.Html, Html, true);
+            Html = new HtmlPage(this);
 
             CommandLine = new LunetCommandLine(this);
 
@@ -93,6 +92,8 @@ namespace Lunet.Core
             Content = new ContentPlugin(this);
 
             Plugins = new OrderedList<ISitePlugin>();
+
+            Helpers = new HelperObject(this);
 
             _pluginBuilders = new ContainerBuilder();
             _pluginBuilders.RegisterInstance(LoggerFactory).As<ILoggerFactory>();
@@ -161,6 +162,8 @@ namespace Lunet.Core
 
         public IFileSystem FileSystem => _fileSystem;
 
+        public HelperObject Helpers { get; }
+
         public IFileSystem OutputFileSystem { get; set; }
 
         public IFileSystem SharedMetaFileSystem { get; }
@@ -201,7 +204,7 @@ namespace Lunet.Core
 
         public LunetCommandLine CommandLine { get; }
 
-        public HtmlObject Html { get; }
+        public HtmlPage Html { get; }
 
         public string BasePath
         {

@@ -1,4 +1,7 @@
-﻿<meta name="generator" content="lunet {{lunet.version}}" />
-{{for $include in site.html.head_includes
-    include $include
-end}}
+﻿{{~ for $meta in site.html.head.metas ~}}
+    {{ object.eval $meta }}
+{{~ end ~}}
+    <title>{{ if site.html.head.title; site.html.head.title; else if page.url == '/'; site.title; else; page.title + " - " + site.title; end; }}</title>
+{{~ for $include in site.html.head.includes ~}}
+    {{~ include $include ~}}
+{{~ end ~}}

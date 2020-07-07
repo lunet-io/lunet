@@ -40,6 +40,19 @@ namespace Lunet.Scripts
         /// </summary>
         public ScriptGlobalFunctions SiteFunctions { get; }
 
+
+        public ScriptFunction CompileAnonymous(string expression)
+        {
+            if (expression == null) throw new ArgumentNullException(nameof(expression));
+            var statements = Template.Parse($"do;{expression};end", lexerOptions: new LexerOptions() { Mode = ScriptMode.ScriptOnly }).Page.Body.Statements;
+            if (statements.Count == 1 && statements[0] is ScriptExpressionStatement exprStatement && exprStatement.Expression is ScriptAnonymousFunction anonymous)
+            {
+                return anonymous.Function;
+            }
+            throw new ArgumentException("Unable to extract anonymous function from results", nameof(expression));
+        }
+
+
         /// <summary>
         /// Parses a script with the specified content and path.
         /// </summary>
@@ -206,6 +219,7 @@ namespace Lunet.Scripts
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
             context = context ?? new TemplateContext(Builtins);
+            context.PushGlobal(Site.Helpers);
             if (obj != null)
             {
                 context.PushGlobal(obj);
@@ -239,11 +253,12 @@ namespace Lunet.Scripts
             }
             finally
             {
+                context.PopSourceFile();
                 if (obj != null)
                 {
                     context.PopGlobal();
                 }
-                context.PopSourceFile();
+                context.PopGlobal(); // pop helpers
                 page.Content = context.Output.ToString();
 
                 // We don't keep the site variable after this initialization
