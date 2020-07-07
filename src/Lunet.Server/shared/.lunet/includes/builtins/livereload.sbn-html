@@ -1,14 +1,1 @@
-﻿<script>
-    (function() {
-        var ws = new WebSocket("{{site.livereload_url}}");
-        ws.onclose = function() {
-            // console.log("livereload: websocket connection closed");
-        };
-        ws.onmessage = function(event) {
-            // console.log("livereload: evt " + event.data);
-            if (event.data === "reload") {
-                location.reload();
-            }
-        };
-    })();
-</script>
+﻿    <script>(function() {var ws = new WebSocket("{{site.livereload_url}}"); ws.onmessage = function(event) { if (event.data === "reload") { location.reload(); } }; })(); </script>
