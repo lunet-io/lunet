@@ -161,7 +161,8 @@ namespace Lunet.Menus
             if (hasChildren && level < maxDepth) 
             {
                 builder.Append(' ', level * IndentSize);
-                builder.AppendLine($"<ol id='{menuId}' class='{(kind == "nav" ? "navbar-nav" : kind)} {(collapsible? $"collapse {(isCurrentPageInMenuPath ? " show" : string.Empty)}": string.Empty)} {options["list_class"]}'>");
+                var listKind = (kind == "nav" ? "navbar-nav" : kind);
+                builder.AppendLine($"<ol id='{menuId}' class='{listKind} {kind}-level{level} {(collapsible? $"collapse {(isCurrentPageInMenuPath ? " show" : string.Empty)}": string.Empty)} {options["list_class"]}'>");
                 foreach (var item in this.Children)
                 {
                     item.Render(page, builder, level + 1, options, this, root, ref index);
