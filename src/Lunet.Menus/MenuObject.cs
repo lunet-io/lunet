@@ -70,7 +70,13 @@ namespace Lunet.Menus
             get => GetSafeValue<string>("target");
             set => SetValue("target", value);
         }
-        
+
+        public bool Folder
+        {
+            get => GetSafeValue<bool>("folder");
+            set => SetValue("folder", value);
+        }
+
         public MenuCollection Children { get; }
 
         public MenuObject Parent { get; set; }
@@ -85,7 +91,7 @@ namespace Lunet.Menus
         {
             get => GetSafeValue<ContentObject>("page");
             set => SetValue("page", value);
-        }        
+        }
 
         public bool HasChildren() => this.Count > 0;
         

@@ -43,33 +43,32 @@ namespace Lunet.Menus
 
                     menu.Page = page;
                     SetPageMenu(page, menu);
-                    
-                    if (page["submenus"] is bool v && v)
-                    {
-                        var thisDirectory = ((UPath) menu.Path).GetDirectory();
+
+                    if (!menu.Folder) continue;
+
+                    var thisDirectory = ((UPath) menu.Path).GetDirectory();
                         
-                        foreach (var otherMenu in _menus)
+                    foreach (var otherMenu in _menus)
+                    {
+                        if (otherMenu == menu || otherMenu.Path == null) continue;
+
+                        var menuPath = (UPath) otherMenu.Path;
+                        if (menuPath.GetDirectory() == thisDirectory && menuPath.GetName() == MenuFileName)
                         {
-                            if (otherMenu == menu || otherMenu.Path == null) continue;
-
-                            var menuPath = (UPath) otherMenu.Path;
-                            if (menuPath.GetDirectory() == thisDirectory && menuPath.GetName() == MenuFileName)
-                            {
-                                otherMenu.Path = menu.Path;
-                                otherMenu.Page = page;
-                                if (menu.Parent != null) 
-                                { 
-                                    var parentMenu = menu.Parent;
-                                    var indexInParent = parentMenu.Children.IndexOf(menu);
-                                    if (indexInParent >= 0 && otherMenu != parentMenu)
-                                    {
-                                        parentMenu.Children[indexInParent] = otherMenu;
-                                        otherMenu.Parent = parentMenu;
-                                    }
+                            otherMenu.Path = menu.Path;
+                            otherMenu.Page = page;
+                            if (menu.Parent != null) 
+                            { 
+                                var parentMenu = menu.Parent;
+                                var indexInParent = parentMenu.Children.IndexOf(menu);
+                                if (indexInParent >= 0 && otherMenu != parentMenu)
+                                {
+                                    parentMenu.Children[indexInParent] = otherMenu;
+                                    otherMenu.Parent = parentMenu;
                                 }
-
-                                break;
                             }
+
+                            break;
                         }
                     }
                 }
