@@ -1,7 +1,7 @@
 ﻿{{~ for $meta in site.html.head.metas ~}}
     {{ object.eval $meta }}
 {{~ end ~}}
-    <title>{{ if site.html.head.title; site.html.head.title; else if page.url == '/'; site.title; else; page.title + " - " + site.title; end; }}</title>
+    <title>{{ if site.html.head.title; page.full_title = site.html.head.title; else if page.url == '/'; page.full_title = site.title; else; page.full_title = page.title + " - " + site.title; end; page.full_title }}</title>
 {{~ for $include in site.html.head.includes ~}}
     {{~ include $include ~}}
 {{~ end ~}}
