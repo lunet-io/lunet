@@ -99,7 +99,7 @@ namespace Lunet.Menus
             return ContentResult.Break;
         }
 
-        private void DecodeMenu(object o, ContentObject menuFile, MenuObject parent = null)
+        private void DecodeMenu(object o, ContentObject menuFile, MenuObject parent = null, bool expectingMenuEntry = false)
         {
             if (o is ScriptObject obj)
             {
@@ -111,31 +111,55 @@ namespace Lunet.Menus
                         var menuObject = new MenuObject {Path = (string) menuFile.Path, Name = menuName};
                         _menus.Add(menuObject);
                         Plugin.SetValue(menuName, menuObject);
-                        DecodeMenu(keyPair.Value, menuFile, menuObject);
+                        DecodeMenu(keyPair.Value, menuFile, menuObject, false);
                     }
                 }
                 else
                 {
-                    var menuObject = new MenuObject {Parent = parent};
-                    _menus.Add(menuObject);
-                    parent.Children.Add(menuObject);
-                    
-                    foreach (var keyPair in obj)
+                    if (expectingMenuEntry)
                     {
-                        var key = keyPair.Key;
-                        var value = keyPair.Value;
-                        if (key == "path")
-                        {
-                            var valueAsStr = value?.ToString();
+                        var menuObject = new MenuObject {Parent = parent};
+                        _menus.Add(menuObject);
+                        parent.Children.Add(menuObject);
 
-                            if (valueAsStr == null || !UPath.TryParse(valueAsStr, out _))
+                        foreach (var keyPair in obj)
+                        {
+                            var key = keyPair.Key;
+                            var value = keyPair.Value;
+                            if (key == "path")
                             {
-                                throw new LunetException($"The path value `{valueAsStr}` is not a valid path for key `{key}`.");
+                                var valueAsStr = value?.ToString();
+
+                                if (valueAsStr == null || !UPath.TryParse(valueAsStr, out _))
+                                {
+                                    throw new LunetException($"The path value `{valueAsStr}` is not a valid path for key `{key}`.");
+                                }
+
+                                value = (string) (menuFile.Path.GetDirectory() / (UPath) value?.ToString());
                             }
 
-                            value = (string) (menuFile.Path.GetDirectory() / (UPath) value?.ToString());
+                            menuObject[key] = value;
                         }
-                        menuObject[key] = value;
+                    }
+                    else
+                    {
+                        foreach (var keyPair in obj)
+                        {
+                            var key = keyPair.Key;
+                            var value = keyPair.Value;
+                            if (key == "items")
+                            {
+                                if (!(value is ScriptArray))
+                                {
+                                    throw new LunetException($"The items of menu `{parent.Name}` must be an array. The type {value?.GetType()} is not valid for this element.");
+                                }
+                                DecodeMenu(value, menuFile, parent, true);
+                            }
+                            else
+                            {
+                                parent[key] = value;
+                            }
+                        }
                     }
                 }
             }
@@ -148,7 +172,7 @@ namespace Lunet.Menus
                 }
                 foreach (var item in array)
                 {
-                    DecodeMenu(item, menuFile, parent);
+                    DecodeMenu(item, menuFile, parent, true);
                 }
             }
             else if (o is string str)
