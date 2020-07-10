@@ -207,8 +207,11 @@ namespace Lunet.Menus
             }
 
             bool isBreadcrumb = kind == "breadcrumb";
+
+            var thisLinkItemClass = this["list_item_class"];
+            thisLinkItemClass = thisLinkItemClass != null ? $" {thisLinkItemClass}" : string.Empty;
             
-            builder.AppendLine($"<li class='{kind}-item {options["list_item_class"]}{(isActive ? " active" : string.Empty)}'>");
+            builder.AppendLine($"<li class='{kind}-item {options["list_item_class"]}{(isActive ? " active" : string.Empty)}{thisLinkItemClass}'>");
 
             builder.Append(' ', (level + 1) * IndentSize);
 
