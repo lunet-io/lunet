@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="shared\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="shared\.lunet\includes\builtins\cards.sbn-html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
+    <ProjectReference Include="..\Lunet.Resources\Lunet.Resources.csproj" />
+  </ItemGroup>
+
+</Project>

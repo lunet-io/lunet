@@ -1,5 +1,6 @@
 ﻿using System;
 using Lunet.Bundles;
+using Lunet.Cards;
 using Lunet.Core;
 using Lunet.Datas;
 using Lunet.Extends;
@@ -34,6 +35,7 @@ namespace Lunet
                 .Register<MinifierPlugin>()
                 .Register<ScssPlugin>()
                 .Register<TaxonomyPlugin>()
+                .Register<CardsPlugin>()
                 .Register<SearchPlugin>()
                 .Register<YamlPlugin>();
                 

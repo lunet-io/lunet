@@ -49,6 +49,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Menus", "Lunet.Menus\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Search", "Lunet.Search\Lunet.Search.csproj", "{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Cards", "Lunet.Cards\Lunet.Cards.csproj", "{8181979A-3484-4BE6-8A64-4B4E042C9832}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -127,6 +129,10 @@ Global
 		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{682BCEAC-AFEC-413A-A88C-081C22FDF3D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8181979A-3484-4BE6-8A64-4B4E042C9832}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8181979A-3484-4BE6-8A64-4B4E042C9832}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8181979A-3484-4BE6-8A64-4B4E042C9832}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8181979A-3484-4BE6-8A64-4B4E042C9832}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
