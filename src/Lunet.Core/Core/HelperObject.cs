@@ -12,7 +12,7 @@ namespace Lunet.Core
         {
             parent.SetValue(SiteVariables.Helpers, this, true);
             Head = parent.Scripts.CompileAnonymous("include 'builtins/head.sbn-html'");
-            SetValue("urlize", DelegateCustomFunction.CreateFunc((Func<string, string>)Urlize), true);
+            SetValue("urlsite", DelegateCustomFunction.CreateFunc((Func<string, string>)Urlsite), true);
         }
 
         public object Head
@@ -21,7 +21,7 @@ namespace Lunet.Core
             set => SetValue("Head", value);
         }
 
-        public string Urlize(string url)
+        public string Urlsite(string url)
         {
             if (url == null)
             {

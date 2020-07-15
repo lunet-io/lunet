@@ -4,6 +4,6 @@
     <meta name="twitter:title" content="{{ page.twitter_title ?? title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title) }}">
     <meta name="twitter:description" content="{{ page.twitter_description ?? description ?? page.description ?? site.description }}">
 {{~ if image || page.twitter_image ~}}
-    <meta name="twitter:image" content="{{ (page.twitter_image ?? image)  | urlize }}">
+    <meta name="twitter:image" content="{{ (page.twitter_image ?? image)  | urlsite }}">
     <meta name="twitter:image:alt" content="{{ page.twitter_image_alt ?? image_alt ?? page.twitter_title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title)}}">    
 {{~ end; end; end ~}}
