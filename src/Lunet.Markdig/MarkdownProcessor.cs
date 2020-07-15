@@ -3,10 +3,16 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using Lunet.Core;
 using Markdig;
+using Markdig.Renderers;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 using Scriban.Runtime;
+using Zio;
 
 namespace Lunet.Markdown
 {
@@ -14,11 +20,13 @@ namespace Lunet.Markdown
     {
         private readonly DynamicObject<MarkdownProcessor> markdigOptions;
         private readonly DynamicObject<MarkdownProcessor> markdownHelper;
+        private readonly Dictionary<UPath, ContentObject> _pages;
 
         public MarkdownProcessor(MarkdownPlugin plugin) : base(plugin)
         {
             markdigOptions = new DynamicObject<MarkdownProcessor>(this);
             markdownHelper = new DynamicObject<MarkdownProcessor>(this);
+            _pages = new Dictionary<UPath, ContentObject>();
 
             markdownHelper.SetValue("options", markdigOptions, true);
 
@@ -28,9 +36,21 @@ namespace Lunet.Markdown
             markdownHelper.Import("to_html", new Func<string, string>(ToHtmlFunction));
         }
 
+
+        public override void Process(ProcessingStage stage)
+        {
+            if (stage == ProcessingStage.BeforeProcessingContent)
+            {
+                foreach (var page in Site.Pages)
+                {
+                    _pages[page.Path] = page;
+                }
+            }
+        }
+
         public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
         {
-            Debug.Assert(stage == ContentProcessingStage.AfterLoading);
+            Debug.Assert(stage == ContentProcessingStage.Processing);
 
             var contentType = page.ContentType;
 
@@ -40,7 +60,7 @@ namespace Lunet.Markdown
                 return ContentResult.None;
             }
 
-            var html = ToHtmlFunction(page.Content);
+            var html = ToHtml(page, GetPipeline());
             page.Content = html;
             page.ChangeContentType(ContentType.Html);
 
@@ -67,6 +87,45 @@ namespace Lunet.Markdown
         {
             var pipeline = GetPipeline();
             return Markdig.Markdown.ToHtml(markdown, pipeline);
+        }
+
+        private string ToHtml(ContentObject page, MarkdownPipeline pipeline)
+        {
+            if (page == null) throw new ArgumentNullException(nameof(page));
+            if (pipeline == null) throw new ArgumentNullException(nameof(pipeline));
+
+            var markdown = page.Content;
+            var markdownDocument = Markdig.Markdown.Parse(markdown, pipeline);
+
+            var currentDir = page.Path.GetDirectory();
+            
+            foreach (var link in markdownDocument.Descendants<LinkInline>())
+            {
+                if (string.IsNullOrEmpty(link.Url) || link.Url.Contains(":") || !UPath.TryParse(link.Url, out var path)) continue;
+
+                if (path.IsRelative)
+                {
+                    path = currentDir / path;
+                }
+
+                if (_pages.TryGetValue(path, out var pageLink))
+                {
+                    var destPath = pageLink.GetDestinationPath();
+
+                    link.Url = (string) destPath;
+                    if (link.Url.EndsWith("/index.html") || link.Url.EndsWith("/index.htm"))
+                    {
+                        link.Url = (string)destPath.GetDirectory();
+                    }
+                }
+            }
+
+            var renderer = new HtmlRenderer(new StringWriter());
+            pipeline.Setup(renderer);
+            renderer.Render(markdownDocument);
+            renderer.Writer.Flush();
+            var str = renderer.Writer.ToString();
+            return str;
         }
     }
 }

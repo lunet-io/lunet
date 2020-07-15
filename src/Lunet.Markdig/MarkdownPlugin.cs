@@ -12,7 +12,9 @@ namespace Lunet.Markdown
     {
         public MarkdownPlugin(SiteObject site) : base(site)
         {
-            site.Content.AfterLoadingProcessors.Add(new MarkdownProcessor(this));
+            var processor = new MarkdownProcessor(this);
+            site.Content.BeforeProcessingProcessors.Add(processor);
+            site.Content.ContentProcessors.Add(processor);
         }
     }
 }
