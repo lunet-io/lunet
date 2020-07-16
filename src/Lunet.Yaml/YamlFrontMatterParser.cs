@@ -15,7 +15,7 @@ namespace Lunet.Yaml
 
         public IFrontMatter TryParse(string text, string sourceFilePath, out TextPosition position)
         {
-            var frontMatter = YamlUtil.FromYamlFrontMatter(text, out position);
+            var frontMatter = YamlUtil.FromYamlFrontMatter(text, out position, sourceFilePath);
             if (frontMatter is ScriptObject obj)
             {
                 return new YamlFrontMatter(obj);

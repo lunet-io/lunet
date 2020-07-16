@@ -90,7 +90,10 @@ namespace Lunet.Yaml
                         if (expectOnlyFrontMatter)
                         {
                             reader.Accept<DocumentStart>();
-                            var nextDocStart = reader.Expect<DocumentStart>();
+                            // Don't consume the token as the parser will try to parse
+                            // the following characters and could hit non YAML syntax (in Markdown)
+                            // and would throw a parser exception
+                            var nextDocStart = reader.Peek<DocumentStart>();
                             endPosition = nextDocStart.End;
                             break;
                         }
