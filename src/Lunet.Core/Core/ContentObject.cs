@@ -73,10 +73,14 @@ namespace Lunet.Core
             if (isHtml)
             {
                 var name = Path.GetNameWithoutExtension();
-                var isIndex = name == "index";
+                var isIndex = name == "index" || (site.ReadmeAsIndex && name.ToLowerInvariant() == "readme");
                 if (isIndex)
                 {
-                    urlAsPath = Path.GetDirectory().FullName + "/";
+                    urlAsPath = Path.GetDirectory().FullName;
+                    if (!urlAsPath.EndsWith("/"))
+                    {
+                        urlAsPath += "/";
+                    }
                 }
                 else if (HasFrontMatter && !Site.UrlAsFile)
                 {

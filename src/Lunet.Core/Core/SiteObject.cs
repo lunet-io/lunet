@@ -48,6 +48,7 @@ namespace Lunet.Core
 
         public SiteObject(ILoggerFactory loggerFactory = null)
         {
+            ReadmeAsIndex = true;
             ErrorRedirect = "/404.html";
             var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
 
@@ -240,6 +241,12 @@ namespace Lunet.Core
         {
             get => GetSafeValue<string>(SiteVariables.ErrorRedirect);
             set => this[SiteVariables.ErrorRedirect] = value;
+        }
+
+        public bool ReadmeAsIndex
+        {
+            get => GetSafeValue<bool>(SiteVariables.ReadmeAsIndex);
+            set => this[SiteVariables.ReadmeAsIndex] = value;
         }
 
         public void AddContentFileSystem(IFileSystem fileSystem)
