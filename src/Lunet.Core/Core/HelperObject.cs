@@ -17,11 +17,11 @@ namespace Lunet.Core
 
             // Helpers used for declaring panels (e.g {{NOTE do}}This is a note.{{end}}
             var helpers = @"
-# Defines the generic panel helper function
-func PANEL
-    `<div class='` + $0 + `'>`
+# Defines the generic alert helper function
+func ALERT
+    `<div class='alert ` + $0 + `' role='alert'>`
         `<div class='` + $0 + `-heading'>`
-            `<i class='` + $0 + `-icon'></i><span class='` + $0 + `-heading-text'></span>`
+            `<span class='` + $0 + `-icon'></span><span class='` + $0 + `-heading-text'></span>`
         `</div>`
         `<div class='` + $0 + `-content'>` + '\n\n'
             $1
@@ -29,13 +29,13 @@ func PANEL
     '</div>\n\n'
 end
 
-# Defines panel functions
-func NOTE; PANEL 'lunet-block-note' @$0; end
-func TIP; PANEL 'lunet-block-tip' @$0; end
-func WARNING; PANEL 'lunet-block-warning' @$0; end
-func IMPORTANT; PANEL 'lunet-block-important' @$0; end
-func CAUTION; PANEL 'lunet-block-caution' @$0; end
-func CALLOUT; PANEL 'lunet-block-callout' @$0; end
+# Defines alert functions
+func NOTE; ALERT 'lunet-alert-note' @$0; end
+func TIP; ALERT 'lunet-alert-tip' @$0; end
+func WARNING; ALERT 'lunet-alert-warning' @$0; end
+func IMPORTANT; ALERT 'lunet-alert-important' @$0; end
+func CAUTION; ALERT 'lunet-alert-caution' @$0; end
+func CALLOUT; ALERT 'lunet-alert-callout' @$0; end
 ";
             
             parent.Scripts.TryImportScript(helpers, "internal_helpers", this, ScriptFlags.AllowSiteFunctions, out _);
