@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license. 
 // See the license.txt file in the project root for more information.
 
+using System.Collections.Generic;
 using Lunet.Bundles;
 using Lunet.Core;
 using Zio;
@@ -12,18 +13,26 @@ namespace Lunet.Search
     {
         public static readonly UPath DefaultUrl = UPath.Root / "js" / "lunet-search.db";
 
+        public const string DefaultKind = SqliteSearchEngine.Kind;
+
         public SearchPlugin(SiteObject site, BundlePlugin bundlePlugin) : base(site)
         {
             BundlePlugin = bundlePlugin;
             Enable = false;
+            Engine = DefaultKind;
             Url = (string)DefaultUrl;
+
+            SearchEngines = new List<SearchEngine>()
+            {
+                new SqliteSearchEngine(this)
+            };
 
             Excludes = new PathCollection();
             SetValue("excludes", Excludes, true);
 
             site.SetValue("search", this, true);
 
-            var processor = new SearchProcessor(this);
+            var processor = new SearchProcessorDispatch(this);
             site.Content.BeforeLoadingProcessors.Add(processor);
             // It is important to insert the processor at the beginning 
             // because we output values used by the BundlePlugin
@@ -41,6 +50,14 @@ namespace Lunet.Search
 
         public PathCollection Excludes { get; }
 
+        public string Engine
+        {
+            get => GetSafeValue<string>("engine");
+            set => SetValue("engine", value);
+        }
+
+        public List<SearchEngine> SearchEngines { get; }
+
         public bool Worker
         {
             get => GetSafeValue<bool>("worker");
@@ -51,6 +68,51 @@ namespace Lunet.Search
         {
             get => GetSafeValue<string>("url");
             set => SetValue("url", value);
+        }
+
+        private class SearchProcessorDispatch : ContentProcessor<SearchPlugin>
+        {
+            private SearchEngine _selectedEngine;
+
+            public SearchProcessorDispatch(SearchPlugin plugin) : base(plugin)
+            {
+            }
+            
+            public override void Process(ProcessingStage stage)
+            {
+                if (stage == ProcessingStage.BeforeLoadingContent)
+                {
+                    if (!Plugin.Enable) return;
+
+                    var engine = Plugin.Engine ?? DefaultKind;
+                    foreach (var processor in Plugin.SearchEngines)
+                    {
+                        if (processor.Name == engine)
+                        {
+                            _selectedEngine = processor;
+                            break;
+                        }
+                    }
+
+                    // If we haven't found a processor, no need to continue
+                    if (_selectedEngine == null)
+                    {
+                        Site.Error($"Unable to find search engine `{engine}`. Search is disabled");
+                        return;
+                    }
+
+                    _selectedEngine.Process(stage);
+                }
+                else if (stage == ProcessingStage.BeforeProcessingContent)
+                {
+                    _selectedEngine?.Process(stage);
+                }
+            }
+
+            public override ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage)
+            {
+                return _selectedEngine?.TryProcessContent(file, stage) ?? ContentResult.Continue;
+            }
         }
     }
 }

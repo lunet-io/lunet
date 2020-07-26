@@ -15,22 +15,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="shared\.lunet\modules\search\lunet-search-ws-client.js">
+    <Content Include="shared\.lunet\modules\search\sqlite\lunet-search-ws-client.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="shared\.lunet\modules\search\lunet-search.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="shared\.lunet\modules\search\lunet-sql-wasm.wasm">
+    <Content Include="shared\.lunet\modules\search\sqlite\lunet-search.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="shared\.lunet\modules\search\lunet-sql-wasm.js">
+    <Content Include="shared\.lunet\modules\search\sqlite\lunet-sql-wasm.wasm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="shared\.lunet\modules\search\sqlite\lunet-sql-wasm.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
