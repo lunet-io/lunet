@@ -19,7 +19,7 @@ namespace Lunet.Core
             var helpers = @"
 # Defines the generic alert helper function
 func ALERT
-    `<div class='alert ` + $0 + `' role='alert'>`
+    `<div class='` + (($0 + ` ` + $.class) | string.rstrip ) + `' role='alert'>`
         `<div class='` + $0 + `-heading'>`
             `<span class='` + $0 + `-icon'></span><span class='` + $0 + `-heading-text'></span>`
         `</div>`
@@ -30,14 +30,14 @@ func ALERT
 end
 
 # Defines alert functions
-func NOTE; ALERT 'lunet-alert-note' @$0; end
-func TIP; ALERT 'lunet-alert-tip' @$0; end
-func WARNING; ALERT 'lunet-alert-warning' @$0; end
-func IMPORTANT; ALERT 'lunet-alert-important' @$0; end
-func CAUTION; ALERT 'lunet-alert-caution' @$0; end
-func CALLOUT; ALERT 'lunet-alert-callout' @$0; end
+func NOTE; ALERT 'lunet-alert-note' class:$.class @$0; end
+func TIP; ALERT 'lunet-alert-tip' class:$.class @$0; end
+func WARNING; ALERT 'lunet-alert-warning' class:$.class @$0; end
+func IMPORTANT; ALERT 'lunet-alert-important' class:$.class @$0; end
+func CAUTION; ALERT 'lunet-alert-caution' class:$.class @$0; end
+func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
 ";
-            
+
             parent.Scripts.TryImportScript(helpers, "internal_helpers", this, ScriptFlags.AllowSiteFunctions, out _);
         }
 
