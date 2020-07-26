@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Lunet.Bundles;
 using Lunet.Core;
@@ -38,7 +39,7 @@ namespace Lunet.Search
         {
             var index = Task.Run(() => Index.Build(async builder =>
             {
-                builder.AddField("id", 3);
+                builder.AddField("href", 3);
                 builder.AddField("title", 2);
                 builder.AddField("body", 1);
 
@@ -47,8 +48,9 @@ namespace Lunet.Search
                     await builder.Add(new Document
                     {
                         {"id", file.Url ?? string.Empty},
-                        {"title", file.Title ?? string.Empty},
-                        {"body", plainText ?? string.Empty},
+                        {"href", SquashPunctuation(file.Url ?? string.Empty)},
+                        {"title", SquashPunctuation(file.Title ?? string.Empty)},
+                        {"body", SquashPunctuation(plainText ?? string.Empty)},
                     });
                 }
             })).Result;
@@ -82,6 +84,13 @@ namespace Lunet.Search
                 //defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search.js");
                 //defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-sql-wasm.js");
             }
+        }
+        
+        private static readonly Regex PunctuationRegex = new Regex(@"[^\w]+");
+        
+        private static string SquashPunctuation(string text)
+        {
+            return PunctuationRegex.Replace(text, " ");
         }
     }
 }

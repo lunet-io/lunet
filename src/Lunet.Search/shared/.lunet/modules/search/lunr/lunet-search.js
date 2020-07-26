@@ -115,7 +115,7 @@ class LunetSearch {
         var results = [];
 
         try {
-            const rows = this.db.exec(escapeText);
+            const rows = this.db.search(escapeText);
             if (rows.length > 0) {
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
