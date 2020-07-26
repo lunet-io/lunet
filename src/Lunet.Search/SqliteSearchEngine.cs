@@ -16,9 +16,9 @@ namespace Lunet.Search
         private string _dbPathOnDisk;
         private SqliteTransaction _currentTransaction;
 
-        public const string Kind = "sqlite";
+        public const string EngineName = "sqlite";
 
-        public SqliteSearchEngine(SearchPlugin plugin) : base(plugin, Kind)
+        public SqliteSearchEngine(SearchPlugin plugin) : base(plugin, EngineName)
         {
         }
 
@@ -112,7 +112,7 @@ namespace Lunet.Search
             // Add our dynamic content to the output
             var fs = new PhysicalFileSystem();
             var srcPath = fs.ConvertPathFromInternal(_dbPathOnDisk);
-            var content = new ContentObject(Site, new FileEntry(new PhysicalFileSystem(), srcPath), path: OutputUrl);
+            var content = new ContentObject(Site, new FileEntry(fs, srcPath), path: OutputUrl);
             Site.DynamicPages.Add(content);
 
             _currentTransaction = null;

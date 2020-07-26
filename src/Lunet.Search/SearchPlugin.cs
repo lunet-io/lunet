@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using Lunet.Bundles;
 using Lunet.Core;
+using Lunet.Resources;
 using Zio;
 
 namespace Lunet.Search
@@ -13,17 +14,19 @@ namespace Lunet.Search
     {
         public static readonly UPath DefaultUrl = UPath.Root / "js" / "lunet-search.db";
 
-        public const string DefaultKind = SqliteSearchEngine.Kind;
+        public const string DefaultKind = SqliteSearchEngine.EngineName;
 
-        public SearchPlugin(SiteObject site, BundlePlugin bundlePlugin) : base(site)
+        public SearchPlugin(SiteObject site, BundlePlugin bundlePlugin, ResourcePlugin resourcePlugin) : base(site)
         {
             BundlePlugin = bundlePlugin;
+            ResourcePlugin = resourcePlugin;
             Enable = false;
             Engine = DefaultKind;
             Url = (string)DefaultUrl;
 
             SearchEngines = new List<SearchEngine>()
             {
+                new LunrSearchEngine(this),
                 new SqliteSearchEngine(this)
             };
 
@@ -47,6 +50,8 @@ namespace Lunet.Search
         }
 
         internal BundlePlugin BundlePlugin { get; }
+
+        internal ResourcePlugin ResourcePlugin { get; }
 
         public PathCollection Excludes { get; }
 
