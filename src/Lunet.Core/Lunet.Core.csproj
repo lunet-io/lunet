@@ -15,7 +15,6 @@
 
   <ItemGroup>
     <None Include="shared\.lunet\newsite\config.scriban" />
-    <None Include="shared\.lunet\newsite\.lunet\layouts\_default.html" />
   </ItemGroup>
 
   <ItemGroup>
