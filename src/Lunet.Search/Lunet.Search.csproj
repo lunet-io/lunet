@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LunrCore" Version="2.3.8.1" />
+    <PackageReference Include="LunrCore" Version="2.3.8.4" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="3.1.6" />
   </ItemGroup>
 
@@ -16,13 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="shared\.lunet\modules\search\lunr\lunet-search.js">
+    <Content Include="shared\.lunet\modules\search\lunr\lunet-search-lunr.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="shared\.lunet\modules\search\sqlite\lunet-search-ws-client.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="shared\.lunet\modules\search\sqlite\lunet-search.js">
+    <Content Include="shared\.lunet\modules\search\sqlite\lunet-search-sqlite.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

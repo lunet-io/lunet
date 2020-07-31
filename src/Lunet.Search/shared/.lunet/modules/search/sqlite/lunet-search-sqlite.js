@@ -1,6 +1,6 @@
 // Case of web-worker, we pre-initialize sql.js
 if (typeof importScripts === 'function') {
-    // init for worker
+    importScripts("lunet-sql-wasm.js");
 }
 
 class LunetSearch {
@@ -8,6 +8,12 @@ class LunetSearch {
 	    performance.mark("lunet-search-start");
         this._available = false;
         this._reason = "Search not initialized";
+
+        // configurable, should be properties 
+        this.url_weight = 3.0;
+        this.title_weight = 2.0;
+        this.content_weight = 1.0;
+        this.snippet_words = 20;
     }
 
     get available() {
@@ -23,35 +29,39 @@ class LunetSearch {
 	    return this._perf;
     }
 
-    _initializeDbFromResponse(response, resolve) {
+    _initializeDbFromResponse(sqlLoader, response, resolve) {
         const thisInstance = this;
-        response.json().then((data) => {
-            try {
-                // fake exec to check if the database is valid
-                thisInstance._reason = "Please wait, initializing search engine...";
-                thisInstance.db = lunr.Index.load(data);
-                thisInstance._available = true;
-                thisInstance._reason = "Search database available for queries.";
+        response.arrayBuffer().then((buffer) => {
+            const u8Buffer = new Uint8Array(buffer);
+            thisInstance._reason = "Please wait, initializing search engine...";
+            sqlLoader.then((sql) => {
+                this.db = new sql.Database(u8Buffer);
+                try {
+                    // fake exec to check if the database is valid
+                    thisInstance.db.exec("pragma schema_version;");
+                    thisInstance._available = true;
+                    thisInstance._reason = "Search database available for queries.";
 
-                performance.mark("lunet-search-end");
-                thisInstance._perf = performance.measure("lunet-search-init",
-                    "lunet-search-start",
-                    "lunet-search-end");
+                    performance.mark("lunet-search-end");
+                    thisInstance._perf = performance.measure("lunet-search-init",
+                        "lunet-search-start",
+                        "lunet-search-end");
 
-                resolve();
-            } catch (err) {
-                console.log(err);
-                thisInstance._reason = `Error while loading search database. ${err}`;
-            }
+                    resolve();
+                } catch (err) {
+                    thisInstance._reason = `Error while loading search database. ${err}`;
+                }
+            });
         });
     }
 
-    initialize(dbUrl = "/js/lunet-search.db", locateSqliteWasm = (file) => `/js/lunet-${file}`)
+    initialize(dbUrl = "/js/lunet-search.sqlite", locateSqliteWasm = (file) => `/js/lunet-${file}`)
     {
         const thisInstance = this;
         if ("caches" in self && "fetch" in self) {
             return new Promise(function(resolve, reject) {
                 caches.open("lunet.cache").then((lunetCache) => {
+                    const sqlLoader = self.lunetInitSqlJs({locateFile: function(file, prefix){ return locateSqliteWasm(file);} });
                     thisInstance._reason = "Please wait, initializing search database...";
                     // Always fecth the headers for the DB to check if we need to update it
                     fetch(dbUrl, { method: "HEAD" }).then((latestResponse) => {
@@ -66,7 +76,7 @@ class LunetSearch {
                                     requiresFetch = true;
                                 } else {
                                     // We can use the cached version
-                                    thisInstance._initializeDbFromResponse(cachedResponse, resolve);
+                                    thisInstance._initializeDbFromResponse(sqlLoader, cachedResponse, resolve);
                                 }
                             } else {
                                 requiresFetch = true;
@@ -79,7 +89,9 @@ class LunetSearch {
                                         lunetCache.put(dbUrl, latestResponse2);
                                         // refetch from cache
                                         lunetCache.match(dbUrl).then((cachedResponse2) => {
-                                            thisInstance._initializeDbFromResponse(cachedResponse2, resolve);
+                                            thisInstance._initializeDbFromResponse(sqlLoader,
+                                                cachedResponse2,
+                                                resolve);
                                         });
                                     }
                                 });
@@ -112,16 +124,18 @@ class LunetSearch {
         if (((escapeText.match(/"/g) || []).length % 2) !== 0) {
             escapeText = escapeText + "\"";
         }
+        var sqlQuery = `SELECT pages.url, pages.title, snippet(pages, 2, '<b>', '</b>', '', ${this.snippet_words}) FROM pages WHERE pages MATCH '${escapeText}' ORDER BY bm25(pages, ${this.url_weight}, ${this.title_weight}, ${this.content_weight});`;
         var results = [];
 
         try {
-            const rows = this.db.search(escapeText);
-            if (rows.length > 0) {
+            const dbResults = this.db.exec(sqlQuery);
+            if (dbResults.length > 0) {
+                const rows = dbResults[0].values;
                 for (let i = 0; i < rows.length; i++) {
                     const row = rows[i];
-                    const url = row.ref;
-                    const title = row.ref;
-                    const snippet = "TODO content";
+                    const url = row[0];
+                    const title = row[1];
+                    const snippet = row[2];
 
                     results.push({ url: url, title: title, snippet: snippet });
                 }

@@ -112,7 +112,7 @@ namespace Lunet.Search
             // Add our dynamic content to the output
             var fs = new PhysicalFileSystem();
             var srcPath = fs.ConvertPathFromInternal(_dbPathOnDisk);
-            var content = new ContentObject(Site, new FileEntry(fs, srcPath), path: OutputUrl);
+            var content = new ContentObject(Site, new FileEntry(fs, srcPath), path: OutputUrl.ChangeExtension("sqlite"));
             Site.DynamicPages.Add(content);
 
             _currentTransaction = null;
@@ -124,7 +124,7 @@ namespace Lunet.Search
             if (Plugin.Worker)
             {
                 defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
-                defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-search.js", "/js/lunet-search.js");
+                defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-search-sqlite.js", "/js/lunet-search.js");
                 defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.js", "/js/lunet-sql-wasm.js");
                 defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search-ws-client.js");
             }
@@ -132,7 +132,7 @@ namespace Lunet.Search
             {
                 // Insert content before the others to make sure they are loaded async ASAP
                 defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
-                defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search.js");
+                defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search-sqlite.js");
                 defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-sql-wasm.js");
             }
         }

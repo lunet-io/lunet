@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Lunet.Bundles;
@@ -37,25 +38,43 @@ namespace Lunet.Search
 
         public override void Terminate()
         {
+            var docs = new List<Document>();
             var index = Task.Run(() => Index.Build(async builder =>
             {
+                builder.MetadataAllowList.Add("position");
                 builder.AddField("href", 3);
                 builder.AddField("title", 2);
                 builder.AddField("body", 1);
 
+                builder.Separator = c => !char.IsLetterOrDigit(c);
+
                 foreach (var (file, plainText) in _searchContentList)
                 {
-                    await builder.Add(new Document
+                    var doc = new Document
                     {
                         {"id", file.Url ?? string.Empty},
-                        {"href", SquashPunctuation(file.Url ?? string.Empty)},
-                        {"title", SquashPunctuation(file.Title ?? string.Empty)},
-                        {"body", SquashPunctuation(plainText ?? string.Empty)},
-                    });
+                        {"href", file.Url ?? string.Empty},
+                        {"title", file.Title ?? string.Empty},
+                        {"body", plainText ?? string.Empty},
+                    };
+                    docs.Add(doc);
+                    await builder.Add(doc);
                 }
             })).Result;
-            
-            var db = index.ToJson();
+
+
+            var dbContent = new DbContent()
+            {
+                Index = index,
+            };
+            foreach (var doc in docs)
+            {
+                var rawDoc = new Dictionary<string, object>(doc);
+                rawDoc.Remove("id");
+                dbContent.Docs.Add((string)doc["id"], rawDoc);
+            }
+
+            var db = JsonSerializer.Serialize(dbContent, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase});
 
             var dbPathOnDisk = Path.GetTempFileName();
             File.WriteAllText(dbPathOnDisk, db, new UTF8Encoding(false));
@@ -63,7 +82,7 @@ namespace Lunet.Search
             // Add our dynamic content to the output
             var fs = new PhysicalFileSystem();
             var srcPath = fs.ConvertPathFromInternal(dbPathOnDisk);
-            var content = new ContentObject(Site, new FileEntry(fs, srcPath), path: OutputUrl);
+            var content = new ContentObject(Site, new FileEntry(fs, srcPath), path: OutputUrl.ChangeExtension("json"));
             Site.DynamicPages.Add(content);
 
             // TODO: make it configurable by selecting which bundle will receive the search/db
@@ -74,11 +93,11 @@ namespace Lunet.Search
             defaultBundle.AddJs(lunr, "lunr.js", mode: "");
             if (Plugin.Worker)
             {
-                defaultBundle.AddJs("/modules/search/lunr/lunet-search.js", mode: "");
+                defaultBundle.AddJs("/modules/search/lunr/lunet-search-lunr.js", mode: "");
             }
             else
             {
-                defaultBundle.AddJs("/modules/search/lunr/lunet-search.js", mode: "");
+                defaultBundle.AddJs("/modules/search/lunr/lunet-search-lunr.js", mode: "");
                 //// Insert content before the others to make sure they are loaded async ASAP
                 //defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
                 //defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search.js");
@@ -90,7 +109,20 @@ namespace Lunet.Search
         
         private static string SquashPunctuation(string text)
         {
-            return PunctuationRegex.Replace(text, " ");
+            return PunctuationRegex.Replace(text, " ").Trim();
+        }
+
+
+        private class DbContent
+        {
+            public DbContent()
+            {
+                Docs = new Dictionary<string, Dictionary<string, object>>();
+            }
+
+            public Dictionary<string, Dictionary<string, object>> Docs { get; }
+
+            public Index Index { get; set; }
         }
     }
 }
