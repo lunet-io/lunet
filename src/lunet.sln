@@ -42,6 +42,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{46B38F3E
 		..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
+		global.json = global.json
 		..\readme.md = ..\readme.md
 	EndProjectSection
 EndProject
