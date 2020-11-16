@@ -37,6 +37,7 @@ namespace Lunet.Watcher
         private readonly Stopwatch _clock;
         private FileSystemEventBatchArgs _batchEvents;
         private readonly ManualResetEvent _onClosingEvent;
+        private bool _threadStarted = false;
 
         public WatcherPlugin(SiteObject site) : base(site)
         {
@@ -49,6 +50,7 @@ namespace Lunet.Watcher
 
         private void ProcessEvents()
         {
+            _threadStarted = true;
             while (true)
             {
                 FileSystemEventBatchArgs batchEventsCopy = null;
@@ -303,6 +305,9 @@ namespace Lunet.Watcher
 
         private void OnFileSystemEvent(object sender, FileChangedEventArgs e)
         {
+            // Don't log events until the thread is started
+            if (!_threadStarted) return;
+
             var dir = new DirectoryEntry(e.FileSystem, e.FullPath);
 
             if (IsOutputDirectory(e.FullPath))

@@ -122,6 +122,8 @@ namespace Lunet.Server
                 site.BasePath = string.Empty;
             }
 
+            site.Build();
+
             if (!noWatchOption.HasValue())
             {
                 if (site.GetLiveReload())
@@ -161,8 +163,6 @@ namespace Lunet.Server
                     };
                 }
             }
-
-            site.Build();
         }
 
         public OrderedList<Action<IApplicationBuilder>> AppBuilders { get; }
