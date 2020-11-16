@@ -58,6 +58,8 @@ namespace Lunet.Resources
 
         protected override ResourceObject InstallToDisk(string resourceName, string resourceVersion, DirectoryEntry directory, ResourceInstallFlags flags)
         {
+            Plugin.Site.Info($"NPM installing {resourceName}");
+
             JObject resourceJson = null;
             var npmPackageUrl = RegistryUrl + resourceName;
             try
