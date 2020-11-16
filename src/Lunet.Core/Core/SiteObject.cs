@@ -409,6 +409,11 @@ namespace Lunet.Core
 
         public void Build()
         {
+            if (this.CanInfo())
+            {
+                this.Info($"Site build started");
+            }
+
             var clock = Stopwatch.StartNew();
             InitializePlugins();
 
@@ -424,7 +429,7 @@ namespace Lunet.Core
 
             if (this.CanInfo())
             {
-                this.Info($"Build finished in {elapsed}ms. {Statistics.GetSummary()}");
+                this.Info($"Site build finished in {elapsed}ms. {Statistics.GetSummary()}");
             }
         }
 
