@@ -74,7 +74,10 @@ namespace Lunet.Core
             {
                 builder.AddProvider(new LoggerProviderIntercept(this))
                     .AddFilter(LogFilter)
-                    .AddConsole();
+                    .AddSimpleConsole(configure: options =>
+                    {
+                        options.SingleLine = true;
+                    });
             });
             
             Log = LoggerFactory.CreateLogger("lunet");
