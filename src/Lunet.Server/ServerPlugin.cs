@@ -122,8 +122,6 @@ namespace Lunet.Server
                 site.BasePath = string.Empty;
             }
 
-            site.Build();
-
             if (!noWatchOption.HasValue())
             {
                 if (site.GetLiveReload())
@@ -134,6 +132,8 @@ namespace Lunet.Server
                         SetupLiveReloadServer();
                     }
                 }
+
+                site.Build();
 
                 if (server)
                 {
@@ -162,6 +162,10 @@ namespace Lunet.Server
                         }
                     };
                 }
+            }
+            else
+            {
+                site.Build();
             }
         }
 
