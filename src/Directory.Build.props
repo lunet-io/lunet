@@ -1,7 +1,7 @@
 <Project>
     <PropertyGroup>
         <VersionPrefix>0.2.0</VersionPrefix>
-        <VersionSuffix>alpha.2</VersionSuffix>
+        <!--<VersionSuffix>alpha.3</VersionSuffix>-->
         <MSBuildGitHashSuppressDirtyWarning>True</MSBuildGitHashSuppressDirtyWarning>
     </PropertyGroup>
 </Project>
