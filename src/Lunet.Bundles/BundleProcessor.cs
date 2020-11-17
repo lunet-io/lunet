@@ -99,7 +99,7 @@ namespace Lunet.Bundles
                 {
                     if (!concatBuilders.ContainsKey(type.Key))
                     {
-                        concatBuilders[type.Key] = new ConcatGroup();
+                        concatBuilders[type.Key] = new ConcatGroup(type.Key);
                     }
                 }
             }
@@ -349,16 +349,28 @@ namespace Lunet.Bundles
             }
         }
 
+        /// <summary>
+        /// A class that concatenates strings per kind (css, js...)
+        ///
+        /// TODO: Concatenation should be a pluggable features per content kind
+        /// </summary>
         private class ConcatGroup
         {
-            public ConcatGroup()
+            public ConcatGroup(string kind)
             {
+                Kind = kind;
                 Pages = new List<ContentObject>();
                 ModeToBuilders = new Dictionary<string, StringBuilder> {{string.Empty, new StringBuilder()}};
             }
+
+            public string Kind { get; }
+
             public List<ContentObject> Pages { get; }
 
             public Dictionary<string, StringBuilder> ModeToBuilders { get; }
+
+            // used to store if the css kind has already a @charset rules at the top
+            private bool _hasCssCharset;
 
             public void AppendContent(string mode, string content)
             {
@@ -370,8 +382,40 @@ namespace Lunet.Bundles
                     ModeToBuilders.Add(mode, builder);
                 }
 
-                builder.Append(content);
-                builder.Append('\n');
+                // The @charset rules in css cannot be concatened but must come first in the css
+                // so we are handling this case by setting charset rule at the beginning of the concat
+                if (Kind == "css" && content.StartsWith("@charset "))
+                {
+                    var endOfCharset = content.IndexOf('\n');
+                    string charset = null;
+                    if (endOfCharset > 0)
+                    {
+                        charset = content.Substring(0, endOfCharset + 1);
+                        content = content.Substring(endOfCharset + 1);
+                    }
+                    else
+                    {
+                        charset = content;
+                        content = "";
+                    }
+
+                    if (!_hasCssCharset)
+                    {
+                        builder.Insert(0, charset);
+                        _hasCssCharset = true;
+                    }
+                    else
+                    {
+                        // TODO: in case of having multiple charset we should verify that
+                        // they are the same otherwise we could not concat the files!
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(content))
+                {
+                    builder.Append(content);
+                    builder.Append('\n');
+                }
             }
         }
     }
