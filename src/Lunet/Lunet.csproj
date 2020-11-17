@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <Description>Lunet is a static website generator.</Description>
     <Copyright>Alexandre Mutel</Copyright>
-    <AssemblyTitle>Lunet.Core</AssemblyTitle>
     <NeutralLanguage>en-US</NeutralLanguage>
     <Authors>Alexandre Mutel</Authors>
-    <AssemblyName>Lunet.Core</AssemblyName>
+    <AssemblyName>lunet</AssemblyName>
     <PackageId>lunet</PackageId>
     <PackageIcon>lunet.png</PackageIcon>
     <PackageTags>website;jekyll;hugo;static</PackageTags>
@@ -15,7 +15,6 @@
     <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>git://github.com/lunet-io/lunet</RepositoryUrl>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <RuntimeIdentifiers>win7-x64;osx.10.10-x64;ubuntu.14.04-x64</RuntimeIdentifiers>
     <AssemblyName>lunet</AssemblyName>
