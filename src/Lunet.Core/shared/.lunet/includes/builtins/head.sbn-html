@@ -1,5 +1,5 @@
 ﻿{{~ for $meta in site.html.head.metas ~}}
-    {{ object.eval $meta }}
+    {{ object.eval_template $meta }}
 {{~ end ~}}
     <title>{{ page.full_title = site.html.head.title ?? (page.url == '/' ? site.title : page.title + " - " + site.title); page.full_title }}</title>
 {{~ for $include in site.html.head.includes ~}}
