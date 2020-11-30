@@ -1,5 +1,7 @@
 # Changelog
 
-## 0.1.0-alpha.x (19 Jun 2020)
+## 0.3.0
 
-- Initial alpha version
+- Add support Toml, Json data providers
+- Add support for sitemaps
+- Update Scriban and NUglify to latest
