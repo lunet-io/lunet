@@ -20,8 +20,8 @@
   <ItemGroup>
     <PackageReference Include="Autofac" Version="6.0.0" />
     <PackageReference Include="Markdig" Version="0.22.0" />
-    <PackageReference Include="Scriban" Version="3.0.2" />
-    <PackageReference Include="NUglify" Version="1.11.1" />
+    <PackageReference Include="Scriban" Version="3.0.3" />
+    <PackageReference Include="NUglify" Version="1.11.3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" />
