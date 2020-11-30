@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>    
+    <TargetFramework>net5.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Tomlyn" Version="0.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
+    <ProjectReference Include="..\Lunet.Datas\Lunet.Datas.csproj" />
+  </ItemGroup>
+</Project>

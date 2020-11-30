@@ -33,7 +33,7 @@ namespace Lunet.Yaml
         /// </summary>
         /// <param name="yamlText">An input yaml text</param>
         /// <returns>The parsed YAML object to a Scriban <see cref="ScriptObject"/> or <see cref="ScriptArray"/></returns>
-        public static object FromYaml(string yamlText, string yamlFile = null)
+        public static object FromText(string yamlText, string yamlFile = null)
         {
             TextPosition position;
             return FromYaml(yamlText, yamlFile, false, out position);

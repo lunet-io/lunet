@@ -92,7 +92,7 @@ namespace Lunet.Menus
             // The menu file is not copied to the output!
             page.Discard = true;
 
-            var rawMenu = YamlUtil.FromYaml(page.SourceFile.ReadAllText(), page.SourceFile.FullName);
+            var rawMenu = YamlUtil.FromText(page.SourceFile.ReadAllText(), page.SourceFile.FullName);
             DecodeMenu(rawMenu, page);
             
             return ContentResult.Break;

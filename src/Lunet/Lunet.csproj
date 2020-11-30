@@ -35,6 +35,7 @@
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
     <ProjectReference Include="..\Lunet.Datas\Lunet.Datas.csproj" />
     <ProjectReference Include="..\Lunet.Extends\Lunet.Extends.csproj" />
+    <ProjectReference Include="..\Lunet.Json\Lunet.Json.csproj" />
     <ProjectReference Include="..\Lunet.Menus\Lunet.Menus.csproj" />
     <ProjectReference Include="..\Lunet.Search\Lunet.Search.csproj" />
     <ProjectReference Include="..\Lunet.Server\Lunet.Server.csproj" />
@@ -44,6 +45,7 @@
     <ProjectReference Include="..\Lunet.Resources\Lunet.Resources.csproj" />
     <ProjectReference Include="..\Lunet.Scss\Lunet.Scss.csproj" />
     <ProjectReference Include="..\Lunet.Taxonomies\Lunet.Taxonomies.csproj" />
+    <ProjectReference Include="..\Lunet.Toml\Lunet.Toml.csproj" />
     <ProjectReference Include="..\Lunet.Yaml\Lunet.Yaml.csproj" />
   </ItemGroup>
 

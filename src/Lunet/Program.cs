@@ -4,6 +4,7 @@ using Lunet.Cards;
 using Lunet.Core;
 using Lunet.Datas;
 using Lunet.Extends;
+using Lunet.Json;
 using Lunet.Layouts;
 using Lunet.Markdown;
 using Lunet.Menus;
@@ -13,6 +14,7 @@ using Lunet.Taxonomies;
 using Lunet.Scss;
 using Lunet.Search;
 using Lunet.Server;
+using Lunet.Toml;
 using Lunet.Watcher;
 using Lunet.Yaml;
 
@@ -37,8 +39,10 @@ namespace Lunet
                 .Register<TaxonomyPlugin>()
                 .Register<CardsPlugin>()
                 .Register<SearchPlugin>()
-                .Register<YamlPlugin>();
-                
+                .Register<YamlPlugin>()
+                .Register<JsonPlugin>()
+                .Register<TomlPlugin>();
+
             return site.Run(args);
         }
 

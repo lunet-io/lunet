@@ -1,21 +1,20 @@
-﻿using System.IO;
-using Lunet.Datas;
+﻿using Lunet.Datas;
 using Zio;
 
-namespace Lunet.Yaml
+namespace Lunet.Json
 {
-    public class YamlDataLoader : IDataLoader
+    public class JsonDataLoader : IDataLoader
     {
         public bool CanHandle(string fileExtension)
         {
             var fileExt = fileExtension.ToLowerInvariant();
-            return fileExt == ".yml" || fileExt == ".yaml";
+            return fileExt == ".json";
         }
 
         public object Load(FileEntry file)
         {
             var text = file.ReadAllText();
-            return YamlUtil.FromText(text);
+            return JsonUtil.FromText(text);
         }
     }
 }
