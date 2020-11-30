@@ -14,6 +14,7 @@ using Lunet.Taxonomies;
 using Lunet.Scss;
 using Lunet.Search;
 using Lunet.Server;
+using Lunet.Sitemaps;
 using Lunet.Toml;
 using Lunet.Watcher;
 using Lunet.Yaml;
@@ -39,6 +40,7 @@ namespace Lunet
                 .Register<TaxonomyPlugin>()
                 .Register<CardsPlugin>()
                 .Register<SearchPlugin>()
+                .Register<SitemapsPlugin>()
                 .Register<YamlPlugin>()
                 .Register<JsonPlugin>()
                 .Register<TomlPlugin>();

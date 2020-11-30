@@ -19,6 +19,10 @@ namespace Lunet.Core
 
         public static readonly ContentType Js = new ContentType("js");
 
+        public static readonly ContentType Xml = new ContentType("xml");
+
+        public static readonly ContentType Txt = new ContentType("txt");
+        
         public ContentType(string name)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
