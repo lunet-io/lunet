@@ -53,7 +53,7 @@ namespace Lunet.Core
         {
             ReadmeAsIndex = true;
             ErrorRedirect = "/404.html";
-            var sharedFolder = Path.Combine(Path.GetDirectoryName(typeof(SiteObject).GetTypeInfo().Assembly.Location), SharedFolderName);
+            var sharedFolder = Path.Combine(AppContext.BaseDirectory, SharedFolderName);
 
             _contentFileSystems = new List<IFileSystem>();
             var sharedPhysicalFileSystem = new PhysicalFileSystem();
