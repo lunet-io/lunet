@@ -13,7 +13,10 @@ using Autofac;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Lunet.Statistics;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.Console;
 using Scriban.Parsing;
 using Zio;
@@ -72,12 +75,17 @@ namespace Lunet.Core
             // Create the logger
             LoggerFactory = loggerFactory ?? Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
             {
+                // Similar to builder.AddSimpleConsole
+                // But we are using our own console that stays on the same line if the message doesn't have new lines
+                builder.AddConfiguration();
                 builder.AddProvider(new LoggerProviderIntercept(this))
                     .AddFilter(LogFilter)
-                    .AddSimpleConsole(configure: options =>
+                    .AddConsoleFormatter<SimpleConsoleFormatter, SimpleConsoleFormatterOptions>(configure =>
                     {
-                        options.SingleLine = true;
+                        configure.SingleLine = true;
                     });
+                builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
+                LoggerProviderOptions.RegisterProviderOptions<ConsoleLoggerOptions, ConsoleLoggerProvider>(builder.Services);
             });
             
             Log = LoggerFactory.CreateLogger("lunet");
