@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+- Improve translation of local links with anchors to URL.
+
 ## 0.3.1
 
 - Change single line logging to allow messages with lines to still be preserved
