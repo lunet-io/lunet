@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Web;
 using Lunet.Core;
 using Markdig;
 using Markdig.Renderers;
@@ -101,7 +102,28 @@ namespace Lunet.Markdown
             
             foreach (var link in markdownDocument.Descendants<LinkInline>())
             {
-                if (string.IsNullOrEmpty(link.Url) || link.Url.Contains(":") || !UPath.TryParse(link.Url, out var path)) continue;
+                var url = link.Url;
+                if (string.IsNullOrEmpty(url) || url.Contains(":") || url.StartsWith("/")) continue;
+
+
+                var indexOfLastPart = url.IndexOf('?');
+                if (indexOfLastPart < 0)
+                {
+                    indexOfLastPart = url.IndexOf('#');
+                }
+
+                string query = null;
+
+                if (indexOfLastPart > 0)
+                {
+                    query = url.Substring(indexOfLastPart);
+                    url = url.Substring(0, indexOfLastPart);
+                }
+
+                if (!UPath.TryParse(url, out var path))
+                {
+                    continue;
+                }
 
                 if (path.IsRelative)
                 {
@@ -116,6 +138,12 @@ namespace Lunet.Markdown
                     if (link.Url.EndsWith("/index.html") || link.Url.EndsWith("/index.htm"))
                     {
                         link.Url = (string)destPath.GetDirectory();
+                    }
+
+                    // Append the query
+                    if (query != null)
+                    {
+                        link.Url += query;
                     }
                 }
             }
