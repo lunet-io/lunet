@@ -20,7 +20,7 @@ namespace Lunet.Core
 
         private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null)
+        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null, ScriptObject preContent = null)
         {
             Site = site ?? throw new ArgumentNullException(nameof(site));
             SourceFile = sourceFileInfo ?? throw new ArgumentNullException(nameof(sourceFileInfo));
@@ -28,6 +28,9 @@ namespace Lunet.Core
             Script = scriptInstance?.Template;
             Dependencies = new List<ContentDependency>();
             ObjectType = ContentObjectType.File;
+            
+            // Copy any pre-content to this object
+            preContent?.CopyTo(this);
 
             // TODO: Make this part pluggable
             // Parse a standard blog text

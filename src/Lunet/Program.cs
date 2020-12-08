@@ -1,4 +1,5 @@
 ﻿using System;
+using Lunet.Attributes;
 using Lunet.Bundles;
 using Lunet.Cards;
 using Lunet.Core;
@@ -41,6 +42,7 @@ namespace Lunet
                 .Register<CardsPlugin>()
                 .Register<SearchPlugin>()
                 .Register<SitemapsPlugin>()
+                .Register<AttributesPlugin>()
                 .Register<YamlPlugin>()
                 .Register<JsonPlugin>()
                 .Register<TomlPlugin>();

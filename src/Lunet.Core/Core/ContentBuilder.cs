@@ -37,6 +37,7 @@ namespace Lunet.Core
 
             BeforeInitializingProcessors = new OrderedList<ISiteProcessor>();
             BeforeLoadingProcessors = new OrderedList<ISiteProcessor>();
+            BeforeLoadingContentProcessors = new OrderedList<TryProcessPreContentDelegate>();
             AfterLoadingProcessors = new OrderedList<IContentProcessor>();
             BeforeProcessingProcessors = new OrderedList<ISiteProcessor>();
             ContentProcessors = new OrderedList<IContentProcessor>();
@@ -49,6 +50,8 @@ namespace Lunet.Core
 
         public OrderedList<ISiteProcessor> BeforeLoadingProcessors { get; }
 
+        public OrderedList<TryProcessPreContentDelegate> BeforeLoadingContentProcessors { get; }
+        
         public OrderedList<IContentProcessor> AfterLoadingProcessors { get; }
 
         public OrderedList<ISiteProcessor> BeforeProcessingProcessors { get; }
@@ -469,14 +472,22 @@ namespace Lunet.Core
                     }
                 }
 
+                // Run pre-content (e.g AttributesPlugin)
+                ScriptObject preContent = null;
+                foreach (var preLoadingContentProcessor in BeforeLoadingContentProcessors)
+                {
+                    preLoadingContentProcessor(file.Path, ref preContent);
+                }
+
                 if (hasFrontMatter)
                 {
-                    page = await LoadPageScript(Site, stream, file);
+                    page = await LoadPageScript(Site, stream, file, preContent);
                     stream = null;
                 }
                 else
                 {
-                    page = new ContentObject(Site, file);
+
+                    page = new ContentObject(Site, file, preContent: preContent);
                     
                     // Run pre-processing on static content as well
                     var pendingPageProcessors = new OrderedList<IContentProcessor>();
@@ -494,7 +505,7 @@ namespace Lunet.Core
 
             return page;
         }
-        private static async Task<ContentObject> LoadPageScript(SiteObject site, Stream stream, FileEntry file)
+        private static async Task<ContentObject> LoadPageScript(SiteObject site, Stream stream, FileEntry file, ScriptObject preContent)
         {
             // Read the stream
             var reader = new StreamReader(stream);
@@ -508,7 +519,7 @@ namespace Lunet.Core
             var scriptInstance = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatterAndContent);
             if (!scriptInstance.HasErrors)
             {
-                page = new ContentObject(site, file, scriptInstance);
+                page = new ContentObject(site, file, scriptInstance, preContent: preContent);
 
                 var evalClock = Stopwatch.StartNew();
                 if (site.Content.TryPreparePage(page))

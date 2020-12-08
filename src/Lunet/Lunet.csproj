@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <None Include="../../doc/images/lunet.png" Pack="true" PackagePath="" />
+    <ProjectReference Include="..\Lunet.Attributes\Lunet.Attributes.csproj" />
     <ProjectReference Include="..\Lunet.Bundles\Lunet.Bundles.csproj" />
     <ProjectReference Include="..\Lunet.Cards\Lunet.Cards.csproj" />
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />

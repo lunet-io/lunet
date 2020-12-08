@@ -58,6 +58,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Toml", "Lunet.Toml\Lu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Sitemaps", "Lunet.Sitemaps\Lunet.Sitemaps.csproj", "{500C84FC-8179-4B43-9556-DFB4F7F69A32}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Attributes", "Lunet.Attributes\Lunet.Attributes.csproj", "{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -152,6 +154,10 @@ Global
 		{500C84FC-8179-4B43-9556-DFB4F7F69A32}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{500C84FC-8179-4B43-9556-DFB4F7F69A32}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{500C84FC-8179-4B43-9556-DFB4F7F69A32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
