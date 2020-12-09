@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Scriban.Functions;
 using Scriban.Helpers;
+using Scriban.Parsing;
 using Scriban.Runtime;
 using Scriban.Syntax;
 using Zio;
@@ -56,6 +58,7 @@ namespace Lunet.Core
             ContentType = Site.ContentTypes.GetContentType(Extension);
 
             // Extract the section of this content
+            // section cannot be setup by the pre-content
             Section = Path.GetFirstDirectory(out var pathInSection);
             if (pathInSection.IsEmpty)
             {
@@ -66,35 +69,12 @@ namespace Lunet.Core
             {
                 PathInSection = pathInSection;
             }
-            Layout = Section;
 
-            // Extract the default Url of this content
-            // By default, for html content, we don't output a file but a directory
-            var urlAsPath = (string)Path;
-
-            var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
-            if (isHtml)
-            {
-                var name = Path.GetNameWithoutExtension();
-                var isIndex = name == "index" || (site.ReadmeAsIndex && name.ToLowerInvariant() == "readme");
-                if (isIndex)
-                {
-                    urlAsPath = Path.GetDirectory().FullName;
-                    if (!urlAsPath.EndsWith("/"))
-                    {
-                        urlAsPath += "/";
-                    }
-                }
-                else if (HasFrontMatter && !Site.UrlAsFile)
-                {
-                    if (!string.IsNullOrEmpty(Extension))
-                    {
-                        urlAsPath = urlAsPath.Substring(0, urlAsPath.Length - Extension.Length);
-                    }
-                    urlAsPath = PathUtil.NormalizeUrl(urlAsPath, true);
-                }
-            }
-            Url = urlAsPath;
+            // Layout could have been already setup by pre-content, so we keep it in that case
+            Layout ??= Section;
+            // Same for the URL
+            // Note that SetupUrl() must be called for potential HTML content or content with front matter
+            Url ??= (string)Path;
 
             // Replicate readonly values to the Scripting object
             InitializeReadOnlyVariables();
@@ -210,7 +190,21 @@ namespace Lunet.Core
 
         public DateTime Date
         {
-            get => GetSafeValue<DateTime>(PageVariables.Date);
+            get
+            {
+                // Try to recover the date from the current value
+                var value = this[PageVariables.Date];
+                if (value is DateTime dt) return dt;
+                if (value is string str)
+                {
+                    if (DateTime.TryParse(str, out var result))
+                    {
+                        return result;
+                    }
+                }
+                // Date is empty
+                return new DateTime();
+            }
             set => this[PageVariables.Date] = value;
         }
 
@@ -226,6 +220,12 @@ namespace Lunet.Core
             set => this[PageVariables.Title] = value;
         }
 
+        public string Slug
+        {
+            get => GetSafeValue<string>(PageVariables.Slug) ?? StringFunctions.Handleize(Title);
+            set => this[PageVariables.Slug] = value;
+        }
+
         public string Layout
         {
             get => GetSafeValue<string>(PageVariables.Layout);
@@ -239,6 +239,70 @@ namespace Lunet.Core
         }
 
         public List<ContentDependency> Dependencies { get; }
+
+        /// <summary>
+        /// Final fix-up for URL of the page once frontmatter has been loaded
+        ///
+        /// Transforms an URL to a file to a folder URL:
+        /// 
+        /// From: /blog/this-is-a-post.md
+        /// To: /blog/this-is-a-post/
+        ///
+        /// Or if the index.html/index.md or readme.html or readme.md is used, it converts to the parent folder:
+        ///
+        /// From: /section/readme.md
+        /// To: /section/
+        /// 
+        /// </summary>
+        public void SetupUrl()
+        {
+            // Extract the default Url of this content
+            // By default, for html content, we don't output a file but a directory
+            var url = Url ?? (string)Path;
+
+            url = ReplaceUrlPlaceHolders(url);
+            // In case place holders are all wrong
+            if (url == "/")
+            {
+                url = (string)Path;
+            }
+
+            // Don't try to patch an URL that is already specifying a "folder" url
+            if (url.EndsWith("/"))
+            {
+                return;
+            }
+            
+            // Special case handling, if the content is going to be Html,
+            // we process its URL to map to a folder if necessary (if e.g this is index.html or readme.md)
+            var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
+            if (isHtml)
+            {
+                var urlAsPath = (UPath)url;
+                var name = urlAsPath.GetNameWithoutExtension();
+                var isIndex = name == "index" || (Site.ReadmeAsIndex && name.ToLowerInvariant() == "readme");
+                if (isIndex)
+                {
+                    url = urlAsPath.GetDirectory().FullName;
+                    if (!url.EndsWith("/"))
+                    {
+                        url += "/";
+                    }
+                }
+                else if (HasFrontMatter && !Site.UrlAsFile)
+                {
+                    if (!string.IsNullOrEmpty(Extension))
+                    {
+                        url = url.Substring(0, url.Length - Extension.Length);
+                    }
+
+                    url = PathUtil.NormalizeUrl(url, true);
+                }
+            }
+
+            // Replace the final URL
+            Url = url;
+        }
 
         public void ChangeContentType(ContentType newContentType)
         {
@@ -281,8 +345,93 @@ namespace Lunet.Core
             SetValue(FileVariables.Path, Path, true);
             SetValue(FileVariables.Extension, Extension, true);
 
-            SetValue(PageVariables.Section, Layout, true);
+            SetValue(PageVariables.Section, Section, true);
             SetValue(PageVariables.PathInSection, PathInSection, true);
+        }
+
+        static readonly Regex PlaceHolderRegex = new Regex(@"(/?):(\w+)");
+
+        private string ReplaceUrlPlaceHolders(string url)
+        {
+            if (!url.Contains(":")) return url;
+
+            var urlClean = PlaceHolderRegex.Replace(url, evaluator: PlaceHolderRegexEvaluatorWrap);
+
+            if (!urlClean.StartsWith("/"))
+            {
+                urlClean = $"/{urlClean}";
+            }
+
+            return urlClean;
+        }
+
+        private string PlaceHolderRegexEvaluatorWrap(Match match)
+        {
+            var result = PlaceHolderRegexEvaluator(match);
+            return string.IsNullOrEmpty(result) ? string.Empty : $"{match.Groups[1].Value}{result}";
+        }
+
+        private string PlaceHolderRegexEvaluator(Match match)
+        {
+            var placeHolder = match.Groups[2].Value;
+            switch (placeHolder)
+            {
+                case "year":
+                    return Date.ToString("yyyy", CultureInfo.InvariantCulture);
+                case "short_year":
+                    return Date.ToString("yy", CultureInfo.InvariantCulture);
+                case "month":
+                    return Date.ToString("MM", CultureInfo.InvariantCulture);
+                case "i_month":
+                    return Date.ToString("M", CultureInfo.InvariantCulture);
+                case "short_month":
+                    return Date.ToString("MMM", CultureInfo.InvariantCulture);
+                case "long_month":
+                    return Date.ToString("MMMM", CultureInfo.InvariantCulture);
+                case "day":
+                    return Date.ToString("dd", CultureInfo.InvariantCulture);
+                case "i_day":
+                    return Date.ToString("d", CultureInfo.InvariantCulture);
+                case "y_day":
+                    return Date.DayOfYear.ToString("000", CultureInfo.InvariantCulture);
+                case "w_year":
+                    return ISOWeek.GetWeekOfYear(Date).ToString("00", CultureInfo.InvariantCulture);
+                case "week":
+                    return CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(Date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday).ToString("00", CultureInfo.InvariantCulture);
+                case "w_day":
+                    var day = (int) Date.DayOfWeek;
+                    // monday is 1
+                    // sunday is 7
+                    day = day == 0 ? 7 : day;
+                    return day.ToString(CultureInfo.InvariantCulture);
+                case "short_day":
+                    return Date.ToString("ddd", CultureInfo.InvariantCulture);
+                case "long_day":
+                    return Date.ToString("dddd", CultureInfo.InvariantCulture);
+                case "hour":
+                    return Date.ToString("HH", CultureInfo.InvariantCulture);
+                case "minute":
+                    return Date.ToString("mm", CultureInfo.InvariantCulture);
+                case "second":
+                    return Date.ToString("ss", CultureInfo.InvariantCulture);
+                case "title":
+                    return StringFunctions.Handleize(Title);
+                case "slug":
+                    return Slug;
+                case "section":
+                    return Section;
+                case "slugified_section":
+                    return StringFunctions.Handleize(Section);
+                case "output_ext":
+                    return Extension;
+                case "path":
+                    return Path.FullName;
+            }
+
+            var pos = new TextPosition(0, 1, 1);
+            Site.Warning(new SourceSpan(Path.FullName, pos, pos), $"The URL placeholder `{placeHolder}` is not supported.");
+
+            return null;
         }
     }
 }

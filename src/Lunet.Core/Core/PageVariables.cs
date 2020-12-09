@@ -14,6 +14,8 @@ namespace Lunet.Core
 
         public const string Title = "title";
 
+        public const string Slug = "slug";
+
         public const string Weight = "weight";
 
         public const string UrlExplicit = "url_explicit";

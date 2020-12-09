@@ -21,7 +21,7 @@ namespace Lunet.Attributes
 
         public bool Match
         {
-            get => GetSafeValue<bool>("match");
+            get => GetSafeValue<bool>("match"); 
             set => this["match"] = value;
         }
 
@@ -44,8 +44,15 @@ namespace Lunet.Attributes
     {
         public AttributesObject()
         {
+            this.Import("clear", (Action)Clear);
             this.Import("unmatch", (Func<string, ScriptObject, AttributesGlobber>)UnMatch);
             this.Import("match", (Func<string, ScriptObject, AttributesGlobber>)Match);
+
+            // Add a default match for blog posts files
+            Match("/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*", new ScriptObject()
+            {
+                {"url", "/:section/:year/:month/:day/:title:output_ext"}
+            });
         }
 
         public AttributesGlobber Match(string pattern, ScriptObject setters)
@@ -82,9 +89,8 @@ namespace Lunet.Attributes
             Add(globber);
             return globber;
         }
-
-
-        public void Process(UPath path, ref ScriptObject obj)
+        
+        internal void ProcessAttributesForPath(UPath path, ref ScriptObject obj)
         {
             foreach (var globber in this)
             {

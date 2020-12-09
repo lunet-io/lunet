@@ -315,6 +315,9 @@ namespace Lunet.Core
                 return false;
             }
 
+            // Make sure to setup the Url of the document
+            page.SetupUrl();
+
             if (page.Script != null && TryEvaluate(page))
             {
                 // If page is discarded, skip it
@@ -482,12 +485,14 @@ namespace Lunet.Core
                 if (hasFrontMatter)
                 {
                     page = await LoadPageScript(Site, stream, file, preContent);
+                    // page.SetupUrl() is performed right after the setup of the frontmatter
                     stream = null;
                 }
                 else
                 {
 
                     page = new ContentObject(Site, file, preContent: preContent);
+                    page.SetupUrl();
                     
                     // Run pre-processing on static content as well
                     var pendingPageProcessors = new OrderedList<IContentProcessor>();

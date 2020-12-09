@@ -12,7 +12,7 @@ namespace Lunet.Attributes
         {
             var attributesObject = new AttributesObject();
             Site.Scripts.Builtins.SetValue("attributes", attributesObject, true);
-            Site.Content.BeforeLoadingContentProcessors.Add(attributesObject.Process);
+            Site.Content.BeforeLoadingContentProcessors.Add(attributesObject.ProcessAttributesForPath);
         }
     }
 }
