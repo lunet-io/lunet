@@ -125,13 +125,12 @@ namespace Lunet.Layouts
                         var nextLayout = NormalizeLayoutName(page.Layout, false);
                         if (nextLayout != layoutName && nextLayout != null)
                         {
-                            if (layoutNames.Contains(nextLayout))
+                            if (!layoutNames.Add(nextLayout))
                             {
                                 Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutScript.SourceFilePath}`");
                                 result = ContentResult.Break;
                                 break;
                             }
-                            layoutNames.Add(nextLayout);
 
                             layoutName = nextLayout;
                             continueLayout = true;
