@@ -82,7 +82,7 @@ namespace Lunet.Search
             var contentType = file.ContentType;
 
             // This plugin is only working on scss files
-            if (!(contentType == ContentType.Markdown || contentType == ContentType.Html))
+            if (!contentType.IsHtmlLike())
             {
                 return ContentResult.Continue;
             }

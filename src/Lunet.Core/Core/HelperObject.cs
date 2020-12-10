@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text;
 using Lunet.Scripts;
+using Scriban;
 using Scriban.Runtime;
 using Zio;
 
@@ -13,7 +14,7 @@ namespace Lunet.Core
         {
             parent.SetValue(SiteVariables.Helpers, this, true);
             Head = parent.Scripts.CompileAnonymous("include 'builtins/head.sbn-html'");
-            SetValue("urlsite", DelegateCustomFunction.CreateFunc((Func<string, string>)Urlsite), true);
+            SetValue("ref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRef), true);
 
             // Helpers used for declaring panels (e.g {{NOTE do}}This is a note.{{end}}
             var helpers = @"
@@ -47,19 +48,37 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
             set => SetValue("Head", value);
         }
 
-        public string Urlsite(string url)
+        public string UrlRef(TemplateContext context, string url)
         {
-            if (url == null)
+            url ??= "/";
+
+            // In case of using url on an external URL, don't error but return it as it is
+            if (url.StartsWith("http:") || url.StartsWith("https:") || url.StartsWith("ftp:"))
             {
-                url = "/";
+                return url;
             }
 
-            if (!url.StartsWith("/"))
+            // Validate the url
+            if (!UPath.TryParse(url, out var urlPath))
             {
-                throw new ArgumentException($"Invalid url `{url}`. Expecting an absolute url starting with /", nameof(url));
+                throw new ArgumentException($"Malformed url `{url}`", nameof(url));
             }
             
-            if (!UPath.TryParse(url, out var urlPath))
+            // If the URL is not absolute, we make it absolute from the current page
+            if (!url.StartsWith("/"))
+            {
+                if (context is LunetTemplateContext lunetContext && lunetContext.Page?.Url != null)
+                {
+                    var directory = lunetContext.Page.GetDestinationDirectory();
+                    url = (string)(directory / urlPath);
+                }
+                else
+                {
+                    throw new ArgumentException($"Invalid url `{url}`. Expecting an absolute url starting with /", nameof(url));
+                }
+            }
+            
+            if (!UPath.TryParse(url, out _))
             {
                 throw new ArgumentException($"Malformed url `{url}`", nameof(url));
             }

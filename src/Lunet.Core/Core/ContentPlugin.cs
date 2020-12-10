@@ -627,15 +627,11 @@ namespace Lunet.Core
 
         private bool TryEvaluate(ContentObject page)
         {
-            if (page.ScriptObjectLocal == null)
-            {
-                page.ScriptObjectLocal = new ScriptObject();
-            }
-
+            page.ScriptObjectLocal ??= new ScriptObject();
             var clock = Stopwatch.StartNew();
             try
             {
-                return Site.Scripts.TryEvaluate(page, page.Script, page.SourceFile.Path, page.ScriptObjectLocal);
+                return Site.Scripts.TryEvaluatePage(page, page.Script, page.SourceFile.Path, page.ScriptObjectLocal);
             }
             finally
             {

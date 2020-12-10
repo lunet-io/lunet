@@ -99,14 +99,14 @@ namespace Lunet.Scripts
             return new ScriptInstance(template.HasErrors, (string)scriptPath, frontmatter, template.Page);
         }
 
-        public bool TryImportScript(string scriptText, UPath scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, TemplateContext context = null)
+        public bool TryImportScript(string scriptText, UPath scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
         {
             if (scriptText == null) throw new ArgumentNullException(nameof(scriptText));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
             result = null;
-            context = context ?? new TemplateContext(Builtins);
+            context ??= new LunetTemplateContext(Builtins);
 
             var scriptResult = ParseScript(scriptText, scriptPath.FullName, ScriptMode.ScriptOnly);
             if (!scriptResult.HasErrors)
@@ -144,14 +144,14 @@ namespace Lunet.Scripts
             return false;
         }
 
-        public bool TryImportScriptStatement(string scriptStatement, IDynamicObject scriptObject, ScriptFlags flags, out object result, TemplateContext context = null)
+        public bool TryImportScriptStatement(string scriptStatement, IDynamicObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
         {
             if (scriptStatement == null) throw new ArgumentNullException(nameof(scriptStatement));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
             return TryImportScript(scriptStatement, "__script__", scriptObject, flags, out result, context);
         }
 
-        public bool TryImportScriptFromFile(FileEntry scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, TemplateContext context = null)
+        public bool TryImportScriptFromFile(FileEntry scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
         {
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
@@ -207,19 +207,25 @@ namespace Lunet.Scripts
             }
             return true;
         }
-
-
+        
+        public LunetTemplateContext CreatePageContext()
+        {
+            var context = new LunetTemplateContext(Builtins);
+            context.PushGlobal(Site.Helpers);
+            return context;
+        }
+        
         /// <summary>
         /// Initializes this instance.
         /// </summary>
-        public bool TryEvaluate(ContentObject page, ScriptPage script, UPath scriptPath, ScriptObject obj = null, TemplateContext context = null)
+        public bool TryEvaluatePage(ContentObject page, ScriptPage script, UPath scriptPath, ScriptObject obj = null)
         {
             if (page == null) throw new ArgumentNullException(nameof(page));
             if (script == null) throw new ArgumentNullException(nameof(script));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
-            context = context ?? new TemplateContext(Builtins);
-            context.PushGlobal(Site.Helpers);
+            var context = CreatePageContext();
+            context.Page = page;
             if (obj != null)
             {
                 context.PushGlobal(obj);
@@ -258,7 +264,6 @@ namespace Lunet.Scripts
                 {
                     context.PopGlobal();
                 }
-                context.PopGlobal(); // pop helpers
                 page.Content = context.Output.ToString();
 
                 // We don't keep the site variable after this initialization
@@ -405,4 +410,19 @@ namespace Lunet.Scripts
             }
         }
     }
+
+
+    public class LunetTemplateContext : TemplateContext
+    {
+        public LunetTemplateContext()
+        {
+        }
+
+        public LunetTemplateContext(ScriptObject builtin) : base(builtin)
+        {
+        }
+        
+        public ContentObject Page { get; set; }
+    }
+
 }

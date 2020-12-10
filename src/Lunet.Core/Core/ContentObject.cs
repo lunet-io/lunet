@@ -318,6 +318,12 @@ namespace Lunet.Core
             }
         }
 
+        public UPath GetDestinationDirectory()
+        {
+            var dir = GetDestinationPath().GetDirectory();
+            return dir.IsNull ? UPath.Root : dir;
+        }
+
         public UPath GetDestinationPath()
         {
             var urlAsPath = Url;
@@ -329,7 +335,7 @@ namespace Lunet.Core
                 urlAsPath = Url = Path.FullName;
             }
 
-            if (HasFrontMatter && ContentType == ContentType.Html && !Site.UrlAsFile && urlAsPath.EndsWith("/"))
+            if (HasFrontMatter && ContentType.IsHtmlLike() && !Site.UrlAsFile && urlAsPath.EndsWith("/"))
             {
                 urlAsPath += "index" + Site.GetSafeDefaultPageExtension();
             }

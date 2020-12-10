@@ -51,7 +51,7 @@ namespace Lunet.Sitemaps
                 {
                     Url = "/robots.txt",
                     ContentType = ContentType.Txt,
-                    Content = $"Sitemap: {Site.Helpers.Urlsite(content.Url)}"
+                    Content = $"Sitemap: {Site.Helpers.UrlRef(null, content.Url)}"
                 };
                 Site.DynamicPages.Add(robotsContent);
             }
@@ -60,7 +60,7 @@ namespace Lunet.Sitemaps
         public override ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage)
         {
             var contentType = file.ContentType;
-            if (!Plugin.Enable || !(contentType == ContentType.Markdown || contentType == ContentType.Html))
+            if (!Plugin.Enable || !contentType.IsHtmlLike())
             {
                 return ContentResult.Continue;
             }
@@ -69,7 +69,7 @@ namespace Lunet.Sitemaps
             var allowSiteMap = file["sitemap"] is bool v ? v : true;
             if (!allowSiteMap) return ContentResult.Continue;
             
-            var url = Site.Helpers.Urlsite(file.Url);
+            var url = Site.Helpers.UrlRef(null, file.Url);
 
             var sitemapUrl = new SitemapUrl(url)
             {

@@ -112,34 +112,24 @@ namespace Lunet.Layouts
                 }
 
                 page.ScriptObjectLocal.SetValue(PageVariables.Page, page, true);
+                page.ScriptObjectLocal.SetValue(PageVariables.Content, page.Content, false);
 
                 // We manage global locally here as we need to push the local variable ScriptVariable.BlockDelegate
-                var context = new TemplateContext(Site.Scripts.Builtins);
-                context.PushGlobal(page.ScriptObjectLocal);
-                try
+                if (Site.Scripts.TryEvaluatePage(page, layoutScript.Template, layoutScript.SourceFilePath, page.ScriptObjectLocal))
                 {
-                    context.SetValue(ContentVariable, page.Content);
-
-                    if (Site.Scripts.TryEvaluate(page, layoutScript.Template, layoutScript.SourceFilePath, null, context))
+                    var nextLayout = NormalizeLayoutName(page.Layout, false);
+                    if (nextLayout != layoutName && nextLayout != null)
                     {
-                        var nextLayout = NormalizeLayoutName(page.Layout, false);
-                        if (nextLayout != layoutName && nextLayout != null)
+                        if (!layoutNames.Add(nextLayout))
                         {
-                            if (!layoutNames.Add(nextLayout))
-                            {
-                                Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutScript.SourceFilePath}`");
-                                result = ContentResult.Break;
-                                break;
-                            }
-
-                            layoutName = nextLayout;
-                            continueLayout = true;
+                            Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutScript.SourceFilePath}`");
+                            result = ContentResult.Break;
+                            break;
                         }
+
+                        layoutName = nextLayout;
+                        continueLayout = true;
                     }
-                }
-                finally
-                {
-                    context.PopGlobal();
                 }
 
             } while (continueLayout);

@@ -23,6 +23,11 @@ namespace Lunet.Core
 
         public static readonly ContentType Txt = new ContentType("txt");
         
+        public bool IsHtmlLike()
+        {
+            return this.Equals(Html) || this.Equals(Markdown);
+        }
+        
         public ContentType(string name)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
