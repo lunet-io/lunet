@@ -75,7 +75,7 @@ namespace Lunet.Search
 
         public override ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage)
         {
-            Debug.Assert(stage == ContentProcessingStage.AfterLoading);
+            Debug.Assert(stage == ContentProcessingStage.Running);
 
             if (!_isInitialized) return ContentResult.Continue;
 

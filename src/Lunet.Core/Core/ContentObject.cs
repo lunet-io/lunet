@@ -254,8 +254,13 @@ namespace Lunet.Core
         /// To: /section/
         /// 
         /// </summary>
-        public void SetupUrl()
+        public void Initialize()
         {
+            if (FrontMatter != null)
+            {
+                Site.Scripts.TryRunFrontMatter(FrontMatter, this);
+            }
+
             // Extract the default Url of this content
             // By default, for html content, we don't output a file but a directory
             var url = Url ?? (string)Path;

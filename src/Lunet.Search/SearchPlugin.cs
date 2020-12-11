@@ -40,7 +40,7 @@ namespace Lunet.Search
             // It is important to insert the processor at the beginning 
             // because we output values used by the BundlePlugin
             site.Content.BeforeProcessingProcessors.Insert(0, processor);
-            site.Content.AfterLoadingProcessors.Add(processor);
+            site.Content.AfterRunningProcessors.Add(processor);
         }
 
         public bool Enable

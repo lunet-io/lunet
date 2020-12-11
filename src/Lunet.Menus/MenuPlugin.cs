@@ -8,7 +8,7 @@ namespace Lunet.Menus
         {
             Processor = new MenuProcessor(this);
             Site.SetValue("menu", this, true);
-            Site.Content.AfterLoadingProcessors.Insert(0, Processor);
+            Site.Content.AfterRunningProcessors.Insert(0, Processor);
             Site.Content.BeforeProcessingProcessors.Insert(0, Processor);
         }
 

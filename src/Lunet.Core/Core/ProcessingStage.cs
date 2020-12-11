@@ -17,6 +17,11 @@ namespace Lunet.Core
 
         /// <summary>
         /// This stage is happening after all content has been loaded. But the content has not been yet processed.
+        /// </summary>
+        AfterLoadingContent,
+
+        /// <summary>
+        /// This stage is happening after all content has been loaded. But the content has not been yet processed.
         /// Then, the registered content processors <see cref="IContentProcessor"/> are called after this stage.
         /// </summary>
         BeforeProcessingContent,

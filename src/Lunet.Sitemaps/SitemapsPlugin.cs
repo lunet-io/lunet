@@ -14,7 +14,7 @@ namespace Lunet.Sitemaps
             var processor = new SitemapsProcessor(this);
             site.Content.BeforeLoadingProcessors.Add(processor);
             site.Content.BeforeProcessingProcessors.Add(processor);
-            site.Content.AfterLoadingProcessors.Add(processor);
+            site.Content.AfterRunningProcessors.Add(processor);
         }
 
         public bool Enable

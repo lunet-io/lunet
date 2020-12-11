@@ -2,7 +2,7 @@
 {
     public enum ContentProcessingStage
     {
-        AfterLoading,
+        Running,
 
         Processing,
     }

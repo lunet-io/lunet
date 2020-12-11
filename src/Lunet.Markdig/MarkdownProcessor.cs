@@ -21,13 +21,11 @@ namespace Lunet.Markdown
     {
         private readonly DynamicObject<MarkdownProcessor> markdigOptions;
         private readonly DynamicObject<MarkdownProcessor> markdownHelper;
-        private readonly Dictionary<UPath, ContentObject> _pages;
 
         public MarkdownProcessor(MarkdownPlugin plugin) : base(plugin)
         {
             markdigOptions = new DynamicObject<MarkdownProcessor>(this);
             markdownHelper = new DynamicObject<MarkdownProcessor>(this);
-            _pages = new Dictionary<UPath, ContentObject>();
 
             markdownHelper.SetValue("options", markdigOptions, true);
 
@@ -35,18 +33,6 @@ namespace Lunet.Markdown
             // with the markdown.to_html function
             Site.Scripts.Builtins.SetValue("markdown", markdownHelper, true);
             markdownHelper.Import("to_html", new Func<string, string>(ToHtmlFunction));
-        }
-
-
-        public override void Process(ProcessingStage stage)
-        {
-            if (stage == ProcessingStage.BeforeProcessingContent)
-            {
-                foreach (var page in Site.Pages)
-                {
-                    _pages[page.Path] = page;
-                }
-            }
         }
 
         public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
@@ -103,49 +89,8 @@ namespace Lunet.Markdown
             foreach (var link in markdownDocument.Descendants<LinkInline>())
             {
                 var url = link.Url;
-                if (string.IsNullOrEmpty(url) || url.Contains(":") || url.StartsWith("/")) continue;
-
-
-                var indexOfLastPart = url.IndexOf('?');
-                if (indexOfLastPart < 0)
-                {
-                    indexOfLastPart = url.IndexOf('#');
-                }
-
-                string query = null;
-
-                if (indexOfLastPart > 0)
-                {
-                    query = url.Substring(indexOfLastPart);
-                    url = url.Substring(0, indexOfLastPart);
-                }
-
-                if (!UPath.TryParse(url, out var path))
-                {
-                    continue;
-                }
-
-                if (path.IsRelative)
-                {
-                    path = currentDir / path;
-                }
-
-                if (_pages.TryGetValue(path, out var pageLink))
-                {
-                    var destPath = pageLink.GetDestinationPath();
-
-                    link.Url = (string) destPath;
-                    if (link.Url.EndsWith("/index.html") || link.Url.EndsWith("/index.htm"))
-                    {
-                        link.Url = (string)destPath.GetDirectory();
-                    }
-
-                    // Append the query
-                    if (query != null)
-                    {
-                        link.Url += query;
-                    }
-                }
+                if (string.IsNullOrEmpty(url)) continue;
+                link.Url = Site.Helpers.UrlRelRef(page, url);
             }
 
             var renderer = new HtmlRenderer(new StringWriter());

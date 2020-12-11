@@ -80,7 +80,7 @@ namespace Lunet.Menus
 
         public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
         {
-            Debug.Assert(stage == ContentProcessingStage.AfterLoading);
+            Debug.Assert(stage == ContentProcessingStage.Running);
 
             _pages.Add(page.Path, page);
             

@@ -19,7 +19,9 @@ namespace Lunet.Statistics
 
         public TimeSpan LoadingParsingTime { get; set; }
 
-        public TimeSpan EvaluateTime { get; set; }
+        public TimeSpan LoadingTime { get; set; }
+
+        public TimeSpan RunningTime { get; set; }
 
         public TimeSpan SummaryTime { get; set; }
 

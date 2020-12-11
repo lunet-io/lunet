@@ -38,7 +38,8 @@ namespace Lunet.Core
             BeforeInitializingProcessors = new OrderedList<ISiteProcessor>();
             BeforeLoadingProcessors = new OrderedList<ISiteProcessor>();
             BeforeLoadingContentProcessors = new OrderedList<TryProcessPreContentDelegate>();
-            AfterLoadingProcessors = new OrderedList<IContentProcessor>();
+            AfterLoadingProcessors = new OrderedList<ISiteProcessor>();
+            AfterRunningProcessors = new OrderedList<IContentProcessor>();
             BeforeProcessingProcessors = new OrderedList<ISiteProcessor>();
             ContentProcessors = new OrderedList<IContentProcessor>();
             AfterProcessingProcessors = new OrderedList<ISiteProcessor>();
@@ -51,9 +52,11 @@ namespace Lunet.Core
         public OrderedList<ISiteProcessor> BeforeLoadingProcessors { get; }
 
         public OrderedList<TryProcessPreContentDelegate> BeforeLoadingContentProcessors { get; }
-        
-        public OrderedList<IContentProcessor> AfterLoadingProcessors { get; }
 
+        public OrderedList<ISiteProcessor> AfterLoadingProcessors { get; }
+
+        public OrderedList<IContentProcessor> AfterRunningProcessors { get; }
+        
         public OrderedList<ISiteProcessor> BeforeProcessingProcessors { get; }
 
         public OrderedList<IContentProcessor> ContentProcessors { get; }
@@ -103,7 +106,13 @@ namespace Lunet.Core
                 }
 
                 // Load content
-                LoadAllContent();
+                if (!LoadAllContent())
+                {
+                    return;
+                }
+
+                // Run all content
+                RunAllContent();
 
                 // Before processing content
                 if (!TryRunProcess(BeforeProcessingProcessors, ProcessingStage.BeforeProcessingContent))
@@ -308,29 +317,32 @@ namespace Lunet.Core
             return true;
         }
 
-        public bool TryPreparePage(ContentObject page)
+        private void RunPage(ContentObject page)
         {
-            if (page.FrontMatter != null && !Scripts.TryRunFrontMatter(page.FrontMatter, page))
-            {
-                return false;
-            }
+            // Update statistics
+            var evalClock = Stopwatch.StartNew();
+            var contentStat = Site.Statistics.GetContentStat(page);
 
-            // Make sure to setup the Url of the document
-            page.SetupUrl();
-
-            if (page.Script != null && TryEvaluate(page))
+            if (page.Script != null && TryRunPageWithScript(page))
             {
                 // If page is discarded, skip it
                 if (page.Discard)
                 {
-                    return false;
+                    return;
                 }
-
-                var pendingPageProcessors = new OrderedList<IContentProcessor>();
-                return TryProcessPage(page, ContentProcessingStage.AfterLoading, AfterLoadingProcessors, pendingPageProcessors, false);
             }
 
-            return false;
+            var pendingPageProcessors = new OrderedList<IContentProcessor>();
+            TryProcessPage(page, ContentProcessingStage.Running, AfterRunningProcessors, pendingPageProcessors, false);
+
+            contentStat.RunningTime += evalClock.Elapsed;
+
+            // Update the summary of the page
+            evalClock.Restart();
+            SummaryHelper.UpdateSummary(page);
+            evalClock.Stop();
+
+            contentStat.SummaryTime += evalClock.Elapsed;
         }
 
         public void ProcessPages(PageCollection pages, bool copyOutput)
@@ -345,10 +357,14 @@ namespace Lunet.Core
             }
         }
 
-        private void LoadAllContent()
+        private bool LoadAllContent()
         {
             Site.StaticFiles.Clear();
             Site.Pages.Clear();
+
+            // Uncomment to dispatch on multithread
+            //const int MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded;
+            const int MaxDegreeOfParallelism = 1;
 
             // Load a content asynchronously
             var contentLoaderBlock = new TransformBlock<(FileEntry, int), ContentObject>(
@@ -365,16 +381,14 @@ namespace Lunet.Core
                 new ExecutionDataflowBlockOptions()
                 {
                     EnsureOrdered = false,
-                    // Uncomment to dispatch on multithread
-                    //MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded
-                    MaxDegreeOfParallelism = 1 
+                    MaxDegreeOfParallelism = MaxDegreeOfParallelism
                 });
 
             // Add the content loaded to the correct list (static vs pages)
             var contentAdderBlock = new ActionBlock<ContentObject>(content =>
             {
                 // We don't need lock as this block has a MaxDegreeOfParallelism = 1
-                var list = content.ScriptObjectLocal != null ? Site.Pages : Site.StaticFiles;
+                var list = content.Script != null ? Site.Pages : Site.StaticFiles;
                 list.Add(content);
             });
 
@@ -404,6 +418,43 @@ namespace Lunet.Core
 
             // Finally, we sort pages by natural order
             Site.Pages.Sort();
+
+            // Right after we have been loading the content, we can iterate on all content
+            if (!TryRunProcess(AfterLoadingProcessors, ProcessingStage.AfterLoadingContent))
+            {
+                // If we have any errors during processing, early exit
+                return false;
+            }
+
+            return true;
+        }
+        
+        private void RunAllContent()
+        {
+            // Uncomment to dispatch on multithread
+            //const int MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded;
+            const int MaxDegreeOfParallelism = 1;
+
+            // Run script content asynchronously
+            var contentRunnerBlock = new ActionBlock<ContentObject>(
+                RunPage,
+                new ExecutionDataflowBlockOptions()
+                {
+                    EnsureOrdered = false,
+                    MaxDegreeOfParallelism = MaxDegreeOfParallelism
+                });
+
+            foreach (var page in Site.Pages)
+            {
+                contentRunnerBlock.Post(page);
+            }
+            foreach (var page in Site.StaticFiles)
+            {
+                contentRunnerBlock.Post(page);
+            }
+
+            contentRunnerBlock.Complete();
+            contentRunnerBlock.Completion.Wait();
         }
 
         private IEnumerable<FileEntry> LoadDirectory(DirectoryEntry directory, Queue<DirectoryEntry> directoryQueue)
@@ -485,19 +536,20 @@ namespace Lunet.Core
                 if (hasFrontMatter)
                 {
                     page = await LoadPageScript(Site, stream, file, preContent);
-                    // page.SetupUrl() is performed right after the setup of the frontmatter
                     stream = null;
                 }
                 else
                 {
 
                     page = new ContentObject(Site, file, preContent: preContent);
-                    page.SetupUrl();
                     
-                    // Run pre-processing on static content as well
-                    var pendingPageProcessors = new OrderedList<IContentProcessor>();
-                    TryProcessPage(page, ContentProcessingStage.AfterLoading, AfterLoadingProcessors, pendingPageProcessors, false);
+                    //// Run pre-processing on static content as well
+                    //var pendingPageProcessors = new OrderedList<IContentProcessor>();
+                    //TryProcessPage(page, ContentProcessingStage.AfterLoading, AfterLoadingProcessors, pendingPageProcessors, false);
                 }
+
+                // Initialize the page loaded
+                page?.Initialize();
             }
             finally
             {
@@ -512,6 +564,7 @@ namespace Lunet.Core
         }
         private static async Task<ContentObject> LoadPageScript(SiteObject site, Stream stream, FileEntry file, ScriptObject preContent)
         {
+            var evalClock = Stopwatch.StartNew();
             // Read the stream
             var reader = new StreamReader(stream);
             var content = await reader.ReadToEndAsync();
@@ -525,26 +578,12 @@ namespace Lunet.Core
             if (!scriptInstance.HasErrors)
             {
                 page = new ContentObject(site, file, scriptInstance, preContent: preContent);
-
-                var evalClock = Stopwatch.StartNew();
-                if (site.Content.TryPreparePage(page))
-                {
-                    evalClock.Stop();
-
-                    // Update statistics
-                    var contentStat = site.Statistics.GetContentStat(page);
-
-                    contentStat.EvaluateTime += evalClock.Elapsed;
-
-                    // Update the summary of the page
-                    evalClock.Restart();
-                    SummaryHelper.UpdateSummary(page);
-                    evalClock.Stop();
-
-                    // Update statistics
-                    contentStat.SummaryTime += evalClock.Elapsed;
-                }
             }
+            evalClock.Stop();
+
+            // Update statistics
+            var contentStat = site.Statistics.GetContentStat(page);
+            contentStat.LoadingTime += evalClock.Elapsed;
 
             return page;
         }
@@ -625,19 +664,10 @@ namespace Lunet.Core
             return true;
         }
 
-        private bool TryEvaluate(ContentObject page)
+        private bool TryRunPageWithScript(ContentObject page)
         {
             page.ScriptObjectLocal ??= new ScriptObject();
-            var clock = Stopwatch.StartNew();
-            try
-            {
-                return Site.Scripts.TryEvaluatePage(page, page.Script, page.SourceFile.Path, page.ScriptObjectLocal);
-            }
-            finally
-            {
-                clock.Stop();
-                Site.Statistics.GetContentStat(page).EvaluateTime += clock.Elapsed;
-            }
+            return Site.Scripts.TryEvaluatePage(page, page.Script, page.SourceFile.Path, page.ScriptObjectLocal);
         }
 
         public void CreateDirectory(DirectoryEntry directory)
