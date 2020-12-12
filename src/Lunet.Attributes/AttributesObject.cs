@@ -51,7 +51,7 @@ namespace Lunet.Attributes
             // Add a default match for blog posts files
             Match("/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*", new ScriptObject()
             {
-                {"url", "/:section/:year/:month/:day/:title:output_ext"}
+                {"url", "/:section/:year/:month/:day/:slug:output_ext"}
             });
         }
 
