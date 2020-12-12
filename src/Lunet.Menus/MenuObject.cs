@@ -148,7 +148,8 @@ namespace Lunet.Menus
             string menuId = $"{kind}-id-{root.Name}-{index}";
 
             bool isCurrentPageInMenuPath = false;
-            var currentMenu = page["menu"] as MenuObject;
+            var rootMenu = page["menu"] as MenuObject;
+            var currentMenu = rootMenu;
             while (currentMenu != null)
             {
                 if (currentMenu.Page == Page)
@@ -212,6 +213,13 @@ namespace Lunet.Menus
                 }
             }
 
+
+            // If the page is not in a menu, try to recover it from the same section
+            if (!string.IsNullOrEmpty(page.Section) && page["menu"] == null && page.Section == Page?.Section)
+            {
+                isActive = true;
+            }
+            
             bool isBreadcrumb = kind == "breadcrumb";
 
             var thisLinkItemClass = this["list_item_class"];
