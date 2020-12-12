@@ -84,7 +84,11 @@ namespace Lunet.Watcher
                 {
                     SquashAndLogChanges(batchEventsCopy);
 
-                    FileSystemEvents?.Invoke(this, batchEventsCopy);
+                    // Squash can discard events (e.g if files excluded)
+                    if (batchEventsCopy.FileEvents.Count > 0)
+                    {
+                        FileSystemEvents?.Invoke(this, batchEventsCopy);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -114,6 +118,11 @@ namespace Lunet.Watcher
             foreach (var change in list)
             {
                 var e = change.Args;
+                if (!Site.IsHandlingPath(e.FullPath))
+                {
+                    continue;
+                }
+
                 args.FileEvents.Add(e);
                 if (Site.CanInfo())
                 {
@@ -191,7 +200,7 @@ namespace Lunet.Watcher
         {
             bool isEntryLunet = entry.Name == SiteObject.LunetFolderName;
 
-            if (!isEntryLunet)
+            if (!isEntryLunet && Site.IsHandlingPath(entry.Path))
             {
                 CreateFileWatch(entry);
             }

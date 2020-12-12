@@ -463,7 +463,7 @@ namespace Lunet.Core
         {
             foreach (var entry in directory.EnumerateEntries())
             {
-                if (entry.Name == SiteObject.DefaultConfigFileName)
+                if (entry.Name == SiteObject.DefaultConfigFileName || !Site.IsHandlingPath(entry.Path))
                 {
                     continue;
                 }
@@ -472,7 +472,7 @@ namespace Lunet.Core
                 {
                     yield return (FileEntry) entry;
                 }
-                else if (!entry.Name.StartsWith("_") && entry.Name != SiteObject.LunetFolderName)
+                else if (entry.Name != SiteObject.LunetFolderName )
                 {
                     directoryQueue.Enqueue((DirectoryEntry)entry);
                 }

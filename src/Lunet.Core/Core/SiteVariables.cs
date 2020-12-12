@@ -35,5 +35,9 @@ namespace Lunet.Core
         public const string ReadmeAsIndex = "readme_as_index";
 
         public const string Pages = "pages";
+
+        public const string Excludes = "excludes";
+
+        public const string Includes = "includes";
     }
 }

@@ -106,6 +106,15 @@ namespace Lunet.Core
             Plugins = new OrderedList<ISitePlugin>();
 
             Builtins = new BuiltinsObject(this);
+            Excludes = new GlobCollection()
+            {
+                "**/~*/**",
+                "**/.*/**",
+                "**/_*/**",
+            };
+            Includes = new GlobCollection();
+            SetValue(SiteVariables.Excludes, Excludes, true);
+            SetValue(SiteVariables.Includes, Includes, true);
 
             SetValue(SiteVariables.Pages, Pages, true);
             
@@ -116,6 +125,23 @@ namespace Lunet.Core
 
         public FileEntry ConfigFile { get; }
 
+        public GlobCollection Excludes { get;  }
+
+        public GlobCollection Includes { get; }
+
+        /// <summary>
+        /// Checks if the specified path is included or excluded
+        /// </summary>
+        public bool IsHandlingPath(UPath path)
+        {
+            // If we have an explicit include, it overrides any excludes
+            var isIncluded = Includes.IsMatch(path);
+            if (isIncluded) return true;
+
+            var isExcluded = Excludes.IsMatch(path);
+            return !isExcluded;
+        }
+        
         ///// <summary>
         ///// Gets or sets the base directory of the website (input files, config file)
         ///// </summary>
