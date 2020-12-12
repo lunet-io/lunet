@@ -90,7 +90,7 @@ namespace Lunet.Markdown
             {
                 var url = link.Url;
                 if (string.IsNullOrEmpty(url)) continue;
-                link.Url = Site.Helpers.UrlRelRef(page, url);
+                link.Url = Site.Builtins.UrlRelRef(page, url);
             }
 
             var renderer = new HtmlRenderer(new StringWriter());

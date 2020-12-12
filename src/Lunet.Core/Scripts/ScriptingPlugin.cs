@@ -208,7 +208,7 @@ namespace Lunet.Scripts
         public LunetTemplateContext CreatePageContext()
         {
             var context = new LunetTemplateContext(Builtins);
-            context.PushGlobal(Site.Helpers);
+            context.PushGlobal(Site.Builtins);
             return context;
         }
         

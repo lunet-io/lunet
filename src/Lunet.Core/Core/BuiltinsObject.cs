@@ -10,19 +10,19 @@ using Zio;
 
 namespace Lunet.Core
 {
-    public class HelperObject : DynamicObject<SiteObject>, ISiteProcessor
+    public class BuiltinsObject : DynamicObject<SiteObject>, ISiteProcessor
     {
         private readonly Dictionary<UPath, ContentObject> _pages;
 
-        public string Name => "helpers";
+        public string Name => SiteVariables.Builtins;
 
         public SiteObject Site { get; }
 
-        public HelperObject(SiteObject parent) : base(parent)
+        public BuiltinsObject(SiteObject parent) : base(parent)
         {
             Site = parent;
             _pages = new Dictionary<UPath, ContentObject>();
-            parent.SetValue(SiteVariables.Helpers, this, true);
+            parent.SetValue(SiteVariables.Builtins, this, true);
             Head = parent.Scripts.CompileAnonymous("include 'builtins/head.sbn-html'");
 
             // Helpers used for declaring panels (e.g {{NOTE do}}This is a note.{{end}}

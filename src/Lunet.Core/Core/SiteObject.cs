@@ -105,7 +105,7 @@ namespace Lunet.Core
 
             Plugins = new OrderedList<ISitePlugin>();
 
-            Helpers = new HelperObject(this);
+            Builtins = new BuiltinsObject(this);
 
             SetValue(SiteVariables.Pages, Pages, true);
             
@@ -176,7 +176,7 @@ namespace Lunet.Core
 
         public IFileSystem FileSystem => _fileSystem;
 
-        public HelperObject Helpers { get; }
+        public BuiltinsObject Builtins { get; }
 
         public IFileSystem OutputFileSystem { get; set; }
 
