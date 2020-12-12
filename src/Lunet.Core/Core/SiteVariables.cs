@@ -33,5 +33,7 @@ namespace Lunet.Core
         public const string ErrorRedirect = "error_redirect";
 
         public const string ReadmeAsIndex = "readme_as_index";
+
+        public const string Pages = "pages";
     }
 }

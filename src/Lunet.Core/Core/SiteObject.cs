@@ -107,6 +107,8 @@ namespace Lunet.Core
 
             Helpers = new HelperObject(this);
 
+            SetValue(SiteVariables.Pages, Pages, true);
+            
             _pluginBuilders = new ContainerBuilder();
             _pluginBuilders.RegisterInstance(LoggerFactory).As<ILoggerFactory>();
             _pluginBuilders.RegisterInstance(this);

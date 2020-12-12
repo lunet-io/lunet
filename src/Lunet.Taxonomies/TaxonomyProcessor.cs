@@ -131,10 +131,9 @@ namespace Lunet.Taxonomies
                 foreach (var term in tax.Terms.Values.OfType<TaxonomyTerm>())
                 {
                     // term.Url
-                    var content = new ContentObject(Site, tax.Name)
+                    var content = new DynamicContentObject(Site, term.Url, tax.Name)
                     {
                         ScriptObjectLocal = new DynamicObject<TaxonomyTerm>(term),
-                        Url = term.Url,
                         Layout = tax.Name,
                         LayoutType = "term",
                         ContentType = ContentType.Html
@@ -154,10 +153,9 @@ namespace Lunet.Taxonomies
 
                 // Generate a terms page for the current taxonomy
                 {
-                    var content = new ContentObject(Site, tax.Name)
+                    var content = new DynamicContentObject(Site, tax.Url, tax.Name)
                     {
                         ScriptObjectLocal = new DynamicObject<Taxonomy>(tax),
-                        Url = tax.Url,
                         Layout = tax.Name,
                         LayoutType = "terms",
                         ContentType = ContentType.Html

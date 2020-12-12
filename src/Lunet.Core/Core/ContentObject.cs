@@ -15,90 +15,25 @@ using Zio;
 
 namespace Lunet.Core
 {
-    [DebuggerDisplay("Content: {Path}")]
-    public class ContentObject : DynamicObject
+    public abstract class TemplateObject : DynamicObject
     {
-        private ContentType contentType;
-
-        private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
-
-        public ContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null, ScriptObject preContent = null)
+        protected TemplateObject(SiteObject site, ContentObjectType objectType, FileEntry sourceFileInfo = null, ScriptInstance scriptInstance = null, UPath? path = null)
         {
             Site = site ?? throw new ArgumentNullException(nameof(site));
-            SourceFile = sourceFileInfo ?? throw new ArgumentNullException(nameof(sourceFileInfo));
+            SourceFile = sourceFileInfo;
             FrontMatter = scriptInstance?.FrontMatter;
             Script = scriptInstance?.Template;
-            Dependencies = new List<ContentDependency>();
-            ObjectType = ContentObjectType.File;
-            
-            // Copy any pre-content to this object
-            preContent?.CopyTo(this);
-
-            // TODO: Make this part pluggable
-            // Parse a standard blog text
-            var match = ParsePostName.Match(sourceFileInfo.Name);
-            if (match.Success)
-            {
-                var year = int.Parse(match.Groups[1].Value);
-                var month = int.Parse(match.Groups[2].Value);
-                var day = int.Parse(match.Groups[3].Value);
-                var title = match.Groups[4].Value;
-                Date = new DateTime(year, month, day);
-                Title = StringFunctions.Capitalize(title.Replace('-',' '));
-            }
-            else
-            {
-                Date = DateTime.Now;
-            }
-
-            Path = path ?? sourceFileInfo.Path;
-            Length = SourceFile.Length;
-            Extension = SourceFile.ExtensionWithDot?.ToLowerInvariant();
-            ModifiedTime = SourceFile.LastWriteTime;
-            ContentType = Site.ContentTypes.GetContentType(Extension);
-
-            // Extract the section of this content
-            // section cannot be setup by the pre-content
-            Section = Path.GetFirstDirectory(out var pathInSection);
-            if (pathInSection.IsEmpty)
-            {
-                Section = string.Empty;
-                PathInSection = Path;
-            }
-            else
-            {
-                PathInSection = pathInSection;
-            }
-
-            // Layout could have been already setup by pre-content, so we keep it in that case
-            Layout ??= Section;
-            // Same for the URL
-            // Note that SetupUrl() must be called for potential HTML content or content with front matter
-            Url ??= (string)Path;
-
-            // Replicate readonly values to the Scripting object
-            InitializeReadOnlyVariables();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ContentObject"/> class that is not attached to a particular file.
-        /// </summary>
-        /// <param name="site">The site.</param>
-        /// <param name="rootDirectoryInfo">The root directory information.</param>
-        /// <param name="section"></param>
-        /// <exception cref="System.ArgumentNullException">
-        /// </exception>
-        public ContentObject(SiteObject site, string section = null)
-        {
-            Site = site ?? throw new ArgumentNullException(nameof(site));
+            ObjectType = objectType;
             Dependencies = new List<ContentDependency>();
 
-            Section = section;
 
-            ObjectType = ContentObjectType.Dynamic;
-
-            // Replicate readonly values to the Scripting object
-            InitializeReadOnlyVariables();
+            Path = path ?? SourceFile?.Path ?? null;
+            if (SourceFile != null)
+            {
+                Length = SourceFile.Length;
+                Extension = SourceFile.ExtensionWithDot?.ToLowerInvariant();
+                ModifiedTime = SourceFile.LastWriteTime;
+            }
         }
 
         public SiteObject Site { get; }
@@ -117,17 +52,6 @@ namespace Lunet.Core
 
         public string Extension { get; }
 
-        public string Section { get; }
-
-        public UPath PathInSection { get; }
-
-
-        public bool Discard
-        {
-            get => GetSafeValue<bool>(FileVariables.Discard);
-            set => this[FileVariables.Discard] = value;
-        }
-
         /// <summary>
         /// Gets or sets the script attached to this page if any.
         /// </summary>
@@ -136,6 +60,30 @@ namespace Lunet.Core
         public ScriptObject ScriptObjectLocal { get; set; }
 
         public bool HasFrontMatter => FrontMatter != null;
+
+        public List<ContentDependency> Dependencies { get; }
+    }
+    
+
+    public abstract class ContentObject : TemplateObject
+    {
+        private ContentType contentType;
+
+
+        protected ContentObject(SiteObject site, ContentObjectType objectType, FileEntry sourceFileInfo = null, ScriptInstance scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
+        {
+        }
+        
+        public string Section { get; protected set; }
+
+        public UPath PathInSection { get; protected set; }
+
+
+        public bool Discard
+        {
+            get => GetSafeValue<bool>(FileVariables.Discard);
+            set => this[FileVariables.Discard] = value;
+        }
 
         /// <summary>
         /// Gets or sets the output of the script.
@@ -237,8 +185,6 @@ namespace Lunet.Core
             get => GetSafeValue<string>(PageVariables.LayoutType);
             set => this[PageVariables.LayoutType] = value;
         }
-
-        public List<ContentDependency> Dependencies { get; }
 
         /// <summary>
         /// Final fix-up for URL of the page once frontmatter has been loaded
@@ -348,16 +294,11 @@ namespace Lunet.Core
             return urlAsPath;
         }
 
-        private void InitializeReadOnlyVariables()
-        {
-            // Replicate readonly values to the Scripting object
-            SetValue(FileVariables.Length, Length, true);
-            SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
-            SetValue(FileVariables.Path, Path, true);
-            SetValue(FileVariables.Extension, Extension, true);
 
-            SetValue(PageVariables.Section, Section, true);
-            SetValue(PageVariables.PathInSection, PathInSection, true);
+        internal void InitializeAfterRun()
+        {
+            // Normalize the date (make sure it's a datetime object)
+            this.Date = Date;
         }
 
         static readonly Regex PlaceHolderRegex = new Regex(@"(/?):(\w+)");
@@ -375,6 +316,7 @@ namespace Lunet.Core
 
             return urlClean;
         }
+
 
         private string PlaceHolderRegexEvaluatorWrap(Match match)
         {
@@ -410,7 +352,7 @@ namespace Lunet.Core
                 case "week":
                     return CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(Date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday).ToString("00", CultureInfo.InvariantCulture);
                 case "w_day":
-                    var day = (int) Date.DayOfWeek;
+                    var day = (int)Date.DayOfWeek;
                     // monday is 1
                     // sunday is 7
                     day = day == 0 ? 7 : day;
@@ -443,6 +385,93 @@ namespace Lunet.Core
             Site.Warning(new SourceSpan(Path.FullName, pos, pos), $"The URL placeholder `{placeHolder}` is not supported.");
 
             return null;
+        }
+
+    }
+
+
+    [DebuggerDisplay("File: {" + nameof(Path) + "}")]
+    public class FileContentObject : ContentObject
+    {
+        private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
+
+        public FileContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null, ScriptObject preContent = null) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance, path)
+        {
+            if (sourceFileInfo == null) throw new ArgumentNullException(nameof(sourceFileInfo));
+
+            preContent?.CopyTo(this);
+
+            // TODO: Make this part pluggable
+            // Parse a standard blog text
+            var match = ParsePostName.Match(sourceFileInfo.Name);
+            if (match.Success)
+            {
+                var year = int.Parse(match.Groups[1].Value);
+                var month = int.Parse(match.Groups[2].Value);
+                var day = int.Parse(match.Groups[3].Value);
+                var title = match.Groups[4].Value;
+                Date = new DateTime(year, month, day);
+                Slug = title;
+                Title = StringFunctions.Capitalize(title.Replace('-', ' '));
+            }
+            else
+            {
+                Date = DateTime.Now;
+            }
+
+            ContentType = Site.ContentTypes.GetContentType(Extension);
+
+            // Extract the section of this content
+            // section cannot be setup by the pre-content
+            Section = Path.GetFirstDirectory(out var pathInSection);
+            if (pathInSection.IsEmpty)
+            {
+                Section = string.Empty;
+                PathInSection = Path;
+            }
+            else
+            {
+                PathInSection = pathInSection;
+            }
+
+            // Layout could have been already setup by pre-content, so we keep it in that case
+            Layout ??= Section;
+            // Same for the URL
+            // Note that SetupUrl() must be called for potential HTML content or content with front matter
+            Url ??= (string)Path;
+
+            // Replicate readonly values to the Scripting object
+            InitializeReadOnlyVariables();
+        }
+
+        private void InitializeReadOnlyVariables()
+        {
+            // Replicate readonly values to the Scripting object
+            SetValue(FileVariables.Length, Length, true);
+            SetValue(FileVariables.ModifiedTime, ModifiedTime, true);
+            SetValue(FileVariables.Path, Path, true);
+            SetValue(FileVariables.Extension, Extension, true);
+
+            SetValue(PageVariables.Section, Section, true);
+            SetValue(PageVariables.PathInSection, PathInSection, true);
+        }
+    }
+
+    [DebuggerDisplay("Dynamic: {" + nameof(Url) + "}")]
+    public class DynamicContentObject : ContentObject
+    {
+        public DynamicContentObject(SiteObject site, string url, string section = null) : base(site, ContentObjectType.Dynamic)
+        {
+            Url = url;
+            Section = section;
+
+            // Replicate readonly values to the Scripting object
+            InitializeReadOnlyVariables();
+        }
+
+        private void InitializeReadOnlyVariables()
+        {
+            SetValue(PageVariables.Section, Section, true);
         }
     }
 }

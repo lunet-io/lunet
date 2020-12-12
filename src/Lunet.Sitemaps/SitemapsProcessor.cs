@@ -38,18 +38,16 @@ namespace Lunet.Sitemaps
                 xmlSerializer.Serialize(sitemap, _urlSet, namespaces);
 
                 // Generate sitemap.xml
-                var content = new ContentObject(Site)
+                var content = new DynamicContentObject(Site, "/sitemap.xml")
                 {
-                    Url = "/sitemap.xml",
                     ContentType = ContentType.Xml,
                     Content = sitemap.ToString()
                 };
                 Site.DynamicPages.Add(content);
 
                 // Generate robots.txt
-                var robotsContent = new ContentObject(Site)
+                var robotsContent = new DynamicContentObject(Site, "/robots.txt")
                 {
-                    Url = "/robots.txt",
                     ContentType = ContentType.Txt,
                     Content = $"Sitemap: {Site.Helpers.UrlRef((ContentObject)null, content.Url)}"
                 };

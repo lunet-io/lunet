@@ -9,16 +9,18 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Lunet.Scripts;
+using NUglify;
 using Scriban;
 using Scriban.Syntax;
 using Scriban.Parsing;
+using Scriban.Runtime;
 using Zio;
 
 namespace Lunet.Layouts
 {
     public class LayoutProcessor : ContentProcessor<LayoutPlugin>
     {
-        private readonly Dictionary<LayoutKey, ScriptInstance> _layouts;
+        private readonly Dictionary<LayoutKey, LayoutContentObject> _layouts;
 
         private readonly List<KeyValuePair<string, GetLayoutPathsDelegate>> _layoutPathProviders;
 
@@ -32,7 +34,7 @@ namespace Lunet.Layouts
 
         public LayoutProcessor(LayoutPlugin plugin) : base(plugin)
         {
-            _layouts = new Dictionary<LayoutKey, ScriptInstance>();
+            _layouts = new Dictionary<LayoutKey, LayoutContentObject>();
             _layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
             RegisterLayoutPathProvider(LayoutTypes.Single, SingleLayout);
             RegisterLayoutPathProvider(LayoutTypes.List, ListLayout);
@@ -84,45 +86,34 @@ namespace Lunet.Layouts
             {
                 continueLayout = false;
                 // TODO: We are using content type here with the layout extension, is it ok?
-                var layoutScript = GetLayout(layoutName, page.LayoutType, page.ContentType);
+                var layoutObject = GetLayout(layoutName, page.LayoutType, page.ContentType);
 
                 // If we haven't found any layout, this is not an error, so we let the 
                 // content as-is
-                if (layoutScript == null)
+                if (layoutObject == null)
                 {
                     Site.Warning($"No layout found for content [{page.Url}] with layout name [{layoutName}] and type [{page.LayoutType}]");
                     break;
                 }
 
                 // Add dependency to the layout file
-                page.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, layoutScript.SourceFilePath)));
+                page.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, layoutObject.SourceFile.Path)));
 
-                // If we had any errors, the page is invalid, so we can't process it
-                if (layoutScript.HasErrors)
-                {
-                    result = ContentResult.Break;
-                    break;
-                }
-
-                // We run first the front matter on the layout
-                if (layoutScript.FrontMatter != null && !Site.Scripts.TryRunFrontMatter(layoutScript.FrontMatter, page))
-                {
-                    result = ContentResult.Break;
-                    break;
-                }
-
-                page.ScriptObjectLocal.SetValue(PageVariables.Page, page, true);
-                page.ScriptObjectLocal.SetValue(PageVariables.Content, page.Content, false);
+                // Clear the layout object to make sure it is not changed when processing layout between pages
+                layoutObject.ScriptObjectLocal.Clear();
+                layoutObject.SetValue(PageVariables.Page, page, true);
+                layoutObject.SetValue(PageVariables.Content, page.Content, false);
 
                 // We manage global locally here as we need to push the local variable ScriptVariable.BlockDelegate
-                if (Site.Scripts.TryEvaluatePage(page, layoutScript.Template, layoutScript.SourceFilePath, page.ScriptObjectLocal))
+                if (Site.Scripts.TryEvaluatePage(page, layoutObject.Script, layoutObject.SourceFile.Path, layoutObject, layoutObject.ScriptObjectLocal))
                 {
-                    var nextLayout = NormalizeLayoutName(page.Layout, false);
+                    var nextLayoutName = layoutObject.GetSafeValue<string>(PageVariables.Layout);
+                    var nextLayout = NormalizeLayoutName(nextLayoutName, false);
                     if (nextLayout != layoutName && nextLayout != null)
                     {
                         if (!layoutNames.Add(nextLayout))
                         {
-                            Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutScript.SourceFilePath}`");
+                            Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutObject.SourceFile.Path}`");
                             result = ContentResult.Break;
                             break;
                         }
@@ -138,15 +129,15 @@ namespace Lunet.Layouts
             return result;
         }
 
-        private ScriptInstance GetLayout(string layoutName, string layoutType, ContentType contentType)
+        private LayoutContentObject GetLayout(string layoutName, string layoutType, ContentType contentType)
         {
-            ScriptInstance scriptResult;
+            LayoutContentObject layoutObject;
 
             layoutType ??= LayoutTypes.Single;
             var layoutKey = new LayoutKey(layoutName, layoutType, contentType);
-            if (_layouts.TryGetValue(layoutKey, out scriptResult))
+            if (_layouts.TryGetValue(layoutKey, out layoutObject))
             {
-                return scriptResult;
+                return layoutObject;
             }
 
             var layoutDelegate = FindLayoutPaths(layoutType);
@@ -164,14 +155,29 @@ namespace Lunet.Layouts
                         if (entry.Exists)
                         {
                             var scriptLayoutText = entry.ReadAllText();
-                            scriptResult = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
-                            _layouts.Add(layoutKey, scriptResult);
-                            return scriptResult;
+                            var scriptInstance = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
+
+                            if (scriptInstance.HasErrors)
+                            {
+                                goto exit;
+                            }
+
+                            layoutObject = new LayoutContentObject(Site, entry, scriptInstance);
+                            
+                            // We run first the front matter on the layout
+                            if (layoutObject.FrontMatter != null && !Site.Scripts.TryRunFrontMatter(layoutObject.FrontMatter, layoutObject))
+                            {
+                                goto exit;
+                            }
+
+                            _layouts.Add(layoutKey, layoutObject);
+                            return layoutObject;
                         }
                     }
                 }
             }
 
+            exit:
             return null;
         }
 
@@ -278,6 +284,17 @@ namespace Lunet.Layouts
             {
                 return $"{nameof(Name)}: {Name}, {nameof(Type)}: {Type}, {nameof(ContentType)}: {ContentType}";
             }
+        }
+
+
+    }
+
+    [DebuggerDisplay("Layout: {" + nameof(Path) + "}")]
+    public class LayoutContentObject : TemplateObject
+    {
+        public LayoutContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance)
+        {
+            ScriptObjectLocal = new ScriptObject();
         }
     }
 }

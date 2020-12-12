@@ -325,6 +325,8 @@ namespace Lunet.Core
 
             if (page.Script != null && TryRunPageWithScript(page))
             {
+                page.InitializeAfterRun();
+
                 // If page is discarded, skip it
                 if (page.Discard)
                 {
@@ -416,9 +418,6 @@ namespace Lunet.Core
             contentLoaderBlock.Complete();
             contentAdderBlock.Completion.Wait();
 
-            // Finally, we sort pages by natural order
-            Site.Pages.Sort();
-
             // Right after we have been loading the content, we can iterate on all content
             if (!TryRunProcess(AfterLoadingProcessors, ProcessingStage.AfterLoadingContent))
             {
@@ -455,6 +454,9 @@ namespace Lunet.Core
 
             contentRunnerBlock.Complete();
             contentRunnerBlock.Completion.Wait();
+
+            // Finally, we sort pages by natural order
+            Site.Pages.Sort();
         }
 
         private IEnumerable<FileEntry> LoadDirectory(DirectoryEntry directory, Queue<DirectoryEntry> directoryQueue)
@@ -541,7 +543,7 @@ namespace Lunet.Core
                 else
                 {
 
-                    page = new ContentObject(Site, file, preContent: preContent);
+                    page = new FileContentObject(Site, file, preContent: preContent);
                     
                     //// Run pre-processing on static content as well
                     //var pendingPageProcessors = new OrderedList<IContentProcessor>();
@@ -577,7 +579,7 @@ namespace Lunet.Core
             var scriptInstance = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatterAndContent);
             if (!scriptInstance.HasErrors)
             {
-                page = new ContentObject(site, file, scriptInstance, preContent: preContent);
+                page = new FileContentObject(site, file, scriptInstance, preContent: preContent);
             }
             evalClock.Stop();
 
@@ -667,7 +669,7 @@ namespace Lunet.Core
         private bool TryRunPageWithScript(ContentObject page)
         {
             page.ScriptObjectLocal ??= new ScriptObject();
-            return Site.Scripts.TryEvaluatePage(page, page.Script, page.SourceFile.Path, page.ScriptObjectLocal);
+            return Site.Scripts.TryEvaluatePage(page, page.Script, page.SourceFile.Path, page);
         }
 
         public void CreateDirectory(DirectoryEntry directory)

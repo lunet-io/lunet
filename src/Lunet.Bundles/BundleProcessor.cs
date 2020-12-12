@@ -203,7 +203,7 @@ namespace Lunet.Bundles
 
                         if (entry.Exists)
                         {
-                            currentContent = new ContentObject(Site, entry);
+                            currentContent = new FileContentObject(Site, entry);
                         }
                         else
                         {
@@ -281,9 +281,8 @@ namespace Lunet.Bundles
                             // If the file is private or meta, we need to copy to the output
                             // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
                             var url = outputUrlDirectory + bundle.Name + (string.IsNullOrEmpty(mode) ? $".{type}" : $"-{mode}.{type}");
-                            var newStaticFile = new ContentObject(Site)
+                            var newStaticFile = new DynamicContentObject(Site, url)
                             {
-                                Url = url,
                                 Content = builder.ToString()
                             };
                             Site.DynamicPages.Add(newStaticFile);

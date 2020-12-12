@@ -178,13 +178,17 @@ namespace Lunet.Scripts
         /// <summary>
         /// Initializes this instance.
         /// </summary>
-        public bool TryRunFrontMatter(IFrontMatter frontMatter, ContentObject obj)
+        public bool TryRunFrontMatter(IFrontMatter frontMatter, TemplateObject obj, ScriptObject newGlobal = null)
         {
             if (frontMatter == null) throw new ArgumentNullException(nameof(frontMatter));
             if (obj == null) throw new ArgumentNullException(nameof(obj));
-            
-            var context = new TemplateContext(Builtins);
+
+            var context = CreatePageContext();
             context.PushGlobal(obj);
+            if (newGlobal != null)
+            {
+                context.PushGlobal(newGlobal);
+            }
             try
             {
                 context.EnableOutput = false;
@@ -197,13 +201,6 @@ namespace Lunet.Scripts
             {
                 LogException(exception);
                 return false;
-            }
-            finally
-            {
-                context.PopGlobal();
-
-                // We don't keep the site variable after this initialization
-                Site.Remove(PageVariables.Site);
             }
             return true;
         }
@@ -218,7 +215,7 @@ namespace Lunet.Scripts
         /// <summary>
         /// Initializes this instance.
         /// </summary>
-        public bool TryEvaluatePage(ContentObject page, ScriptPage script, UPath scriptPath, ScriptObject obj = null)
+        public bool TryEvaluatePage(ContentObject page, ScriptPage script, UPath scriptPath, params ScriptObject[] contextObjects)
         {
             if (page == null) throw new ArgumentNullException(nameof(page));
             if (script == null) throw new ArgumentNullException(nameof(script));
@@ -226,9 +223,12 @@ namespace Lunet.Scripts
 
             var context = CreatePageContext();
             context.Page = page;
-            if (obj != null)
+            foreach (var contextObject in contextObjects)
             {
-                context.PushGlobal(obj);
+                if (contextObject != null)
+                {
+                    context.PushGlobal(contextObject);
+                }
             }
             context.PushSourceFile((string)scriptPath);
 
@@ -259,16 +259,13 @@ namespace Lunet.Scripts
             }
             finally
             {
-                context.PopSourceFile();
-                if (obj != null)
-                {
-                    context.PopGlobal();
-                }
-                page.Content = context.Output.ToString();
-
                 // We don't keep the site variable after this initialization
                 currentScriptObject.Remove(PageVariables.Site);
                 currentScriptObject.Remove(PageVariables.Page);
+
+                context.PopSourceFile();
+                context.PopGlobal();
+                page.Content = context.Output.ToString();
             }
             return true;
         }
