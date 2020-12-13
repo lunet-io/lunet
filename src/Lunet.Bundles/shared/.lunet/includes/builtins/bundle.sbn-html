@@ -6,6 +6,6 @@
 {{~ end ~}}
 {{~ for $link in (bundle page.bundle).links ~}}
     {{~ if $link.type == "js" ~}}
-    <script src="{{$link.url}}" type="text/javascript" {{if $link.mode != ""; $link.mode; end }}></script>
+    <script src="{{$link.url}}" {{if $link.mode != ""; $link.mode; end }}></script>
     {{~ end ~}}
 {{~ end ~}}
