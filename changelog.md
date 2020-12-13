@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+
+- Remove non necessary type="text/javascript" for script in meta
+
 ## 0.4.0
 
 - Improve layout
