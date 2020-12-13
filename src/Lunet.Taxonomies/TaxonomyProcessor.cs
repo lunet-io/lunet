@@ -153,12 +153,15 @@ namespace Lunet.Taxonomies
             // Generate taxonomy pages
             foreach (var tax in List)
             {
+                UPath.TryParse(tax.Url, out var taxPath);
+                var section = taxPath.GetFirstDirectory(out var pathInSection);
+
                 bool hasTerms = false;
                 // Generate a term page for each term in the current taxonomy
                 foreach (var term in tax.Terms.Values.OfType<TaxonomyTerm>())
                 {
                     // term.Url
-                    var content = new DynamicContentObject(Site, term.Url, tax.Name)
+                    var content = new DynamicContentObject(Site, term.Url, section)
                     {
                         ScriptObjectLocal =  new ScriptObject(), // only used to let layout processor running
                         Layout = tax.Name,
@@ -184,7 +187,7 @@ namespace Lunet.Taxonomies
                 // Generate a terms page for the current taxonomy
                 if (hasTerms)
                 {
-                    var content = new DynamicContentObject(Site, tax.Url, tax.Name)
+                    var content = new DynamicContentObject(Site, tax.Url, section)
                     {
                         ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
                         Layout = tax.Name,
