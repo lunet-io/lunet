@@ -91,7 +91,7 @@ namespace Lunet.Taxonomies
             byName.Clear();
             byCount.Clear();
             byName.AddRange(tempByName);
-            byCount.AddRange(tempByName);
+            byCount.AddRange(tempByCount);
         }
     }
 }
