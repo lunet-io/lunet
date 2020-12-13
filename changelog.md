@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- Improve layout
+- Add rss, summarizer
+
 ## 0.3.2
 
 - Improve translation of local links with anchors to URL.
