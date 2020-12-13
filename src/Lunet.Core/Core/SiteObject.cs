@@ -34,6 +34,7 @@ namespace Lunet.Core
 
         public const string LunetFolderName = ".lunet";
         public static readonly UPath LunetFolder = UPath.Root / LunetFolderName;
+        public static readonly string LunetFolderWithSlash = "/" + LunetFolderName + "/";
 
         public const string BuildFolderName = "build";
         public static readonly UPath BuildFolder = LunetFolder / BuildFolderName;
@@ -44,6 +45,7 @@ namespace Lunet.Core
 
         private bool _isInitialized;
         private readonly AggregateFileSystem _fileSystem;
+        private readonly AggregateFileSystem _metaFileSystem;
         private readonly List<IFileSystem> _contentFileSystems;
         private IFileSystem _siteFileSystem;
         private bool _pluginInitialized;
@@ -63,8 +65,10 @@ namespace Lunet.Core
             SharedMetaFileSystem = SharedFileSystem.GetOrCreateSubFileSystem(LunetFolder);
 
             _fileSystem = new AggregateFileSystem(SharedFileSystem);
-
-            MetaFileSystem = new SubFileSystem(_fileSystem, LunetFolder);
+            
+            // MetaFileSystem provides an aggregate view of the shared meta file system + the user meta file system
+            _metaFileSystem = new AggregateFileSystem(SharedMetaFileSystem);
+            MetaFileSystem = _metaFileSystem;
 
             ConfigFile = new FileEntry(_fileSystem, UPath.Root / DefaultConfigFileName);
 
@@ -106,13 +110,22 @@ namespace Lunet.Core
             Plugins = new OrderedList<ISitePlugin>();
 
             Builtins = new BuiltinsObject(this);
+            ForceExcludes = new GlobCollection()
+            {
+                $"**/{LunetFolderName}/{BuildFolderName}/**",
+                $"/{DefaultConfigFileName}",
+            };
             Excludes = new GlobCollection()
             {
                 "**/~*/**",
                 "**/.*/**",
                 "**/_*/**",
             };
-            Includes = new GlobCollection();
+            Includes = new GlobCollection()
+            {
+                $"**/{LunetFolderName}/**",
+            };
+            SetValue(SiteVariables.ForceExcludes, ForceExcludes, true);
             SetValue(SiteVariables.Excludes, Excludes, true);
             SetValue(SiteVariables.Includes, Includes, true);
 
@@ -125,6 +138,8 @@ namespace Lunet.Core
 
         public FileEntry ConfigFile { get; }
 
+        public GlobCollection ForceExcludes { get; }
+
         public GlobCollection Excludes { get;  }
 
         public GlobCollection Includes { get; }
@@ -134,6 +149,12 @@ namespace Lunet.Core
         /// </summary>
         public bool IsHandlingPath(UPath path)
         {
+            if (path.IsNull) return false;
+
+            // e.g always exclude .lunet/build, can't be overriden by the users
+            var isForceExcluded = ForceExcludes.IsMatch(path);
+            if (isForceExcluded) return false;
+
             // If we have an explicit include, it overrides any excludes
             var isIncluded = Includes.IsMatch(path);
             if (isIncluded) return true;
@@ -312,6 +333,14 @@ namespace Lunet.Core
             {
                 _fileSystem.AddFileSystem(SiteFileSystem);
             }
+
+            // Update _metaFileSystem
+            _metaFileSystem.ClearFileSystems();
+            if (TempMetaFileSystem != null)
+            {
+                _metaFileSystem.AddFileSystem(TempMetaFileSystem);
+            }
+            _metaFileSystem.AddFileSystem(new SubFileSystem(_fileSystem, LunetFolder));
         }
 
         public bool LogFilter(string category, LogLevel level)

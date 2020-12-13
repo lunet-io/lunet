@@ -15,8 +15,8 @@ namespace Lunet.Taxonomies
         {
             Name = name;
             Pages = new PageCollection();
-            Url = $"{parent.Url}{LinkHelper.Urilize(name, true)}/";
-
+            var urlName = parent.Map.GetSafeValue<string>(name) ?? name;
+            Url = $"{parent.Url}{LinkHelper.Urilize(urlName, true)}/";
             SetValue("name", Name, true);
             SetValue("url", Url, true);
             SetValue("pages", Pages, true);

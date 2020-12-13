@@ -36,6 +36,8 @@ namespace Lunet.Core
 
         public const string Pages = "pages";
 
+        public const string ForceExcludes = "force_excludes";
+
         public const string Excludes = "excludes";
 
         public const string Includes = "includes";

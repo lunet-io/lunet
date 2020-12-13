@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>{{ site.title | html.escape }}</title>
+    <link>{{ ref '/' }}</link>
+    <description>{{ site.description }}</description>
+    <generator>lunet {{ lunet.version}}</generator>
+    {{~ if site.language ~}}
+    <language>{{ site.language }}</language>
+    {{~ end ~}}
+    {{~ if site.author ~}}
+    <managingEditor>{{ site.author | html.escape }}</managingEditor>
+    {{~ end ~}}
+    {{~ if site.copyright || site.author ~}}
+    <copyright>{{ (site.copyright ?? site.author) | html.escape }}</copyright>
+    {{~ end ~}}
+    <pubDate>{{ date.now | date.to_rfc822 | html.escape }}</pubDate>
+    <lastBuildDate>{{ date.now | date.to_rfc822 | html.escape }}</lastBuildDate>
+    {{~ $limit = page.rss_limit ?? site.rss.limit ?? 1000; ~}}
+    {{~ for post in site.pages.by_date.reverse ~}}
+    {{~ if post.layout_type != 'single'; continue; end ~}}
+    {{~ if page.rss_section != null && post.section != page.rss_section; continue; end ~}}
+      {{~ $limit = $limit - 1; if $limit < 0; break; end; ~}}
+    <item>
+      <title>{{ post.title }}</title>
+      <link>{{ ref post.url }}</link>
+      <pubDate>{{ post.date | date.to_rfc822 | html.escape }}</pubDate>
+      <author>{{ (post.author ?? site.author) | html.escape }}</author>
+      <guid isPermaLink="true">{{ ref post.url }}</guid>
+      <description>{{ post.summary | html.escape }}</description>
+      {{~ for $tax in site.taxonomies ~}}
+        {{~ $categories = post[$tax.name] ~}}
+        {{~ if ($categories | object.typeof) == 'array' ~}}
+          {{~ for $cat in $categories ~}}
+      <category>{{ $cat | html.escape}}</category>
+          {{~ end ~}}
+        {{~ end ~}}
+      {{~ end ~}}
+    </item>
+    {{~ end ~}}
+  </channel>
+</rss>

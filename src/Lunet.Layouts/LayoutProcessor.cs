@@ -9,7 +9,6 @@ using System.IO;
 using Lunet.Core;
 using Lunet.Helpers;
 using Lunet.Scripts;
-using NUglify;
 using Scriban;
 using Scriban.Syntax;
 using Scriban.Parsing;
@@ -36,6 +35,10 @@ namespace Lunet.Layouts
         {
             _layouts = new Dictionary<LayoutKey, LayoutContentObject>();
             _layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
+
+            Site.Content.OrderLayoutTypes.Add(LayoutTypes.Single);
+            Site.Content.OrderLayoutTypes.Add(LayoutTypes.List);
+            
             RegisterLayoutPathProvider(LayoutTypes.Single, SingleLayout);
             RegisterLayoutPathProvider(LayoutTypes.List, ListLayout);
         }
@@ -76,38 +79,48 @@ namespace Lunet.Layouts
 
             var layoutName = page.Layout ?? page.Section;
             layoutName = NormalizeLayoutName(layoutName, true);
-
+            var layoutType = page.LayoutType;
             var layoutNames = new HashSet<string>() {layoutName};
-
             var result = ContentResult.Continue;
 
+            // For a list rendering the pages is setup
+            if (layoutType == LayoutTypes.List)
+            {
+                page.ScriptObjectLocal.SetValue("pages", Site.Pages, true);
+            }
+            
             bool continueLayout;
             do
             {
                 continueLayout = false;
                 // TODO: We are using content type here with the layout extension, is it ok?
-                var layoutObject = GetLayout(layoutName, page.LayoutType, page.ContentType);
+                var layoutObject = GetLayout(layoutName, layoutType, page.ContentType);
 
                 // If we haven't found any layout, this is not an error, so we let the 
                 // content as-is
                 if (layoutObject == null)
                 {
-                    Site.Warning($"No layout found for content [{page.Url}] with layout name [{layoutName}] and type [{page.LayoutType}]");
+                    Site.Warning($"No layout found for content [{page.Url}] with layout name [{layoutName}] and type [{layoutType}]");
                     break;
                 }
 
                 // Add dependency to the layout file
                 page.Dependencies.Add(new FileContentDependency(new FileEntry(Site.FileSystem, layoutObject.SourceFile.Path)));
+                
+                // Override playground object
+                layoutObject.CopyToWithReadOnly(page.ScriptObjectLocal);
+
+                layoutObject.ScriptObjectLocal?.CopyToWithReadOnly(page.ScriptObjectLocal);
 
                 // Clear the layout object to make sure it is not changed when processing layout between pages
-                layoutObject.ScriptObjectLocal.Clear();
-                layoutObject.SetValue(PageVariables.Page, page, true);
-                layoutObject.SetValue(PageVariables.Content, page.Content, false);
+                page.ScriptObjectLocal.SetValue(PageVariables.Page, page, true);
+                page.ScriptObjectLocal.SetValue(PageVariables.Content, page.Content, false);
 
                 // We manage global locally here as we need to push the local variable ScriptVariable.BlockDelegate
-                if (Site.Scripts.TryEvaluatePage(page, layoutObject.Script, layoutObject.SourceFile.Path, layoutObject, layoutObject.ScriptObjectLocal))
+                if (Site.Scripts.TryEvaluatePage(page, layoutObject.Script, layoutObject.SourceFile.Path, page.ScriptObjectLocal))
                 {
                     var nextLayoutName = layoutObject.GetSafeValue<string>(PageVariables.Layout);
+                    var nextLayoutType = layoutObject.GetSafeValue<string>(PageVariables.LayoutType);
                     var nextLayout = NormalizeLayoutName(nextLayoutName, false);
                     if (nextLayout != layoutName && nextLayout != null)
                     {
@@ -119,6 +132,7 @@ namespace Lunet.Layouts
                         }
 
                         layoutName = nextLayout;
+                        layoutType = nextLayoutType ?? layoutType;
                         continueLayout = true;
                     }
                 }

@@ -72,6 +72,8 @@ namespace Lunet.Core
 
         protected ContentObject(SiteObject site, ContentObjectType objectType, FileEntry sourceFileInfo = null, ScriptInstance scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
         {
+            // Default to single layout type
+            LayoutType = "single";
         }
         
         public string Section { get; protected set; }
@@ -286,7 +288,7 @@ namespace Lunet.Core
                 urlAsPath = Url = Path.FullName;
             }
 
-            if (HasFrontMatter && ContentType.IsHtmlLike() && !Site.UrlAsFile && urlAsPath.EndsWith("/"))
+            if (ContentType.IsHtmlLike() && !Site.UrlAsFile && urlAsPath.EndsWith("/"))
             {
                 urlAsPath += "index" + Site.GetSafeDefaultPageExtension();
             }

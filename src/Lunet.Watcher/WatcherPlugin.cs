@@ -118,7 +118,7 @@ namespace Lunet.Watcher
             foreach (var change in list)
             {
                 var e = change.Args;
-                if (!Site.IsHandlingPath(e.FullPath))
+                if (!IsPathToWatch(e.FullPath))
                 {
                     continue;
                 }
@@ -196,11 +196,17 @@ namespace Lunet.Watcher
             _processEventsThread.Start();
         }
 
+
+        private bool IsPathToWatch(UPath path)
+        {
+            return path == Site.ConfigFile.Path || Site.IsHandlingPath(path);
+        }
+
         private void WatchFolder(DirectoryEntry entry)
         {
             bool isEntryLunet = entry.Name == SiteObject.LunetFolderName;
 
-            if (!isEntryLunet && Site.IsHandlingPath(entry.Path))
+            if (IsPathToWatch(entry.Path))
             {
                 CreateFileWatch(entry);
             }

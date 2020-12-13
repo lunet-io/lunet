@@ -27,6 +27,8 @@ namespace Lunet.Core
         private bool isInitialized;
         private readonly Stopwatch totalDuration;
 
+        public const string SingleLayoutType = "single";
+
         public ContentPlugin(SiteObject site) : base(site)
         {
             previousOutputDirectories = new HashSet<DirectoryEntry>();
@@ -34,6 +36,8 @@ namespace Lunet.Core
             Scripts = Site.Scripts;
             filesWritten = new Dictionary<FileEntry, FileEntry>();
             totalDuration = new Stopwatch();
+
+            OrderLayoutTypes = new List<string>();
 
             BeforeInitializingProcessors = new OrderedList<ISiteProcessor>();
             BeforeLoadingProcessors = new OrderedList<ISiteProcessor>();
@@ -46,6 +50,9 @@ namespace Lunet.Core
         }
 
         private ScriptingPlugin Scripts { get; }
+
+        // Defines the way layout types are processed
+        public List<string> OrderLayoutTypes { get; }
 
         public OrderedList<ISiteProcessor> BeforeInitializingProcessors { get; }
 
@@ -338,24 +345,35 @@ namespace Lunet.Core
             TryProcessPage(page, ContentProcessingStage.Running, AfterRunningProcessors, pendingPageProcessors, false);
 
             contentStat.RunningTime += evalClock.Elapsed;
-
-            // Update the summary of the page
-            evalClock.Restart();
-            SummaryHelper.UpdateSummary(page);
-            evalClock.Stop();
-
-            contentStat.SummaryTime += evalClock.Elapsed;
         }
 
         public void ProcessPages(PageCollection pages, bool copyOutput)
         {
             if (pages == null) throw new ArgumentNullException(nameof(pages));
-
-            // Process pages
-            var pendingPageProcessors = new OrderedList<IContentProcessor>();
+            
+            // Collect and group pages per their layout type
+            var mapTypeToPages = new Dictionary<string, List<ContentObject>>();
             foreach (var page in pages)
             {
-                TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
+                var layoutType = page.LayoutType ?? SingleLayoutType;
+                if (!mapTypeToPages.TryGetValue(layoutType, out var subPages))
+                {
+                    subPages = new List<ContentObject>();
+                    mapTypeToPages.Add(layoutType, subPages);
+                }
+                subPages.Add(page);
+            }
+
+            // Process pages in order of their layout types
+            var pendingPageProcessors = new OrderedList<IContentProcessor>();
+            foreach (var layoutType in OrderLayoutTypes)
+            {
+                if (!mapTypeToPages.TryGetValue(layoutType, out var subPages)) continue;
+
+                foreach (var page in subPages)
+                {
+                    TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
+                }
             }
         }
 
@@ -463,7 +481,7 @@ namespace Lunet.Core
         {
             foreach (var entry in directory.EnumerateEntries())
             {
-                if (entry.Name == SiteObject.DefaultConfigFileName || !Site.IsHandlingPath(entry.Path))
+                if (!Site.IsHandlingPath(entry.Path))
                 {
                     continue;
                 }

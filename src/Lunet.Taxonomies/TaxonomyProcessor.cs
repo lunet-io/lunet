@@ -25,8 +25,15 @@ namespace Lunet.Taxonomies
 
             Site.SetValue("taxonomies", List, true);
 
-            layoutPlugin.Processor.RegisterLayoutPathProvider("terms", TermsLayout);
+            Site.Content.OrderLayoutTypes.Add("term");
+            Site.Content.OrderLayoutTypes.Add("terms");
+
             layoutPlugin.Processor.RegisterLayoutPathProvider("term", TermPagesLayout);
+            layoutPlugin.Processor.RegisterLayoutPathProvider("terms", TermsLayout);
+            
+            // Add tags and categories as default taxonomies
+            List.ScriptObject.Add("tags", "tag");
+            List.ScriptObject.Add("categories", "category");
         }
 
         public TaxonomyCollection List { get; }
@@ -50,11 +57,30 @@ namespace Lunet.Taxonomies
             foreach (var taxonomy in List.ScriptObject)
             {
                 var name = taxonomy.Key;
-                var singular = taxonomy.Value as string;
+                var value = taxonomy.Value;
+
+                string singular = null;
+                string url = null;
+                ScriptObject map = null;
+                switch (value)
+                {
+                    case string valueAsStr:
+                        singular = valueAsStr;
+                        break;
+                    case ScriptObject valueAsObj:
+                        singular = valueAsObj.GetSafeValue<string>("singular");
+                        url = valueAsObj.GetSafeValue<string>("url");
+                        map = valueAsObj.GetSafeValue<ScriptObject>("map");
+                        break;
+                    case IScriptCustomFunction _:
+                        // Skip functions (clear...etc.)
+                        continue;
+                }
+                
                 if (string.IsNullOrWhiteSpace(singular))
                 {
                     // Don't log an error, as we just want to 
-                    // Site.Error($"Invalid singular form [{singular}] of taxonomy [{name}]. Expecting a string");
+                    Site.Error($"Invalid singular form [{singular}] of taxonomy [{name}]. Expecting a non empty string");
                     continue;
                 }
                 // TODO: verify that plural is a valid identifier
@@ -65,7 +91,7 @@ namespace Lunet.Taxonomies
                     continue;
                 }
 
-                List.Add(new Taxonomy(this, name, singular));
+                List.Add(new Taxonomy(this, name, singular, url, map));
             }
 
             // Convert taxonomies to readonly after initialization
@@ -127,13 +153,14 @@ namespace Lunet.Taxonomies
             // Generate taxonomy pages
             foreach (var tax in List)
             {
+                bool hasTerms = false;
                 // Generate a term page for each term in the current taxonomy
                 foreach (var term in tax.Terms.Values.OfType<TaxonomyTerm>())
                 {
                     // term.Url
                     var content = new DynamicContentObject(Site, term.Url, tax.Name)
                     {
-                        ScriptObjectLocal = new DynamicObject<TaxonomyTerm>(term),
+                        ScriptObjectLocal =  new ScriptObject(), // only used to let layout processor running
                         Layout = tax.Name,
                         LayoutType = "term",
                         ContentType = ContentType.Html
@@ -148,19 +175,24 @@ namespace Lunet.Taxonomies
                         content.Dependencies.Add(new PageContentDependency(page));
                     }
 
+                    content.Initialize();
+
                     Site.DynamicPages.Add(content);
+                    hasTerms = true;
                 }
 
                 // Generate a terms page for the current taxonomy
+                if (hasTerms)
                 {
                     var content = new DynamicContentObject(Site, tax.Url, tax.Name)
                     {
-                        ScriptObjectLocal = new DynamicObject<Taxonomy>(tax),
+                        ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
                         Layout = tax.Name,
                         LayoutType = "terms",
                         ContentType = ContentType.Html
                     };
                     content.ScriptObjectLocal.SetValue("taxonomy", tax, true);
+                    content.Initialize();
 
                     // TODO: Add dependencies
 

@@ -11,11 +11,13 @@ using Lunet.Markdown;
 using Lunet.Menus;
 using Lunet.Minifiers;
 using Lunet.Resources;
+using Lunet.Rss;
 using Lunet.Taxonomies;
 using Lunet.Scss;
 using Lunet.Search;
 using Lunet.Server;
 using Lunet.Sitemaps;
+using Lunet.Summarizer;
 using Lunet.Toml;
 using Lunet.Watcher;
 using Lunet.Yaml;
@@ -26,10 +28,12 @@ namespace Lunet
     {
         static int Main(string[] args)
         {
+            // The order they are registered here is important
             var site = new SiteObject()
                 .Register<BundlePlugin>()
                 .Register<MenuPlugin>()
                 .Register<ExtendsPlugin>()
+                .Register<SummarizerPlugin>()
                 .Register<MarkdownPlugin>()
                 .Register<LayoutPlugin>()
                 .Register<ResourcePlugin>()
@@ -37,6 +41,7 @@ namespace Lunet
                 .Register<WatcherPlugin>()
                 .Register<ServerPlugin>()
                 .Register<MinifierPlugin>()
+                .Register<RssPlugin>()
                 .Register<ScssPlugin>()
                 .Register<TaxonomyPlugin>()
                 .Register<CardsPlugin>()

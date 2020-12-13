@@ -60,6 +60,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Sitemaps", "Lunet.Sit
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Attributes", "Lunet.Attributes\Lunet.Attributes.csproj", "{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Rss", "Lunet.Rss\Lunet.Rss.csproj", "{51514CAB-AB18-45C9-95A4-CB3CDC0BFB11}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Summarizer", "Lunet.Summarizer\Lunet.Summarizer.csproj", "{4C6145FA-ED5F-4785-B434-CD4E801254C9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -158,6 +162,14 @@ Global
 		{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0FCA0C1A-0BB0-4E84-B25C-2BC96BC51D49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51514CAB-AB18-45C9-95A4-CB3CDC0BFB11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51514CAB-AB18-45C9-95A4-CB3CDC0BFB11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51514CAB-AB18-45C9-95A4-CB3CDC0BFB11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51514CAB-AB18-45C9-95A4-CB3CDC0BFB11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C6145FA-ED5F-4785-B434-CD4E801254C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C6145FA-ED5F-4785-B434-CD4E801254C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C6145FA-ED5F-4785-B434-CD4E801254C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C6145FA-ED5F-4785-B434-CD4E801254C9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

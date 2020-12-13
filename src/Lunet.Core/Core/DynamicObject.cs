@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using Scriban;
 using Scriban.Parsing;
 using Scriban.Runtime;
@@ -19,6 +20,10 @@ namespace Lunet.Core
     public class DynamicObject : ScriptObject, IDynamicObject
     {
         public DynamicObject()
+        {
+        }
+
+        public DynamicObject(IEqualityComparer<string> keyComparer) : base(keyComparer)
         {
         }
 
@@ -68,6 +73,28 @@ namespace Lunet.Core
             Parent = parent;
         }
 
+        public DynamicObject(T parent, IEqualityComparer<string> keyComparer) : base(keyComparer)
+        {
+            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            Parent = parent;
+        }
+
         public T Parent { get; }
+    }
+
+    public static class DynamicObjectExtensions
+    {
+        public static void CopyToWithReadOnly(this ScriptObject from, ScriptObject to)
+        {
+            if (@from == null) throw new ArgumentNullException(nameof(@from));
+            if (to == null) throw new ArgumentNullException(nameof(to));
+            if (ReferenceEquals(from, to)) return;
+
+            foreach (var (key, value) in from)
+            {
+                var isReadOnly = !from.CanWrite(key);
+                to.SetValue(key, value, isReadOnly);
+            }
+        }
     }
 }

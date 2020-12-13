@@ -61,12 +61,18 @@ namespace Lunet.Core
                     exts.Add(extAndType.Key);
                 }
             }
+
+            // If we haven't found any extensions, add at least one from the type
+            if (exts.Count == 0)
+            {
+                exts.Add($".{type.Name}");
+            }
+
             return exts;
         }
 
         private void AddBuiltins()
         {
-            
             _extensionToContentType[".htm"] = ContentType.Html;
             _extensionToContentType[".html"] = ContentType.Html;
             _extensionToContentType[".scriban-html"] = ContentType.Html;

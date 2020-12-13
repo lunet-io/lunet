@@ -3,18 +3,14 @@
 // See the license.txt file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Lunet.Core;
-using NUglify;
 using NUglify.Html;
 using Scriban.Functions;
-using Scriban.Helpers;
-using Scriban.Runtime;
 
-namespace Lunet.Helpers
+namespace Lunet.Summarizer
 {
-    public static class SummaryHelper
+    public static class SummarizerHelper
     {
         public static void UpdateSummary(ContentObject page)
         {
@@ -22,6 +18,7 @@ namespace Lunet.Helpers
             {
                 return;
             }
+
             // Use specific settings to extract text from html
             var settings = new HtmlSettings()
             {
@@ -37,10 +34,10 @@ namespace Lunet.Helpers
                 MinifyCssAttributes = false
             };
 
-            var parser = new HtmlParser(page.Content, (string)page.SourceFile.Path, settings);
+            var parser = new HtmlParser($"<body>{page.Content}</body>", (string)page.SourceFile.Path, settings);
             var document = parser.Parse();
 
-            var errors = new List<UglifyError>(parser.Errors);
+            //var errors = new List<UglifyError>(parser.Errors);
 
             if (document != null)
             {
@@ -55,7 +52,7 @@ namespace Lunet.Helpers
 
                 var keepFormatting = sumarrySettings.GetSafeValue<bool>(PageVariables.SummaryKeepFormatting);
 
-                errors.AddRange(minifier.Errors);
+                //errors.AddRange(minifier.Errors);
 
                 var writer = new StringWriter();
                 var htmlWriter = new HtmlWriterToSummary(writer, keepFormatting ? HtmlToTextOptions.KeepFormatting : HtmlToTextOptions.KeepHtmlEscape);
@@ -70,17 +67,17 @@ namespace Lunet.Helpers
                 page.Summary = summary;
             }
 
-            foreach (var message in errors)
-            {
-                if (message.IsError)
-                {
-                    page.Site.Error(message.ToString());
-                }
-                else
-                {
-                    page.Site.Warning(message.ToString());
-                }
-            }
+            //foreach (var message in errors)
+            //{
+            //    if (message.IsError)
+            //    {
+            //        page.Site.Error(message.ToString());
+            //    }
+            //    else
+            //    {
+            //        page.Site.Warning(message.ToString());
+            //    }
+            //}
         }
 
         private class HtmlWriterToSummary : HtmlWriterToText

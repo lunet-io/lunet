@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Lunet.Core;
+using Scriban.Runtime;
 
 namespace Lunet.Taxonomies
 {
@@ -26,19 +27,21 @@ namespace Lunet.Taxonomies
         private readonly TaxonomyTermCollection byName;
         private readonly TaxonomyTermCollection byCount;
 
-        public Taxonomy(TaxonomyProcessor parent, string name, string single) : base(parent)
+        public Taxonomy(TaxonomyProcessor parent, string name, string single, string url, ScriptObject map) : base(parent)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (single == null) throw new ArgumentNullException(nameof(single));
             Name = name;
-            Url = $"/{Name}/";
+            Url = url ?? $"/{Name}/";
+            Map = map ?? new ScriptObject();
             Single = single;
-            Terms = new DynamicObject<Taxonomy>(this);
+            Terms = new DynamicObject<Taxonomy>(this, StringComparer.OrdinalIgnoreCase);
             byName = new TaxonomyTermCollection();
             byCount = new TaxonomyTermCollection();
             SetValue("name", Name, true);
             SetValue("url", Url, true);
             SetValue("single", Single, true);
+            SetValue("map", Map, true);
             SetValue("terms", Terms, true);
             Terms.SetValue("by_name", ByName, true);
             Terms.SetValue("by_count", ByCount, true);
@@ -49,6 +52,8 @@ namespace Lunet.Taxonomies
         public string Url { get; }
 
         public string Single { get; }
+
+        public ScriptObject Map { get; }
 
         public DynamicObject Terms { get; }
 

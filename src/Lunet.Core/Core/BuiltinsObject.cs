@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Text;
 using Lunet.Scripts;
 using Scriban;
+using Scriban.Functions;
 using Scriban.Runtime;
 using Zio;
 
@@ -51,6 +52,10 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
             parent.Scripts.TryImportScript(helpers, "internal_helpers", this, ScriptFlags.AllowSiteFunctions, out _);
             SetValue("ref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRef), true);
             SetValue("relref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRelRef), true);
+
+            // Add our own to_rfc822
+            var dateTimeFunctions = (DateTimeFunctions) Site.Scripts.Builtins["date"];
+            dateTimeFunctions.Import("to_rfc822", (Func<DateTime, string>)ToRFC822);
 
             Site.Content.AfterLoadingProcessors.Add(this);
         }
@@ -157,6 +162,18 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
             {
                 _pages[page.Path] = page;
             }
+        }
+        
+        private static string ToRFC822(DateTime date)
+        {
+            int offset = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Hours;
+            string timeZone = "+" + offset.ToString(CultureInfo.InvariantCulture).PadLeft(2, '0');
+            if (offset < 0)
+            {
+                int i = offset * -1;
+                timeZone = "-" + i.ToString(CultureInfo.InvariantCulture).PadLeft(2, '0');
+            }
+            return date.ToString("ddd, dd MMM yyyy HH:mm:ss " + timeZone.PadRight(5, '0'));
         }
     }
 }
