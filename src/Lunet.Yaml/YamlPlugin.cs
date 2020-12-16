@@ -8,6 +8,11 @@ using Lunet.Datas;
 
 namespace Lunet.Yaml
 {
+
+    public class YamlModule : SiteModule<YamlPlugin>
+    {
+    }
+
     public class YamlPlugin : SitePlugin
     {
         public YamlPlugin(SiteObject site, DatasPlugin datasPlugin) : base(site)

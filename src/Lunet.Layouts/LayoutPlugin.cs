@@ -2,6 +2,10 @@
 
 namespace Lunet.Layouts
 {
+    public class LayoutModule : SiteModule<LayoutPlugin>
+    {
+    }
+
     public class LayoutPlugin : SitePlugin
     {
         public LayoutPlugin(SiteObject site) : base(site)

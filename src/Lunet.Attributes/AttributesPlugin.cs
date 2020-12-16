@@ -6,6 +6,10 @@ using Lunet.Core;
 
 namespace Lunet.Attributes
 {
+    public class AttributesModule : SiteModule<AttributesPlugin>
+    {
+    }
+
     public class AttributesPlugin : SitePlugin
     {
         public AttributesPlugin(SiteObject site) : base(site)

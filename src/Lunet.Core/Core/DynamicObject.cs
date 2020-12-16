@@ -84,6 +84,11 @@ namespace Lunet.Core
 
     public static class DynamicObjectExtensions
     {
+        public static T GetSafeValue<T>(this IScriptObject obj, string name)
+        {
+            return obj.TryGetValue(name, out var value) && value is T tvalue ? tvalue : default;
+        }
+        
         public static void CopyToWithReadOnly(this ScriptObject from, ScriptObject to)
         {
             if (@from == null) throw new ArgumentNullException(nameof(@from));

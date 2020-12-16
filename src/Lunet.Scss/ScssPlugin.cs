@@ -6,6 +6,10 @@ using Lunet.Core;
 
 namespace Lunet.Scss
 {
+    public class ScssModule : SiteModule<ScssPlugin>
+    {
+    }
+
     public class ScssPlugin : SitePlugin
     {
         public ScssPlugin(SiteObject site) : base(site)

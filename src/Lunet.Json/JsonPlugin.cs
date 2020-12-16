@@ -8,6 +8,10 @@ using Lunet.Datas;
 
 namespace Lunet.Json
 {
+    public class JsonModule : SiteModule<JsonPlugin>
+    {
+    }
+
     public class JsonPlugin : SitePlugin
     {
         public JsonPlugin(SiteObject site, DatasPlugin dataPlugin) : base(site)

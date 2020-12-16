@@ -25,7 +25,7 @@ namespace Lunet.Helpers
             Arguments = new List<CommandArgument>();
             Commands = new List<CommandLineApplication>();
             RemainingArguments = new List<string>();
-            Invoke = () => 0;
+            Invoke = () => {};
         }
 
         public CommandLineApplication Parent { get; set; }
@@ -39,7 +39,7 @@ namespace Lunet.Helpers
         public List<CommandArgument> Arguments { get; private set; }
         public List<string> RemainingArguments { get; private set; }
         public bool IsShowingInformation { get; protected set; }  // Is showing help or version?
-        public Func<int> Invoke { get; set; }
+        public Action Invoke { get; set; }
         public Func<string> LongVersionGetter { get; set; }
         public Func<string> ShortVersionGetter { get; set; }
         public List<CommandLineApplication> Commands { get; private set; }
@@ -89,17 +89,7 @@ namespace Lunet.Helpers
             return argument;
         }
 
-        public void OnExecute(Func<int> invoke)
-        {
-            Invoke = invoke;
-        }
-
-        public void OnExecute(Func<Task<int>> invoke)
-        {
-            Invoke = () => invoke().Result;
-        }
-
-        public int Execute(params string[] args)
+        public void Parse(params string[] args)
         {
             CommandLineApplication command = this;
             CommandOption option = null;
@@ -150,12 +140,12 @@ namespace Lunet.Helpers
                         if (command.OptionHelp == option)
                         {
                             command.ShowHelp();
-                            return 0;
+                            return;
                         }
                         else if (command.OptionVersion == option)
                         {
                             command.ShowVersion();
-                            return 0;
+                            return;
                         }
 
                         if (longOption.Length == 2)
@@ -195,12 +185,12 @@ namespace Lunet.Helpers
                         if (command.OptionHelp == option)
                         {
                             command.ShowHelp();
-                            return 0;
+                            return;
                         }
                         else if (command.OptionVersion == option)
                         {
                             command.ShowVersion();
-                            return 0;
+                            return;
                         }
 
                         if (shortOption.Length == 2)
@@ -276,7 +266,7 @@ namespace Lunet.Helpers
                 throw new CommandParsingException(command, $"Missing value for option '{option.LongName}'");
             }
 
-            return command.Invoke();
+            command.Invoke();
         }
 
         // Helper method that adds a help option

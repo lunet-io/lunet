@@ -8,6 +8,10 @@ using Lunet.Datas;
 
 namespace Lunet.Toml
 {
+    public class TomlModule : SiteModule<TomlPlugin>
+    {
+    }
+    
     public class TomlPlugin : SitePlugin
     {
         public TomlPlugin(SiteObject site, DatasPlugin dataPlugin) : base(site)

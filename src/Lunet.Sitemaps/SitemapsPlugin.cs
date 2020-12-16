@@ -6,6 +6,10 @@ using Lunet.Core;
 
 namespace Lunet.Sitemaps
 {
+    public class SitemapsModule : SiteModule<SitemapsPlugin>
+    {
+    }
+
     public class SitemapsPlugin : SitePlugin
     {
         public SitemapsPlugin(SiteObject site) : base(site)

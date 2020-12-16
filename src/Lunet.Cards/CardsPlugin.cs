@@ -6,6 +6,10 @@ using Lunet.Core;
 
 namespace Lunet.Cards
 {
+    public class CardsModule : SiteModule<CardsPlugin>
+    {
+    }
+
     /// <summary>
     /// Manages resources.
     /// </summary>

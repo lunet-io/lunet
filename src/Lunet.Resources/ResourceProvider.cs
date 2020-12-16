@@ -89,7 +89,7 @@ namespace Lunet.Resources
             }
 
             // Otherwise we are going to check if it is already on the disk
-            var resourcePrivatePath = new DirectoryEntry(Plugin.Site.TempMetaFileSystem, ResourcePlugin.ResourceFolder / Name / resourceName / resourceVersion);
+            var resourcePrivatePath = new DirectoryEntry(Plugin.Site.CacheMetaFileSystem, ResourcePlugin.ResourceFolder / Name / resourceName / resourceVersion);
             var resourcePublicPath = new DirectoryEntry(Plugin.Site.MetaFileSystem, ResourcePlugin.ResourceFolder / Name / resourceName / resourceVersion);
             DirectoryEntry resourcePath = null;
             if (resourcePublicPath.Exists)

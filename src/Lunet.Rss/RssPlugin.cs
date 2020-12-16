@@ -9,6 +9,10 @@ using Zio;
 
 namespace Lunet.Rss
 {
+    public class RssModule : SiteModule<RssPlugin>
+    {
+    }
+
     public class RssPlugin : SitePlugin
     {
         public RssPlugin(SiteObject site, LayoutPlugin layoutPlugin) : base(site)

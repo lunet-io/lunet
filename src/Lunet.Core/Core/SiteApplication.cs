@@ -1,25 +1,28 @@
 ﻿// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
+using Lunet.Core.Commands;
 using Lunet.Helpers;
 using Zio;
 using Zio.FileSystems;
 
 namespace Lunet.Core
 {
-    public class LunetCommandLine : CommandLineApplication
+    public class SiteApplication : CommandLineApplication, IEnumerable
     {
-        private readonly SiteObject site;
-
-        public LunetCommandLine(SiteObject site) : base(false)
+        private readonly List<SiteModule> _modules;
+        
+        public SiteApplication(SiteConfiguration config = null)
         {
-            if (site == null) throw new ArgumentNullException(nameof(site));
-            this.site = site;
+            Config = config ?? new SiteConfiguration();
+            _modules = new List<SiteModule>();
+
             Name = "lunet";
             FullName = "Lunet Static Website Engine";
             Description = "LunetCommand to generate static website";
@@ -34,11 +37,11 @@ namespace Lunet.Core
             var version = VersionOption("-v|--version", versionText, infoVersionText);
 
             // The defines to setup before initializing config.sban
-            Defines = Option("-d|--define <variable=value>", "Defines a site variable", CommandOptionType.MultipleValue);
-            OutputDirectory = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteObject.DefaultOutputFolderName}'", CommandOptionType.SingleValue);
-            InputDirectory = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
+            DefinesOption = Option("-d|--define <variable=value>", "Defines a site variable", CommandOptionType.MultipleValue);
+            OutputDirectoryOption = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteFileSystems.DefaultOutputFolderName}'", CommandOptionType.SingleValue);
+            InputDirectoryOption = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
 
-            this.Invoke = () =>
+            Invoke = () =>
             {
                 if (!this.OptionHelp.HasValue() || !version.HasValue())
                 {
@@ -47,11 +50,8 @@ namespace Lunet.Core
 
                 if (RemainingArguments.Count > 0)
                 {
-                    Reporter.Output.WriteLine($"Invalid command arguments : {string.Join(" ",RemainingArguments)}".Red());
-                    return 1;
+                    Reporter.Output.WriteLine($"Invalid command arguments : {string.Join(" ", RemainingArguments)}".Red());
                 }
-                
-                return 0;
             };
 
             // New command
@@ -70,25 +70,17 @@ namespace Lunet.Core
                 newApp.Invoke = () =>
                 {
                     var inputFolder = folderArgument.Value ?? ".";
-                    if (InputDirectory.Values.Count > 0)
+                    if (InputDirectoryOption.Values.Count > 0)
                     {
-                        InputDirectory.Values[0] = inputFolder;
+                        InputDirectoryOption.Values[0] = inputFolder;
                     }
                     else
                     {
-                        InputDirectory.Values.Add(inputFolder);
+                        InputDirectoryOption.Values.Add(inputFolder);
                     }
-                    HandleCommonOptions();
-                    try
-                    {
-                        site.Create(forceOption.HasValue());
-                        return 0;
-                    }
-                    catch (Exception ex)
-                    {
-                        site.Error($"Unexpected exception while trying to copy files: {ex.GetReason()}");
-                        return 1;
-                    }
+
+                    var initCommand = CreateCommandRunner<InitCommandRunner>();
+                    initCommand.Force = forceOption.HasValue();
                 };
             }, false);
 
@@ -111,21 +103,6 @@ namespace Lunet.Core
                 newApp.HelpOption("-h|--help");
             }, false);
 
-            // The run command
-            RunCommand = Command("build", newApp =>
-            {
-                newApp.Description = "Builds the website";
-                newApp.HelpOption("-h|--help");
-
-                newApp.Invoke = () =>
-                {
-                    HandleCommonOptions();
-                    site.Build();
-                    return site.HasErrors ? 1 : 0;
-                };
-
-            }, false);
-
             // The clean command
             CleanCommand = Command("clean", newApp =>
             {
@@ -134,32 +111,55 @@ namespace Lunet.Core
 
                 newApp.Invoke = () =>
                 {
-                    HandleCommonOptions();
-                    return site.Clean();
+                    CreateCommandRunner<CleanCommandRunner>();
                 };
 
             }, false);
         }
+
+        public SiteConfiguration Config { get; }
 
         public CommandLineApplication InitCommand { get; }
 
         public CommandLineApplication NewCommand { get; }
 
         public CommandLineApplication ConfigCommand { get; }
-        
+
         public CommandLineApplication RunCommand { get; }
 
         public CommandLineApplication CleanCommand { get; }
 
-        public CommandOption Defines { get; }
+        private CommandOption DefinesOption { get; }
 
-        public CommandOption OutputDirectory { get; }
+        private CommandOption OutputDirectoryOption { get; }
 
-        public CommandOption InputDirectory { get; }
-
-        public void HandleCommonOptions()
+        private CommandOption InputDirectoryOption { get; }
+        
+        public SiteApplication Add(SiteModule module)
         {
-            site.Setup(InputDirectory.Value(), OutputDirectory.Value(), Defines.Values.ToArray());
+            if (module == null) throw new ArgumentNullException(nameof(module));
+            module.ConfigureInternal(this);
+            return this;
+        }
+
+        private void InitializeConfig()
+        {
+            Config.FileSystems.Initialize(InputDirectoryOption.Value(), OutputDirectoryOption.Value());
+            Config.Defines.Clear();
+            Config.Defines.AddRange(DefinesOption.Values);
+        }
+
+        public TCommandRunner CreateCommandRunner<TCommandRunner>() where TCommandRunner : ISiteCommandRunner, new()
+        {
+            InitializeConfig();
+            var commandRunner = new TCommandRunner();
+            Config.CommandRunners.Add(commandRunner);
+            return commandRunner;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable) _modules).GetEnumerator();
         }
     }
 }

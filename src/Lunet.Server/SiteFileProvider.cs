@@ -18,27 +18,27 @@ namespace Lunet.Server
     /// </summary>
     internal class SiteFileProvider : IFileProvider
     {
-        private readonly SiteObject _site;
+        private readonly IFileSystem _fs;
 
-        public SiteFileProvider(SiteObject site)
+        public SiteFileProvider(IFileSystem fileSystem)
         {
-            _site = site;
+            _fs = fileSystem;
         }
 
         public IFileInfo GetFileInfo(string subpath)
         {
-            return new SiteFileInfo(_site.OutputFileSystem, subpath);
+            return new SiteFileInfo(_fs, subpath);
         }
 
         public IDirectoryContents GetDirectoryContents(string subpath)
         {
-            return new SiteDirectoryContents(_site.OutputFileSystem, subpath);
+            return new SiteDirectoryContents(_fs, subpath);
         }
 
         public IChangeToken Watch(string filter)
         {
             // TODO: Not sure we actually need this for now
-            return new SiteChangeToken(_site, filter);
+            return new SiteChangeToken(_fs, filter);
         }
 
         private class SiteFileInfo : IFileInfo
@@ -72,12 +72,12 @@ namespace Lunet.Server
 
         private class SiteChangeToken : IChangeToken
         {
-            private readonly SiteObject _site;
+            private readonly IFileSystem _fs;
             private string _filter;
 
-            public SiteChangeToken(SiteObject site, string filter)
+            public SiteChangeToken(IFileSystem filesystem, string filter)
             {
-                _site = site;
+                _fs = filesystem;
                 _filter = filter;
             }
 

@@ -8,6 +8,10 @@ using Lunet.Core;
 
 namespace Lunet.Markdown
 {
+    public class MarkdownModule : SiteModule<MarkdownPlugin>
+    {
+    }
+
     public class MarkdownPlugin : SitePlugin
     {
         public MarkdownPlugin(SiteObject site) : base(site)

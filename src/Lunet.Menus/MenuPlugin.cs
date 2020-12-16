@@ -2,6 +2,10 @@
 
 namespace Lunet.Menus
 {
+    public class MenuModule : SiteModule<MenuPlugin>
+    {
+    }
+
     public class MenuPlugin : SitePlugin
     {
         public MenuPlugin(SiteObject site) : base(site)

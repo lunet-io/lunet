@@ -11,6 +11,10 @@ using NUglify;
 
 namespace Lunet.Minifiers
 {
+    public class MinifierModule : SiteModule<MinifierPlugin>
+    {
+    }
+
     public class MinifierPlugin : SitePlugin, IContentMinifier
     {
         public MinifierPlugin(SiteObject site, BundlePlugin bundlePlugin) : base(site)

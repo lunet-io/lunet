@@ -10,6 +10,12 @@ using Lunet.Layouts;
 
 namespace Lunet.Taxonomies
 {
+
+    public class TaxonomyModule : SiteModule<TaxonomyPlugin>
+    {
+    }
+
+
     public class TaxonomyPlugin : SitePlugin
     {
         public TaxonomyPlugin(SiteObject site, LayoutPlugin layoutPlugin) : base(site)

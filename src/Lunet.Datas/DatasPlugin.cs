@@ -7,6 +7,10 @@ using Lunet.Helpers;
 
 namespace Lunet.Datas
 {
+    public class DatasModule : SiteModule<DatasPlugin>
+    {
+    }
+
     public class DatasPlugin : SitePlugin
     {
         public DatasPlugin(SiteObject site) : base(site)

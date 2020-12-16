@@ -9,6 +9,11 @@ using Scriban.Runtime;
 
 namespace Lunet.Bundles
 {
+
+    public class BundleModule : SiteModule<BundlePlugin>
+    {
+    }
+    
     /// <summary>
     /// Manages resources.
     /// </summary>

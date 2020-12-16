@@ -15,6 +15,10 @@ using Zio;
 
 namespace Lunet.Resources
 {
+    public class ResourceModule : SiteModule<ResourcePlugin>
+    {
+    }
+    
     /// <summary>
     /// Manages resources.
     /// </summary>

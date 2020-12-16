@@ -15,6 +15,12 @@ using Zio.FileSystems;
 
 namespace Lunet.Extends
 {
+
+    public class ExtendsModule : SiteModule<ExtendsPlugin>
+    {
+    }
+
+
     /// <summary>
     /// Manages themes.
     /// </summary>
@@ -83,7 +89,7 @@ namespace Lunet.Extends
                 }
                 CurrentList.Add(extendObject);
 
-                var configPath = new FileEntry(extendObject.FileSystem, UPath.Root / SiteObject.DefaultConfigFileName);
+                var configPath = new FileEntry(extendObject.FileSystem, UPath.Root / SiteFileSystems.DefaultConfigFileName);
                 object result;
                 Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions, out result);
             }
@@ -114,7 +120,7 @@ namespace Lunet.Extends
 
             //var themePrivatePath = PrivateExtendsFolder / extendName;
             var themeSiteDir = new DirectoryEntry(Site.MetaFileSystem, ExtendsFolder / extendName);
-            var themeTempDir = new DirectoryEntry(Site.TempMetaFileSystem, ExtendsFolder / extendName);
+            var themeTempDir = new DirectoryEntry(Site.CacheMetaFileSystem, ExtendsFolder / extendName);
             IFileSystem extendPath = null;
 
             if (themeSiteDir.Exists)

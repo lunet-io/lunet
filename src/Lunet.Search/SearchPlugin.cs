@@ -10,6 +10,10 @@ using Zio;
 
 namespace Lunet.Search
 {
+    public class SearchModule : SiteModule<SearchPlugin>
+    {
+    }
+
     public class SearchPlugin : SitePlugin
     {
         public static readonly UPath DefaultUrl = UPath.Root / "js" / "lunet-search.db";

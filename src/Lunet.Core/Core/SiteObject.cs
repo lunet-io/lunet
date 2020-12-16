@@ -6,100 +6,57 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using Autofac;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Lunet.Statistics;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Configuration;
-using Microsoft.Extensions.Logging.Console;
-using Scriban.Parsing;
 using Zio;
-using Zio.FileSystems;
 
 namespace Lunet.Core
 {
-    public class SiteObject : DynamicObject
+    public class SiteObject : DynamicObject, ISiteLoggerProvider
     {
-        public const string TempSiteFolderName = "tmp";
-        public static readonly UPath TempSiteFolder = UPath.Root / TempSiteFolderName;
-
-        public const string SharedFolderName = "shared";
-        public static readonly UPath SiteFolder = UPath.Root / SharedFolderName;
-
-        public const string LunetFolderName = ".lunet";
-        public static readonly UPath LunetFolder = UPath.Root / LunetFolderName;
-        public static readonly string LunetFolderWithSlash = "/" + LunetFolderName + "/";
-
-        public const string BuildFolderName = "build";
-        public static readonly UPath BuildFolder = LunetFolder / BuildFolderName;
-
-        public const string DefaultOutputFolderName = "www";
         public const string DefaultPageExtensionValue = ".html";
-        public const string DefaultConfigFileName = "config.scriban";
 
         private bool _isInitialized;
-        private readonly AggregateFileSystem _fileSystem;
-        private readonly AggregateFileSystem _metaFileSystem;
-        private readonly List<IFileSystem> _contentFileSystems;
-        private IFileSystem _siteFileSystem;
         private bool _pluginInitialized;
-        private readonly ContainerBuilder _pluginBuilders;
+        private readonly List<Type> _pluginTypes;
 
-        public SiteObject(ILoggerFactory loggerFactory = null)
+        public SiteObject(SiteConfiguration configuration)
         {
+            Config = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _pluginTypes = Config.PluginTypes();
             ReadmeAsIndex = true;
             ErrorRedirect = "/404.html";
-            var sharedFolder = Path.Combine(AppContext.BaseDirectory, SharedFolderName);
 
-            _contentFileSystems = new List<IFileSystem>();
-            var sharedPhysicalFileSystem = new PhysicalFileSystem();
+            SharedFileSystem = Config.FileSystems.SharedFileSystem;
+            SiteFileSystem = Config.FileSystems.InputFileSystem;
+            CacheSiteFileSystem = Config.FileSystems.InputFileSystem;
+            FileSystem = Config.FileSystems.FileSystem;
+            OutputFileSystem = Config.FileSystems.OutputFileSystem;
+            SharedMetaFileSystem = Config.FileSystems.SharedMetaFileSystem;
+            CacheMetaFileSystem = Config.FileSystems.CacheMetaFileSystem;
+            MetaFileSystem = Config.FileSystems.MetaFileSystem;
+            ConfigFile = Config.FileSystems.ConfigFile;
 
-            // Make sure that SharedFileSystem is a read-only filesystem
-            SharedFileSystem = new ReadOnlyFileSystem(new SubFileSystem(sharedPhysicalFileSystem, sharedPhysicalFileSystem.ConvertPathFromInternal(sharedFolder)));
-            SharedMetaFileSystem = SharedFileSystem.GetOrCreateSubFileSystem(LunetFolder);
+            foreach (var define in Config.Defines)
+            {
+                AddDefine(define);
+            }
 
-            _fileSystem = new AggregateFileSystem(SharedFileSystem);
-            
-            // MetaFileSystem provides an aggregate view of the shared meta file system + the user meta file system
-            _metaFileSystem = new AggregateFileSystem(SharedMetaFileSystem);
-            MetaFileSystem = _metaFileSystem;
-
-            ConfigFile = new FileEntry(_fileSystem, UPath.Root / DefaultConfigFileName);
+            LoggerFactory.LogFilter = LogFilter;
 
             StaticFiles = new PageCollection();
             Pages = new PageCollection();
             DynamicPages = new PageCollection();
-            
-            // Create the logger
-            LoggerFactory = loggerFactory ?? Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
-            {
-                // Similar to builder.AddSimpleConsole
-                // But we are using our own console that stays on the same line if the message doesn't have new lines
-                builder.AddConfiguration();
-                builder.AddProvider(new LoggerProviderIntercept(this))
-                    .AddFilter(LogFilter)
-                    .AddConsoleFormatter<SimpleConsoleFormatter, SimpleConsoleFormatterOptions>(configure =>
-                    {
-                        configure.SingleLine = true;
-                    });
-                builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
-                LoggerProviderOptions.RegisterProviderOptions<ConsoleLoggerOptions, ConsoleLoggerProvider>(builder.Services);
-            });
-            
-            Log = LoggerFactory.CreateLogger("lunet");
+
             ContentTypes = new ContentTypeManager();
 
             DefaultPageExtension = DefaultPageExtensionValue;
 
             Html = new HtmlPage(this);
-
-            CommandLine = new LunetCommandLine(this);
 
             Statistics = new SiteStatistics();
 
@@ -112,8 +69,8 @@ namespace Lunet.Core
             Builtins = new BuiltinsObject(this);
             ForceExcludes = new GlobCollection()
             {
-                $"**/{LunetFolderName}/{BuildFolderName}/**",
-                $"/{DefaultConfigFileName}",
+                $"**/{SiteFileSystems.LunetFolderName}/{SiteFileSystems.BuildFolderName}/**",
+                $"/{SiteFileSystems.DefaultConfigFileName}",
             };
             Excludes = new GlobCollection()
             {
@@ -123,18 +80,15 @@ namespace Lunet.Core
             };
             Includes = new GlobCollection()
             {
-                $"**/{LunetFolderName}/**",
+                $"**/{SiteFileSystems.LunetFolderName}/**",
             };
             SetValue(SiteVariables.ForceExcludes, ForceExcludes, true);
             SetValue(SiteVariables.Excludes, Excludes, true);
             SetValue(SiteVariables.Includes, Includes, true);
-
             SetValue(SiteVariables.Pages, Pages, true);
-            
-            _pluginBuilders = new ContainerBuilder();
-            _pluginBuilders.RegisterInstance(LoggerFactory).As<ILoggerFactory>();
-            _pluginBuilders.RegisterInstance(this);
         }
+
+        public SiteConfiguration Config { get; }
 
         public FileEntry ConfigFile { get; }
 
@@ -162,90 +116,42 @@ namespace Lunet.Core
             var isExcluded = Excludes.IsMatch(path);
             return !isExcluded;
         }
-        
-        ///// <summary>
-        ///// Gets or sets the base directory of the website (input files, config file)
-        ///// </summary>
-        //public UPath BaseFolder
-        //{
-        //    get { return _baseFolder; }
-
-        //    set
-        //    {
-        //        // Update all 
-        //        _baseFolder = value;
-        //        PrivateBaseFolder = Path.Combine(BaseFolder.FullName, TempFolderName);
-        //        MetaFolder = BaseFolder / MetaFolderName;
-        //        PrivateMetaFolder = PrivateBaseFolder / MetaFolderName;
-        //        ConfigFile = BaseFolder / DefaultConfigFileName;
-        //        OutputFolder = PrivateBaseFolder / DefaultOutputFolderName;
-        //    }
-        //}
 
         public IFileSystem SharedFileSystem { get; }
-        
-        public void Setup(string inputDirectory, string outputDirectory, params string[] defines)
-        {
-            var rootFolder = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, inputDirectory ?? "."));
 
-            var diskfs = new PhysicalFileSystem();
+        public IFileSystem SiteFileSystem { get; }
 
-            var siteFileSystem = new SubFileSystem(diskfs, diskfs.ConvertPathFromInternal(rootFolder));
-            SiteFileSystem = siteFileSystem;
+        public IFileSystem CacheSiteFileSystem { get; }
 
-            // Add defines
-            foreach (var value in defines)
-            {
-                AddDefine(value);
-            }
+        public IFileSystem FileSystem { get; }
 
-            var outputFolder = outputDirectory != null
-                ? Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, outputDirectory))
-                : Path.Combine(rootFolder, LunetFolderName + "/build/" + DefaultOutputFolderName);
-
-            var outputFolderForFs = diskfs.ConvertPathFromInternal(outputFolder);
-            OutputFileSystem = diskfs.GetOrCreateSubFileSystem(outputFolderForFs);
-        }
-
-        public IFileSystem SiteFileSystem
-        {
-            get => _siteFileSystem;
-            set
-            {
-                _siteFileSystem = value;
-                TempSiteFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder / BuildFolderName / TempSiteFolderName);
-                TempMetaFileSystem = _siteFileSystem?.GetOrCreateSubFileSystem(LunetFolder / BuildFolderName / TempSiteFolderName / LunetFolderName);
-                UpdateFileSystem();
-            }
-        }
-        
-        public IFileSystem TempSiteFileSystem { get; private set; }
-
-        public IFileSystem FileSystem => _fileSystem;
-
-        public BuiltinsObject Builtins { get; }
-
-        public IFileSystem OutputFileSystem { get; set; }
+        public IFileSystem OutputFileSystem { get; }
 
         public IFileSystem SharedMetaFileSystem { get; }
 
-        public IFileSystem TempMetaFileSystem { get; private set; }
+        public IFileSystem CacheMetaFileSystem { get; }
 
-        public IFileSystem MetaFileSystem { get; private set; }
+        public IFileSystem MetaFileSystem { get; }
+
+        public BuiltinsObject Builtins { get; }
 
         public OrderedList<ISitePlugin> Plugins { get; }
 
         /// <summary>
         /// Gets the logger factory that was used to create the site logger <see cref="Log"/>.
         /// </summary>
-        public ILoggerFactory LoggerFactory { get; }
+        public SiteLoggerFactory LoggerFactory => Config.LoggerFactory;
 
         /// <summary>
         /// Gets the site logger.
         /// </summary>
-        public ILogger Log { get; }
-        
-        internal int LogEventId { get; set; }
+        public ILogger Log => Config.Log;
+
+        public int LogEventId
+        {
+            get => Config.LogEventId;
+            set => Config.LogEventId = value;
+        }
 
         public PageCollection StaticFiles { get; }
 
@@ -262,8 +168,6 @@ namespace Lunet.Core
         public SiteStatistics Statistics { get; }
 
         public ContentTypeManager ContentTypes { get; }
-
-        public LunetCommandLine CommandLine { get; }
 
         public HtmlPage Html { get; }
 
@@ -309,63 +213,29 @@ namespace Lunet.Core
             set => this[SiteVariables.ReadmeAsIndex] = value;
         }
 
-        public void AddContentFileSystem(IFileSystem fileSystem)
-        {
-            if (!_contentFileSystems.Contains(fileSystem))
-            {
-                _contentFileSystems.Add(fileSystem);
-            }
-            UpdateFileSystem();
-        }
-
-        private void UpdateFileSystem()
-        {
-            _fileSystem.ClearFileSystems();
-            if (TempSiteFileSystem != null)
-            {
-                _fileSystem.AddFileSystem(TempSiteFileSystem);
-            }
-            foreach (var contentfs in _contentFileSystems)
-            {
-                _fileSystem.AddFileSystem(contentfs);
-            }
-            if (SiteFileSystem != null)
-            {
-                _fileSystem.AddFileSystem(SiteFileSystem);
-            }
-
-            // Update _metaFileSystem
-            _metaFileSystem.ClearFileSystems();
-            if (TempMetaFileSystem != null)
-            {
-                _metaFileSystem.AddFileSystem(TempMetaFileSystem);
-            }
-            _metaFileSystem.AddFileSystem(new SubFileSystem(_fileSystem, LunetFolder));
-        }
-
-        public bool LogFilter(string category, LogLevel level)
+        private bool LogFilter(string category, LogLevel level)
         {
             var levelStr = Scripts.SiteFunctions.LogObject.GetSafeValue<string>("level")?.ToLowerInvariant() ?? "info";
             var filterLevel = LogLevel.Information;
             switch (levelStr)
             {
+                case "trace":
+                    filterLevel = LogLevel.Trace;
+                    break;
                 case "debug":
                     filterLevel = LogLevel.Debug;
                     break;
                 case "info":
                     filterLevel = LogLevel.Information;
                     break;
+                case "warning":
+                    filterLevel = LogLevel.Warning;
+                    break;
                 case "error":
                     filterLevel = LogLevel.Error;
                     break;
-                case "trace":
-                    filterLevel = LogLevel.Trace;
-                    break;
                 case "critical":
                     filterLevel = LogLevel.Critical;
-                    break;
-                case "warning":
-                    filterLevel = LogLevel.Warning;
                     break;
             }
 
@@ -376,8 +246,8 @@ namespace Lunet.Core
         {
             if (!ConfigFile.Exists)
             {
-                SiteFileSystem.DeleteDirectory(BuildFolder, true);
-                this.Info($"Directory {BuildFolder} deleted");
+                SiteFileSystem.DeleteDirectory(SiteFileSystems.BuildFolder, true);
+                this.Info($"Directory {SiteFileSystems.BuildFolder} deleted");
                 return 0;
             }
 
@@ -405,55 +275,32 @@ namespace Lunet.Core
             Scripts.TryImportScriptStatement(defineStatement, this, ScriptFlags.AllowSiteFunctions, out result);
         }
 
-        public void Create(bool force)
+        public int Create(bool force)
         {
             if (!force && SiteFileSystem.EnumerateFiles(UPath.Root).Any())
             {
                 this.Error($"The destination directory is not empty. Use the --force option to force the creation of an empty website");
-                return;
+                return 1;
             }
 
             SharedMetaFileSystem.CopyDirectory("/newsite", SiteFileSystem,UPath.Root, true);
 
             // TODO: Add created at "folder"
             this.Info($"New website created.");
-        }
-
-        public SiteObject Register<TPlugin>() where TPlugin : ISitePlugin
-        {
-            Register(typeof(TPlugin));
-            return this;
-        }
-
-        public SiteObject Register(Type pluginType)
-        {
-            if (pluginType == null) throw new ArgumentNullException(nameof(pluginType));
-            if (!typeof(ISitePlugin).GetTypeInfo().IsAssignableFrom(pluginType))
-            {
-                throw new ArgumentException("Expecting a plugin type inheriting from ISitePlugin", nameof(pluginType));
-            }
-            _pluginBuilders.RegisterType(pluginType).As<ISitePlugin>().AsSelf().SingleInstance();
-            return this;
+            return 0;
         }
 
         public SiteObject Clone()
         {
-            var siteObject = new SiteObject(LoggerFactory);
-            foreach (var plugin in Plugins)
-            {
-                siteObject.Register(plugin.GetType());
-            }
-
-            siteObject.LogEventId = LogEventId;
-            siteObject.SiteFileSystem = SiteFileSystem;
-            siteObject.OutputFileSystem = OutputFileSystem;
+            var siteObject = new SiteObject(Config);
             siteObject.InitializePlugins();
-
             return siteObject;
         }
 
         public bool Initialize()
         {
+            InitializePlugins();
+
             if (ConfigFile.Exists)
             {
                 if (_isInitialized)
@@ -461,11 +308,13 @@ namespace Lunet.Core
                     return true;
                 }
 
+                // Pre-initialize stage (running before we initialize site object)
+                Content.PreInitialize();
+
                 _isInitialized = true;
 
-                object result;
                 // We then actually load the config
-                return Scripts.TryImportScriptFromFile(ConfigFile, this, ScriptFlags.Expect | ScriptFlags.AllowSiteFunctions, out result);
+                return Scripts.TryImportScriptFromFile(ConfigFile, this, ScriptFlags.Expect | ScriptFlags.AllowSiteFunctions, out _);
             }
 
             this.Error($"The config file [{ConfigFile.Name}] was not found");
@@ -480,11 +329,6 @@ namespace Lunet.Core
             }
 
             var clock = Stopwatch.StartNew();
-            InitializePlugins();
-
-            // Pre-initialize stage (running before we initialize site object)
-            Content.PreInitialize();
-
             if (Initialize())
             {
                 Content.Run();
@@ -498,88 +342,27 @@ namespace Lunet.Core
             }
         }
 
+        public void AddContentFileSystem(IFileSystem contentFileSystem)
+        {
+            Config.FileSystems.AddContentFileSystem(contentFileSystem);
+        }
+
         private void InitializePlugins()
         {
             if (!_pluginInitialized)
             {
-                var container = _pluginBuilders.Build();
+                var pluginBuilders = new ContainerBuilder();
+                pluginBuilders.RegisterInstance(LoggerFactory).As<ILoggerFactory>();
+                pluginBuilders.RegisterInstance(this);
+                foreach (var pluginType in _pluginTypes)
+                {
+                    pluginBuilders.RegisterType(pluginType).As<ISitePlugin>().AsSelf().SingleInstance();
+                }
+                var container = pluginBuilders.Build();
+
                 var plugins = container.Resolve<IEnumerable<ISitePlugin>>().ToList();
                 Plugins.AddRange(plugins);
                 _pluginInitialized = true;
-            }
-        }
-
-        public int Run(string[] args)
-        {
-            if (args == null) throw new ArgumentNullException(nameof(args));
-
-            try
-            {
-                InitializePlugins();
-
-                if (ConfigFile.Exists)
-                {
-                    Initialize();
-                }
-
-                return CommandLine.Execute(args);
-            }
-            catch (Exception ex)
-            {
-                this.Error($"Unexpected error. Reason: {ex.GetReason()}");
-                return 1;
-            }
-            finally
-            {
-                // Force a dispose to make sure the ConsoleLogger is flushed
-                LoggerFactory.Dispose();
-            }
-        }
-
-        private class LoggerProviderIntercept : ILoggerProvider
-        {
-            private readonly SiteObject _site;
-
-            public LoggerProviderIntercept(SiteObject site)
-            {
-                this._site = site;
-            }
-
-            public void Dispose()
-            {
-            }
-
-            public ILogger CreateLogger(string categoryName)
-            {
-                return new LoggerIntercept(_site);
-            }
-        }
-
-        private class LoggerIntercept : ILogger
-        {
-            private readonly SiteObject _site;
-
-            public LoggerIntercept(SiteObject site)
-            {
-                this._site = site;
-            }
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-            {
-                if (logLevel == LogLevel.Critical || logLevel == LogLevel.Error)
-                {
-                    _site.HasErrors = true;
-                }
-            }
-
-            public bool IsEnabled(LogLevel logLevel)
-            {
-                return logLevel == LogLevel.Critical || logLevel == LogLevel.Error;
-            }
-
-            public IDisposable BeginScope<TState>(TState state)
-            {
-                return null;
             }
         }
     }

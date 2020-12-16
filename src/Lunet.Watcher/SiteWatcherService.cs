@@ -3,12 +3,12 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using Lunet.Core;
 using Lunet.Helpers;
-using Microsoft.Extensions.Logging;
 using Zio;
 
 namespace Lunet.Watcher
@@ -23,7 +23,30 @@ namespace Lunet.Watcher
         public List<FileChangedEventArgs> FileEvents { get; }
     }
 
-    public class WatcherPlugin : SitePlugin
+    public class WatcherModule : SiteModule
+    {
+        protected override void Configure(SiteApplication application)
+        {
+            // The run command
+            BuildAndWatchCommand = application.Command("build", newApp =>
+            {
+                newApp.Description = "Builds the website";
+                newApp.HelpOption("-h|--help");
+                var watchOption = newApp.Option("-w|--watch", "Enables watching files and triggering of a new run", CommandOptionType.NoValue);
+
+                newApp.Invoke = () =>
+                {
+                    var buildAndWatch = application.CreateCommandRunner<BuildAndWatchCommandRunner>();
+                    buildAndWatch.Watch = watchOption.HasValue();
+                };
+
+            }, false);
+        }
+
+        public CommandLineApplication BuildAndWatchCommand { get; private set; }
+    }
+
+    public class SiteWatcherService : ISiteService
     {
         private DirectoryEntry _siteDirectory;
 
@@ -38,16 +61,82 @@ namespace Lunet.Watcher
         private FileSystemEventBatchArgs _batchEvents;
         private readonly ManualResetEvent _onClosingEvent;
         private bool _threadStarted = false;
+        private readonly SiteConfiguration _siteConfig;
 
-        public WatcherPlugin(SiteObject site) : base(site)
+        public SiteWatcherService(SiteConfiguration siteConfig)
         {
+            _siteConfig = siteConfig ?? throw new ArgumentNullException(nameof(siteConfig));
             _watchers = new Dictionary<DirectoryEntry, IFileSystemWatcher>();
             _batchLock = new object();
-            _processEventsThread = new Thread(ProcessEvents) {IsBackground = true};
+            _processEventsThread = new Thread(ProcessEvents) { IsBackground = true };
             _clock = new Stopwatch();
             _onClosingEvent = new ManualResetEvent(false);
+            FileSystemEvents = new BlockingCollection<FileSystemEventBatchArgs>();
         }
 
+        public BlockingCollection<FileSystemEventBatchArgs> FileSystemEvents { get; }
+
+        public Func<UPath, bool> IsHandlingPath;
+        
+        public static RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+        {
+            var site = runner.CurrentSite;
+            var runnerResult = RunnerResult.Continue;
+            var watcherService = runner.GetService<SiteWatcherService>();
+
+            if (watcherService == null)
+            {
+                watcherService = new SiteWatcherService(runner.Config)
+                {
+                    IsHandlingPath = site.IsHandlingPath
+                };
+                watcherService.Start();
+                runner.RegisterService(watcherService);
+                runner.Config.Info("File watcher started and waiting for file changes.");
+            }
+            else
+            {
+                watcherService.IsHandlingPath = site.IsHandlingPath;
+            }
+
+            try
+            {
+                var events = watcherService.FileSystemEvents.Take(cancellationToken);
+
+                if (runner.Config.CanTrace())
+                {
+                    runner.Config.Trace($"Received file events [{events.FileEvents.Count}]");
+                }
+
+                runnerResult = RunnerResult.Continue;
+            }
+            catch (OperationCanceledException)
+            {
+                watcherService.Dispose();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    runnerResult = RunnerResult.Exit;
+                }
+            }
+
+            return runnerResult;
+        }
+        
+        public void Start()
+        {
+            if (_processEventsThread.IsAlive)
+            {
+                return;
+            }
+
+            _siteDirectory = new DirectoryEntry(_siteConfig.FileSystems.FileSystem, UPath.Root);
+
+            WatchFolder(_siteDirectory);
+
+            // Starts the thread
+            _processEventsThread.Start();
+        }
+        
         private void ProcessEvents()
         {
             _threadStarted = true;
@@ -59,6 +148,7 @@ namespace Lunet.Watcher
                 {
                     break;
                 }
+
 
                 lock (_batchLock)
                 {
@@ -87,12 +177,12 @@ namespace Lunet.Watcher
                     // Squash can discard events (e.g if files excluded)
                     if (batchEventsCopy.FileEvents.Count > 0)
                     {
-                        FileSystemEvents?.Invoke(this, batchEventsCopy);
+                        FileSystemEvents.Add(batchEventsCopy);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Site.Error(ex, $"Unexpected error on SiteWatcher callback. Reason: {ex.GetReason()}");
+                    _siteConfig.Error(ex, $"Unexpected error on SiteWatcher callback. Reason: {ex.GetReason()}");
                 }
             }
 
@@ -124,9 +214,9 @@ namespace Lunet.Watcher
                 }
 
                 args.FileEvents.Add(e);
-                if (Site.CanInfo())
+                if (_siteConfig.CanInfo())
                 {
-                    Site.Info($"File event occured: {e.ChangeType} -> {e.FullPath}");
+                    _siteConfig.Info($"File event occured: {e.ChangeType} -> {e.FullPath}");
                 }
             }
         }
@@ -139,7 +229,7 @@ namespace Lunet.Watcher
                 FullPath = args.FullPath;
                 Args = args;
             }
-            
+
             /// <summary>
             /// The filesystem originating this change.
             /// </summary>
@@ -178,33 +268,14 @@ namespace Lunet.Watcher
             }
         }
 
-
-
-        public event EventHandler<FileSystemEventBatchArgs> FileSystemEvents;
-
-        public void Start()
-        {
-            if (_processEventsThread.IsAlive)
-            {
-                return;
-            }
-            _siteDirectory = new DirectoryEntry(Site.FileSystem, UPath.Root);
-
-            WatchFolder(_siteDirectory);
-
-            // Starts the thread
-            _processEventsThread.Start();
-        }
-
-
         private bool IsPathToWatch(UPath path)
         {
-            return path == Site.ConfigFile.Path || Site.IsHandlingPath(path);
+            return path == _siteConfig.FileSystems.ConfigFile.Path || (IsHandlingPath?.Invoke(path) ?? false);
         }
 
         private void WatchFolder(DirectoryEntry entry)
         {
-            bool isEntryLunet = entry.Name == SiteObject.LunetFolderName;
+            bool isEntryLunet = entry.Name == SiteFileSystems.LunetFolderName;
 
             if (IsPathToWatch(entry.Path))
             {
@@ -215,11 +286,11 @@ namespace Lunet.Watcher
             {
                 if (isEntryLunet)
                 {
-                    if (directory.Path.IsInDirectory(SiteObject.BuildFolder, true) || directory.Name.StartsWith("new"))
+                    if (directory.Path.IsInDirectory(SiteFileSystems.BuildFolder, true) || directory.Name.StartsWith("new"))
                     {
-                        if (Site.CanTrace())
+                        if (_siteConfig.CanTrace())
                         {
-                            Site.Trace($"Skipping {directory.FullName}");
+                            _siteConfig.Trace($"Skipping {directory.FullName}");
                         }
                         continue;
                     }
@@ -246,11 +317,13 @@ namespace Lunet.Watcher
                 }
                 _watchers.Clear();
             }
+
+            _siteConfig.Info("File watcher stopped.");
         }
 
         private bool IsOutputDirectory(UPath path)
         {
-            return path.IsInDirectory(SiteObject.BuildFolder, true);
+            return path.IsInDirectory(SiteFileSystems.BuildFolder, true);
         }
 
         private void CreateFileWatch(DirectoryEntry directory)
@@ -268,9 +341,9 @@ namespace Lunet.Watcher
                     return;
                 }
 
-                if (Site.CanTrace())
+                if (_siteConfig.CanTrace())
                 {
-                    Site.Trace($"Tracking file system changed for directory [{directory}]");
+                    _siteConfig.Trace($"Tracking file system changed for directory [{directory}]");
                 }
 
                 watcher = directory.FileSystem.Watch(directory.Path);
@@ -304,9 +377,9 @@ namespace Lunet.Watcher
 
         private void DisposeWatcher(IFileSystemWatcher watcher)
         {
-            if (Site.CanTrace())
+            if (_siteConfig.CanTrace())
             {
-                Site.Trace($"Untrack changes from [{watcher.Path}]");
+                _siteConfig.Trace($"Untrack changes from [{watcher.Path}]");
             }
 
             watcher.EnableRaisingEvents = false;
@@ -349,7 +422,7 @@ namespace Lunet.Watcher
                         }
                         break;
                     case WatcherChangeTypes.Renamed:
-                        var renamed = (FileRenamedEventArgs) e;
+                        var renamed = (FileRenamedEventArgs)e;
                         if (isDirectory)
                         {
                             var previousDirectory = new DirectoryEntry(renamed.FileSystem, renamed.OldFullPath);
@@ -380,12 +453,18 @@ namespace Lunet.Watcher
                 _batchEvents.FileEvents.Add(e);
             }
         }
-        
+
         private void WatcherOnError(object sender, FileSystemErrorEventArgs errorEventArgs)
         {
             // Not sure if we have something to do with the errors, so don't log them for now
             var watcher = sender as IFileSystemWatcher;
-            // Site.Trace($"Expection occured for directory watcher [{watcher?.Path}]: {errorEventArgs.GetException().GetReason()}");
+            // _config.Trace($"Expection occured for directory watcher [{watcher?.Path}]: {errorEventArgs.GetException().GetReason()}");
+        }
+
+        public void Dispose()
+        {
+            Stop();
+            _onClosingEvent?.Dispose();
         }
     }
 }

@@ -6,6 +6,10 @@ using Lunet.Core;
 
 namespace Lunet.Summarizer
 {
+    public class SummarizerModule : SiteModule<SummarizerPlugin>
+    {
+    }
+    
     public class SummarizerPlugin : SitePlugin
     {
         public SummarizerPlugin(SiteObject site) : base(site)

@@ -490,7 +490,7 @@ namespace Lunet.Core
                 {
                     yield return (FileEntry) entry;
                 }
-                else if (entry.Name != SiteObject.LunetFolderName )
+                else if (entry.Name != SiteFileSystems.LunetFolderName )
                 {
                     directoryQueue.Enqueue((DirectoryEntry)entry);
                 }
