@@ -41,11 +41,6 @@ namespace Lunet.Core
             MetaFileSystem = Config.FileSystems.MetaFileSystem;
             ConfigFile = Config.FileSystems.ConfigFile;
 
-            foreach (var define in Config.Defines)
-            {
-                AddDefine(define);
-            }
-
             LoggerFactory.LogFilter = LogFilter;
 
             StaticFiles = new PageCollection();
@@ -86,6 +81,11 @@ namespace Lunet.Core
             SetValue(SiteVariables.Excludes, Excludes, true);
             SetValue(SiteVariables.Includes, Includes, true);
             SetValue(SiteVariables.Pages, Pages, true);
+
+            foreach (var define in Config.Defines)
+            {
+                AddDefine(define);
+            }
         }
 
         public SiteConfiguration Config { get; }
