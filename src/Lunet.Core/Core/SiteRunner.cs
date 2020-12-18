@@ -73,8 +73,14 @@ namespace Lunet.Core
                     {
                         break;
                     }
-
+                    
                     CurrentSite = CurrentSite.Clone();
+
+                    // Force collection if requested
+                    if (Config.ShouldRunGarbageCollectorOnReload)
+                    {
+                        GC.Collect();
+                    }
                 }
 
                 consoleLifetime.SetExitedGracefully();

@@ -29,7 +29,7 @@ namespace Lunet.Core
             LoggerFactory = loggerFactory ?? new SiteLoggerFactory();
             CommandRunners = new List<ISiteCommandRunner>();
             Log = LoggerFactory.CreateLogger("lunet");
-            ConsoleShutdown = true;
+            ShouldRunGarbageCollectorOnReload = true;
         }
 
         public SiteFileSystems FileSystems { get; }
@@ -46,8 +46,8 @@ namespace Lunet.Core
 
         public List<ISiteCommandRunner> CommandRunners { get; }
 
-
-        public bool ConsoleShutdown { get; set; }
+        // TODO: make this configurable from the command line
+        public bool ShouldRunGarbageCollectorOnReload { get; set; }
 
         public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : SitePlugin
         {
