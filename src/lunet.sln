@@ -64,6 +64,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Rss", "Lunet.Rss\Lune
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Summarizer", "Lunet.Summarizer\Lunet.Summarizer.csproj", "{4C6145FA-ED5F-4785-B434-CD4E801254C9}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Api.DotNet.Extractor", "Lunet.Api.DotNet.Extractor\Lunet.Api.DotNet.Extractor.csproj", "{A4CE9FD9-A74F-403F-9FF5-9E13709B9345}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Api.DotNet.Extractor.CodeGen", "Lunet.Api.DotNet.Extractor.CodeGen\Lunet.Api.DotNet.Extractor.CodeGen.csproj", "{9636C21E-9567-409A-B450-D468799042B4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lunet.Api.DotNet", "Lunet.Api.DotNet\Lunet.Api.DotNet.csproj", "{65EF8FF9-26DC-44F9-849F-F2EAF9CBDD20}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A4CE9FD9-A74F-403F-9FF5-9E13709B9345} = {A4CE9FD9-A74F-403F-9FF5-9E13709B9345}
+	EndProjectSection
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Api", "Lunet.Api\Lunet.Api.csproj", "{8E09B3CD-76D2-4DBF-88B1-3BAEE913476A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Application", "Lunet.Application\Lunet.Application.csproj", "{11D59EB1-68C6-4DD1-A920-8F3F3922ED79}"
@@ -174,6 +183,18 @@ Global
 		{4C6145FA-ED5F-4785-B434-CD4E801254C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C6145FA-ED5F-4785-B434-CD4E801254C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4C6145FA-ED5F-4785-B434-CD4E801254C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4CE9FD9-A74F-403F-9FF5-9E13709B9345}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4CE9FD9-A74F-403F-9FF5-9E13709B9345}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4CE9FD9-A74F-403F-9FF5-9E13709B9345}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4CE9FD9-A74F-403F-9FF5-9E13709B9345}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9636C21E-9567-409A-B450-D468799042B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9636C21E-9567-409A-B450-D468799042B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9636C21E-9567-409A-B450-D468799042B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9636C21E-9567-409A-B450-D468799042B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65EF8FF9-26DC-44F9-849F-F2EAF9CBDD20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65EF8FF9-26DC-44F9-849F-F2EAF9CBDD20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65EF8FF9-26DC-44F9-849F-F2EAF9CBDD20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65EF8FF9-26DC-44F9-849F-F2EAF9CBDD20}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8E09B3CD-76D2-4DBF-88B1-3BAEE913476A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8E09B3CD-76D2-4DBF-88B1-3BAEE913476A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8E09B3CD-76D2-4DBF-88B1-3BAEE913476A}.Release|Any CPU.ActiveCfg = Release|Any CPU

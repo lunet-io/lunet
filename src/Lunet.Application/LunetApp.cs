@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Lunet.Api;
+using Lunet.Api.DotNet;
 using Lunet.Attributes;
 using Lunet.Bundles;
 using Lunet.Cards;
@@ -33,6 +35,7 @@ namespace Lunet
             Config = config ?? new SiteConfiguration();
             Modules = new OrderedList<SiteModule>()
             {
+                new ApiModule(),
                 new BundleModule(),
                 new MenuModule(),
                 new ExtendsModule(),

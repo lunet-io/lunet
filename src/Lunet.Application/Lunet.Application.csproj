@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Lunet.Api.DotNet\Lunet.Api.DotNet.csproj" />
+    <ProjectReference Include="..\Lunet.Api\Lunet.Api.csproj" />
     <ProjectReference Include="..\Lunet.Attributes\Lunet.Attributes.csproj" />
     <ProjectReference Include="..\Lunet.Bundles\Lunet.Bundles.csproj" />
     <ProjectReference Include="..\Lunet.Cards\Lunet.Cards.csproj" />

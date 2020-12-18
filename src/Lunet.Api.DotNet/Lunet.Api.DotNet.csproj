@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="shared\api\dotnet\Lunet.Api.DotNet.Extractor.props" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Lunet.Api.DotNet.Extractor\ExtractorHelper.cs" Link="ExtractorHelper.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lunet.Api\Lunet.Api.csproj" />
+    <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
+    <ProjectReference Include="..\Lunet.Json\Lunet.Json.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Lunet.Api.DotNet.Extractor\bin\$(Configuration)\netstandard2.0\Lunet.Api.DotNet.Extractor.dll" Link="shared\api\dotnet\Lunet.Api.DotNet.Extractor.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="shared\api\dotnet\Lunet.Api.DotNet.Extractor.props">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

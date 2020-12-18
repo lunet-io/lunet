@@ -1,0 +1,13 @@
+﻿<Project>
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="IntermediateOutputPath" />
+    <CompilerVisibleProperty Include="ProjectDir" />
+    <CompilerVisibleProperty Include="GenerateDocumentationFile" />
+    <Analyzer Include="$(MSBuildThisFileDirectory)Lunet.Api.DotNet.Extractor.dll"/>
+  </ItemGroup>
+</Project>
