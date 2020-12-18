@@ -53,20 +53,20 @@ namespace Lunet.Server
                     {
                         SiteServerService.SetupLiveReloadClient(site);
                     }
-                }
 
-                // Build the files
-                site.Build();
-                
-                // Start or restart the web server
-                if (needRestart)
-                {
-                    // Run the web server if necessary
-                    serverService.StartOrUpdate(cancellationToken);
-                }
-                else if (serverService.LiveReload)
-                {
-                    serverService.NotifyReloadToClients();
+                    // Build the files
+                    site.Build();
+
+                    // Start or restart the web server
+                    if (needRestart)
+                    {
+                        // Run the web server if necessary
+                        serverService.StartOrUpdate(cancellationToken);
+                    }
+                    else if (serverService.LiveReload)
+                    {
+                        serverService.NotifyReloadToClients();
+                    }
                 }
 
                 // Watch events
