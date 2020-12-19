@@ -218,7 +218,7 @@ namespace Microsoft.DocAsCode.DataContracts.ManagedReference
 
         [YamlMember(Alias = Constants.PropertyName.Type)]
         [JsonProperty(Constants.PropertyName.Type)]
-        public MemberType? Type { get; set; }
+        public MemberType Type { get; set; }
 
         [YamlMember(Alias = Constants.PropertyName.Source)]
         [JsonProperty(Constants.PropertyName.Source)]

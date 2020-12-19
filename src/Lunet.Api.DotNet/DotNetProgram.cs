@@ -13,11 +13,11 @@ namespace Lunet.Api.DotNet
 {
     public class DotNetProgramException : Exception
     {
-        public DotNetProgramException(string? message) : base(message)
+        public DotNetProgramException(string message) : base(message)
         {
         }
 
-        public DotNetProgramException(string? message, Exception? innerException) : base(message, innerException)
+        public DotNetProgramException(string message, Exception innerException) : base(message, innerException)
         {
         }
     }
