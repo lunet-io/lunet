@@ -17,7 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
-    <ProjectReference Include="..\Lunet.Resources\Lunet.Resources.csproj" />
   </ItemGroup>
 
 </Project>

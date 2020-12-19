@@ -23,8 +23,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Scss", "Lunet.Scss\Lu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Layouts", "Lunet.Layouts\Lunet.Layouts.csproj", "{ABFE0E15-F643-4C84-A0C6-9225724284D2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Feeds", "Lunet.Feeds\Lunet.Feeds.csproj", "{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Tests", "Lunet.Tests\Lunet.Tests.csproj", "{C0B22D93-8761-47FC-9D0D-B95250AB07CE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Yaml", "Lunet.Yaml\Lunet.Yaml.csproj", "{12D998DE-509A-4A63-82D5-1670FAB7C06A}"
@@ -123,10 +121,6 @@ Global
 		{ABFE0E15-F643-4C84-A0C6-9225724284D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ABFE0E15-F643-4C84-A0C6-9225724284D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABFE0E15-F643-4C84-A0C6-9225724284D2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4761DDC-D0F6-4FBC-B4FC-89F27233BE1C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0B22D93-8761-47FC-9D0D-B95250AB07CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
