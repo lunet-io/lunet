@@ -57,11 +57,12 @@ namespace Lunet.Core
 
             Scripts = new ScriptingPlugin(this);
 
+            Builtins = new BuiltinsObject(this);
+
             Content = new ContentPlugin(this);
 
             Plugins = new OrderedList<ISitePlugin>();
 
-            Builtins = new BuiltinsObject(this);
             ForceExcludes = new GlobCollection()
             {
                 $"**/{SiteFileSystems.LunetFolderName}/{SiteFileSystems.BuildFolderName}/**",

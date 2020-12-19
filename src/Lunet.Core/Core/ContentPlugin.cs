@@ -37,6 +37,7 @@ namespace Lunet.Core
             filesWritten = new Dictionary<FileEntry, FileEntry>();
             totalDuration = new Stopwatch();
 
+
             OrderLayoutTypes = new List<string>();
 
             BeforeInitializingProcessors = new OrderedList<ISiteProcessor>();
@@ -47,6 +48,9 @@ namespace Lunet.Core
             BeforeProcessingProcessors = new OrderedList<ISiteProcessor>();
             ContentProcessors = new OrderedList<IContentProcessor>();
             AfterProcessingProcessors = new OrderedList<ISiteProcessor>();
+            
+            Finder = new PageFinderProcessor(this);
+            AfterLoadingProcessors.Add(Finder); // Make uid available before running Markdown content
         }
 
         private ScriptingPlugin Scripts { get; }
@@ -69,6 +73,8 @@ namespace Lunet.Core
         public OrderedList<IContentProcessor> ContentProcessors { get; }
         
         public OrderedList<ISiteProcessor> AfterProcessingProcessors { get; }
+        
+        public PageFinderProcessor Finder { get; }
 
         private void Initialize()
         {
@@ -105,6 +111,11 @@ namespace Lunet.Core
                     return;
                 }
 
+                // Make sure that all collections are cleared before building the content
+                Site.StaticFiles.Clear();
+                Site.Pages.Clear();
+                Site.DynamicPages.Clear();
+                
                 // Before loading content
                 if (!TryRunProcess(BeforeLoadingProcessors, ProcessingStage.BeforeLoadingContent))
                 {

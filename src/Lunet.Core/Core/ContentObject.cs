@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -10,65 +9,16 @@ using Scriban.Functions;
 using Scriban.Helpers;
 using Scriban.Parsing;
 using Scriban.Runtime;
-using Scriban.Syntax;
 using Zio;
 
 namespace Lunet.Core
 {
-    public abstract class TemplateObject : DynamicObject
-    {
-        protected TemplateObject(SiteObject site, ContentObjectType objectType, FileEntry sourceFileInfo = null, ScriptInstance scriptInstance = null, UPath? path = null)
-        {
-            Site = site ?? throw new ArgumentNullException(nameof(site));
-            SourceFile = sourceFileInfo;
-            FrontMatter = scriptInstance?.FrontMatter;
-            Script = scriptInstance?.Template;
-            ObjectType = objectType;
-            Dependencies = new List<ContentDependency>();
-
-
-            Path = path ?? SourceFile?.Path ?? null;
-            if (SourceFile != null)
-            {
-                Length = SourceFile.Length;
-                Extension = SourceFile.ExtensionWithDot?.ToLowerInvariant();
-                ModifiedTime = SourceFile.LastWriteTime;
-            }
-        }
-
-        public SiteObject Site { get; }
-
-        public FileEntry SourceFile { get; }
-
-        public long Length { get; }
-
-        public ContentObjectType ObjectType { get; }
-
-        public IFrontMatter FrontMatter { get; set; }
-
-        public UPath Path { get; }
-
-        public DateTime ModifiedTime { get; }
-
-        public string Extension { get; }
-
-        /// <summary>
-        /// Gets or sets the script attached to this page if any.
-        /// </summary>
-        public ScriptPage Script { get; }
-
-        public ScriptObject ScriptObjectLocal { get; set; }
-
-        public bool HasFrontMatter => FrontMatter != null;
-
-        public List<ContentDependency> Dependencies { get; }
-    }
-    
-
+    /// <summary>
+    /// Base class for all content object.
+    /// </summary>
     public abstract class ContentObject : TemplateObject
     {
-        private ContentType contentType;
-
+        private ContentType _contentType;
 
         protected ContentObject(SiteObject site, ContentObjectType objectType, FileEntry sourceFileInfo = null, ScriptInstance scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
         {
@@ -122,13 +72,13 @@ namespace Lunet.Core
         /// </summary>
         public ContentType ContentType
         {
-            get { return contentType; }
+            get { return _contentType; }
 
             set
             {
-                contentType = value;
+                _contentType = value;
                 // Special case, ContentType is seen as readonly in scripts
-                SetValue(PageVariables.ContentType, contentType.Name, true);
+                SetValue(PageVariables.ContentType, _contentType.Name, true);
             }
         }
 
@@ -136,6 +86,12 @@ namespace Lunet.Core
         {
             get => GetSafeValue<string>(PageVariables.Url);
             set => this[PageVariables.Url] = value;
+        }
+        
+        public string Uid
+        {
+            get => GetSafeValue<string>(PageVariables.Uid);
+            set => this[PageVariables.Uid] = value;
         }
 
         public DateTime Date

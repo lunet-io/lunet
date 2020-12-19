@@ -10,6 +10,8 @@ namespace Lunet.Core
 
         public const string Url = "url";
 
+        public const string Uid = "uid";
+
         public const string Date = "date";
 
         public const string Title = "title";
