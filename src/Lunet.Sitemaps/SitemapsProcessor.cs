@@ -76,7 +76,10 @@ namespace Lunet.Sitemaps
                 LastModified = file.ModifiedTime.Ticks == 0 ? DateTime.Now : file.ModifiedTime
             };
 
-            _urlSet.Urls.Add(sitemapUrl);
+            lock (_urlSet)
+            {
+                _urlSet.Urls.Add(sitemapUrl);
+            }
 
             return ContentResult.Continue;
         }

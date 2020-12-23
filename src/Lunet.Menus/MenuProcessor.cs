@@ -82,19 +82,23 @@ namespace Lunet.Menus
         {
             Debug.Assert(stage == ContentProcessingStage.Running);
 
-            _pages.Add(page.Path, page);
-            
-            if (page.Path.GetName() != MenuFileName)
+            lock (_menus)
             {
-                return ContentResult.Continue;
-            }
-            
-            // The menu file is not copied to the output!
-            page.Discard = true;
+                _pages.Add(page.Path, page);
+                
+                if (page.Path.GetName() != MenuFileName)
+                {
+                    return ContentResult.Continue;
+                }
+                
+                // The menu file is not copied to the output!
+                page.Discard = true;
 
-            var rawMenu = YamlUtil.FromText(page.SourceFile.ReadAllText(), page.SourceFile.FullName);
-            DecodeMenu(rawMenu, page);
-            
+                var rawMenu = YamlUtil.FromText(page.SourceFile.ReadAllText(), page.SourceFile.FullName);
+                // Lock the menus as we can work concurrently
+                DecodeMenu(rawMenu, page);
+            }
+
             return ContentResult.Break;
         }
 

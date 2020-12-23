@@ -56,11 +56,15 @@ namespace Lunet.Statistics
             if (plugin == null) throw new ArgumentNullException(nameof(plugin));
 
             PluginStat stat;
-            if (!Plugins.TryGetValue(plugin, out stat))
+            lock (Plugins)
             {
-                stat = new PluginStat(plugin);
-                Plugins.Add(plugin, stat);
+                if (!Plugins.TryGetValue(plugin, out stat))
+                {
+                    stat = new PluginStat(plugin);
+                    Plugins.Add(plugin, stat);
+                }
             }
+            
             return stat;
         }
 

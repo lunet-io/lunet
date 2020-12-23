@@ -16,26 +16,32 @@ using Lunet.Scripts;
 using Scriban.Parsing;
 using Scriban.Runtime;
 using Zio;
+using Zio.FileSystems;
 
 namespace Lunet.Core
 {
     public class ContentPlugin : SitePlugin
     {
-        private readonly HashSet<DirectoryEntry> previousOutputDirectories;
-        private readonly HashSet<FileEntry> previousOutputFiles;
-        private readonly Dictionary<FileEntry, FileEntry> filesWritten;
+        /// <summary>
+        /// The lock for tracking related dictionaries
+        /// </summary>
+        private readonly object _lockForTracking = new object();
+        private readonly HashSet<DirectoryEntry> _trackingPreviousOutputDirectories;
+        private readonly HashSet<FileEntry> _trackingPreviousOutputFiles;
+        private readonly Dictionary<FileEntry, FileEntry> _trackingFilesWritten;
+        
         private readonly Dictionary<string, PageCollection> _mapTypeToPages;
-        private bool isInitialized;
-        private readonly Stopwatch totalDuration;
+        private bool _isInitialized;
+        private readonly Stopwatch _totalDuration;
 
         public ContentPlugin(SiteObject site) : base(site)
         {
-            previousOutputDirectories = new HashSet<DirectoryEntry>();
-            previousOutputFiles = new HashSet<FileEntry>();
+            _trackingPreviousOutputDirectories = new HashSet<DirectoryEntry>();
+            _trackingPreviousOutputFiles = new HashSet<FileEntry>();
             Scripts = Site.Scripts;
-            filesWritten = new Dictionary<FileEntry, FileEntry>();
+            _trackingFilesWritten = new Dictionary<FileEntry, FileEntry>();
             _mapTypeToPages = new Dictionary<string, PageCollection>();
-            totalDuration = new Stopwatch();
+            _totalDuration = new Stopwatch();
             
             // Setup layout types
             LayoutTypes = new ContentLayoutTypes();
@@ -77,6 +83,8 @@ namespace Lunet.Core
         
         public PageFinderProcessor Finder { get; }
 
+        private int MaxDegreeOfParallelism => Site.Config.SingleThreaded ? 1 : DataflowBlockOptions.Unbounded;
+
         /// <summary>
         /// Determines whether if the layout type is a list layout.
         /// </summary>
@@ -90,19 +98,19 @@ namespace Lunet.Core
         
         private void Initialize()
         {
-            totalDuration.Restart();
+            _totalDuration.Restart();
 
             // We collect all previous file entries in the output directory
             CollectPreviousFileEntries();
 
-            filesWritten.Clear();
+            _trackingFilesWritten.Clear();
             Site.Statistics.Reset();
 
-            if (isInitialized)
+            if (_isInitialized)
             {
                 return;
             }
-            isInitialized = true;
+            _isInitialized = true;
         }
 
         public void PreInitialize()
@@ -174,37 +182,11 @@ namespace Lunet.Core
             finally
             {
                 // Update statistics
-                totalDuration.Stop();
-                Site.Statistics.TotalTime = totalDuration.Elapsed;
+                _totalDuration.Stop();
+                Site.Statistics.TotalTime = _totalDuration.Elapsed;
             }
         }
         
-        public bool TryCopyFile(FileEntry fromFile, UPath outputPath)
-        {
-            if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
-            outputPath.AssertAbsolute(nameof(outputPath));
-
-            var outputFile = new FileEntry(Site.OutputFileSystem, outputPath);
-            TrackDestination(outputFile, fromFile);
-
-            if (!outputFile.Exists || (fromFile.LastWriteTime > outputFile.LastWriteTime))
-            {
-                CreateDirectory(outputFile.Directory);
-
-                if (Site.CanTrace())
-                {
-                    Site.Trace($"Copy file from [{fromFile} to [{outputPath}]");
-                }
-
-                fromFile.CopyTo(outputFile.FullName, true);
-                return true;
-                // Update statistics
-                //stat.Static = true;
-                //stat.OutputBytes += fromFile.Length;
-            }
-            return false;
-        }
-
         public bool TryCopyContentToOutput(ContentObject fromFile, UPath outputPath)
         {
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
@@ -287,29 +269,33 @@ namespace Lunet.Core
         {
             if (outputFile == null) throw new ArgumentNullException(nameof(outputFile));
 
-            if (sourceFile != null)
+            lock (_lockForTracking)
             {
-                FileEntry previousSourceFile;
-                if (filesWritten.TryGetValue(outputFile, out previousSourceFile))
+                if (sourceFile != null)
                 {
-                    Site.Error($"The content [{previousSourceFile}] and [{sourceFile}] have the same Url output [{sourceFile}]");
+                    FileEntry previousSourceFile;
+                    if (_trackingFilesWritten.TryGetValue(outputFile, out previousSourceFile))
+                    {
+                        Site.Error($"The content [{previousSourceFile}] and [{sourceFile}] have the same Url output [{sourceFile}]");
+                    }
+                    else
+                    {
+                        _trackingFilesWritten.Add(outputFile, sourceFile);
+                    }
                 }
-                else
-                {
-                    filesWritten.Add(outputFile, sourceFile);
-                }
-            }
 
-            // If the directory is used for a new file, remove it from the list of previous directories
-            // Note that we remove even if things are not working after, so that previous files are kept 
-            // in case of an error
-            var previousDir = outputFile.Directory;
-            while (previousDir != null)
-            {
-                previousOutputDirectories.Remove(previousDir);
-                previousDir = previousDir.Parent;
+                // If the directory is used for a new file, remove it from the list of previous directories
+                // Note that we remove even if things are not working after, so that previous files are kept 
+                // in case of an error
+                var previousDir = outputFile.Directory;
+                while (previousDir != null)
+                {
+                    _trackingPreviousOutputDirectories.Remove(previousDir);
+                    previousDir = previousDir.Parent;
+                }
+
+                _trackingPreviousOutputFiles.Remove(outputFile);
             }
-            previousOutputFiles.Remove(outputFile);
         }
 
         private bool TryRunProcess(IEnumerable<ISiteProcessor> processors, ProcessingStage stage)
@@ -379,12 +365,27 @@ namespace Lunet.Core
         {
             if (pages == null) throw new ArgumentNullException(nameof(pages));
             
+            // Process the content of all pages
+            var pageActionBlock = new ActionBlock<ContentObject>(page =>
+                {
+                    var pendingPageProcessors = new OrderedList<IContentProcessor>();
+                    TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
+                },
+                new ExecutionDataflowBlockOptions()
+                {
+                    EnsureOrdered = false,
+                    MaxDegreeOfParallelism = MaxDegreeOfParallelism
+                }
+            );
+
             // Process pages in order of their layout types
-            var pendingPageProcessors = new OrderedList<IContentProcessor>();
             foreach (var page in pages)
             {
-                TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
+                pageActionBlock.Post(page);
             }
+            
+            pageActionBlock.Complete();
+            pageActionBlock.Completion.Wait();
         }
 
         private void ResetPagesPerLayoutType()
@@ -427,10 +428,6 @@ namespace Lunet.Core
         {
             Site.StaticFiles.Clear();
             Site.Pages.Clear();
-
-            // Uncomment to dispatch on multithread
-            //const int MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded;
-            const int MaxDegreeOfParallelism = 1;
 
             // Load a content asynchronously
             var contentLoaderBlock = new TransformBlock<(FileEntry, int), ContentObject>(
@@ -532,9 +529,17 @@ namespace Lunet.Core
                     continue;
                 }
 
-                if (entry is FileEntry)
+                if (entry is FileEntry fileEntry)
                 {
-                    yield return (FileEntry) entry;
+                    // Optimization, if an entry is coming from the aggregate, let's try to return the entry from the underlying system directly
+                    if (fileEntry.FileSystem is AggregateFileSystem aggregateFs)
+                    {
+                        yield return (FileEntry) aggregateFs.FindFirstFileSystemEntry(entry.Path);
+                    }
+                    else
+                    {
+                        yield return (FileEntry) entry;
+                    }
                 }
                 else if (entry.Name != SiteFileSystems.LunetFolderName )
                 {
@@ -759,7 +764,7 @@ namespace Lunet.Core
         private void CleanupOutputFiles()
         {
             // Remove all previous files that have not been generated
-            foreach (var outputFile in previousOutputFiles)
+            foreach (var outputFile in _trackingPreviousOutputFiles)
             {
                 try
                 {
@@ -777,7 +782,7 @@ namespace Lunet.Core
                 }
             }
 
-            foreach (var outputDirectory in previousOutputDirectories)
+            foreach (var outputDirectory in _trackingPreviousOutputDirectories)
             {
                 try
                 {
@@ -799,8 +804,8 @@ namespace Lunet.Core
         private void CollectPreviousFileEntries()
         {
             var outputDirectoryInfo = new DirectoryEntry(Site.OutputFileSystem, UPath.Root);
-            previousOutputDirectories.Clear();
-            previousOutputFiles.Clear();
+            _trackingPreviousOutputDirectories.Clear();
+            _trackingPreviousOutputFiles.Clear();
 
             if (!outputDirectoryInfo.Exists)
             {
@@ -816,14 +821,14 @@ namespace Lunet.Core
 
                 if (!Equals(nextDirectory, outputDirectoryInfo))
                 {
-                    previousOutputDirectories.Add(nextDirectory);
+                    _trackingPreviousOutputDirectories.Add(nextDirectory);
                 }
 
                 foreach (var entry in nextDirectory.EnumerateEntries())
                 {
                     if (entry is FileEntry)
                     {
-                        previousOutputFiles.Add(((FileEntry)entry));
+                        _trackingPreviousOutputFiles.Add(((FileEntry)entry));
                     }
                     else if (entry is DirectoryEntry)
                     {

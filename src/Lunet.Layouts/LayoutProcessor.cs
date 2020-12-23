@@ -139,47 +139,50 @@ namespace Lunet.Layouts
 
         private LayoutContentObject GetLayout(string layoutName, string layoutType, ContentType contentType)
         {
-            LayoutContentObject layoutObject;
-
-            layoutType ??= ContentLayoutTypes.Single;
-            var layoutKey = new LayoutKey(layoutName, layoutType, contentType);
-            if (_layouts.TryGetValue(layoutKey, out layoutObject))
+            lock (_layouts)
             {
-                return layoutObject;
-            }
+                LayoutContentObject layoutObject;
 
-            var layoutDelegate = FindLayoutPaths(layoutType);
-            if (layoutDelegate != null)
-            {
-                // Get all possible extensions for the specific content type
-                var extensions = Site.ContentTypes.GetExtensionsByContentType(contentType);
-                var layoutRoot = UPath.Root / LayoutFolderName;
-                foreach (var layoutPath in layoutDelegate(Site, layoutName, layoutType))
+                layoutType ??= ContentLayoutTypes.Single;
+                var layoutKey = new LayoutKey(layoutName, layoutType, contentType);
+                if (_layouts.TryGetValue(layoutKey, out layoutObject))
                 {
-                    foreach (var extension in extensions)
+                    return layoutObject;
+                }
+
+                var layoutDelegate = FindLayoutPaths(layoutType);
+                if (layoutDelegate != null)
+                {
+                    // Get all possible extensions for the specific content type
+                    var extensions = Site.ContentTypes.GetExtensionsByContentType(contentType);
+                    var layoutRoot = UPath.Root / LayoutFolderName;
+                    foreach (var layoutPath in layoutDelegate(Site, layoutName, layoutType))
                     {
-                        var fullLayoutPath = layoutRoot / layoutPath.FullName + extension;
-                        var entry = new FileEntry(Site.MetaFileSystem, fullLayoutPath);
-                        if (entry.Exists)
+                        foreach (var extension in extensions)
                         {
-                            var scriptLayoutText = entry.ReadAllText();
-                            var scriptInstance = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
-
-                            if (scriptInstance.HasErrors)
+                            var fullLayoutPath = layoutRoot / layoutPath.FullName + extension;
+                            var entry = new FileEntry(Site.MetaFileSystem, fullLayoutPath);
+                            if (entry.Exists)
                             {
-                                goto exit;
-                            }
+                                var scriptLayoutText = entry.ReadAllText();
+                                var scriptInstance = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
 
-                            layoutObject = new LayoutContentObject(Site, entry, scriptInstance);
-                            
-                            // We run first the front matter on the layout
-                            if (layoutObject.FrontMatter != null && !Site.Scripts.TryRunFrontMatter(layoutObject.FrontMatter, layoutObject))
-                            {
-                                goto exit;
-                            }
+                                if (scriptInstance.HasErrors)
+                                {
+                                    goto exit;
+                                }
 
-                            _layouts.Add(layoutKey, layoutObject);
-                            return layoutObject;
+                                layoutObject = new LayoutContentObject(Site, entry, scriptInstance);
+
+                                // We run first the front matter on the layout
+                                if (layoutObject.FrontMatter != null && !Site.Scripts.TryRunFrontMatter(layoutObject.FrontMatter, layoutObject))
+                                {
+                                    goto exit;
+                                }
+
+                                _layouts.Add(layoutKey, layoutObject);
+                                return layoutObject;
+                            }
                         }
                     }
                 }
