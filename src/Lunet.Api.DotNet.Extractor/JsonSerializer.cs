@@ -3,8 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Microsoft.DocAsCode.DataContracts.ManagedReference;
 
 namespace Lunet.Api.DotNet.Extractor
 {
@@ -171,15 +174,25 @@ namespace Lunet.Api.DotNet.Extractor
 
             StartArray();
             bool isFirst = true;
-            foreach (var item in values)
+            try
             {
-                if (!isFirst)
+                foreach (var item in values)
                 {
-                    WriteOutput(',');
-                    WriteLine();
+                    if (!isFirst)
+                    {
+                        WriteOutput(',');
+                        WriteLine();
+                    }
+
+                    isFirst = false;
+                    WriteJsonValue(item);
                 }
-                isFirst = false;
-                WriteJsonValue(item);
+            }
+            catch (Exception ex)
+            {
+                var supportedInterfaces = values.GetType().GetInterfaces();
+                
+                throw new InvalidOperationException($"Error while trying to serialize {values.GetType()}. Reason: {ex.Message}. Supported interfaces: {string.Join("\n", supportedInterfaces.Select(x=> x.FullName))}", ex);
             }
 
             if (_prettyOutput && !isFirst)
@@ -211,6 +224,10 @@ namespace Lunet.Api.DotNet.Extractor
             {
                 WriteJsonInt32(i32);
             }
+            else if (value is string str)
+            {
+                WriteJsonString(str);
+            }
             else if (value is IDictionary dictionary)
             {
                 var it = dictionary.GetEnumerator();
@@ -228,11 +245,8 @@ namespace Lunet.Api.DotNet.Extractor
             }
             else
             {
-                if (value is string str)
-                {
-                    WriteJsonString(str);
-                }
-                else if (value is Enum e)
+                var type = value.GetType();
+                if (value is Enum e)
                 {
                     WriteJsonString(e.ToString());
                 }

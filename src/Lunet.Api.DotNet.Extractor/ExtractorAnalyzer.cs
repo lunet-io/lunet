@@ -114,16 +114,10 @@ namespace Lunet.Api.DotNet.Extractor
                 
                 var model = YamlMetadataResolver.ResolveMetadata(allMembers, allReferences, true);
 
-                // 1. generate toc.yml
-                model.TocYamlViewModel.Type = MemberType.Toc;
-
-                // TOC do not change
-                var tocViewModel = model.TocYamlViewModel.ToTocViewModel();
-
                 var assemblyViewModel = new AssemblyViewModel()
                 {
-                    Toc = tocViewModel,
-                    Content = model.Members.Select(x => x.ToPageViewModel()).ToList()
+                    Name = context.Compilation.AssemblyName,
+                    Items = model.Members.Select(x => x.ToPageViewModel()).ToList()
                 };
 
                 var serializer = new JsonSerializer(writer) {PrettyOutput = true};

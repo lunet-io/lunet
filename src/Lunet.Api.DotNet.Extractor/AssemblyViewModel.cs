@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.DocAsCode.DataContracts.Common;
 using Microsoft.DocAsCode.DataContracts.ManagedReference;
 using Newtonsoft.Json;
@@ -11,11 +12,11 @@ namespace Lunet.Api.DotNet.Extractor
 {
     public class AssemblyViewModel
     {
-        [JsonProperty("toc")]
-        public TocViewModel Toc { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
 
 
-        [JsonProperty("content")]
-        public List<PageViewModel> Content { get; set; }
+        [JsonProperty("items")]
+        public List<PageViewModel> Items { get; set; }
     }
 }

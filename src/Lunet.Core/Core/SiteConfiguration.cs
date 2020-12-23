@@ -30,6 +30,7 @@ namespace Lunet.Core
             CommandRunners = new List<ISiteCommandRunner>();
             Log = LoggerFactory.CreateLogger("lunet");
             ShouldRunGarbageCollectorOnReload = true;
+            SharedCache = new Dictionary<object, object>();
         }
 
         public SiteFileSystems FileSystems { get; }
@@ -48,6 +49,9 @@ namespace Lunet.Core
 
         // TODO: make this configurable from the command line
         public bool ShouldRunGarbageCollectorOnReload { get; set; }
+        
+        
+        public Dictionary<object, object> SharedCache { get; }
 
         public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : SitePlugin
         {

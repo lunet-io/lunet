@@ -1,4 +1,5 @@
 
+using System;
 namespace Lunet.Api.DotNet.Extractor
 {
     public partial class JsonSerializer 
@@ -25,7 +26,7 @@ namespace Lunet.Api.DotNet.Extractor
             _serializers.Add(typeof(Microsoft.DocAsCode.DataContracts.Common.TocItemViewModel), SerializeMicrosoft_DocAsCode_DataContracts_Common_TocItemViewModel);
             _serializers.Add(typeof(Microsoft.DocAsCode.DataContracts.Common.TocRootViewModel), SerializeMicrosoft_DocAsCode_DataContracts_Common_TocRootViewModel);
             _serializers.Add(typeof(Microsoft.DocAsCode.Common.Git.GitDetail), SerializeMicrosoft_DocAsCode_Common_Git_GitDetail);
-            _serializers.Add(typeof(AssemblyViewModel), SerializeLunet_ApiDotNet_Extractor_AssemblyViewModel);
+            _serializers.Add(typeof(Lunet.Api.DotNet.Extractor.AssemblyViewModel), SerializeLunet_Api_DotNet_Extractor_AssemblyViewModel);
             _serializers.Add(typeof(Microsoft.DocAsCode.Common.HtmlLogListener.ReportItem), SerializeMicrosoft_DocAsCode_Common_HtmlLogListener_ReportItem);
             _serializers.Add(typeof(Microsoft.DocAsCode.Common.ReportLogListener.ReportItem), SerializeMicrosoft_DocAsCode_Common_ReportLogListener_ReportItem);
         }
@@ -303,12 +304,12 @@ namespace Lunet.Api.DotNet.Extractor
             serializer.WriteJsonKeyValue("repo", value.RemoteRepositoryUrl);
             serializer.EndObject();
         }
-        private static void SerializeLunet_ApiDotNet_Extractor_AssemblyViewModel(JsonSerializer serializer, object valueObj)
+        private static void SerializeLunet_Api_DotNet_Extractor_AssemblyViewModel(JsonSerializer serializer, object valueObj)
         {
-            var value = (AssemblyViewModel)valueObj;
+            var value = (Lunet.Api.DotNet.Extractor.AssemblyViewModel)valueObj;
             serializer.StartObject();
-            serializer.WriteJsonKeyValue("toc", value.Toc);
-            serializer.WriteJsonKeyValue("content", value.Content);
+            serializer.WriteJsonKeyValue("name", value.Name);
+            serializer.WriteJsonKeyValue("items", value.Items);
             serializer.EndObject();
         }
         private static void SerializeMicrosoft_DocAsCode_Common_HtmlLogListener_ReportItem(JsonSerializer serializer, object valueObj)

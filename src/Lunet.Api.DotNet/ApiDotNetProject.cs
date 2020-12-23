@@ -17,8 +17,18 @@ namespace Lunet.Api.DotNet
         
         public UPath CachePath { get; set; }
 
-        public bool IsCachePathValid { get; set; }
+        public ApitDotNetCacheState CacheState { get; set; }
         
         public ScriptObject Api { get; set; }
     }
+    
+    public enum ApitDotNetCacheState
+    {
+        Invalid,
+        NotFound,
+        Found,
+        New,
+    }
+    
+    
 }
