@@ -25,8 +25,8 @@ namespace Lunet.Taxonomies
 
             Site.SetValue("taxonomies", List, true);
 
-            Site.Content.LayoutTypes["term"] = ContentLayoutTypes.ListWeight;
-            Site.Content.LayoutTypes["terms"] = ContentLayoutTypes.ListWeight;
+            Site.Content.LayoutTypes.AddListType("term");
+            Site.Content.LayoutTypes.AddListType("terms");
             
             // Add tags and categories as default taxonomies
             List.ScriptObject.Add("tags", "tag");

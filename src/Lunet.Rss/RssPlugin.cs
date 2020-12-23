@@ -17,7 +17,7 @@ namespace Lunet.Rss
     {
         public RssPlugin(SiteObject site) : base(site)
         {
-            Site.Content.LayoutTypes["rss"] = ContentLayoutTypes.ListWeight;
+            Site.Content.LayoutTypes.AddListType("rss");
             site.SetValue("rss", this, true);
             Limit = 10;
         }

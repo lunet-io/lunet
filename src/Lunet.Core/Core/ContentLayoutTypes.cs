@@ -25,5 +25,11 @@ namespace Lunet.Core
             this[Single] = SingleWeight;
             this[List] = ListWeight;
         }
+
+        public void AddListType(string type)
+        {
+            this[type] = ListWeight;
+        }
+        
     }
 }
