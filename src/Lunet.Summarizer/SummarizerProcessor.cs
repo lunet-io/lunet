@@ -16,9 +16,10 @@ namespace Lunet.Summarizer
         public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
         {
             Debug.Assert(stage == ContentProcessingStage.Processing);
-
-            // Work only on single layout type
-            if (page.LayoutType != ContentPlugin.SingleLayoutType) return ContentResult.Continue;
+            if (page.Content == null || page.ContentType != ContentType.Html)
+            {
+                return ContentResult.Continue;
+            }
             SummarizerHelper.UpdateSummary(page);
 
             // Allow further processing of this page

@@ -28,6 +28,8 @@ namespace Lunet.Core
 
         public const string SummaryKeepFormatting = "summary_keep_formatting";
 
+        public const string SummaryWordCount = "summary_word_count";
+
         public const string ContentType = "content_type";
 
         public const string Layout = "layout";

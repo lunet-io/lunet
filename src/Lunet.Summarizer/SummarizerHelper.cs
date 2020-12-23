@@ -4,7 +4,9 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using Lunet.Core;
+using NUglify;
 using NUglify.Html;
 using Scriban.Functions;
 
@@ -12,13 +14,10 @@ namespace Lunet.Summarizer
 {
     public static class SummarizerHelper
     {
+        public const int DefaultSummaryWordCount = 70;
+        
         public static void UpdateSummary(ContentObject page)
         {
-            if (page.Content == null || page.ContentType != ContentType.Html)
-            {
-                return;
-            }
-
             // Use specific settings to extract text from html
             var settings = new HtmlSettings()
             {
@@ -32,6 +31,7 @@ namespace Lunet.Summarizer
                 MinifyJs = false,
                 MinifyCss = false,
                 MinifyCssAttributes = false
+
             };
 
             var parser = new HtmlParser($"<body>{page.Content}</body>", (string)page.SourceFile.Path, settings);
@@ -44,25 +44,41 @@ namespace Lunet.Summarizer
                 var minifier = new HtmlMinifier(document, settings);
                 minifier.Minify();
 
-                var sumarrySettings = (DynamicObject) page;
-                if (!sumarrySettings.Contains(PageVariables.SummaryKeepFormatting))
+                var keepFormatting = page.GetSafeValueFromPageOrSite<bool>(PageVariables.SummaryKeepFormatting);
+                var maxSummaryCountWord = page.GetSafeValueFromPageOrSite<int>(PageVariables.SummaryWordCount, DefaultSummaryWordCount);
+                if (maxSummaryCountWord < 0) maxSummaryCountWord = DefaultSummaryWordCount;
+
+                // We detect if the document has already a <!--more--> attribute, if yes, we will use it has the summary
+                bool hasMore = false;
+                try
                 {
-                    sumarrySettings = page.Site;
+                    var checkHasMore = new HtmlVisitHasMore();
+                    checkHasMore.Write(document);
+                }
+                catch (HtmlWriterEarlyExitException)
+                {
+                    hasMore = true;
                 }
 
-                var keepFormatting = sumarrySettings.GetSafeValue<bool>(PageVariables.SummaryKeepFormatting);
-
-                //errors.AddRange(minifier.Errors);
-
+                
+                // Write the content with early exit
                 var writer = new StringWriter();
-                var htmlWriter = new HtmlWriterToSummary(writer, keepFormatting ? HtmlToTextOptions.KeepFormatting : HtmlToTextOptions.KeepHtmlEscape);
-                htmlWriter.Write(document);
+                try
+                {
+                    var htmlWriter = new HtmlWriterToSummary(writer, keepFormatting ? HtmlToTextOptions.KeepFormatting : HtmlToTextOptions.KeepHtmlEscape)
+                    {
+                        HasMore = hasMore, 
+                        MaxSummaryWordCount = maxSummaryCountWord
+                    };
+                    htmlWriter.Write(document);
+                }
+                catch (HtmlWriterEarlyExitException)
+                {
+                    // ignore
+                }
 
                 var fullText = writer.ToString();
-
-                var readMoreIndex = fullText.IndexOf("<!--more-->", StringComparison.Ordinal);
-                
-                var summary = readMoreIndex >= 0 ? fullText.Substring(0, readMoreIndex) : StringFunctions.Truncatewords(fullText, 70);
+                var summary = hasMore ? fullText : StringFunctions.Truncatewords(fullText, maxSummaryCountWord);
 
                 page.Summary = summary;
             }
@@ -80,20 +96,63 @@ namespace Lunet.Summarizer
             //}
         }
 
+        /// <summary>
+        /// Html writer that early exists if the number of word count has been reached or if we have found a more comment.
+        /// </summary>
         private class HtmlWriterToSummary : HtmlWriterToText
         {
+            private static readonly Regex CountWordsRegex = new Regex(@"\w+");
+            private int _totalRunningNumberOfWords;
+            
             public HtmlWriterToSummary(TextWriter writer, HtmlToTextOptions options) : base(writer, options)
             {
             }
+            
+            public int MaxSummaryWordCount { get; set; }
+            
+            public bool HasMore { get; set; }
 
             protected override void Write(HtmlComment node)
             {
-                // Keep comment
-                Write("<!--");
-                var comment = node.Slice.ToString();
-                Write(comment);
-                Write("-->");
+                var sliceText = node.Slice.ToString().Trim();
+                if (sliceText == "more") throw new HtmlWriterEarlyExitException();
             }
+
+            protected override void Write(string text)
+            {
+                base.Write(text);
+                
+                // If we are looking more <!-- more --> then don't limit by word count
+                if (!HasMore)
+                {
+                    _totalRunningNumberOfWords += CountWordsRegex.Matches(text).Count;
+                    if (_totalRunningNumberOfWords >= MaxSummaryWordCount) throw new HtmlWriterEarlyExitException();
+                }
+            }
+        }
+
+        private class HtmlVisitHasMore : HtmlWriterBase
+        {
+            protected override void Write(HtmlComment node)
+            {
+                var sliceText = node.Slice.ToString().Trim();
+                if (sliceText == "more") throw new HtmlWriterEarlyExitException();
+            }
+
+            protected override void Write(string text)
+            {
+            }
+
+            protected override void Write(char c)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Exception used for early exit in <see cref="HtmlVisitHasMore"/> and <see cref="HtmlWriterToSummary"/>.
+        /// </summary>
+        private class HtmlWriterEarlyExitException : Exception
+        {
         }
     }
 }

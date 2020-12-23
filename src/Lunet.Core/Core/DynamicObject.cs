@@ -88,7 +88,19 @@ namespace Lunet.Core
         {
             return obj.TryGetValue(name, out var value) && value is T tvalue ? tvalue : default;
         }
-        
+
+        public static T GetSafeValueFromPageOrSite<T>(this TemplateObject obj, string name, T defaultValue = default)
+        {
+            if (!obj.TryGetValue(name, out var value))
+            {
+                if (!obj.TryGetValue(name, out value))
+                {
+                    return defaultValue;
+                }
+            } 
+            return value is T rvalue ? rvalue : defaultValue;
+        }
+
         public static void CopyToWithReadOnly(this ScriptObject from, ScriptObject to)
         {
             if (@from == null) throw new ArgumentNullException(nameof(@from));
