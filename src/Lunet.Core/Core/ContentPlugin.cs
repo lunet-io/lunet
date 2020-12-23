@@ -24,10 +24,9 @@ namespace Lunet.Core
         private readonly HashSet<DirectoryEntry> previousOutputDirectories;
         private readonly HashSet<FileEntry> previousOutputFiles;
         private readonly Dictionary<FileEntry, FileEntry> filesWritten;
+        private readonly Dictionary<string, PageCollection> _mapTypeToPages;
         private bool isInitialized;
         private readonly Stopwatch totalDuration;
-
-        public const string SingleLayoutType = "single";
 
         public ContentPlugin(SiteObject site) : base(site)
         {
@@ -35,10 +34,12 @@ namespace Lunet.Core
             previousOutputFiles = new HashSet<FileEntry>();
             Scripts = Site.Scripts;
             filesWritten = new Dictionary<FileEntry, FileEntry>();
+            _mapTypeToPages = new Dictionary<string, PageCollection>();
             totalDuration = new Stopwatch();
-
-
-            OrderLayoutTypes = new List<string>();
+            
+            // Setup layout types
+            LayoutTypes = new ContentLayoutTypes();
+            Site.SetValue(SiteVariables.LayoutTypes, LayoutTypes, true);
 
             BeforeInitializingProcessors = new OrderedList<ISiteProcessor>();
             BeforeLoadingProcessors = new OrderedList<ISiteProcessor>();
@@ -54,9 +55,9 @@ namespace Lunet.Core
         }
 
         private ScriptingPlugin Scripts { get; }
-
-        // Defines the way layout types are processed
-        public List<string> OrderLayoutTypes { get; }
+        
+        
+        public ContentLayoutTypes LayoutTypes { get; }
 
         public OrderedList<ISiteProcessor> BeforeInitializingProcessors { get; }
 
@@ -76,6 +77,17 @@ namespace Lunet.Core
         
         public PageFinderProcessor Finder { get; }
 
+        /// <summary>
+        /// Determines whether if the layout type is a list layout.
+        /// </summary>
+        /// <param name="layoutType">Type of the layout.</param>
+        /// <returns><c>true</c> if the specified layout type is a list layout; otherwise, <c>false</c>.</returns>
+        public static bool IsListLayout(string layoutType)
+        {
+            // NOTE: this is not pluggable today, but it should be simple enough to avoid complicated setup
+            return (layoutType != null && (layoutType.EndsWith("s") || layoutType.EndsWith("list")));
+        }
+        
         private void Initialize()
         {
             totalDuration.Restart();
@@ -139,14 +151,19 @@ namespace Lunet.Core
                     return;
                 }
 
+                // Reset content to process
+                ResetPagesPerLayoutType();
+
+                // Collect all contents per layout type
                 // Process static content files
-                ProcessPages(Site.StaticFiles, true);
-
+                CollectPagesPerLayoutType(Site.StaticFiles);
                 // Process pages content (files with front matter)
-                ProcessPages(Site.Pages, true);
-
+                CollectPagesPerLayoutType(Site.Pages);
                 // Process dynamic pages content (files with front matter)
-                ProcessPages(Site.DynamicPages, true);
+                CollectPagesPerLayoutType(Site.DynamicPages);
+                
+                // Process content per layout type
+                ProcessPagesPerLayoutType();
 
                 // End processing content
                 TryRunProcess(AfterProcessingProcessors, ProcessingStage.AfterProcessingContent);
@@ -362,29 +379,47 @@ namespace Lunet.Core
         {
             if (pages == null) throw new ArgumentNullException(nameof(pages));
             
-            // Collect and group pages per their layout type
-            var mapTypeToPages = new Dictionary<string, List<ContentObject>>();
+            // Process pages in order of their layout types
+            var pendingPageProcessors = new OrderedList<IContentProcessor>();
             foreach (var page in pages)
             {
-                var layoutType = page.LayoutType ?? SingleLayoutType;
-                if (!mapTypeToPages.TryGetValue(layoutType, out var subPages))
+                TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
+            }
+        }
+
+        private void ResetPagesPerLayoutType()
+        {
+            // Don't remove the PageCollection (to keep them allocated around)
+            foreach (var mapTypeToPage in _mapTypeToPages)
+            {
+                mapTypeToPage.Value.Clear();
+            }
+        }
+
+        private void CollectPagesPerLayoutType(PageCollection pages)
+        {
+            if (pages == null) throw new ArgumentNullException(nameof(pages));
+
+            // Collect and group pages per their layout type
+            foreach (var page in pages)
+            {
+                var layoutType = page.LayoutType ?? ContentLayoutTypes.Single;
+                if (!_mapTypeToPages.TryGetValue(layoutType, out var subPages))
                 {
-                    subPages = new List<ContentObject>();
-                    mapTypeToPages.Add(layoutType, subPages);
+                    subPages = new PageCollection();
+                    _mapTypeToPages.Add(layoutType, subPages);
                 }
                 subPages.Add(page);
             }
+        }
 
-            // Process pages in order of their layout types
-            var pendingPageProcessors = new OrderedList<IContentProcessor>();
-            foreach (var layoutType in OrderLayoutTypes)
+        private void ProcessPagesPerLayoutType()
+        {
+            var layoutTypes = _mapTypeToPages.Keys.OrderBy(x => LayoutTypes.GetSafeValue<int>(x)).ToList();
+            foreach (var layoutType in layoutTypes)
             {
-                if (!mapTypeToPages.TryGetValue(layoutType, out var subPages)) continue;
-
-                foreach (var page in subPages)
-                {
-                    TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
-                }
+                var pages = _mapTypeToPages[layoutType];
+                ProcessPages(pages, true);
             }
         }
 

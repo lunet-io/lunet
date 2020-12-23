@@ -25,11 +25,8 @@ namespace Lunet.Taxonomies
 
             Site.SetValue("taxonomies", List, true);
 
-            Site.Content.OrderLayoutTypes.Add("term");
-            Site.Content.OrderLayoutTypes.Add("terms");
-
-            layoutPlugin.Processor.RegisterLayoutPathProvider("term", TermPagesLayout);
-            layoutPlugin.Processor.RegisterLayoutPathProvider("terms", TermsLayout);
+            Site.Content.LayoutTypes["term"] = ContentLayoutTypes.ListWeight;
+            Site.Content.LayoutTypes["terms"] = ContentLayoutTypes.ListWeight;
             
             // Add tags and categories as default taxonomies
             List.ScriptObject.Add("tags", "tag");
@@ -201,54 +198,6 @@ namespace Lunet.Taxonomies
 
                     Site.DynamicPages.Add(content);
                 }
-            }
-        }
-
-        private static IEnumerable<UPath> TermsLayout(SiteObject site, string layoutName, string layoutType)
-        {
-            // try: _meta/layouts/{layoutName}/terms.{layoutExtension}
-            yield return (UPath)layoutName / (layoutType);
-
-            // try: _meta/layouts/{layoutName}.terms.{layoutExtension}
-            yield return (UPath)(layoutName + "." + layoutType);
-
-            if (layoutName != LayoutProcessor.DefaultLayoutName)
-            {
-                // try: _meta/layouts/_default/terms.{layoutExtension}
-                yield return (UPath)LayoutProcessor.DefaultLayoutName / (layoutType);
-
-                // try: _meta/layouts/_default.terms.{layoutExtension}
-                yield return (UPath)(LayoutProcessor.DefaultLayoutName + "." + layoutType);
-            }
-        }
-
-        private static IEnumerable<UPath> TermPagesLayout(SiteObject site, string layoutName, string layoutType)
-        {
-            // try: _meta/layouts/{layoutName}/{layoutType}.{layoutExtension}
-            yield return (UPath)layoutName / (layoutType);
-
-            // try: _meta/layouts/{layoutName}.{layoutType}.{layoutExtension}
-            yield return (UPath)(layoutName + "." + layoutType);
-
-            // try: _meta/layouts/{layoutName}/list.{layoutExtension}
-            yield return (UPath)layoutName / (LayoutTypes.List);
-
-            // try: _meta/layouts/{layoutName}.list.{layoutExtension}
-            yield return (UPath)(layoutName + "." + LayoutTypes.List);
-
-            if (layoutName != LayoutProcessor.DefaultLayoutName)
-            {
-                // try: _meta/layouts/_default/{layoutType}.{layoutExtension}
-                yield return (UPath)LayoutProcessor.DefaultLayoutName / (layoutType);
-
-                // try: _meta/layouts/_default.{layoutType}.{layoutExtension}
-                yield return (UPath)(LayoutProcessor.DefaultLayoutName + "." + layoutType);
-
-                // try: _meta/layouts/_default/list.{layoutExtension}
-                yield return (UPath)LayoutProcessor.DefaultLayoutName / (LayoutTypes.List);
-
-                // try: _meta/layouts/_default.list.{layoutExtension}
-                yield return (UPath)(LayoutProcessor.DefaultLayoutName + "." + LayoutTypes.List);
             }
         }
     }

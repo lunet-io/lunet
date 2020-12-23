@@ -41,6 +41,7 @@ namespace Lunet.Sitemaps
                 var content = new DynamicContentObject(Site, "/sitemap.xml")
                 {
                     ContentType = ContentType.Xml,
+                    LayoutType = ContentLayoutTypes.List, // Use list content just to make sure that they are processed after simple page content
                     Content = sitemap.ToString()
                 };
                 Site.DynamicPages.Add(content);
@@ -49,6 +50,7 @@ namespace Lunet.Sitemaps
                 var robotsContent = new DynamicContentObject(Site, "/robots.txt")
                 {
                     ContentType = ContentType.Txt,
+                    LayoutType = ContentLayoutTypes.List,
                     Content = $"Sitemap: {Site.Content.Finder.UrlRef((ContentObject)null, content.Url)}"
                 };
                 Site.DynamicPages.Add(robotsContent);

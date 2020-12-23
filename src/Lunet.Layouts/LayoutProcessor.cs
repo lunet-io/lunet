@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Lunet.Core;
 using Lunet.Helpers;
 using Lunet.Scripts;
@@ -36,23 +37,14 @@ namespace Lunet.Layouts
             _layouts = new Dictionary<LayoutKey, LayoutContentObject>();
             _layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
 
-            Site.Content.OrderLayoutTypes.Add(LayoutTypes.Single);
-            Site.Content.OrderLayoutTypes.Add(LayoutTypes.List);
-            
-            RegisterLayoutPathProvider(LayoutTypes.Single, SingleLayout);
-            RegisterLayoutPathProvider(LayoutTypes.List, ListLayout);
+            RegisterLayoutPathProvider(ContentLayoutTypes.Single, SingleLayout);
+            RegisterLayoutPathProvider(ContentLayoutTypes.List, DefaultLayout);
         }
 
         public void RegisterLayoutPathProvider(string layoutType, GetLayoutPathsDelegate layoutPathsDelegate)
         {
             if (layoutType == null) throw new ArgumentNullException(nameof(layoutType));
             if (layoutPathsDelegate == null) throw new ArgumentNullException(nameof(layoutPathsDelegate));
-
-            var existing = FindLayoutPaths(layoutType);
-            if (existing != null)
-            {
-                throw new ArgumentException($"LayoutType [{layoutType}] cannot be registered multiple times", nameof(layoutType));
-            }
             _layoutPathProviders.Add(new KeyValuePair<string, GetLayoutPathsDelegate>(layoutType, layoutPathsDelegate));
         }
 
@@ -65,7 +57,9 @@ namespace Lunet.Layouts
                     return item.Value;
                 }
             }
-            return null;
+            
+            // Always return a default layout
+            return DefaultLayout;
         }
 
         public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
@@ -78,13 +72,13 @@ namespace Lunet.Layouts
             }
 
             var layoutName = page.Layout ?? page.Section;
-            layoutName = NormalizeLayoutName(layoutName, true);
+            layoutName = NormalizeLayoutName(page, layoutName, true);
             var layoutType = page.LayoutType;
             var layoutNames = new HashSet<string>() {layoutName};
             var result = ContentResult.Continue;
 
             // For a list rendering the pages is setup
-            if (layoutType == LayoutTypes.List)
+            if (layoutType == ContentLayoutTypes.List)
             {
                 page.ScriptObjectLocal.SetValue("pages", Site.Pages, true);
             }
@@ -121,7 +115,7 @@ namespace Lunet.Layouts
                 {
                     var nextLayoutName = layoutObject.GetSafeValue<string>(PageVariables.Layout);
                     var nextLayoutType = layoutObject.GetSafeValue<string>(PageVariables.LayoutType);
-                    var nextLayout = NormalizeLayoutName(nextLayoutName, false);
+                    var nextLayout = NormalizeLayoutName(layoutObject, nextLayoutName, false);
                     if (nextLayout != layoutName && nextLayout != null)
                     {
                         if (!layoutNames.Add(nextLayout))
@@ -147,7 +141,7 @@ namespace Lunet.Layouts
         {
             LayoutContentObject layoutObject;
 
-            layoutType ??= LayoutTypes.Single;
+            layoutType ??= ContentLayoutTypes.Single;
             var layoutKey = new LayoutKey(layoutName, layoutType, contentType);
             if (_layouts.TryGetValue(layoutKey, out layoutObject))
             {
@@ -201,6 +195,9 @@ namespace Lunet.Layouts
             yield return (UPath)layoutName / layoutType;
 
             // try: _meta/layouts/{layoutName}.{layoutExtension}
+            yield return layoutName + "." + layoutType;
+            
+            // try: _meta/layouts/{layoutName}.{layoutExtension}
             yield return layoutName;
 
             if (layoutName != DefaultLayoutName)
@@ -213,7 +210,7 @@ namespace Lunet.Layouts
             }
         }
 
-        private static IEnumerable<UPath> ListLayout(SiteObject site, string layoutName, string layoutType)
+        private static IEnumerable<UPath> DefaultLayout(SiteObject site, string layoutName, string layoutType)
         {
             // try: _meta/layouts/{layoutName}/list.{layoutExtension}
             yield return (UPath)layoutName / layoutType;
@@ -231,22 +228,22 @@ namespace Lunet.Layouts
             }
         }
 
-        private static string NormalizeLayoutName(string layoutName, bool defaultIfNull)
+        private static readonly char[] InvalidLayoutChars = new[] {'\\', '/', '.'};
+
+        private string NormalizeLayoutName(TemplateObject context, string layoutName, bool defaultIfNull)
         {
             if (string.IsNullOrEmpty(layoutName))
             {
                 return defaultIfNull ? DefaultLayoutName : null;
             }
             layoutName = layoutName.Trim();
-            layoutName = layoutName.Replace('\\', '/');
-            var index = layoutName.IndexOf('/');
-            if (index > 0)
+            if (layoutName.IndexOfAny(InvalidLayoutChars) >= 0)
             {
-                layoutName = layoutName.Substring(0, index);
-            }
-            else if (index == 0)
-            {
-                layoutName = null;
+                Site.Warning($"In file {context.Path}, the layout `{layoutName}` contains invalid chars ({string.Join(", ", InvalidLayoutChars.Select(x => $"`{x}`"))}. Replacing invalid chars with `-`");
+                foreach (var invalidLayoutChar in InvalidLayoutChars)
+                {
+                    layoutName = layoutName.Replace(invalidLayoutChar, '-');
+                }
             }
 
             if (string.IsNullOrEmpty(layoutName))
