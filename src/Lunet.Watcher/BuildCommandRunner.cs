@@ -7,11 +7,19 @@ using Lunet.Core;
 
 namespace Lunet.Watcher
 {
-    public class BuildAndWatchCommandRunner : ISiteCommandRunner
+    public class BuildCommandRunner : ISiteCommandRunner
     {
         public bool Watch { get; set; }
+        
+        public bool SingleThreaded { get; set; }
 
         public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+        {
+            runner.Config.SingleThreaded = SingleThreaded;
+            return RunImpl(runner, cancellationToken);
+        }
+
+        protected virtual RunnerResult RunImpl(SiteRunner runner, CancellationToken cancellationToken)
         {
             runner.CurrentSite.Build();
 

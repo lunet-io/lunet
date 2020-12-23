@@ -73,7 +73,7 @@ namespace Lunet.Core
                     {
                         break;
                     }
-                    
+
                     CurrentSite = CurrentSite.Clone();
 
                     // Force collection if requested
@@ -84,6 +84,11 @@ namespace Lunet.Core
                 }
 
                 consoleLifetime.SetExitedGracefully();
+            }
+            catch (Exception ex)
+            {
+                Config.Error($"Unexpected error while processing the site. Reason: {ex}");
+                result = RunnerResult.ExitWithError;
             }
             finally
             {

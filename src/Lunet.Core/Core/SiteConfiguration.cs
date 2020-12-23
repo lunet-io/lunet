@@ -50,6 +50,7 @@ namespace Lunet.Core
         // TODO: make this configurable from the command line
         public bool ShouldRunGarbageCollectorOnReload { get; set; }
         
+        public bool SingleThreaded { get; set; }
         
         public Dictionary<object, object> SharedCache { get; }
 
