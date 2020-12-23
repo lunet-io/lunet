@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="shared\api\dotnet\Lunet.Api.DotNet.Extractor.props" />
+    <None Remove="shared\.lunet\modules\api\dotnet\Lunet.Api.DotNet.Extractor.props" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,10 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\Lunet.Api.DotNet.Extractor\bin\$(Configuration)\netstandard2.0\Lunet.Api.DotNet.Extractor.dll" Link="shared\api\dotnet\Lunet.Api.DotNet.Extractor.dll">
+    <Content Include="..\Lunet.Api.DotNet.Extractor\bin\$(Configuration)\netstandard2.0\Lunet.Api.DotNet.Extractor.dll" Link="shared\.lunet\modules\api\dotnet\Lunet.Api.DotNet.Extractor.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="shared\api\dotnet\Lunet.Api.DotNet.Extractor.props">
+    <Content Include="shared\.lunet\modules\api\dotnet\Lunet.Api.DotNet.Extractor.props">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

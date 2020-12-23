@@ -25,6 +25,8 @@ namespace Lunet.Core
         public static readonly UPath LunetFolder = UPath.Root / LunetFolderName;
         public static readonly string LunetFolderWithSlash = "/" + LunetFolderName + "/";
 
+        public const string ModulesFolderName = "modules";
+        
         public const string BuildFolderName = "build";
         public static readonly UPath BuildFolder = LunetFolder / BuildFolderName;
 

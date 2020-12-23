@@ -30,7 +30,7 @@ namespace Lunet.Api.DotNet
         public ApiDotNetProcessor(ApiDotNetPlugin plugin, ApiDotNetConfig config) : base(plugin)
         {
             Config = config;
-            _customMsBuildFileProps = Path.Combine(AppContext.BaseDirectory, "shared", "api", "dotnet", "Lunet.Api.DotNet.Extractor.props");
+            _customMsBuildFileProps = Path.Combine(AppContext.BaseDirectory, SiteFileSystems.SharedFolderName, SiteFileSystems.LunetFolderName, SiteFileSystems.ModulesFolderName, "api", "dotnet", "Lunet.Api.DotNet.Extractor.props");
             Cache = new ApiDotNetCache();
             Projects = new List<ApiDotNetProject>();
         }
