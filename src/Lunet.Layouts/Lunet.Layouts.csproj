@@ -5,6 +5,12 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="shared\.lunet\layouts\_default.sbn-html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />

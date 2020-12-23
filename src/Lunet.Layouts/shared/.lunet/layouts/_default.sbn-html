@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html {{~ site.html.attributes ? " " site.html.attributes : "" }}>
+  <head>
+    {{~ Head ~}}
+  </head>
+  <body>
+    {{~ content ~}}
+  </body>
+</html>
