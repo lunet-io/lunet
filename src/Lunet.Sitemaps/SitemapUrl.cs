@@ -3,54 +3,51 @@
 // See the license.txt file in the project root for more information.
 
 using System;
-using System.Xml.Serialization;
+using Lunet.Core;
 
 namespace Lunet.Sitemaps
 {
-    public class SitemapUrl
+    public class SitemapUrl : DynamicObject
     {
         public SitemapUrl()
         {
         }
-
 
         public SitemapUrl(string url)
         {
             Url = url;
         }
 
-        [XmlElement("loc")]
-        public string Url { get; set; }
-
-        [XmlElement("lastmod")]
-        public string LastModifiedAsText
+        public string Url
         {
-            get => LastModified?.ToString("yyyy-MM-dd");
-            set => throw new NotSupportedException("LastModifiedAsText Not supporting serialization");
+            get => GetSafeValue<string>("loc"); 
+            set => SetValue("loc", value);
         }
 
-        [XmlIgnore]
-        public DateTime? LastModified { get; set; }
-
-        public bool ShouldSerializeLastModifiedAsText()
+        public DateTime? LastModified
         {
-            return LastModified.HasValue;
+            get
+            {
+                var dateStr = GetSafeValue<string>("lastmod");
+                return DateTime.TryParse(dateStr, out var date) ? date : null;
+            }
+            set => SetValue("lastmod", value?.ToString("yyyy-MM-dd"));
         }
         
-        [XmlElement("changefreq")]
-        public string ChangeFrequency { get; set; }
-
-        public bool ShouldSerializeChangeFrequency()
+        public string ChangeFrequency
         {
-            return ChangeFrequency != null;
+            get => GetSafeValue<string>("changefreq");
+            set => SetValue("changefreq", value);
         }
 
-        [XmlElement("priority")]
-        public float? Priority { get; set; }
-
-        public bool ShouldSerializePriority()
+        public float? Priority
         {
-            return Priority.HasValue;
+            get
+            {
+                var priorityStr = GetSafeValue<string>("priority");
+                return float.TryParse(priorityStr, out var priority) ? priority : null;
+            }
+            set => SetValue("priority", value?.ToString("0.0"));
         }
     }
 }

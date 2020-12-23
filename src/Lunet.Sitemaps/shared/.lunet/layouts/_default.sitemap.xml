@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  {{~ for url in urls ~}}
+  <url>
+    <loc>{{ url.loc }}</loc>
+    {{~ if url.lastmod ~}}
+    <lastmod>{{ url.lastmod }}</lastmod>
+    {{~ end ~}}
+    {{~ if url.changefreq ~}}
+    <changefreq>{{ url.changefreq }}</changefreq>
+    {{~ end ~}}
+    {{~ if url.priority ~}}
+    <priority>{{ url.priority }}</priority>
+    {{~ end ~}}
+  </url>
+  {{~ end ~}}
+</urlset>

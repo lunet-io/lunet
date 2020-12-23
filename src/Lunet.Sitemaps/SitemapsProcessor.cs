@@ -5,18 +5,21 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Xml.Serialization;
 using Lunet.Core;
+using Scriban.Runtime;
 
 namespace Lunet.Sitemaps
 {
     public class SitemapsProcessor : ContentProcessor<SitemapsPlugin>
     {
-        private SitemapUrlSet _urlSet;
+        private readonly ScriptCollection _urls;
+
+        public const string DefaultUrl = "/sitemap.xml";
 
         public SitemapsProcessor(SitemapsPlugin plugin) : base(plugin)
         {
-
+            _urls = new ScriptCollection();
+            Site.Content.LayoutTypes.AddListType("sitemap");
         }
 
         public override void Process(ProcessingStage stage)
@@ -25,35 +28,40 @@ namespace Lunet.Sitemaps
 
             if (stage == ProcessingStage.BeforeLoadingContent)
             {
-                _urlSet = new SitemapUrlSet();
+                _urls.Clear();
             }
             else if (stage == ProcessingStage.BeforeProcessingContent)
             {
-                const string ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
-                var xmlSerializer = new XmlSerializer(typeof(SitemapUrlSet), ns);
-                var namespaces = new XmlSerializerNamespaces();
-                namespaces.Add("", ns);
-
-                var sitemap = new Utf8StringWriter();
-                xmlSerializer.Serialize(sitemap, _urlSet, namespaces);
-
                 // Generate sitemap.xml
-                var content = new DynamicContentObject(Site, "/sitemap.xml")
+                ContentObject sitemapContent;
+                if (Site.Content.Finder.TryFindByPath(DefaultUrl, out sitemapContent))
                 {
-                    ContentType = ContentType.Xml,
-                    LayoutType = ContentLayoutTypes.List, // Use list content just to make sure that they are processed after simple page content
-                    Content = sitemap.ToString()
-                };
-                Site.DynamicPages.Add(content);
+                    sitemapContent.ScriptObjectLocal ??= new ScriptObject();
+                }
+                else
+                {
+                    sitemapContent = new DynamicContentObject(Site, DefaultUrl)
+                    {
+                        ContentType = ContentType.Xml,
+                        ScriptObjectLocal = new ScriptObject(), // Force the layout to participate
+                    };
+                    Site.DynamicPages.Add(sitemapContent);
+                }
+                
+                sitemapContent.LayoutType ??= "sitemap";
+                sitemapContent.ScriptObjectLocal["urls"] = _urls;
 
-                // Generate robots.txt
-                var robotsContent = new DynamicContentObject(Site, "/robots.txt")
+                if (!Site.Content.Finder.TryFindByPath("/robots.txt", out _))
                 {
-                    ContentType = ContentType.Txt,
-                    LayoutType = ContentLayoutTypes.List,
-                    Content = $"Sitemap: {Site.Content.Finder.UrlRef((ContentObject)null, content.Url)}"
-                };
-                Site.DynamicPages.Add(robotsContent);
+                    // Generate robots.txt
+                    var robotsContent = new DynamicContentObject(Site, "/robots.txt")
+                    {
+                        ContentType = ContentType.Txt,
+                        LayoutType = ContentLayoutTypes.List,
+                        Content = $"Sitemap: {Site.Content.Finder.UrlRef((ContentObject) null, sitemapContent.Url)}"
+                    };
+                    Site.DynamicPages.Add(robotsContent);
+                }
             }
         }
 
@@ -66,27 +74,32 @@ namespace Lunet.Sitemaps
             }
 
             // if sitemap is false, then don't index it
-            var allowSiteMap = file["sitemap"] is bool v ? v : true;
+            var allowSiteMap = file[SitemapPageVariables.Sitemap] is bool v ? v : true;
             if (!allowSiteMap) return ContentResult.Continue;
             
             var url = Site.Content.Finder.UrlRef((ContentObject)null, file.Url);
 
             var sitemapUrl = new SitemapUrl(url)
             {
-                LastModified = file.ModifiedTime.Ticks == 0 ? DateTime.Now : file.ModifiedTime
+                LastModified = file.ModifiedTime.Ticks == 0 ? DateTime.Now : file.ModifiedTime,
             };
 
-            lock (_urlSet)
+            if (file.ContainsKey(SitemapPageVariables.SitemapPriority))
             {
-                _urlSet.Urls.Add(sitemapUrl);
+                sitemapUrl.SetValue("priority", file.GetSafeValue<float>(SitemapPageVariables.SitemapPriority));
+            }
+            
+            if (file.ContainsKey(SitemapPageVariables.SitemapChangeFrequency))
+            {
+                sitemapUrl.SetValue("changefreq", file.GetSafeValue<string>(SitemapPageVariables.SitemapChangeFrequency));
+            }
+
+            lock (_urls)
+            {
+                _urls.Add(sitemapUrl);
             }
 
             return ContentResult.Continue;
-        }
-
-        private class Utf8StringWriter : StringWriter
-        {
-            public override Encoding Encoding => Encoding.UTF8;
         }
     }
 }
