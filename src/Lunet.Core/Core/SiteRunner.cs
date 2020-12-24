@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Lunet.Helpers;
 
 namespace Lunet.Core
 {
@@ -43,14 +44,14 @@ namespace Lunet.Core
         
         public SiteObject CurrentSite { get; private set; }
         
-        public int Run()
+        public int Run(CancellationTokenSource cancellationTokenSource = null)
         {
             if (CommandRunners.Count == 0) return 0;
 
             // Token source
-            var runnerToken = new CancellationTokenSource();
+            cancellationTokenSource ??= new CancellationTokenSource();
             var shutdownEvent = new ManualResetEventSlim(false);
-            using ConsoleLifetime consoleLifetime = new ConsoleLifetime(Config, runnerToken, shutdownEvent, "Lunet is shutting down.");
+            using ConsoleLifetime consoleLifetime = new ConsoleLifetime(Config, cancellationTokenSource, shutdownEvent, "Lunet is shutting down.");
 
             var result = RunnerResult.Exit;
             try
@@ -62,7 +63,7 @@ namespace Lunet.Core
 
                     foreach (var runner in CommandRunners)
                     {
-                        result = runner.Run(this, runnerToken.Token);
+                        result = runner.Run(this, cancellationTokenSource.Token);
                         if (result != RunnerResult.Continue)
                         {
                             break;
@@ -87,7 +88,7 @@ namespace Lunet.Core
             }
             catch (Exception ex)
             {
-                Config.Error($"Unexpected error while processing the site. Reason: {ex}");
+                Config.Error(ex, $"Unexpected error while processing the site. Reason: {ex.GetReason()}");
                 result = RunnerResult.ExitWithError;
             }
             finally

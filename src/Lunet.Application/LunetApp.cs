@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Lunet.Api;
 using Lunet.Api.DotNet;
 using Lunet.Attributes;
@@ -64,12 +65,13 @@ namespace Lunet
         public SiteConfiguration Config { get; }
 
         public OrderedList<SiteModule> Modules { get; }
-        
-        public int Run(string[] args)
+
+        public int Run(CancellationTokenSource cancellationTokenSource, params string[] args)
         {
+            if (cancellationTokenSource == null) throw new ArgumentNullException(nameof(cancellationTokenSource));
             // The order modules are registered here is important
             var app = new SiteApplication();
-            foreach(var module in Modules)
+            foreach (var module in Modules)
             {
                 app.Add(module);
             }
@@ -79,17 +81,22 @@ namespace Lunet
                 app.Parse(args);
 
                 var runner = new SiteRunner(app.Config);
-                return runner.Run();
+                return runner.Run(cancellationTokenSource);
             }
             catch (Exception ex)
             {
-                app.Config.Error(ex.Message);
+                app.Config.Error(ex, ex.Message);
                 return 1;
             }
             finally
             {
                 app.Config.LoggerFactory.Dispose();
             }
+        }
+
+        public int Run(params string[] args)
+        {
+            return Run(new CancellationTokenSource(), args);
         }
     }
 }
