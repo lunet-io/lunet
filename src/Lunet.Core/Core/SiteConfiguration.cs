@@ -54,7 +54,7 @@ namespace Lunet.Core
         
         public Dictionary<object, object> SharedCache { get; }
 
-        public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : SitePlugin
+        public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : ISitePlugin
         {
             RegisterPlugin(typeof(TPlugin));
             return this;

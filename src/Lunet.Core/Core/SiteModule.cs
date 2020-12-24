@@ -14,7 +14,7 @@ namespace Lunet.Core
         protected abstract void Configure(SiteApplication application);
     }
     
-    public abstract class SiteModule<TPlugin> : SiteModule where TPlugin : SitePlugin
+    public abstract class SiteModule<TPlugin> : SiteModule where TPlugin : ISitePlugin
     {
         protected SiteModule()
         {
