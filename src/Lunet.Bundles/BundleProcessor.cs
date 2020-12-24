@@ -236,7 +236,7 @@ namespace Lunet.Bundles
                             }
                             catch (Exception ex)
                             {
-                                Site.Error($"Unable to load content [{path}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
+                                Site.Error(ex, $"Unable to load content [{path}] while trying to concatenate for bundle [{bundle.Name}]. Reason: {ex.GetReason()}");
                             }
                         }
 

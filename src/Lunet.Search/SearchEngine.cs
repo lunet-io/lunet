@@ -62,7 +62,7 @@ namespace Lunet.Search
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Unable to initialize search processor `{Name}`. Reason: {ex.Message}");
+                    Site.Error(ex, $"Unable to initialize search processor `{Name}`. Reason: {ex.Message}");
                 }
             }
             else if (stage == ProcessingStage.BeforeProcessingContent)

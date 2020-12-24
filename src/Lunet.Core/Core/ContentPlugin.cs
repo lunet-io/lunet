@@ -252,7 +252,7 @@ namespace Lunet.Core
             }
             catch (Exception ex)
             {
-                Site.Error(fromFile.SourceFile != null
+                Site.Error(ex, fromFile.SourceFile != null
                     ? $"Unable to copy file [{fromFile.SourceFile}] to [{outputFile}]. Reason:{ex.GetReason()}"
                     : $"Unable to copy file to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
@@ -319,7 +319,7 @@ namespace Lunet.Core
                 {
                     if (exception is LunetException)
                     {
-                        Site.Error($"Unexpected error in processor {processor.Name}. Reason: {exception.Message}");
+                        Site.Error(exception, $"Unexpected error in processor {processor.Name}. Reason: {exception.Message}");
                     }
                     else
                     {
@@ -712,7 +712,7 @@ namespace Lunet.Core
                     {
                         if (ex is LunetException lunetEx)
                         {
-                            Site.Error($"Error while processing {page.Path} by {processor.Name} processor. {lunetEx.Message}");
+                            Site.Error(ex, $"Error while processing {page.Path} by {processor.Name} processor. {lunetEx.Message}");
                         }
                         else
                         {
@@ -756,7 +756,7 @@ namespace Lunet.Core
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Unable to create directory [{directory}]. Reason:{ex.GetReason()}");
+                    Site.Error(ex, $"Unable to create directory [{directory}]. Reason:{ex.GetReason()}");
                 }
             }
         }

@@ -304,7 +304,7 @@ namespace Lunet.Api.DotNet
                 }
                 catch (Exception ex)
                 {
-                    Site.Error($"Error while building api dotnet for `{project.Name}`. Reason: {ex.Message}");
+                    Site.Error(ex, $"Error while building api dotnet for `{project.Name}`. Reason: {ex.Message}");
                 }
             }
         }

@@ -12,9 +12,11 @@ namespace Lunet.Core
     {
         SiteLoggerFactory LoggerFactory { get; }
 
-        public int LogEventId { get; set; }
+        int LogEventId { get; set; }
 
         ILogger Log { get; }
+        
+        bool ShowStacktraceOnError { get; set; }
     }
 
     /// <summary>
@@ -49,7 +51,7 @@ namespace Lunet.Core
         
         public static void Error(this ISiteLoggerProvider site, Exception exception, string message, params object[] args)
         {
-            site.Log.LogError(new EventId(site.LogEventId++), exception,  message, args);
+            site.Log.LogError(new EventId(site.LogEventId++), site.ShowStacktraceOnError ? exception : null,  message, args);
         }
 
         public static void Warning(this ISiteLoggerProvider site, string message, params object[] args)

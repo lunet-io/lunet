@@ -59,7 +59,7 @@ namespace Lunet.Extends
             }
             catch (Exception ex)
             {
-                site.Error($"Unable to load theme registry from Url [{RegistryUrl}]. Reason:{ex.GetReason()}");
+                site.Error(ex, $"Unable to load theme registry from Url [{RegistryUrl}]. Reason:{ex.GetReason()}");
                 return cacheList;
             }
 
@@ -127,7 +127,7 @@ namespace Lunet.Extends
                     }
                     catch (Exception ex)
                     {
-                        site.Error($"Unable to load extension/theme from Url [{fullVersion}]. Reason:{ex.GetReason()}");
+                        site.Error(ex, $"Unable to load extension/theme from Url [{fullVersion}]. Reason:{ex.GetReason()}");
                         break;
                     }
                 }

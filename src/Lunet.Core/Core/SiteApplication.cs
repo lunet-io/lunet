@@ -41,6 +41,8 @@ namespace Lunet.Core
             OutputDirectoryOption = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteFileSystems.DefaultOutputFolderName}'", CommandOptionType.SingleValue);
             InputDirectoryOption = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
 
+            ShowStacktraceOnErrorOption = Option("--stacktrace", "Shows full stacktrace when an error occurs. Default is false.", CommandOptionType.NoValue);
+
             Invoke = () =>
             {
                 if (!this.OptionHelp.HasValue() || !version.HasValue())
@@ -135,6 +137,8 @@ namespace Lunet.Core
 
         private CommandOption InputDirectoryOption { get; }
         
+        private CommandOption ShowStacktraceOnErrorOption { get; }
+        
         public SiteApplication Add(SiteModule module)
         {
             if (module == null) throw new ArgumentNullException(nameof(module));
@@ -147,6 +151,7 @@ namespace Lunet.Core
             Config.FileSystems.Initialize(InputDirectoryOption.Value(), OutputDirectoryOption.Value());
             Config.Defines.Clear();
             Config.Defines.AddRange(DefinesOption.Values);
+            Config.ShowStacktraceOnError = ShowStacktraceOnErrorOption.HasValue();
         }
 
         public TCommandRunner CreateCommandRunner<TCommandRunner>() where TCommandRunner : ISiteCommandRunner, new()

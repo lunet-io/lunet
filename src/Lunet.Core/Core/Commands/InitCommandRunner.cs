@@ -14,7 +14,7 @@ namespace Lunet.Core.Commands
         
         public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
         {
-            return runner.CurrentSite.Create(true) != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
+            return runner.CurrentSite.Create(Force) != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
         }
     }
 }

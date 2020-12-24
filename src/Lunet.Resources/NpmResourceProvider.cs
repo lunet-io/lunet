@@ -72,8 +72,7 @@ namespace Lunet.Resources
             }
             catch (Exception ex)
             {
-                Plugin.Site.Error(
-                    $"Unable to load a [{Name}] resource from registry from Url [{npmPackageUrl}]. Reason:{ex.GetReason()}");
+                Plugin.Site.Error(ex, $"Unable to load a [{Name}] resource from registry from Url [{npmPackageUrl}]. Reason:{ex.GetReason()}");
                 return null;
             }
 
@@ -81,8 +80,7 @@ namespace Lunet.Resources
             var versions = resourceJson["versions"] as JObject;
             if (versions == null)
             {
-                Plugin.Site.Error(
-                    $"Unable to find `versions` property from [{Name}] package from Url [{npmPackageUrl}]");
+                Plugin.Site.Error($"Unable to find `versions` property from [{Name}] package from Url [{npmPackageUrl}]");
                 return null;
             }
 
@@ -162,8 +160,7 @@ namespace Lunet.Resources
                 }
                 catch (Exception ex)
                 {
-                    Plugin.Site.Error(
-                        $"Unable to download and install the [{Name}] package [{resourceName}/{resourceVersion}] from the url [{downloadUrl}]. Reason:{ex.GetReason()}");
+                    Plugin.Site.Error(ex, $"Unable to download and install the [{Name}] package [{resourceName}/{resourceVersion}] from the url [{downloadUrl}]. Reason:{ex.GetReason()}");
                     return null;
                 }
             }

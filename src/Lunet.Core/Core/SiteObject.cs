@@ -148,6 +148,12 @@ namespace Lunet.Core
         /// </summary>
         public ILogger Log => Config.Log;
 
+        public bool ShowStacktraceOnError
+        {
+            get => Config.ShowStacktraceOnError;
+            set => Config.ShowStacktraceOnError = value;
+        }
+
         public int LogEventId
         {
             get => Config.LogEventId;
