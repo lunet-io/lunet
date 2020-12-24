@@ -11,11 +11,7 @@
     <Content Include="shared\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\Lunet.Layouts\shared\.lunet\layouts\_default.sbn-html" Link="shared\.lunet\newsite\.lunet\layouts\_default.sbn-html" />
-    <None Include="shared\.lunet\newsite\config.scriban" />
+    <Content Include="..\Lunet.Layouts\shared\.lunet\layouts\_default.sbn-html" Link="shared\.lunet\new\site\.lunet\layouts\_default.sbn-html" />
   </ItemGroup>
 
   <ItemGroup>
