@@ -292,8 +292,7 @@ namespace Lunet.Core
 
             SharedMetaFileSystem.CopyDirectory("/new/site", SiteFileSystem,UPath.Root, true, false);
 
-            // TODO: Add created at "folder"
-            this.Info($"New website created.");
+            this.Info($"New website created at `{SiteFileSystem.ConvertPathToInternal(UPath.Root)}`.");
             return 0;
         }
 
