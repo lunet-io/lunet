@@ -84,7 +84,7 @@ namespace Lunet.Core
                     var initCommand = CreateCommandRunner<InitCommandRunner>();
                     initCommand.Force = forceOption.HasValue();
                 };
-            }, false);
+            });
 
 
             // New command
@@ -96,14 +96,14 @@ namespace Lunet.Core
 
                 // TODO: List the supported type on --help -h
                 newApp.HelpOption("-h|--help");
-            }, false);
+            });
 
             // config command
             ConfigCommand = Command("config", newApp =>
             {
                 newApp.Description = "Displays the configuration variables from an existing config or the defaults";
                 newApp.HelpOption("-h|--help");
-            }, false);
+            });
 
             // The clean command
             CleanCommand = Command("clean", newApp =>
@@ -116,7 +116,7 @@ namespace Lunet.Core
                     CreateCommandRunner<CleanCommandRunner>();
                 };
 
-            }, false);
+            });
         }
 
         public SiteConfiguration Config { get; }

@@ -42,7 +42,7 @@ namespace Lunet.Watcher
                     buildAndWatch.SingleThreaded = singleThreadedOption.HasValue();
                 };
 
-            }, false);
+            });
         }
 
         public CommandLineApplication BuildAndWatchCommand { get; private set; }

@@ -27,7 +27,7 @@ namespace Lunet.Server
                     command.Watch = !noWatchOption.HasValue();
                     command.SingleThreaded = singleThreadedOption.HasValue();
                 };
-            }, false);
+            });
         }
 
         public CommandLineApplication ServerCommand { get; private set; }
