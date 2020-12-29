@@ -13,8 +13,12 @@ namespace Lunet.Watcher
         
         public bool SingleThreaded { get; set; }
 
+        public bool Development { get; set; }
+
         public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
         {
+            // Setup the environment
+            runner.CurrentSite.Environment = Development ? "dev" : "prod";
             runner.Config.SingleThreaded = SingleThreaded;
             return RunImpl(runner, cancellationToken);
         }

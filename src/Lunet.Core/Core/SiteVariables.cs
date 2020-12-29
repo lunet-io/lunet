@@ -43,5 +43,7 @@ namespace Lunet.Core
         public const string Includes = "includes";
 
         public const string LayoutTypes = "layout_types";
+
+        public const string Environment = "environment";
     }
 }

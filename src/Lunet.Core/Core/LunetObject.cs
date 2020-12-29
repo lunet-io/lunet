@@ -16,15 +16,8 @@ namespace Lunet.Core
         {
             Version = typeof(LunetObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
             SetValue("version", Version, true);
-            Environment = "Development";
         }
 
         public string Version { get; }
-
-        public string Environment
-        {
-            get { return GetSafeValue<string>("env"); }
-            set { this["env"] = value; }
-        }
     }
 }

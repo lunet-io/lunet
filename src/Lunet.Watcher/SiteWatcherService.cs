@@ -34,12 +34,14 @@ namespace Lunet.Watcher
                 newApp.HelpOption("-h|--help");
                 var watchOption = newApp.Option("--watch", "Enables watching files and triggering of a new run", CommandOptionType.NoValue);
                 var singleThreadedOption = newApp.Option("--no-threads", "Disables multi-threading", CommandOptionType.NoValue);
+                var devOption = newApp.Option("--dev", "Enables development environment. Default environment is prod.", CommandOptionType.NoValue);
 
                 newApp.Invoke = () =>
                 {
                     var buildAndWatch = application.CreateCommandRunner<BuildCommandRunner>();
                     buildAndWatch.Watch = watchOption.HasValue();
                     buildAndWatch.SingleThreaded = singleThreadedOption.HasValue();
+                    buildAndWatch.Development = devOption.HasValue();
                 };
 
             });

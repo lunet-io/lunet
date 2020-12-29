@@ -82,6 +82,7 @@ namespace Lunet.Core
             SetValue(SiteVariables.Excludes, Excludes, true);
             SetValue(SiteVariables.Includes, Includes, true);
             SetValue(SiteVariables.Pages, Pages, true);
+            Environment = "prod";
 
             foreach (var define in Config.Defines)
             {
@@ -219,6 +220,12 @@ namespace Lunet.Core
             get => GetSafeValue<bool>(SiteVariables.ReadmeAsIndex);
             set => this[SiteVariables.ReadmeAsIndex] = value;
         }
+        
+        public string Environment
+        {
+            get => GetSafeValue<string>(SiteVariables.Environment);
+            set => SetValue(SiteVariables.Environment, value);
+        }
 
         private bool LogFilter(string category, LogLevel level)
         {
@@ -331,7 +338,7 @@ namespace Lunet.Core
         {
             if (this.CanInfo())
             {
-                this.Info($"Site build started");
+                this.Info($"Site build started (environment: {Environment})");
             }
 
             var clock = Stopwatch.StartNew();

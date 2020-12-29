@@ -29,9 +29,8 @@ namespace Lunet.Server
         
         public const string DefaultBaseUrl = "http://localhost:4000";
         public const string DefaultRedirect = "/404.html";
-        public const string DefaultEnvironment = "Development";
-
-
+        public const string DefaultEnvironment = "dev";
+        
         public SiteServerService(SiteConfiguration configuration)
         {
             _configuration = configuration;
@@ -49,7 +48,7 @@ namespace Lunet.Server
         {
             var newErrorRedirect = from.ErrorRedirect ?? DefaultRedirect;
             var newBaseUrl = from.BaseUrl ?? DefaultBaseUrl;
-            var newEnvironement = from.Scripts.SiteFunctions.LunetObject.Environment ?? DefaultEnvironment;
+            var newEnvironement = from.Environment ?? DefaultEnvironment;
             var newLogging = from.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server");
             var newLiveReload = from.GetLiveReload();
 
@@ -127,8 +126,6 @@ namespace Lunet.Server
             {
                 await host.StartAsync(token);
 
-                IHostEnvironment service = host.Services.GetService<IHostEnvironment>();
-                logger.Info("Hosting environment: " + service?.EnvironmentName);
                 ICollection<string> addresses = host.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses;
                 if (addresses != null)
                 {

@@ -14,6 +14,9 @@ namespace Lunet.Server
         {
             // By default, enabled
             Watch = true;
+            // dev environment by default
+            // TODO: Make this pluggable via command line
+            Development = true;
         }
        
         protected override RunnerResult RunImpl(SiteRunner runner, CancellationToken cancellationToken)
