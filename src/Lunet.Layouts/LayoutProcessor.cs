@@ -72,8 +72,8 @@ namespace Lunet.Layouts
             }
 
             var layoutName = page.Layout ?? page.Section;
-            layoutName = NormalizeLayoutName(page, layoutName, true);
             var layoutType = page.LayoutType;
+            layoutName = NormalizeLayoutName(page, layoutName, true);
             var layoutNames = new HashSet<string>() {layoutName};
             var result = ContentResult.Continue;
 
@@ -237,8 +237,16 @@ namespace Lunet.Layouts
         {
             if (string.IsNullOrEmpty(layoutName))
             {
-                return defaultIfNull ? DefaultLayoutName : null;
+                if (defaultIfNull)
+                {
+                    layoutName = Site.Layout ?? DefaultLayoutName;
+                }
+                else
+                {
+                    return null;
+                }
             }
+
             layoutName = layoutName.Trim();
             if (layoutName.IndexOfAny(InvalidLayoutChars) >= 0)
             {
@@ -251,7 +259,7 @@ namespace Lunet.Layouts
 
             if (string.IsNullOrEmpty(layoutName))
             {
-                return defaultIfNull ? DefaultLayoutName : null;
+                return defaultIfNull ? (Site.Layout ?? DefaultLayoutName) : null;
             }
 
             return layoutName;

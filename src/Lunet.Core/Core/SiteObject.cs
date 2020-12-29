@@ -227,6 +227,12 @@ namespace Lunet.Core
             set => SetValue(SiteVariables.Environment, value);
         }
 
+        public string Layout
+        {
+            get => GetSafeValue<string>(SiteVariables.Layout);
+            set => SetValue(SiteVariables.Layout, value);
+        }
+        
         private bool LogFilter(string category, LogLevel level)
         {
             var levelStr = Scripts.SiteFunctions.LogObject.GetSafeValue<string>("level")?.ToLowerInvariant() ?? "info";
