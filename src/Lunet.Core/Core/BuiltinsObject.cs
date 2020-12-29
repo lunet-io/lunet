@@ -21,7 +21,7 @@ namespace Lunet.Core
         {
             Site = parent;
             parent.SetValue(SiteVariables.Builtins, this, true);
-            Head = parent.Scripts.CompileAnonymous("include 'builtins/head.sbn-html'");
+            Head = parent.Scripts.CompileAnonymous("include '_builtins/head.sbn-html'");
 
             // Helpers used for declaring panels (e.g {{NOTE do}}This is a note.{{end}}
             var helpers = @"

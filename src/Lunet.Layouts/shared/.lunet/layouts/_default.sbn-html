@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html {{~ site.html.attributes ? " " site.html.attributes : "" }}>
+<html {{~ if site.html.attributes }} {{ site.html.attributes; end }}>
   <head>
     {{~ Head ~}}
   </head>

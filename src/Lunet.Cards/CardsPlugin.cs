@@ -22,7 +22,7 @@ namespace Lunet.Cards
             Twitter = new TwitterCards(this);
 
             // Add the bundle builtins to be included by default in site.html.head.includes
-            Site.Html.Head.Includes.Add("builtins/cards.sbn-html");
+            Site.Html.Head.Includes.Add("_builtins/cards.sbn-html");
         }
 
         public TwitterCards Twitter { get; }

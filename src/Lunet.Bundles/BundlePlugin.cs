@@ -30,7 +30,7 @@ namespace Lunet.Bundles
             Site.SetValue(SiteVariables.Bundles, List, true);
 
             // Add the bundle builtins to be included by default in site.html.head_includes
-            Site.Html.Head.Includes.Add("builtins/bundle.sbn-html");
+            Site.Html.Head.Includes.Add("_builtins/bundle.sbn-html");
 
             // The "bundle" function is global as it is used inside scripts and inside
             Site.Scripts.Builtins.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);

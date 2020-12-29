@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="shared\.lunet\includes\builtins\cards.sbn-html" />
+    <None Include="shared\.lunet\includes\_builtins\cards.sbn-html" />
   </ItemGroup>
 
   <ItemGroup>
