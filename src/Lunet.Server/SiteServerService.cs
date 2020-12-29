@@ -86,7 +86,7 @@ namespace Lunet.Server
             }
 
             _host = CreateWebHost();
-            RunAsync(_host, _tokenSource.Token, "Lunet server started");
+            RunAsync(_host, _tokenSource.Token, "Lunet server started.");
         }
 
         public void ShutdownAndWaitForShutdown()

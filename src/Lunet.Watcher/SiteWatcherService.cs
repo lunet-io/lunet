@@ -107,7 +107,7 @@ namespace Lunet.Watcher
 
                 if (runner.Config.CanTrace())
                 {
-                    runner.Config.Trace($"Received file events [{events.FileEvents.Count}]");
+                    runner.Config.Trace($"Received file events [{events.FileEvents.Count}].");
                 }
 
                 runnerResult = RunnerResult.Continue;
