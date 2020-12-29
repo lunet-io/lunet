@@ -24,6 +24,7 @@ using Lunet.Server;
 using Lunet.Sitemaps;
 using Lunet.Summarizer;
 using Lunet.Toml;
+using Lunet.Tracking;
 using Lunet.Watcher;
 using Lunet.Yaml;
 
@@ -58,7 +59,8 @@ namespace Lunet
                 new AttributesModule(),
                 new YamlModule(),
                 new JsonModule(),
-                new TomlModule()
+                new TomlModule(),
+                new TrackingModule(),
             };
         }
 

@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>    
+    <TargetFramework>net5.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="shared\.lunet\includes\_builtins\google-analytics.sbn-html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
+  </ItemGroup>
+</Project>

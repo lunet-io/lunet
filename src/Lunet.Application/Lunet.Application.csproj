@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Lunet.Summarizer\Lunet.Summarizer.csproj" />
     <ProjectReference Include="..\Lunet.Taxonomies\Lunet.Taxonomies.csproj" />
     <ProjectReference Include="..\Lunet.Toml\Lunet.Toml.csproj" />
+    <ProjectReference Include="..\Lunet.Tracking\Lunet.Tracking.csproj" />
     <ProjectReference Include="..\Lunet.Yaml\Lunet.Yaml.csproj" />
   </ItemGroup>
 

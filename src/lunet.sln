@@ -75,6 +75,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Api", "Lunet.Api\Lune
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Application", "Lunet.Application\Lunet.Application.csproj", "{11D59EB1-68C6-4DD1-A920-8F3F3922ED79}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lunet.Tracking", "Lunet.Tracking\Lunet.Tracking.csproj", "{066DBC53-D085-4323-85A6-E974E7E862DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -197,6 +199,10 @@ Global
 		{11D59EB1-68C6-4DD1-A920-8F3F3922ED79}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11D59EB1-68C6-4DD1-A920-8F3F3922ED79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11D59EB1-68C6-4DD1-A920-8F3F3922ED79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{066DBC53-D085-4323-85A6-E974E7E862DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{066DBC53-D085-4323-85A6-E974E7E862DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{066DBC53-D085-4323-85A6-E974E7E862DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{066DBC53-D085-4323-85A6-E974E7E862DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
