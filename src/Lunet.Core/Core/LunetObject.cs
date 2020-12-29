@@ -14,7 +14,7 @@ namespace Lunet.Core
     {
         public LunetObject(SiteObject site) : base(site)
         {
-            Version = typeof(LunetObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
+            Version = typeof(LunetObject).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
             SetValue("version", Version, true);
         }
 
