@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2
+- Add support for site.layout
+- Add support for site.environment
+- Add support for Google analytics
+- Small fixes and improvements
+
 ## 0.4.1
 
 - Remove non necessary type="text/javascript" for script in meta
