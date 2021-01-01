@@ -33,7 +33,7 @@ namespace Lunet.Core
 
             SharedFileSystem = Config.FileSystems.SharedFileSystem;
             SiteFileSystem = Config.FileSystems.InputFileSystem;
-            CacheSiteFileSystem = Config.FileSystems.InputFileSystem;
+            CacheSiteFileSystem = Config.FileSystems.CacheSiteFileSystem;
             FileSystem = Config.FileSystems.FileSystem;
             OutputFileSystem = Config.FileSystems.OutputFileSystem;
             SharedMetaFileSystem = Config.FileSystems.SharedMetaFileSystem;
