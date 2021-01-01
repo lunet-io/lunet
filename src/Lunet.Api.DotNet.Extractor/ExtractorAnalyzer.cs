@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
-using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -16,6 +15,7 @@ namespace Lunet.Api.DotNet.Extractor
     [DiagnosticAnalyzer(LanguageNames.CSharp, additionalLanguages: LanguageNames.VisualBasic)]
     public class ExtractorAnalyzer : DiagnosticAnalyzer
     {
+        private const string LunetApiDotNet = "LunetApiDotNet";
         private static readonly DiagnosticDescriptor ResultDiagnostic = new DiagnosticDescriptor(id: ExtractorHelper.ResultId,
                                                                              title: "API Extractor Analyzer",
                                                                              messageFormat: "{0}",
@@ -88,7 +88,7 @@ namespace Lunet.Api.DotNet.Extractor
             {
                 return;
             }
-
+            
             //context.ReportDiagnostic(Diagnostic.Create(LoggerDiagnostic, null, $"Analyzer intermediateoutputpath {intermediateOutput} ok"));
 
             var outputPath = Path.Combine(projectdir, intermediateOutput, $"{context.Compilation.AssemblyName}.api.json");
@@ -101,6 +101,24 @@ namespace Lunet.Api.DotNet.Extractor
             bool success = false;
             try
             {
+                // Collect additional doc files
+                var extraDocs = new List<MetadataItem>();
+                foreach (var file in context.Options.AdditionalFiles)
+                {
+                    if (context.Options.AnalyzerConfigOptionsProvider.GetOptions(file).TryGetValue($"build_metadata.AdditionalFiles.{LunetApiDotNet.ToLowerInvariant()}", out var text) && string.Compare(text, "true", StringComparison.OrdinalIgnoreCase) == 0)
+                    {
+                        var itemsPerDoc = TryParseExtraDoc(context, file);
+                        if (itemsPerDoc != null)
+                        {
+                            extraDocs.AddRange(itemsPerDoc);
+                        }
+                        else
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(ErrorDiagnostic, null, $"ApiDotNet File found {file.Path} but is not valid. Make sure that it contains a YAML frontmatter with a uid."));
+                        }
+                    }
+                }
+
                 var extractor = new RoslynMetadataExtractor(context.Compilation);
                 var metadata = extractor.Extract(new ExtractMetadataOptions()
                 {
@@ -108,8 +126,10 @@ namespace Lunet.Api.DotNet.Extractor
                 });
                 
                 var items = new List<MetadataItem>() {metadata};
+                // Add extra docs AFTER to allow MergeYamlProjectMetadata to work correctly
+                metadata.Items.AddRange(extraDocs);
 
-                var allMembers = MergeYamlProjectMetadata(items);
+                var allMembers = MergeYamlProjectMetadata(context, items);
                 var allReferences = MergeYamlProjectReferences(items);
                 
                 var model = YamlMetadataResolver.ResolveMetadata(allMembers, allReferences, true);
@@ -137,7 +157,120 @@ namespace Lunet.Api.DotNet.Extractor
             }
         }
 
-        private static Dictionary<string, MetadataItem> MergeYamlProjectMetadata(List<MetadataItem> projectMetadataList)
+
+        private enum ParseExtraDocState
+        {
+            None,
+            InFrontMatter,
+            InDoc,
+        }
+
+        public List<MetadataItem> TryParseExtraDoc(CompilationAnalysisContext context, AdditionalText file)
+        {
+            var text = file.GetText()?.ToString();
+            if (text == null) return null;
+            var reader = new StringReader(text);
+
+            string currentSection = null;
+            var builder = new StringBuilder();
+
+            var state = ParseExtraDocState.None;
+
+            List<MetadataItem> items = null;
+            string line;
+            MetadataItem item = null;
+            int lastLineFrontMatter = 0;
+            int lineCount = 0;
+            while ((line = reader.ReadLine()) != null)
+            {
+                lineCount++;
+                if (line == "---")
+                {
+                    if (state == ParseExtraDocState.InFrontMatter)
+                    {
+                        state = item == null ? ParseExtraDocState.None : ParseExtraDocState.InDoc;
+                    }
+                    else
+                    {
+                        if (item != null)
+                        {
+                            ProcessSection(currentSection, builder, item);
+                        }
+
+                        state = ParseExtraDocState.InFrontMatter;
+                        lastLineFrontMatter = lineCount;
+                        currentSection = null;
+                        builder.Clear();
+                        item = null;
+                    }
+                    continue;
+                }
+
+                switch (state)
+                {
+                    case ParseExtraDocState.None:
+                        // If the file does not contain 
+                        context.ReportDiagnostic(Diagnostic.Create(ErrorDiagnostic, null, $"Expecting YAML frontmatter `---` at the beginning of the extra documentation file {file.Path}"));
+                        return null;
+
+                    case ParseExtraDocState.InFrontMatter:
+                        if (line.StartsWith("uid:") && item == null)
+                        {
+                            var uid = line.Substring("uid:".Length).Trim();
+                            item = new MetadataItem { Name = uid, IsExtraDoc = true, ExtraDocFilePath = file.Path };
+                            items ??= new List<MetadataItem>();
+                            items.Add(item);
+                        }
+                        break;
+                    case ParseExtraDocState.InDoc:
+
+                        if (line.StartsWith("# "))
+                        {
+                            ProcessSection(currentSection, builder, item);
+                            currentSection = line.Substring("# ".Length).Trim().ToLowerInvariant();
+                        }
+                        else if (currentSection != null)
+                        {
+                            builder.Append(line).Append('\n');
+                        }
+
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            ProcessSection(currentSection, builder, item);
+
+            if (state == ParseExtraDocState.InFrontMatter)
+            {
+                // If has an invalid non-closing front-matter
+                context.ReportDiagnostic(Diagnostic.Create(ErrorDiagnostic, null, $"Invalid YAML frontmatter `---` at line: {lastLineFrontMatter} not being closed in the extra documentation file {file.Path}"));
+                return null;
+            }
+
+            return items;
+        }
+
+        private void ProcessSection(string name, StringBuilder builder, MetadataItem item)
+        {
+            if (name == null) return;
+            switch (name)
+            {
+                case "summary":
+                    item.Summary = builder.ToString();
+                    break;
+                case "remarks":
+                    item.Remarks = builder.ToString();
+                    break;
+                case "example":
+                    if (item.Examples == null) item.Examples = new List<string>();
+                    item.Examples.Add(builder.ToString());
+                    break;
+            }
+            builder.Clear();
+        }
+
+        private static Dictionary<string, MetadataItem> MergeYamlProjectMetadata(CompilationAnalysisContext context, List<MetadataItem> projectMetadataList)
         {
             if (projectMetadataList == null || projectMetadataList.Count == 0)
             {
@@ -183,9 +316,36 @@ namespace Lunet.Api.DotNet.Extractor
                             }
                         }
 
-                        if (!allMembers.ContainsKey(ns.Name))
+                        if (allMembers.TryGetValue(ns.Name, out var existingNs))
                         {
-                            allMembers.Add(ns.Name, ns);
+                            // Merge the extra documentation
+                            if (ns.IsExtraDoc)
+                            {
+                                existingNs.Summary = ConcatDoc(existingNs.Summary, ns.Summary);
+                                existingNs.Remarks = ConcatDoc(existingNs.Remarks, ns.Remarks);
+                                if (ns.Examples != null)
+                                {
+                                    if (existingNs.Examples == null)
+                                    {
+                                        existingNs.Examples = ns.Examples;
+                                    }
+                                    else
+                                    {
+                                        existingNs.Examples.AddRange(ns.Examples);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (ns.IsExtraDoc)
+                            {
+                                context.ReportDiagnostic(Diagnostic.Create(ErrorDiagnostic, null, $"Unexpected uid {ns.Name} found in extra documentation file `{ns.ExtraDocFilePath}`. The uid does not match any existing documentation item."));
+                            }
+                            else
+                            {
+                                allMembers.Add(ns.Name, ns);
+                            }
                         }
 
                         ns.Items?.ForEach(s =>
@@ -216,6 +376,14 @@ namespace Lunet.Api.DotNet.Extractor
             }
 
             return allMembers;
+        }
+
+        private static string ConcatDoc(string left, string right)
+        {
+            if (left == null && right == null) return null;
+            if (left == null) return right;
+            if (right == null) return left;
+            return $"{left}\n{right}";
         }
 
         private static Dictionary<string, ReferenceItem> MergeYamlProjectReferences(List<MetadataItem> projectMetadataList)

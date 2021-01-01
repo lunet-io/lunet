@@ -8,6 +8,7 @@
     <CompilerVisibleProperty Include="IntermediateOutputPath" />
     <CompilerVisibleProperty Include="ProjectDir" />
     <CompilerVisibleProperty Include="GenerateDocumentationFile" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="LunetApiDotNet" />
     <Analyzer Include="$(MSBuildThisFileDirectory)Lunet.Api.DotNet.Extractor.dll"/>
   </ItemGroup>
 </Project>

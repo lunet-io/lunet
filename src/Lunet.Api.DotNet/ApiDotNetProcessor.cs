@@ -6,16 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipes;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using Autofac.Core.Activators;
 using DotNet.Globbing;
 using Lunet.Api.DotNet.Extractor;
 using Lunet.Core;
 using Lunet.Json;
-using Scriban.Functions;
 using Scriban.Runtime;
 using Zio;
 using Zio.FileSystems;
@@ -81,7 +76,7 @@ namespace Lunet.Api.DotNet
                     if (obj.GetSafeValue<string>("type") == "Namespace")
                     {
                         ScriptObject nsScriptObject;
-                        if (!Cache.Objects.TryGetValue(uid, out var nsObject))
+                        if (!namespaces.TryGetValue(uid, out var nsObject))
                         {
                             nsObject = new ScriptObject();
                             nsScriptObject = (ScriptObject)nsObject;
@@ -96,7 +91,8 @@ namespace Lunet.Api.DotNet
                             nsScriptObject.Add("children", new ScriptArray());
                             nsScriptObject.Add("assemblies", new ScriptArray());
                             nsScriptObject.Add("langs", new ScriptArray());
-                            Cache.Objects.Add(uid, nsObject);
+                            // TODO: merge summary/remarks/example...
+                            Cache.Objects[uid] = nsObject;
                         }
                         else
                         {
@@ -234,6 +230,11 @@ namespace Lunet.Api.DotNet
                     $"Start building api dotnet for `{project.Name}`."
                 );
                 var clock = Stopwatch.StartNew();
+
+                var rerunArguments = new List<string>();
+
+                rebuild_doc:
+
                 var buildProject = new DotNetProgram("build")
                 {
                     Arguments =
@@ -243,6 +244,7 @@ namespace Lunet.Api.DotNet
                     },
                     WorkingDirectory = Path.GetDirectoryName(project.Path)
                 };
+                buildProject.Arguments.AddRange(rerunArguments);
 
                 // Copy global properties
                 foreach (var prop in sharedProperties)
@@ -278,8 +280,16 @@ namespace Lunet.Api.DotNet
                     {
                         if (requiresRebuild)
                         {
-                            project.CacheState = ApitDotNetCacheState.Invalid;
-                            Site.Error($"Unable to build api dotnet for `{project.Name}`");
+                            if (rerunArguments.Count > 0)
+                            {
+                                project.CacheState = ApitDotNetCacheState.Invalid;
+                                Site.Error($"Unable to build api dotnet for `{project.Name}`");
+                            }
+                            else
+                            {
+                                rerunArguments.Add("-t:Clean;Build");
+                                goto rebuild_doc;
+                            }
                         }
                         else
                         {

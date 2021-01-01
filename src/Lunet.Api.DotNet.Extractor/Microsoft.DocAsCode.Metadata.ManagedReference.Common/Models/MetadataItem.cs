@@ -25,6 +25,14 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
         [YamlIgnore]
         [JsonIgnore]
+        public bool IsExtraDoc { get; set; }
+
+        [YamlIgnore]
+        [JsonIgnore]
+        public string ExtraDocFilePath { get; set; }
+        
+        [YamlIgnore]
+        [JsonIgnore]
         public string RawComment { get; set; }
 
         [JsonProperty(Constants.PropertyName.IsEii)]
