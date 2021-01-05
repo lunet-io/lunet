@@ -24,6 +24,8 @@ namespace Lunet.Layouts
 
         private readonly List<KeyValuePair<string, GetLayoutPathsDelegate>> _layoutPathProviders;
 
+        private readonly Dictionary<ContentType, ILayoutConverter> _converters;
+
         public static readonly ScriptVariableGlobal ContentVariable = new ScriptVariableGlobal("content");
 
         public const string LayoutFolderName = "layouts";
@@ -36,6 +38,7 @@ namespace Lunet.Layouts
         {
             _layouts = new Dictionary<LayoutKey, LayoutContentObject>();
             _layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
+            _converters = new Dictionary<ContentType, ILayoutConverter>();
 
             RegisterLayoutPathProvider(ContentLayoutTypes.Single, SingleLayout);
             RegisterLayoutPathProvider(ContentLayoutTypes.List, DefaultLayout);
@@ -48,18 +51,9 @@ namespace Lunet.Layouts
             _layoutPathProviders.Add(new KeyValuePair<string, GetLayoutPathsDelegate>(layoutType, layoutPathsDelegate));
         }
 
-        private GetLayoutPathsDelegate FindLayoutPaths(string layoutType)
+        public void RegisterConverter(ContentType contentType, ILayoutConverter converter)
         {
-            foreach (var item in _layoutPathProviders)
-            {
-                if (item.Key == layoutType)
-                {
-                    return item.Value;
-                }
-            }
-            
-            // Always return a default layout
-            return DefaultLayout;
+            _converters[contentType] = converter ?? throw new ArgumentNullException(nameof(converter));
         }
 
         public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
@@ -68,13 +62,18 @@ namespace Lunet.Layouts
             
             if (page.ScriptObjectLocal == null)
             {
-                return ContentResult.None;
+                return TryConvertContent(page, false) ? ContentResult.Continue : ContentResult.None;
             }
 
             var layoutName = page.Layout ?? page.Section;
             var layoutType = page.LayoutType;
+            var layoutContentType = page.ContentType;
             layoutName = NormalizeLayoutName(page, layoutName, true);
-            var layoutNames = new HashSet<string>() {layoutName};
+            var layoutKey = GetLayoutKey(layoutName, layoutType, layoutContentType);
+            var layoutKeys = new HashSet<string>()
+            {
+                layoutKey
+            };
             var result = ContentResult.Continue;
 
             // For a list rendering the pages is setup
@@ -87,14 +86,28 @@ namespace Lunet.Layouts
             do
             {
                 continueLayout = false;
-                // TODO: We are using content type here with the layout extension, is it ok?
-                var layoutObject = GetLayout(layoutName, layoutType, page.ContentType);
+                var layoutObject = GetLayout(layoutName, layoutType, layoutContentType);
 
-                // If we haven't found any layout, this is not an error, so we let the 
-                // content as-is
+                // If we don't have a layout, try to convert the content
                 if (layoutObject == null)
                 {
-                    Site.Warning($"No layout found for content [{page.Url}] with layout name [{layoutName}] and type [{layoutType}]");
+                    // Perform a content conversion if supported and we don't have any layout available
+                    var previousContentType = page.ContentType;
+                    if (TryConvertContent(page, true))
+                    {
+                        layoutContentType = page.ContentType;
+
+                        // If the conversion succeeded, we should have a different layout
+                        // in that case, we can try to resolve the layout with the new extension
+                        if (previousContentType != layoutContentType)
+                        {
+                            continueLayout = true;
+                            continue;
+                        }
+                    }
+
+                    // otherwise, we have an error
+                    Site.Error($"No layout found for content [{page.Url}] with layout name [{layoutName}] and type [{layoutType}] with extension `{layoutContentType}`");
                     break;
                 }
 
@@ -113,20 +126,25 @@ namespace Lunet.Layouts
                 // We manage global locally here as we need to push the local variable ScriptVariable.BlockDelegate
                 if (Site.Scripts.TryEvaluatePage(page, layoutObject.Script, layoutObject.SourceFile.Path, page.ScriptObjectLocal))
                 {
-                    var nextLayoutName = layoutObject.GetSafeValue<string>(PageVariables.Layout);
-                    var nextLayoutType = layoutObject.GetSafeValue<string>(PageVariables.LayoutType);
-                    var nextLayout = NormalizeLayoutName(layoutObject, nextLayoutName, false);
-                    if (nextLayout != layoutName && nextLayout != null)
+                    var nextLayoutName = layoutObject.GetSafeValue<string>(PageVariables.Layout) ?? layoutName;
+                    var nextLayoutType = layoutObject.GetSafeValue<string>(PageVariables.LayoutType) ?? layoutType;
+                    var nextRawLayoutContentType = layoutObject.GetSafeValue<string>(PageVariables.LayoutContentType);
+                    var nextLayoutContentType = nextRawLayoutContentType != null ? new ContentType(nextRawLayoutContentType) : layoutContentType;
+                    nextLayoutName = NormalizeLayoutName(layoutObject, nextLayoutName, false);
+                    if ((nextLayoutName != layoutName || nextLayoutType != layoutType || nextLayoutContentType != layoutContentType) && nextLayoutName != null)
                     {
-                        if (!layoutNames.Add(nextLayout))
+                        layoutKey = GetLayoutKey(nextLayoutName, nextLayoutType, nextLayoutContentType);
+
+                        if (!layoutKeys.Add(layoutKey))
                         {
-                            Site.Error($"Invalid recursive layout `{nextLayout}` from script `{layoutObject.SourceFile.Path}`");
+                            Site.Error($"Invalid recursive layout `{layoutKey.Replace("|", ", ")}` from script `{layoutObject.SourceFile.Path}`");
                             result = ContentResult.Break;
                             break;
                         }
 
-                        layoutName = nextLayout;
-                        layoutType = nextLayoutType ?? layoutType;
+                        layoutName = nextLayoutName;
+                        layoutType = nextLayoutType;
+                        layoutContentType = nextLayoutContentType;
                         continueLayout = true;
                     }
                 }
@@ -135,6 +153,44 @@ namespace Lunet.Layouts
 
             // The file has been correctly layout
             return result;
+        }
+        
+        private GetLayoutPathsDelegate FindLayoutPaths(string layoutType)
+        {
+            foreach (var item in _layoutPathProviders)
+            {
+                if (item.Key == layoutType)
+                {
+                    return item.Value;
+                }
+            }
+
+            // Always return a default layout
+            return DefaultLayout;
+        }
+        
+        private bool TryConvertContent(ContentObject page, bool forLayout)
+        {
+            // Perform a content conversion if supported and we don't have any layout available
+            _converters.TryGetValue(page.ContentType, out var converter);
+
+            // Certain converter should always convert their content by default if there are no layout
+            // (e.g scss => css)
+            if (converter != null && (forLayout || converter.ShouldConvertIfNoLayout))
+            {
+                var previousContentType = page.ContentType;
+                // Convert the page to the desired output
+                converter.Convert(page);
+
+                return page.ContentType != previousContentType;
+            }
+
+            return false;
+        }
+
+        private static string GetLayoutKey(string layoutName, string layoutType, ContentType contentType)
+        {
+            return $"{layoutName}|{layoutType}|{contentType}";
         }
 
         private LayoutContentObject GetLayout(string layoutName, string layoutType, ContentType contentType)

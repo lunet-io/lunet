@@ -71,18 +71,36 @@ namespace Lunet.Core
             return exts;
         }
 
+        private static readonly string[] ScribanPrefixes = new[]
+        {
+            "",
+            "scriban-",
+            "sbn-",
+            "sbn"
+        };
+
+        private static readonly (string extension, ContentType contentType)[] ScribanDefaultExtensions = new[]
+        {
+            ("htm", ContentType.Html),
+            ("html", ContentType.Html),
+            ("md", ContentType.Markdown),
+            ("css", ContentType.Css),
+            ("xml", ContentType.Xml),
+            ("js", ContentType.Js),
+            ("txt", ContentType.Txt),
+        };
+
         private void AddBuiltins()
         {
-            _extensionToContentType[".htm"] = ContentType.Html;
-            _extensionToContentType[".html"] = ContentType.Html;
-            _extensionToContentType[".scriban-html"] = ContentType.Html;
-            _extensionToContentType[".scriban-htm"] = ContentType.Html;
-            _extensionToContentType[".sbn-html"] = ContentType.Html;
-            _extensionToContentType[".sbn-htm"] = ContentType.Html;
-            _extensionToContentType[".sbnhtml"] = ContentType.Html;
-            _extensionToContentType[".sbnhtm"] = ContentType.Html;
+            foreach (var prefix in ScribanPrefixes)
+            {
+                foreach ((string extension, ContentType contentType) in ScribanDefaultExtensions)
+                {
+                    _extensionToContentType[$".{prefix}{extension}"] = contentType;
+                }
+            }
             _extensionToContentType[".markdown"] = ContentType.Markdown;
-            _extensionToContentType[".md"] = ContentType.Markdown;
+
             // Not used, but for example
             _extensionToContentType[".jpg"] = ContentType.Jpeg;
             _extensionToContentType[".jpeg"] = ContentType.Jpeg;

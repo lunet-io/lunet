@@ -11,5 +11,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
+    <ProjectReference Include="..\Lunet.Layouts\Lunet.Layouts.csproj" />
   </ItemGroup>
 </Project>

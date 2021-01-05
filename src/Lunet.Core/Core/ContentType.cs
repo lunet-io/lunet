@@ -5,9 +5,9 @@ using System;
 
 namespace Lunet.Core
 {
-    public struct ContentType : IEquatable<ContentType>
+    public readonly struct ContentType : IEquatable<ContentType>
     {
-        public static ContentType Empty = new ContentType(String.Empty);
+        public static ContentType Empty = new ContentType(string.Empty);
 
         public static readonly ContentType Html = new ContentType("html");
 
@@ -38,18 +38,18 @@ namespace Lunet.Core
 
         public bool Equals(ContentType other)
         {
-            return String.Equals(Name, other.Name);
+            return string.Equals(Name, other.Name);
         }
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is ContentType && Equals((ContentType) obj);
+            return obj is ContentType contentType && Equals(contentType);
         }
 
         public override int GetHashCode()
         {
-            return Name.GetHashCode();
+            return Name?.GetHashCode() ?? 0;
         }
 
         public static bool operator ==(ContentType left, ContentType right)

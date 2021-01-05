@@ -36,6 +36,8 @@ namespace Lunet.Core
 
         public const string LayoutType = "layout_type";
 
+        public const string LayoutContentType = "layout_content_type";
+
         public const string Section = "section";
 
         public const string PathInSection = "path_in_section";
