@@ -17,7 +17,7 @@ namespace Lunet.Core
     /// </summary>
     /// <seealso cref="Scriban.Runtime.ScriptObject" />
     /// <seealso cref="IDynamicObject" />
-    public class DynamicObject : ScriptObject, IDynamicObject
+    public class DynamicObject : ScriptObject
     {
         public DynamicObject()
         {

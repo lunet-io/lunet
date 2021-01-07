@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Lunet.Core;
+using Scriban.Runtime;
 using Zio;
 
 namespace Lunet.Resources
@@ -30,7 +31,7 @@ namespace Lunet.Resources
 
         public List<ResourceObject> Resources { get; }
 
-        public IEnumerable<IDynamicObject> ResourcesForScripting
+        public IEnumerable<ResourceObject> ResourcesForScripting
         {
             get
             {

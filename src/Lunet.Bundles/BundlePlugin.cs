@@ -19,8 +19,6 @@ namespace Lunet.Bundles
     /// </summary>
     public class BundlePlugin : SitePlugin
     {
-        private delegate IDynamicObject BundleFunctionDelegate(params object[] args);
-
         public const string DefaultBundleName = "site";
 
         public BundlePlugin(SiteObject site) : base(site)
@@ -33,7 +31,7 @@ namespace Lunet.Bundles
             Site.Html.Head.Includes.Add("_builtins/bundle.sbn-html");
 
             // The "bundle" function is global as it is used inside scripts and inside
-            Site.Scripts.Builtins.Import(GlobalVariables.BundleFunction, (BundleFunctionDelegate)BundleFunction);
+            Site.Scripts.Builtins.Import(GlobalVariables.BundleFunction, (Func<object[], ScriptObject>)BundleFunction);
 
             BundleProcessor = new BundleProcessor(this);
 

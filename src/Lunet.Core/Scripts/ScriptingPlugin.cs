@@ -99,7 +99,7 @@ namespace Lunet.Scripts
             return new ScriptInstance(template.HasErrors, (string)scriptPath, frontmatter, template.Page);
         }
 
-        public bool TryImportScript(string scriptText, UPath scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
+        public bool TryImportScript(string scriptText, UPath scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null, ScriptMode scriptMode = ScriptMode.ScriptOnly)
         {
             if (scriptText == null) throw new ArgumentNullException(nameof(scriptText));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
@@ -108,7 +108,7 @@ namespace Lunet.Scripts
             result = null;
             context ??= new LunetTemplateContext(Builtins);
 
-            var scriptResult = ParseScript(scriptText, scriptPath.FullName, ScriptMode.ScriptOnly);
+            var scriptResult = ParseScript(scriptText, scriptPath.FullName, scriptMode);
             if (!scriptResult.HasErrors)
             {
                 if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
@@ -144,14 +144,23 @@ namespace Lunet.Scripts
             return false;
         }
 
-        public bool TryImportScriptStatement(string scriptStatement, IDynamicObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
+        public bool TryImportScriptStatement(string scriptStatement, ScriptObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
         {
             if (scriptStatement == null) throw new ArgumentNullException(nameof(scriptStatement));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
             return TryImportScript(scriptStatement, "__script__", scriptObject, flags, out result, context);
         }
 
-        public bool TryImportScriptFromFile(FileEntry scriptPath, IDynamicObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
+        public bool TryImportInclude(UPath includePath, ScriptObject toObject)
+        {
+            if (toObject == null) throw new ArgumentNullException(nameof(toObject));
+            if (includePath.IsNull) throw new ArgumentNullException(nameof(includePath));
+            if (includePath.IsAbsolute) throw new ArgumentException("Include path must be relative", nameof(includePath));
+            
+            return TryImportScriptFromFile(new FileEntry(Site.MetaFileSystem, UPath.Root / IncludesDirectoryName / includePath), toObject, ScriptFlags.Expect, out _, scriptMode: ScriptMode.Default);
+        }
+
+        public bool TryImportScriptFromFile(FileEntry scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null, ScriptMode scriptMode = ScriptMode.ScriptOnly)
         {
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
@@ -170,7 +179,7 @@ namespace Lunet.Scripts
             if (scriptExist)
             {
                 var configAsText = scriptPath.ReadAllText();
-                return TryImportScript(configAsText, scriptPath.Path, scriptObject, flags, out result, context);
+                return TryImportScript(configAsText, scriptPath.Path, scriptObject, flags, out result, context, scriptMode);
             }
             return true;
         }
@@ -189,18 +198,23 @@ namespace Lunet.Scripts
             {
                 context.PushGlobal(newGlobal);
             }
+
             try
             {
                 context.EnableOutput = false;
                 context.TemplateLoader = new TemplateLoaderFromIncludes(Site);
 
-                Site.SetValue(PageVariables.Site, this, true);
+                context.CurrentGlobal.SetValue(PageVariables.Site, Site, true);
                 frontMatter.Evaluate(context);
             }
             catch (ScriptRuntimeException exception)
             {
                 LogException(exception);
                 return false;
+            }
+            finally
+            {
+                context.CurrentGlobal.Remove(PageVariables.Site);
             }
             return true;
         }
