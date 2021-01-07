@@ -68,7 +68,7 @@ namespace Lunet.Core
             }
         }
 
-        private void RegisterUid(ContentObject page)
+        public void RegisterUid(ContentObject page)
         {
             var uid = page.Uid;
             if (string.IsNullOrEmpty(uid)) return;

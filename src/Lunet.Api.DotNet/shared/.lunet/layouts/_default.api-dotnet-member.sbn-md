@@ -1,0 +1,36 @@
++++
+layout = site.api.dotnet.layout ?? site.layout ?? "_default"
+layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
++++
+{{~ $table_class = site.api.dotnet.table_class ?? "api-dotnet-members-table" }}
+# {{ member.name }} {{ member.type }}
+
+Namespace: {{ member.namespace }} \
+Assembly: {{ member.assemblies[0] }}.dll
+
+{{~ member.summary ~}}
+
+```csharp
+{{~ member.syntax.content }}
+```
+{{~ if member.examples && member.examples.size > 0 ~}}
+
+## Examples
+    {{~ for example in member.examples ~}}
+        {{~ example }}
+    {{~ end ~}}
+{{~ end ~}}
+{{~ if member.remarks ~}}
+
+## Remarks
+    {{~ member.remarks ~}}
+{{~ end ~}}
+
+{{~ api_dotnet_members_render member "constructors" "Constructors" $table_class ~}}
+{{~ api_dotnet_members_render member "fields" "Fields" $table_class ~}}
+{{~ api_dotnet_members_render member "properties" "Properties" $table_class ~}}
+{{~ api_dotnet_members_render member "methods" "Methods" $table_class ~}}
+{{~ api_dotnet_members_render member "events" "Events" $table_class ~}}
+{{~ api_dotnet_members_render member "operators" "Operators" $table_class ~}}
+{{~ api_dotnet_members_render member "extensions" "Extensions" $table_class ~}}
+{{~ api_dotnet_members_render member "explicit_interface_implementation_methods" "Explciit Interface Implementation Methods" $table_class ~}}

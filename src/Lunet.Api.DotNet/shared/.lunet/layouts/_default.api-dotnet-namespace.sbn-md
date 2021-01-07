@@ -1,0 +1,16 @@
++++
+layout = site.api.dotnet.layout ?? site.layout ?? "_default"
+layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
++++
+{{~ $table_class = site.api.dotnet.table_class ?? "api-dotnet-members-table" }}
+# {{ namespace.name }} Namespace
+{{~ namespace.summary ~}}
+{{~ api_dotnet_members_render namespace "classes" "Classes" $table_class ~}}
+{{~ api_dotnet_members_render namespace "structs" "Structs" $table_class ~}}
+{{~ api_dotnet_members_render namespace "interfaces" "Interfaces" $table_class ~}}
+{{~ api_dotnet_members_render namespace "enums" "Enums" $table_class ~}}
+{{~ api_dotnet_members_render namespace "delegates" "Delegates" $table_class ~}}
+{{~ if namespace.remarks ~}}
+## Remarks
+{{~ namespace.remarks ~}}
+{{~ end ~}}

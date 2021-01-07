@@ -1,0 +1,10 @@
++++
+layout = site.api.dotnet.layout ?? site.layout ?? "_default"
+layout_type = site.api.dotnet.layout_type ?? "single"
+layout_content_type = "htm"
++++
+<div class="api-dotnet">
+
+{{~ content ~}}
+
+</div>

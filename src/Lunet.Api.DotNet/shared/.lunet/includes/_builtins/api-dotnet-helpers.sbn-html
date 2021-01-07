@@ -1,0 +1,26 @@
+{{ # This file is loaded just once  }}
+{{~ func xref_link(member) ~}}
+<a href="{{ "xref:" + member.uid | relref }}">{{ member.name | html.escape }}</a>
+{{~ end ~}}
+
+{{~ func api_dotnet_members_render(api_object, name, text, table_class) ~}}
+  {{~ if api_object[name] ~}}
+## {{text}}
+
+<table class='{{table_class}}'>
+
+    {{~ for member in api_object[name] ~}}
+<tr>
+
+  <td>{{member | xref_link}}
+  <td>
+  
+      {{~ member.summary ~}}
+  
+</tr>  
+
+    {{~ end ~}}
+</table>
+
+  {{~ end ~}}
+{{~ end ~}}

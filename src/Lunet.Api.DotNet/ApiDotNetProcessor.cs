@@ -2,16 +2,16 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using DotNet.Globbing;
 using Lunet.Api.DotNet.Extractor;
 using Lunet.Core;
 using Lunet.Json;
 using Scriban.Runtime;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using Zio;
 using Zio.FileSystems;
 
@@ -20,21 +20,24 @@ namespace Lunet.Api.DotNet
     public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
     {
         private readonly string _customMsBuildFileProps;
-        private const int MaxNumberOfPipeServers = 16;
+        private readonly Stack<ScriptObjectCollection> _pool;
+        private readonly ScriptObject _helpers;
 
         public ApiDotNetProcessor(ApiDotNetPlugin plugin, ApiDotNetConfig config) : base(plugin)
         {
+            _pool = new Stack<ScriptObjectCollection>();
             Config = config;
             _customMsBuildFileProps = Path.Combine(AppContext.BaseDirectory, SiteFileSystems.SharedFolderName, SiteFileSystems.LunetFolderName, SiteFileSystems.ModulesFolderName, "api", "dotnet", "Lunet.Api.DotNet.Extractor.props");
-            Cache = new ApiDotNetCache();
+            ApiDotNetObject = new ApiDotNetObject(this);
             Projects = new List<ApiDotNetProject>();
+            _helpers = new ScriptObject();
         }
 
         public ApiDotNetConfig Config { get; }
         
         public List<ApiDotNetProject> Projects { get; }
         
-        public ApiDotNetCache Cache { get; }
+        public ApiDotNetObject ApiDotNetObject { get; }
 
         public override void Process(ProcessingStage stage)
         {
@@ -46,7 +49,15 @@ namespace Lunet.Api.DotNet
 
             if (Config.Projects == null || Config.Projects.Count == 0)
             {
-                Site.Warning("No projects configured for api.dotnet");
+                Site.Warning("No projects or assemblies configured for api.dotnet");
+                return;
+            }
+
+            // load include helpers
+            var includeHelperPath = Config.IncludeHelper ?? "_builtins/api-dotnet-helpers.sbn-html";
+            if (!Site.Scripts.TryImportInclude(includeHelperPath, _helpers))
+            {
+                Site.Error($"Unable to load include helper `{includeHelperPath}`");
                 return;
             }
 
@@ -57,11 +68,82 @@ namespace Lunet.Api.DotNet
             if (LoadGeneratedApis())
             {
                 UpdateUid();
+
+                ProcessObjects();
+            }
+
+            GeneratePages();
+        }
+
+        private void GeneratePages()
+        {
+            var objects = ApiDotNetObject.Objects;
+            foreach (var objPair in objects)
+            {
+                var obj = (ScriptObject)objPair.Value;
+                var uid = obj.GetSafeValue<string>("uid");
+                var url = $"/api/{uid}/readme.md";
+
+                DynamicContentObject content = null;
+                switch (GetTypeFromModel(obj))
+                {
+                    case "Namespace":
+                    {
+                        content = new DynamicContentObject(Site, url, "api")
+                        {
+                            ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
+                            LayoutType = "api-dotnet-namespace",
+                        };
+
+                        content.ScriptObjectLocal["namespace"] = obj;
+                        break;
+                    }
+                    case "Class":
+                    case "Interface":
+                    case "Struct":
+                    case "Enum":
+                    case "Delegate":
+                    case "Constructor":
+                    case "Field":
+                    case "Property":
+                    case "Method":
+                    case "Operator":
+                    case "Event":
+                    case "Extension":
+                    case "EiiMethod":
+                    {
+                            content = new DynamicContentObject(Site, url, "api")
+                        {
+                            ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
+                            LayoutType = "api-dotnet-member",
+                        };
+
+                        content.ScriptObjectLocal["member"] = obj;
+                        break;
+                    }
+                }
+
+                if (content != null)
+                {
+                    content.Uid = uid;
+                    content.Layout = Config.Layout ?? "_default";
+                    content.ContentType = ContentType.Markdown;
+                    content.Title = $"{obj["name"]} {obj["type"]}";
+
+                    // Copy helpers as if it was part of the file
+                    _helpers.CopyTo(content.ScriptObjectLocal);
+                    content.Initialize();
+                    Site.Content.Finder.RegisterUid(content);
+                    Site.DynamicPages.Add(content);
+                }
             }
         }
 
         private void UpdateUid()
         {
+            // Make sure the cache is cleared before starting again
+            ApiDotNetObject.Clear();
+
             var namespaces = new Dictionary<string, ScriptObject>();
             
             foreach (var project in Projects)
@@ -92,7 +174,7 @@ namespace Lunet.Api.DotNet
                             nsScriptObject.Add("assemblies", new ScriptArray());
                             nsScriptObject.Add("langs", new ScriptArray());
                             // TODO: merge summary/remarks/example...
-                            Cache.Objects[uid] = nsObject;
+                            ApiDotNetObject.Objects[uid] = nsObject;
                         }
                         else
                         {
@@ -117,18 +199,127 @@ namespace Lunet.Api.DotNet
                     }
                     else
                     {
-                        if (Cache.Objects.Contains(uid))
+                        if (ApiDotNetObject.Objects.Contains(uid))
                         {
                             Site.Error($"The api dotnet uid {uid} is already registered.");
                         }
                         
-                        Cache.Objects[uid] = obj;
+                        ApiDotNetObject.Objects[uid] = obj;
                     }
                 }
             }
 
             // Add namespaces when we are done
-            Cache.Namespaces.AddRange(namespaces.OrderBy(x => x.Key).Select(x => x.Value));
+            ApiDotNetObject.Namespaces.AddRange(namespaces.OrderBy(x => x.Key).Select(x => x.Value));
+        }
+
+        private void ProcessObjects()
+        {
+            var extensionMethods = new List<ScriptObject>();
+            var objects = ApiDotNetObject.Objects;
+            foreach (var objPair in objects)
+            {
+                var obj = (ScriptObject)objPair.Value;
+
+                var commonMembers = GetTypeFromModel(obj) == "Namespace" ? CommonNamespaceMembers : CommonMembers;
+                foreach (var commonMember in commonMembers)
+                {
+                    RecycleCollection(obj, commonMember.name);
+                }
+
+                var ids = obj.GetSafeValue<ScriptArray>("children")?.OfType<string>();
+                if (ids == null) continue;
+
+                foreach (var childId in ids)
+                {
+                    var childObj = (ScriptObject)objects[childId];
+                    if (childObj.GetSafeValue<bool>("isExtensionMethod"))
+                    {
+                        extensionMethods.Add(childObj);
+                    }
+
+                    var typeFromModel = GetTypeFromModel(childObj);
+                    foreach (var commonMember in commonMembers)
+                    {
+                        if (commonMember.type != typeFromModel) continue;
+                        AddToMemberCollection(obj, commonMember.name, childObj);
+                    }
+                }
+            }
+
+            // Attach extension methods to the this type if possible.
+            foreach (var extension in extensionMethods)
+            {
+                var thisTypeUid = (string)((ScriptObject) extension.GetSafeValue<ScriptObject>("syntax").GetSafeValue<ScriptArray>("parameters")[0])["type"];
+                // If the type is a generic, we don't support them for now.
+                if (thisTypeUid.StartsWith("{")) continue;
+
+                // Try to resolve the this type of the extension method
+                if (objects.TryGetValue(thisTypeUid, out var thisTypeObj) && thisTypeObj is ScriptObject thisType)
+                {
+                    AddToMemberCollection(thisType, "extensions", extension);
+                }
+            }
+
+            // TODO: order extension methods by name
+        }
+
+        private static string GetTypeFromModel(ScriptObject obj)
+        {
+            var type = obj["type"] as string;
+            if (type == "Method" && obj.GetSafeValue<bool>("isEii"))
+            {
+                type = "EiiMethod";
+            }
+
+            return type;
+        }
+
+        private readonly (string name, string type)[] CommonMembers = new (string name, string type)[]
+        {
+            ("constructors", "Constructor"),
+            ("fields", "Field"),
+            ("properties", "Property"),
+            ("methods", "Method"),
+            ("events", "Event"),
+            ("operators", "Operator"),
+            ("extensions", "Extension"),
+            ("explicit_interface_implementation_methods", "EiiMethod"),
+        };
+
+        private readonly (string name, string type)[] CommonNamespaceMembers = new (string name, string type)[]
+        {
+            ("classes", "Class"),
+            ("structs", "Struct"),
+            ("interfaces", "Interface"),
+            ("enums", "Enum"),
+            ("delegates", "Delegate"),
+        };
+
+        private void RecycleCollection(ScriptObject obj, string name)
+        {
+            if (obj[name] is ScriptObjectCollection collect)
+            {
+                collect.Clear();
+                _pool.Push(collect);
+            }
+            obj.Remove(name);
+        }
+
+        private void AddToMemberCollection(ScriptObject obj, string memberName, ScriptObject member)
+        {
+            if (!obj.TryGetValue(memberName, out var collectObj) || collectObj is not ScriptObjectCollection)
+            {
+                collectObj = _pool.Count > 0 ? _pool.Pop() : new ScriptObjectCollection();
+                obj[memberName] = collectObj;
+            }
+
+            var collection = (ScriptObjectCollection) collectObj;
+            collection.Add(member);
+        }
+
+        private class ScriptObjectCollection : List<ScriptObject>
+        {
         }
 
         FileSystem GetCacheFileSystem()
@@ -385,33 +576,6 @@ namespace Lunet.Api.DotNet
         private class GlobalCacheKey
         {
             public static readonly GlobalCacheKey Instance = new GlobalCacheKey();
-        }
-    }
-
-    public class ApiDotNetCache : ScriptObject
-    {
-        public ApiDotNetCache()
-        {
-            Namespaces = new ScriptArray<ScriptObject>();
-            Objects = new ScriptObject();
-        }
-
-        public new void Clear()
-        {
-            Namespaces.Clear();
-            Objects.Clear();
-        }
-
-        public ScriptArray<ScriptObject> Namespaces
-        {
-            get => this.GetSafeValue<ScriptArray<ScriptObject>>("namespaces");
-            private init => this.SetValue("namespaces", value, true);
-        }
-
-        public ScriptObject Objects
-        {
-            get => this.GetSafeValue<ScriptObject>("objects");
-            private init => this.SetValue("objects", value, true);
         }
     }
 }

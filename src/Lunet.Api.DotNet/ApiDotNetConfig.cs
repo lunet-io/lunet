@@ -30,5 +30,17 @@ namespace Lunet.Api.DotNet
             get => this.GetSafeValue<ScriptObject>("properties");
             set => this.SetValue("properties", value);
         }
+
+        public string IncludeHelper
+        {
+            get => this.GetSafeValue<string>("include_helper");
+            set => this.SetValue("include_helper", value);
+        }
+
+        public string Layout
+        {
+            get => this.GetSafeValue<string>("layout");
+            set => this.SetValue("layout", value);
+        }
     }
 }
