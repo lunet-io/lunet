@@ -10,33 +10,23 @@
   <xsl:param name="input:language"/>
 
   <xsl:template match="para">
-    <p>
-      <xsl:apply-templates />
-    </p>
+    <p><xsl:apply-templates /></p>
   </xsl:template>
 
   <xsl:template match="b">
-    <strong>
-      <xsl:apply-templates />
-    </strong>
+    <strong><xsl:apply-templates /></strong>
   </xsl:template>
 
   <xsl:template match="i">
-    <em>
-      <xsl:apply-templates />
-    </em>
+    <em><xsl:apply-templates /></em>
   </xsl:template>
 
   <xsl:template match="ui">
-    <strong>
-      <xsl:apply-templates />
-    </strong>
+    <strong><xsl:apply-templates /></strong>
   </xsl:template>
 
   <xsl:template match="c">
-    <code>
-      <xsl:apply-templates />
-    </code>
+    <code><xsl:apply-templates /></code>
   </xsl:template>
 
   <xsl:template match="code">
