@@ -17,12 +17,9 @@ namespace Lunet.Menus
 
         private readonly List<MenuObject> _menus;
 
-        private readonly Dictionary<UPath, ContentObject> _pages;
-        
         public MenuProcessor(MenuPlugin plugin) : base(plugin)
         {
             _menus = new List<MenuObject>();
-            _pages = new Dictionary<UPath, ContentObject>();
         }
 
         public override string Name => "menus";
@@ -35,7 +32,7 @@ namespace Lunet.Menus
             {
                 if (menu.Path != null)
                 {
-                    if (!_pages.TryGetValue(menu.Path, out ContentObject page))
+                    if (!Site.Content.Finder.TryFindByPath(menu.Path, out ContentObject page))
                     {
                         Site.Error($"Cannot find menu path {menu.Path}.");
                         continue;
@@ -84,8 +81,6 @@ namespace Lunet.Menus
 
             lock (_menus)
             {
-                _pages.Add(page.Path, page);
-                
                 if (page.Path.GetName() != MenuFileName)
                 {
                     return ContentResult.Continue;
