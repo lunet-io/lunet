@@ -35,7 +35,7 @@ namespace Lunet.Resources
                 new NpmResourceProvider(this)
             };
             Site.SetValue(SiteVariables.Resources, this, true);
-            Site.Scripts.SiteFunctions.Import(SiteVariables.ResourceFunction, (Func<object, string, object>)ResourceFunction);
+            Site.Builtins.Import(SiteVariables.ResourceFunction, (Func<object, string, object>)ResourceFunction);
         }
 
         public OrderedList<ResourceProvider> Providers { get; }

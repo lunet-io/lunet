@@ -49,7 +49,7 @@ namespace Lunet.Server
             var newErrorRedirect = from.ErrorRedirect ?? DefaultRedirect;
             var newBaseUrl = from.BaseUrl ?? DefaultBaseUrl;
             var newEnvironement = from.Environment ?? DefaultEnvironment;
-            var newLogging = from.Scripts.SiteFunctions.LogObject.GetSafeValue<bool>("server");
+            var newLogging = from.Builtins.LogObject.GetSafeValue<bool>("server");
             var newLiveReload = from.GetLiveReload();
 
             var needNewHost = _host == null ||

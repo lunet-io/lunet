@@ -25,21 +25,14 @@ namespace Lunet.Scripts
         internal ScriptingPlugin(SiteObject site) : base(site)
         {
             unauthorizedTemplateLoader = new TemplateLoaderUnauthorized(Site);
-            Builtins = TemplateContext.GetDefaultBuiltinObject();
-            SiteFunctions = new ScriptGlobalFunctions(this);
+            ScribanBuiltins = TemplateContext.GetDefaultBuiltinObject();
             // Add default scriban frontmatter parser
             FrontMatterParsers = new OrderedList<IFrontMatterParser> {new ScribanFrontMatterParser(this)};
         }
 
-        public ScriptObject Builtins { get; }
+        public ScriptObject ScribanBuiltins { get; }
         
         public OrderedList<IFrontMatterParser> FrontMatterParsers { get; }
-
-        /// <summary>
-        /// Gets the functions that are only accessible from a sban/script file (and not from a page)
-        /// </summary>
-        public ScriptGlobalFunctions SiteFunctions { get; }
-
 
         public ScriptFunction CompileAnonymous(string expression)
         {
@@ -106,14 +99,14 @@ namespace Lunet.Scripts
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
             result = null;
-            context ??= new LunetTemplateContext(Builtins);
+            context ??= new LunetTemplateContext(ScribanBuiltins);
 
             var scriptResult = ParseScript(scriptText, scriptPath.FullName, scriptMode);
             if (!scriptResult.HasErrors)
             {
                 if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
                 {
-                    context.PushGlobal(SiteFunctions);
+                    context.PushGlobal(Site.Builtins);
                 }
 
                 context.PushGlobal((ScriptObject)scriptObject);
@@ -221,7 +214,7 @@ namespace Lunet.Scripts
         
         public LunetTemplateContext CreatePageContext()
         {
-            var context = new LunetTemplateContext(Builtins);
+            var context = new LunetTemplateContext(ScribanBuiltins);
             context.PushGlobal(Site.Builtins);
             return context;
         }

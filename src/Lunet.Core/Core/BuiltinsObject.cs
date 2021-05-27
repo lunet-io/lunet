@@ -23,6 +23,31 @@ namespace Lunet.Core
             parent.SetValue(SiteVariables.Builtins, this, true);
             Head = parent.Scripts.CompileAnonymous("include '_builtins/head.sbn-html'");
 
+            // Add our own to_rfc822
+            var dateTimeFunctions = (DateTimeFunctions) Site.Scripts.ScribanBuiltins["date"];
+            dateTimeFunctions.Import("to_rfc822", (Func<DateTime, string>)ToRFC822);
+
+            // Add log object
+            LogObject = new DynamicObject<BuiltinsObject>(this);
+            SetValue("log", LogObject, true);
+            LogObject.SetValue("info", DelegateCustomFunction.Create((Action<string>)LogInfo), true);
+            LogObject.SetValue("error", DelegateCustomFunction.Create((Action<string>)LogError), true);
+            LogObject.SetValue("warn", DelegateCustomFunction.Create((Action<string>)LogWarning), true);
+            LogObject.SetValue("debug", DelegateCustomFunction.Create((Action<string>)LogDebug), true);
+            LogObject.SetValue("trace", DelegateCustomFunction.Create((Action<string>)LogTrace), true);
+            LogObject.SetValue("fatal", DelegateCustomFunction.Create((Action<string>)LogFatal), true);
+
+            // Setup global Lunet object
+            LunetObject = new LunetObject(Site);
+            SetValue("lunet", LunetObject, true);
+        }
+
+        public DynamicObject LogObject { get; }
+
+        public LunetObject LunetObject { get; }
+
+        public void Initialize()
+        {
             // Helpers used for declaring panels (e.g {{NOTE do}}This is a note.{{end}}
             var helpers = @"
 # Defines the generic alert helper function
@@ -46,12 +71,17 @@ func CAUTION; ALERT 'lunet-alert-caution' class:$.class @$0; end
 func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
 ";
 
-            parent.Scripts.TryImportScript(helpers, "internal_helpers", this, ScriptFlags.AllowSiteFunctions, out _);
-
-            // Add our own to_rfc822
-            var dateTimeFunctions = (DateTimeFunctions) Site.Scripts.Builtins["date"];
-            dateTimeFunctions.Import("to_rfc822", (Func<DateTime, string>)ToRFC822);
+            Site.Scripts.TryImportScript(helpers, "internal_helpers", this, ScriptFlags.AllowSiteFunctions, out _);
         }
+
+        private void LogInfo(string message) => Site.Info(message);
+        private void LogError(string message) => Site.Error(message);
+        private void LogFatal(string message) => Site.Fatal(message);
+        private void LogWarning(string message) => Site.Warning(message);
+        private void LogTrace(string message) => Site.Trace(message);
+        private void LogDebug(string message) => Site.Debug(message);
+
+
 
         public object Head
         {

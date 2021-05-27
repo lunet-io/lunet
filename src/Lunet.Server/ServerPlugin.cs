@@ -10,7 +10,7 @@ namespace Lunet.Server
     {
         public ServerPlugin(SiteObject site) : base(site)
         {
-            Site.Scripts.SiteFunctions.LogObject["server"] = true;
+            Site.Builtins.LogObject["server"] = true;
             // Setup by default livereload
             Site.SetLiveReload(true);
         }

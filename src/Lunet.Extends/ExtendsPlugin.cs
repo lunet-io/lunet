@@ -39,8 +39,8 @@ namespace Lunet.Extends
                 new DefaultExtendProvider()
             };
             CurrentList = new List<ExtendObject>();
-            Site.Scripts.Builtins.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
-            Site.Scripts.SiteFunctions.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
+            Site.Builtins.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
+            Site.Builtins.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
         }
 
         public UPath ExtendsFolder { get; }

@@ -41,6 +41,11 @@ namespace Lunet.Core
             MetaFileSystem = Config.FileSystems.MetaFileSystem;
             ConfigFile = Config.FileSystems.ConfigFile;
 
+            Scripts = new ScriptingPlugin(this);
+
+            Builtins = new BuiltinsObject(this);
+            Builtins.Initialize();
+
             LoggerFactory.LogFilter = LogFilter;
 
             StaticFiles = new PageCollection();
@@ -54,11 +59,7 @@ namespace Lunet.Core
             Html = new HtmlPage(this);
 
             Statistics = new SiteStatistics();
-
-            Scripts = new ScriptingPlugin(this);
-
-            Builtins = new BuiltinsObject(this);
-
+            
             Content = new ContentPlugin(this);
 
             Plugins = new OrderedList<ISitePlugin>();
@@ -235,7 +236,7 @@ namespace Lunet.Core
         
         private bool LogFilter(string category, LogLevel level)
         {
-            var levelStr = Scripts.SiteFunctions.LogObject.GetSafeValue<string>("level")?.ToLowerInvariant() ?? "info";
+            var levelStr = Builtins.LogObject.GetSafeValue<string>("level")?.ToLowerInvariant() ?? "info";
             var filterLevel = LogLevel.Information;
             switch (levelStr)
             {

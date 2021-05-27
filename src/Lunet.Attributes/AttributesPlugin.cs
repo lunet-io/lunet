@@ -15,7 +15,7 @@ namespace Lunet.Attributes
         public AttributesPlugin(SiteObject site) : base(site)
         {
             var attributesObject = new AttributesObject();
-            Site.Scripts.Builtins.SetValue("attributes", attributesObject, true);
+            Site.Builtins.SetValue("attributes", attributesObject, true);
             Site.Content.BeforeLoadingContentProcessors.Add(attributesObject.ProcessAttributesForPath);
         }
     }
