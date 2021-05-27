@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -11,6 +12,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Blake3;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Scriban.Parsing;
@@ -29,6 +31,7 @@ namespace Lunet.Core
         private readonly HashSet<DirectoryEntry> _trackingPreviousOutputDirectories;
         private readonly HashSet<FileEntry> _trackingPreviousOutputFiles;
         private readonly Dictionary<FileEntry, FileEntry> _trackingFilesWritten;
+        private const string SharedCacheContentKey = "content-cache-key";
         
         private readonly Dictionary<string, PageCollection> _mapTypeToPages;
         private bool _isInitialized;
@@ -186,7 +189,10 @@ namespace Lunet.Core
                 Site.Statistics.TotalTime = _totalDuration.Elapsed;
             }
         }
-        
+
+        // Used only to create a shared instance for hash
+        private readonly ConcurrentDictionary<UPath, Blake3.Hash> _cacheHashInstance = new ConcurrentDictionary<UPath, Hash>();
+
         public bool TryCopyContentToOutput(ContentObject fromFile, UPath outputPath)
         {
             if (fromFile == null) throw new ArgumentNullException(nameof(fromFile));
@@ -211,19 +217,33 @@ namespace Lunet.Core
                 // If the file has a content, we will use this instead
                 if (fromFile.Content != null)
                 {
-                    if (Site.CanTrace())
+                    // Use a site wide cache for content hash
+                    if (!Site.Config.SharedCache.TryGetValue(SharedCacheContentKey, out var values) || !(values is ConcurrentDictionary<UPath, Blake3.Hash> mapPathToHash))
                     {
-                        Site.Trace($"Write file [{outputFile}]");
+                        mapPathToHash = (ConcurrentDictionary<UPath, Blake3.Hash>) Site.Config.SharedCache.GetOrAdd(SharedCacheContentKey, _cacheHashInstance);
                     }
 
-                    using (var writer = new StreamWriter(outputFile.Open(FileMode.Create, FileAccess.Write)))
+                    // Don't output the file if the hash hasn't changed
+                    HashUtil.Blake3HashString(fromFile.Content, out var contentHash);
+                    if (!mapPathToHash.TryGetValue(outputPath, out var previousHash) || contentHash != previousHash)
                     {
-                        writer.Write(fromFile.Content);
-                        writer.Flush();
+                        if (Site.CanTrace())
+                        {
+                            Site.Trace($"Write file [{outputFile}]");
+                        }
 
-                        // Update statistics
-                        stat.Static = false;
-                        stat.OutputBytes += writer.BaseStream.Length;
+                        using (var writer = new StreamWriter(outputFile.Open(FileMode.Create, FileAccess.Write)))
+                        {
+                            writer.Write(fromFile.Content);
+                            writer.Flush();
+
+                            // Update statistics
+                            stat.Static = false;
+                            stat.OutputBytes += writer.BaseStream.Length;
+                        }
+
+                        // Store the new content hash
+                        mapPathToHash[outputPath] = contentHash;
                     }
                 }
                 // If the source file is not newer than the destination file, don't overwrite it

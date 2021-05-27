@@ -5,6 +5,7 @@
     <RootNamespace>Lunet</RootNamespace>
     <DefineConstants>NTAR_PUBLIC</DefineConstants>
     <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="Autofac" Version="6.1.0" />
+    <PackageReference Include="Blake3" Version="0.3.0" />
     <PackageReference Include="DotNet.Glob" Version="3.1.2" />
     <PackageReference Include="Markdig" Version="0.22.1" />
     <PackageReference Include="Scriban" Version="3.3.0" />

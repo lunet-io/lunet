@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ namespace Lunet.Core
             CommandRunners = new List<ISiteCommandRunner>();
             Log = LoggerFactory.CreateLogger("lunet");
             ShouldRunGarbageCollectorOnReload = true;
-            SharedCache = new Dictionary<object, object>();
+            SharedCache = new ConcurrentDictionary<object, object>();
         }
 
         public SiteFileSystems FileSystems { get; }
@@ -54,7 +55,7 @@ namespace Lunet.Core
         
         public bool ShowStacktraceOnError { get; set; }
         
-        public Dictionary<object, object> SharedCache { get; }
+        public ConcurrentDictionary<object, object> SharedCache { get; }
 
         public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : ISitePlugin
         {
