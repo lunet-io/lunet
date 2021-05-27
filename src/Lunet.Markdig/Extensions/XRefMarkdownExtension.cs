@@ -59,7 +59,7 @@ namespace Lunet.Markdown.Extensions
                 var endLink = endLinkXref - 1;
                 var link = slice.Text.Substring(startLink, endLink - startLink + 1);
                 
-                processor.Inline = new LinkInline()
+                processor.Inline = new AutolinkInline()
                 {
                     Url = link,
                     Span = new SourceSpan(processor.GetSourcePosition(start.Start, out line, out column), processor.GetSourcePosition(endLinkXref)),

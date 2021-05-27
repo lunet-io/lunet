@@ -8,11 +8,37 @@ using System.Globalization;
 using System.Text;
 using Lunet.Scripts;
 using Scriban;
+using Scriban.Functions;
 using Scriban.Runtime;
 using Zio;
 
 namespace Lunet.Core
 {
+    public static class UidHelper
+    {
+        public static string Handleize(string uid)
+        {
+            var tempStringBuilder = new StringBuilder();
+            for (int index = 0; index < uid.Length; ++index)
+            {
+                char c = uid[index];
+                if (char.IsLetterOrDigit(c) || c == '.' || c == '-')
+                {
+                    tempStringBuilder.Append(c);
+                }
+                else
+                {
+                    tempStringBuilder.Append('-');
+                }
+            }
+            if (tempStringBuilder.Length > 0 && tempStringBuilder[tempStringBuilder.Length - 1] == '-')
+                --tempStringBuilder.Length;
+            string str = tempStringBuilder.ToString();
+            return str;
+        }
+    }
+
+
     /// <summary>
     /// A processor to reference all uid used by static, user content and dynamic content.
     /// </summary>
@@ -20,13 +46,15 @@ namespace Lunet.Core
     {
         private readonly Dictionary<string, ContentObject> _mapUidToContent;
         private readonly Dictionary<UPath, ContentObject> _mapPathToContent;
+        private readonly Dictionary<string, ExtraContent> _uidExtraContent;
         
         public PageFinderProcessor(ContentPlugin plugin) : base(plugin)
         {
             _mapUidToContent = new Dictionary<string, ContentObject>();
             _mapPathToContent = new Dictionary<UPath, ContentObject>();
-            
-            Site.Builtins.SetValue("xref", DelegateCustomFunction.CreateFunc((Func<string, ContentObject>)FunctionXRef), true);
+            _uidExtraContent = new Dictionary<string, ExtraContent>();
+
+            Site.Builtins.SetValue("xref", DelegateCustomFunction.CreateFunc((Func<string, ScriptObject>)FunctionXRef), true);
             Site.Builtins.SetValue("ref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRef), true);
             Site.Builtins.SetValue("relref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRelRef), true);
         }
@@ -39,7 +67,60 @@ namespace Lunet.Core
         /// <returns>`true` if the content with the specified uid was found; `false` otherwise</returns>
         public bool TryFindByUid(string uid, out ContentObject content)
         {
+            content = null;
+            if (uid == null) return false;
+            if (_uidExtraContent.TryGetValue(uid, out var extraContent))
+            {
+                uid = extraContent.DefinitionUid ?? extraContent.Uid;
+            }
+            
             return _mapUidToContent.TryGetValue(uid, out content);
+        }
+
+        public bool TryGetTitleByUid(string uid, out string title)
+        {
+            if (TryFindByUid(uid, out var uidContent))
+            {
+                title = uidContent[PageVariables.XRefName] as string ?? uidContent.Title;
+                return true;
+            }
+            else if (TryGetExternalUid(uid, out var name, out var fullName, out _))
+            {
+                // For external content, we use fullname.
+                title = fullName;
+                return true;
+            }
+
+            title = null;
+            return false;
+        }
+
+        public bool TryGetExternalUid(string uid, out string name, out string fullname, out string url)
+        {
+            if (_uidExtraContent.TryGetValue(uid, out var extraContent))
+            {
+                uid = extraContent.DefinitionUid ?? extraContent.Uid;
+                name = extraContent.Name;
+                fullname = extraContent.FullName;
+            }
+            else
+            {
+                name = null;
+                fullname = null;
+            }
+
+            // TODO: make this mapping pluggable via config
+            if (uid.StartsWith("System.") || uid.StartsWith("Microsoft."))
+            {
+                name ??= uid;
+                fullname ??= uid;
+                url = $"https://docs.microsoft.com/en-us/dotnet/api/{UidHelper.Handleize(uid)}";
+                return true;
+            }
+
+            fullname = null;
+            url = null;
+            return false;
         }
         
         public bool TryFindByPath(string path, out ContentObject content)
@@ -68,7 +149,14 @@ namespace Lunet.Core
             }
         }
 
-        public void RegisterUid(ContentObject page)
+        public void RegisterExtraContent(ExtraContent extraContent)
+        {
+            if (extraContent == null) throw new ArgumentNullException(nameof(extraContent));
+            if (extraContent.Uid == null) throw new ArgumentException("The uid of this extra content cannot be null", nameof(extraContent));
+            _uidExtraContent[extraContent.Uid] = extraContent;
+        }
+
+        private void RegisterUid(ContentObject page)
         {
             var uid = page.Uid;
             if (string.IsNullOrEmpty(uid)) return;
@@ -86,14 +174,39 @@ namespace Lunet.Core
             }
         }
 
-        private ContentObject FunctionXRef(string uid)
+
+        private ScriptObject FunctionXRef(string uid)
         {
             if (uid == null) return null;
-            TryFindByUid(uid, out var result);
-            return result;
+
+            if (TryFindByUid(uid, out var uidContent))
+            {
+                var name = uidContent[PageVariables.XRefName] as string ?? uidContent.Title;
+                var fullName = uidContent[PageVariables.XRefFullName] as string ?? name;
+                return new ScriptObject()
+                {
+                    {"url", uidContent.Url},
+                    {"name", name},
+                    {"fullname", fullName},
+                    {"page", uidContent },
+                };
+            }
+
+            if (TryGetExternalUid(uid, out var externalName, out var externalFullName, out var url))
+            {
+                // TODO: add friendly name and fullname for an external uid using References
+                return new ScriptObject()
+                {
+                    {"url", url},
+                    {"name", externalName},
+                    {"fullname", externalFullName},
+                };
+            }
+
+            return null;
         }
-        
-                private string UrlRef(TemplateContext context, string url)
+
+        private string UrlRef(TemplateContext context, string url)
         {
             return UrlRef(context is LunetTemplateContext lunetContext ? lunetContext.Page : null, url);
         }
@@ -121,15 +234,23 @@ namespace Lunet.Core
             var basePath = Site.BasePath;
 
             // In case of using URL on an external URL (https:), don't error but return it as it is
-            if (url.Contains(":"))
+            if (url.Contains(':'))
             {
                 if (url.StartsWith("xref:"))
                 {
-                    if (TryFindByUid(url.Substring("xref:".Length), out var pageUid))
+                    var xref = url.Substring("xref:".Length);
+                    if (TryFindByUid(xref, out var pageUid))
                     {
                         url = pageUid.Url;
                         return rel ? url : (string) (UPath) $"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
                     }
+
+                    if (TryGetExternalUid(xref, out _, out _, out url))
+                    {
+                        return url;
+                    }
+
+                    Site.Warning($"Unable to find xref {xref} in page {page.Url}");
                 }
                 
                 return url;

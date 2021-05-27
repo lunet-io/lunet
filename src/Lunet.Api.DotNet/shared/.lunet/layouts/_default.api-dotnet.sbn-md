@@ -1,0 +1,6 @@
++++
+layout = site.api.dotnet.layout ?? site.layout ?? "_default"
+layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
++++
+{{~ $table_class = site.api.dotnet.table_class ?? "api-dotnet-members-table" }}
+{{~ api_dotnet_members_render api "namespaces" "Namespaces" $table_class ~}}

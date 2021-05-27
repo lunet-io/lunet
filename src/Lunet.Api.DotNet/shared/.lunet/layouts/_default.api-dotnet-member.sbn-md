@@ -5,14 +5,47 @@ layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 {{~ $table_class = site.api.dotnet.table_class ?? "api-dotnet-members-table" }}
 # {{ member.name }} {{ member.type }}
 
-Namespace: {{ member.namespace }} \
+<h2 id="definition" class="heading-anchor-hidden">Definition</h2>
+
+Namespace: {{ member.namespace| xref_to_html_link }} \
 Assembly: {{ member.assemblies[0] }}.dll
 
 {{~ member.summary ~}}
 
 ```csharp
+// C#
 {{~ member.syntax.content }}
 ```
+{{~ if member.syntax.parameters && member.syntax.parameters.size > 0 ~}}
+
+### Parameters
+
+{{~ for $param in member.syntax.parameters ~}}
+<div class="api-dotnet-parameter">
+<dl class="api-dotnet-parameter-list"><dt>{{$param.id}}</dt><dd>{{$param.type | xref_to_html_link }}</dd></dl>
+
+{{ $param.description }}
+
+</div>
+{{~ end;end ~}}
+{{~ if member.inheritance ~}}
+
+<table class="api-dotnet-inherit"><tr><td>Inheritance<td>
+{{ for $base in member.inheritance;}}<div><span>{{$base | xref_to_html_link }}</span></div>{{~ end }}
+</tr></table>
+{{~ end ~}}
+{{~ if member.derivedClasses ~}}
+
+<table class="api-dotnet-derived"><tr><td>Derived<td>
+{{ for $base in member.derivedClasses;}}<div><span>{{$base | xref_to_html_link true }}</span></div>{{~ end }}
+</tr></table>
+{{~ end ~}}
+{{~ if member.implements ~}}
+
+<table class="api-dotnet-implements"><td>Implements<td>
+{{ for $base in member.implements;}}<div><span>{{$base | xref_to_html_link }}</span></div>{{~ end }}
+</tr></table>
+{{~ end ~}}
 {{~ if member.examples && member.examples.size > 0 ~}}
 
 ## Examples

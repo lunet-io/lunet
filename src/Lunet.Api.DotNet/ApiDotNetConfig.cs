@@ -13,6 +13,12 @@ namespace Lunet.Api.DotNet
             SolutionConfiguration = "Release";
         }
 
+        public string Title
+        {
+            get => this.GetSafeValue<string>("title");
+            set => this.SetValue("title", value);
+        }
+
         public string SolutionConfiguration
         {
             get => this.GetSafeValue<string>("config");

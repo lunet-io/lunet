@@ -241,11 +241,22 @@ namespace Lunet.Menus
 
             var linkClassFromOptions = (isActive ? options?["link_class_active"] : null) ?? options?["link_class"];
             var linkClassFromMenu = (isActive ? this["link_class_active"] : null) ?? this["link_class"];
+            var title = Title ?? Page?.Title;
             if (!isActive || !isBreadcrumb)
             {
-                builder.Append($"<a href='{(Url ?? Page?.Url ?? "#")}'{(Target != null ? $" target='{Target}'" : string.Empty)} class='{kind}-link {linkClassFromOptions} {linkClassFromMenu}'>");
+                var url = (Url ?? Page?.Url ?? "#");
+                if (url.StartsWith("xref:"))
+                {
+                    var uid = url.Substring("xref:".Length);
+                    url = page.Site.Content.Finder.UrlRelRef(page, url);
+                    if (page.Site.Content.Finder.TryFindByUid(uid, out var pageContent))
+                    {
+                        title ??= pageContent.Title;
+                    }
+                }
+                builder.Append($"<a href='{url}'{(Target != null ? $" target='{Target}'" : string.Empty)} class='{kind}-link {linkClassFromOptions} {linkClassFromMenu}'>");
             }
-            builder.Append($"{Pre}{Title ?? Page?.Title}{Post}");
+            builder.Append($"{Pre}{title}{Post}");
 
             if (!isActive || !isBreadcrumb)
             {
@@ -266,8 +277,6 @@ namespace Lunet.Menus
             {
                 builder.Append(options["post_active"]);
             }
-
-
 
             return isActive;
         }

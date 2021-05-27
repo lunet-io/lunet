@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Scriban.Functions;
 using Zio;
 using Zio.FileSystems;
 
@@ -22,15 +23,20 @@ namespace Lunet.Api.DotNet
         private readonly string _customMsBuildFileProps;
         private readonly Stack<ScriptObjectCollection> _pool;
         private readonly ScriptObject _helpers;
+        private readonly string SharedKey = "api-dotnet-object";
 
         public ApiDotNetProcessor(ApiDotNetPlugin plugin, ApiDotNetConfig config) : base(plugin)
         {
             _pool = new Stack<ScriptObjectCollection>();
             Config = config;
             _customMsBuildFileProps = Path.Combine(AppContext.BaseDirectory, SiteFileSystems.SharedFolderName, SiteFileSystems.LunetFolderName, SiteFileSystems.ModulesFolderName, "api", "dotnet", "Lunet.Api.DotNet.Extractor.props");
-            ApiDotNetObject = new ApiDotNetObject(this);
+
+            // Cache the result of the ApitDotNetCache in memory
+            ApiDotNetObject = (ApiDotNetObject)Site.Config.SharedCache.GetOrAdd(SharedKey, new ApiDotNetObject());
             Projects = new List<ApiDotNetProject>();
             _helpers = new ScriptObject();
+
+            Site.Builtins.SetValue("apiref", DelegateCustomFunction.CreateFunc((Func<string, ScriptObject>)ApiRef), true);
         }
 
         public ApiDotNetConfig Config { get; }
@@ -38,6 +44,16 @@ namespace Lunet.Api.DotNet
         public List<ApiDotNetProject> Projects { get; }
         
         public ApiDotNetObject ApiDotNetObject { get; }
+
+        private ScriptObject ApiRef(string arg)
+        {
+            if (ApiDotNetObject.Objects.TryGetValue(arg, out var value))
+            {
+                return value as ScriptObject;
+            }
+
+            return null;
+        }
 
         public override void Process(ProcessingStage stage)
         {
@@ -77,24 +93,39 @@ namespace Lunet.Api.DotNet
 
         private void GeneratePages()
         {
+            // Register all xref
+            foreach (var refKeyPair in ApiDotNetObject.References)
+            {
+                var uid = refKeyPair.Key;
+                var obj = (ScriptObject)refKeyPair.Value;
+                Site.Content.Finder.RegisterExtraContent(new ExtraContent()
+                    {
+                        Uid = uid,
+                        DefinitionUid = obj.GetSafeValue<string>("definition"),
+                        Name = obj.GetSafeValue<string>("name"),
+                        FullName = obj.GetSafeValue<string>("fullName"),
+                        IsExternal = obj.GetSafeValue<bool>("isExternal")
+                    }
+                );
+            }
+
             var objects = ApiDotNetObject.Objects;
             foreach (var objPair in objects)
             {
                 var obj = (ScriptObject)objPair.Value;
                 var uid = obj.GetSafeValue<string>("uid");
-                var url = $"/api/{uid}/readme.md";
+                var url = $"/api/{UidHelper.Handleize(uid)}/readme.md";
 
                 DynamicContentObject content = null;
                 switch (GetTypeFromModel(obj))
                 {
                     case "Namespace":
                     {
-                        content = new DynamicContentObject(Site, url, "api")
+                        content = new DynamicContentObject(Site, url, "api", url)
                         {
                             ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
                             LayoutType = "api-dotnet-namespace",
                         };
-
                         content.ScriptObjectLocal["namespace"] = obj;
                         break;
                     }
@@ -112,7 +143,7 @@ namespace Lunet.Api.DotNet
                     case "Extension":
                     case "EiiMethod":
                     {
-                            content = new DynamicContentObject(Site, url, "api")
+                        content = new DynamicContentObject(Site, url, "api")
                         {
                             ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
                             LayoutType = "api-dotnet-member",
@@ -128,14 +159,40 @@ namespace Lunet.Api.DotNet
                     content.Uid = uid;
                     content.Layout = Config.Layout ?? "_default";
                     content.ContentType = ContentType.Markdown;
-                    content.Title = $"{obj["name"]} {obj["type"]}";
+                    var xrefName = obj["name"] as string;
+                    var xrefFullName = obj["fullName"] as string ?? xrefName;
+                    content[PageVariables.XRefName] = xrefName;
+                    content[PageVariables.XRefFullName] = xrefFullName;
+                    content.Title = $"{xrefName} {obj["type"]}";
 
                     // Copy helpers as if it was part of the file
                     _helpers.CopyTo(content.ScriptObjectLocal);
                     content.Initialize();
-                    Site.Content.Finder.RegisterUid(content);
                     Site.DynamicPages.Add(content);
                 }
+            }
+
+            // Create the root page
+            {
+                var path = "/api/readme.md";
+                var content = new DynamicContentObject(Site, path, "api", path)
+                {
+                    ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
+                    LayoutType = "api-dotnet",
+                };
+
+                content.Uid = "api-dotnet";
+                content.Layout = Config.Layout ?? "_default";
+                content.ContentType = ContentType.Markdown;
+                content.Title = Config.Title ?? $"{Site.GetSafeValue<string>("title")} .NET API Reference";
+                content.ScriptObjectLocal.SetValue("api", ApiDotNetObject, true);
+                content["notoc"] = true;
+                content["nomenu"] = true;
+
+                // Copy helpers as if it was part of the file
+                _helpers.CopyTo(content.ScriptObjectLocal);
+                content.Initialize();
+                Site.DynamicPages.Add(content);
             }
         }
 
@@ -152,65 +209,85 @@ namespace Lunet.Api.DotNet
 
                 var objects = project.Api.GetSafeValue<ScriptArray>("items");
 
-                foreach (var obj in objects.OfType<ScriptObject>().SelectMany(x => (ScriptArray)x["items"]).OfType<ScriptObject>())
+                foreach (var entryItemsAndReferences in objects.OfType<ScriptObject>())
                 {
-                    var uid = (string) obj["uid"];
-                    if (obj.GetSafeValue<string>("type") == "Namespace")
+                    foreach (var obj in ((ScriptArray) entryItemsAndReferences["items"]).OfType<ScriptObject>())
                     {
-                        ScriptObject nsScriptObject;
-                        if (!namespaces.TryGetValue(uid, out var nsObject))
-                        {
-                            nsObject = new ScriptObject();
-                            nsScriptObject = (ScriptObject)nsObject;
-                            namespaces.Add(uid, nsScriptObject);
-                            nsScriptObject.Add("uid", uid);
-                            nsScriptObject.Add("commentId", obj["commentId"]);
-                            nsScriptObject.Add("id", obj["id"]);
-                            nsScriptObject.Add("name", obj["name"]);
-                            nsScriptObject.Add("nameWithType", obj["nameWithType"]);
-                            nsScriptObject.Add("fullName", obj["fullName"]);
-                            nsScriptObject.Add("type", obj["type"]);
-                            nsScriptObject.Add("children", new ScriptArray());
-                            nsScriptObject.Add("assemblies", new ScriptArray());
-                            nsScriptObject.Add("langs", new ScriptArray());
-                            // TODO: merge summary/remarks/example...
-                            ApiDotNetObject.Objects[uid] = nsObject;
-                        }
-                        else
-                        {
-                            nsScriptObject = (ScriptObject)nsObject;
-                        }
-
-                        // Merge child types
-                        var nsChildren = nsScriptObject.GetSafeValue<ScriptArray>("children");
-                        var nsChildrenConcat = nsScriptObject.GetSafeValue<ScriptArray>("children").OfType<string>().Concat(obj.GetSafeValue<ScriptArray>("children").OfType<string>()).ToHashSet().OrderBy(x => x);
-                        nsChildren.Clear();
-                        nsChildren.AddRange(nsChildrenConcat);
-                        
-                        nsScriptObject.GetSafeValue<ScriptArray>("assemblies").AddRange(obj.GetSafeValue<ScriptArray>("assemblies"));
-                        var langs = nsScriptObject.GetSafeValue<ScriptArray>("langs");
-                        foreach (var lang in obj.GetSafeValue<ScriptArray>("langs"))
-                        {
-                            if (!langs.Contains(lang))
-                            {
-                                langs.Add(lang);
-                            }
-                        }
+                        ProcessItem(obj, namespaces);
                     }
-                    else
+
+                    foreach (var obj in ((ScriptArray)entryItemsAndReferences["references"]).OfType<ScriptObject>())
                     {
-                        if (ApiDotNetObject.Objects.Contains(uid))
+                        var uid = (string)obj["uid"];
+                        if (!ApiDotNetObject.References.ContainsKey(uid))
                         {
-                            Site.Error($"The api dotnet uid {uid} is already registered.");
+                            ApiDotNetObject.References[uid] = obj;
                         }
-                        
-                        ApiDotNetObject.Objects[uid] = obj;
                     }
                 }
             }
 
             // Add namespaces when we are done
             ApiDotNetObject.Namespaces.AddRange(namespaces.OrderBy(x => x.Key).Select(x => x.Value));
+        }
+
+        private void ProcessItem(ScriptObject obj, Dictionary<string, ScriptObject> namespaces)
+        {
+            var uid = (string) obj["uid"];
+            if (obj.GetSafeValue<string>("type") == "Namespace")
+            {
+                ScriptObject nsScriptObject;
+                if (!namespaces.TryGetValue(uid, out var nsObject))
+                {
+                    nsObject = new ScriptObject();
+                    nsScriptObject = (ScriptObject) nsObject;
+                    namespaces.Add(uid, nsScriptObject);
+                    nsScriptObject.Add("uid", uid);
+                    nsScriptObject.Add("commentId", obj["commentId"]);
+                    nsScriptObject.Add("id", obj["id"]);
+                    nsScriptObject.Add("name", obj["name"]);
+                    nsScriptObject.Add("nameWithType", obj["nameWithType"]);
+                    nsScriptObject.Add("fullName", obj["fullName"]);
+                    nsScriptObject.Add("summary", obj["summary"]);
+                    nsScriptObject.Add("remarks", obj["remarks"]);
+                    nsScriptObject.Add("example", obj["example"]);
+                    nsScriptObject.Add("type", obj["type"]);
+                    nsScriptObject.Add("children", new ScriptArray());
+                    nsScriptObject.Add("assemblies", new ScriptArray());
+                    nsScriptObject.Add("langs", new ScriptArray());
+                    // TODO: merge summary/remarks/example...
+                    ApiDotNetObject.Objects[uid] = nsObject;
+                }
+                else
+                {
+                    nsScriptObject = (ScriptObject) nsObject;
+                }
+
+                // Merge child types
+                var nsChildren = nsScriptObject.GetSafeValue<ScriptArray>("children");
+                var nsChildrenConcat = nsScriptObject.GetSafeValue<ScriptArray>("children").OfType<string>().Concat(obj.GetSafeValue<ScriptArray>("children").OfType<string>()).ToHashSet().OrderBy(x => x);
+                nsChildren.Clear();
+                nsChildren.AddRange(nsChildrenConcat);
+
+                nsScriptObject.GetSafeValue<ScriptArray>("assemblies").AddRange(obj.GetSafeValue<ScriptArray>("assemblies"));
+                var langs = nsScriptObject.GetSafeValue<ScriptArray>("langs");
+                foreach (var lang in obj.GetSafeValue<ScriptArray>("langs"))
+                {
+                    if (!langs.Contains(lang))
+                    {
+                        langs.Add(lang);
+                    }
+                }
+            }
+            else
+            {
+                if (ApiDotNetObject.Objects.Contains(uid))
+                {
+                    Site.Error($"The api dotnet uid {uid} is already registered.");
+                }
+
+                ApiDotNetObject.Objects[uid] = obj;
+            }
         }
 
         private void ProcessObjects()

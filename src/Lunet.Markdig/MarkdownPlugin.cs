@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using Lunet.Core;
 using Lunet.Layouts;
 using Lunet.Markdown.Extensions;
@@ -11,6 +12,7 @@ using Markdig;
 using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Scriban.Functions;
 using Scriban.Parsing;
 using Scriban.Runtime;
 
@@ -36,7 +38,7 @@ namespace Lunet.Markdown
 
             // Add a global markdown object 
             // with the markdown.to_html function
-            Site.Scripts.Builtins.SetValue("markdown", _markdownHelper, true);
+            Site.Builtins.SetValue("markdown", _markdownHelper, true);
             _markdownHelper.Import("to_html", new Func<string, string>(ToHtmlFunction));
 
             // Register the markdown processor
@@ -82,6 +84,8 @@ namespace Lunet.Markdown
             return Markdig.Markdown.ToHtml(markdown, pipeline);
         }
 
+        private static readonly Regex ExtractXRef = new Regex(@"<xref\s*.*href=['""]([^'""]+)");
+
         private string ToHtml(ContentObject page, MarkdownPipeline pipeline)
         {
             if (page == null) throw new ArgumentNullException(nameof(page));
@@ -92,54 +96,65 @@ namespace Lunet.Markdown
 
             foreach (var inline in markdownDocument.Descendants<Inline>())
             {
-                string url;
-                var span = inline.Span;
+                string url = null;
+                string label = null;
 
-                if (inline is LinkInline link)
+                bool isHandled = false;
+                if (inline is LinkInline inputLink)
                 {
-                    url = link.Url;
+                    url = inputLink.Url;
+                    isHandled = true;
                 }
                 else if (inline is AutolinkInline { IsEmail: false } autoLink)
                 {
                     url = autoLink.Url;
+                    label = autoLink.Url;
+                    isHandled = true;
                 }
-                else
+                else if (inline is HtmlInline htmlInline)
+                {
+                    if (htmlInline.Tag.StartsWith("<xref "))
+                    {
+                        var urlMatch = ExtractXRef.Match(htmlInline.Tag);
+                        label = urlMatch.Success ? urlMatch.Groups[1].Value : "INVALID";
+                        var xref = Uri.UnescapeDataString(label);
+                        url = $"xref:{xref}";
+                        isHandled = true;
+                    }
+                    else if (htmlInline.Tag.StartsWith("</xref>"))
+                    {
+                        htmlInline.Remove();
+                    }
+                }
+
+                if (!isHandled)
                 {
                     continue;
                 }
 
-                string label = null;
-
                 if (string.IsNullOrEmpty(url)) continue;
-                if (url.StartsWith("xref:"))
-                {
-                    var uid = url.Substring("xref:".Length);
-                    if (Site.Content.Finder.TryFindByUid(uid, out var uidContent))
-                    {
-                        url = uidContent.Url;
-                        label = uidContent.Title;
-                    }
-                    else
-                    {
-                        var sourceSpan = new Scriban.Parsing.SourceSpan((string)page.Path, new TextPosition(span.Start, inline.Line, inline.Column), new TextPosition(span.End, inline.Line, inline.Column));
-                        Site.Warning(sourceSpan, $"Unable to find uid `{uid}` from xref");
-                    }
-                }
-
                 var resolvedUrl = Site.Content.Finder.UrlRelRef(page, url);
 
-                if (inline is LinkInline link1)
+                // Extract a more meaningful label
+                bool isXref = url.StartsWith("xref:");
+                if (isXref)
                 {
-                    if (label != null)
-                    {
-                        link1.AppendChild(new LiteralInline(label));
-                    }
-                    link1.Url = resolvedUrl;
+                    var uid = url.Substring("xref:".Length);
+                    Site.Content.Finder.TryGetTitleByUid(uid, out label);
                 }
-                else if (inline is AutolinkInline autoLink)
+
+                var link = inline as LinkInline;
+                if (link == null)
                 {
-                    autoLink.Url = resolvedUrl;
+                    link = new LinkInline(resolvedUrl, label);
+                    inline.ReplaceBy(link);
                 }
+
+                if (label != null)
+                {
+                    link.AppendChild(new LiteralInline(label));
+                }
+                link.Url = resolvedUrl;
             }
 
             var renderer = new HtmlRenderer(new StringWriter());

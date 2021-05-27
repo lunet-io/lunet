@@ -620,16 +620,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     inheritance.Reverse();
                     item.Inheritance = inheritance;
                 }
-                if (symbol.AllInterfaces.Length > 0)
-                {
-                    item.Implements = (from t in symbol.AllInterfaces
-                                       where FilterVisitor.CanVisitApi(t)
-                                       select AddSpecReference(t, typeParamterNames)).ToList();
-                    if (item.Implements.Count == 0)
-                    {
-                        item.Implements = null;
-                    }
-                }
+                AddImplements(symbol, item, typeParamterNames);
             }
             else if (symbol.TypeKind == TypeKind.Interface)
             {
@@ -640,11 +631,27 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 {
                     AddInheritedMembers(symbol, symbol.AllInterfaces[i], dict, typeParamterNames);
                 }
+
+                AddImplements(symbol, item, typeParamterNames);
             }
             if (dict != null)
             {
                 var inheritedMembers = (from r in dict.Values where r != null select r).ToList();
                 item.InheritedMembers = inheritedMembers.Count > 0 ? inheritedMembers : null;
+            }
+        }
+
+        private void AddImplements(INamedTypeSymbol symbol, MetadataItem item, IReadOnlyList<string> typeParamterNames)
+        {
+            if (symbol.AllInterfaces.Length > 0)
+            {
+                item.Implements = (from t in symbol.AllInterfaces
+                    where FilterVisitor.CanVisitApi(t)
+                    select AddSpecReference(t, typeParamterNames)).ToList();
+                if (item.Implements.Count == 0)
+                {
+                    item.Implements = null;
+                }
             }
         }
 

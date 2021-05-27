@@ -416,7 +416,7 @@ namespace Lunet.Core
     [DebuggerDisplay("Dynamic: {" + nameof(Url) + "}")]
     public class DynamicContentObject : ContentObject
     {
-        public DynamicContentObject(SiteObject site, string url, string section = null) : base(site, ContentObjectType.Dynamic)
+        public DynamicContentObject(SiteObject site, string url, string section = null, UPath? path = null) : base(site, ContentObjectType.Dynamic, path: path)
         {
             Url = url;
             Section = section;

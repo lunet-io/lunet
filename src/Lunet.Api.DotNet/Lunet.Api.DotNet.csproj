@@ -43,4 +43,10 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="shared\.lunet\layouts\_default.api-dotnet.sbn-md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

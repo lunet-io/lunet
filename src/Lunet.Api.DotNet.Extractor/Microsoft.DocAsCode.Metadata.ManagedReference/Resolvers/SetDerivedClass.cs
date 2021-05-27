@@ -10,7 +10,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
     public class SetDerivedClass: IResolverPipeline
     {
-        private readonly Dictionary<string, List<string>> _derivedClassMapping = new Dictionary<string, List<string>>();
+        private readonly Dictionary<string, HashSet<string>> _derivedClassMapping = new Dictionary<string, HashSet<string>>();
 
         public void Run(MetadataModel yaml, ResolverContext context)
         {
@@ -26,27 +26,40 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             foreach (var item in items ?? Enumerable.Empty<MetadataItem>())
             {
                 var inheritance = item.Inheritance;
-                if (inheritance!= null && inheritance.Count > 0)
+                if (inheritance != null && inheritance.Count > 0)
                 {
                     var superClass = inheritance[inheritance.Count - 1];
+                    AddInheritance(item, superClass, reference);
+                }
 
-                    if (reference.TryGetValue(superClass, out ReferenceItem referenceItem))
+                var implements = item.Implements;
+                if (implements != null && implements.Count > 0)
+                {
+                    foreach (var implement in implements)
                     {
-                        superClass = referenceItem.Definition ?? superClass;
+                        AddInheritance(item, implement, reference);
                     }
+                }
+            }
+        }
 
-                    // ignore System.Object's derived class
-                    if (superClass != "System.Object")
-                    {
-                        if (_derivedClassMapping.TryGetValue(superClass, out List<string> derivedClasses))
-                        {
-                            derivedClasses.Add(item.Name);
-                        }
-                        else
-                        {
-                            _derivedClassMapping.Add(superClass, new List<string> { item.Name });
-                        }
-                    }
+        private void AddInheritance(MetadataItem item, string superClass, Dictionary<string, ReferenceItem> reference)
+        {
+            if (reference.TryGetValue(superClass, out ReferenceItem referenceItem))
+            {
+                superClass = referenceItem.Definition ?? superClass;
+            }
+
+            // ignore System.Object's derived class
+            if (superClass != "System.Object")
+            {
+                if (_derivedClassMapping.TryGetValue(superClass, out HashSet<string> derivedClasses))
+                {
+                    derivedClasses.Add(item.Name);
+                }
+                else
+                {
+                    _derivedClassMapping.Add(superClass, new HashSet<string>() { item.Name });
                 }
             }
         }
@@ -55,12 +68,13 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
         {
             foreach (var item in items ?? Enumerable.Empty<MetadataItem>())
             {
-                if (item.Type == MemberType.Class)
+                if (item.Type == MemberType.Class || item.Type == MemberType.Struct || item.Type == MemberType.Interface)
                 {
-                    if (_derivedClassMapping.TryGetValue(item.Name, out List<string> derivedClasses))
+                    if (_derivedClassMapping.TryGetValue(item.Name, out var derivedClasses))
                     {
-                        derivedClasses.Sort();
-                        item.DerivedClasses = derivedClasses;
+                        var derivedClassesList = derivedClasses.ToList();
+                        derivedClassesList.Sort();
+                        item.DerivedClasses = derivedClassesList;
                     }
                 }
             }

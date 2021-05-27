@@ -39,11 +39,11 @@ namespace Lunet
             {
                 new ApiModule(),
                 new BundleModule(),
+                new ApiDotNetModule(),
                 new MenuModule(),
                 new ExtendsModule(),
                 new SummarizerModule(),
                 new MarkdownModule(),
-                new ApiDotNetModule(),
                 new LayoutModule(),
                 new ResourceModule(),
                 new DatasModule(),

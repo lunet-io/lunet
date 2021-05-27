@@ -41,5 +41,9 @@ namespace Lunet.Core
         public const string Section = "section";
 
         public const string PathInSection = "path_in_section";
+
+        public const string XRefName = "xref_name";
+
+        public const string XRefFullName = "xref_fullname";
     }
 }
