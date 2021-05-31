@@ -112,7 +112,7 @@ namespace Lunet.Search
             // Add our dynamic content to the output
             var fs = new PhysicalFileSystem();
             var srcPath = fs.ConvertPathFromInternal(_dbPathOnDisk);
-            var content = new FileContentObject(Site, new FileEntry(fs, srcPath), path: OutputUrl.ChangeExtension("sqlite"));
+            var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("sqlite"));
             Site.DynamicPages.Add(content);
 
             _currentTransaction = null;

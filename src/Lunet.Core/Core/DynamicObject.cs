@@ -19,11 +19,11 @@ namespace Lunet.Core
     /// <seealso cref="IDynamicObject" />
     public class DynamicObject : ScriptObject
     {
-        public DynamicObject()
+        public DynamicObject() : base(4, false)
         {
         }
 
-        public DynamicObject(IEqualityComparer<string> keyComparer) : base(keyComparer)
+        public DynamicObject(IEqualityComparer<string> keyComparer) : base(4, false, keyComparer)
         {
         }
 

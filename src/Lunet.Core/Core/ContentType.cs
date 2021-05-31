@@ -38,7 +38,7 @@ namespace Lunet.Core
 
         public bool Equals(ContentType other)
         {
-            return string.Equals(Name, other.Name);
+            return string.Equals(Name, other.Name, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)

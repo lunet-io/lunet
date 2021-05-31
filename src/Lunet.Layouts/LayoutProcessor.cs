@@ -217,8 +217,8 @@ namespace Lunet.Layouts
                         foreach (var extension in extensions)
                         {
                             var fullLayoutPath = layoutRoot / layoutPath.FullName + extension;
-                            var entry = new FileEntry(Site.MetaFileSystem, fullLayoutPath);
-                            if (entry.Exists)
+                            var entry = new FileSystemItem(Site.MetaFileSystem, fullLayoutPath, false);
+                            if (entry.Exists())
                             {
                                 var scriptLayoutText = entry.ReadAllText();
                                 var scriptInstance = Site.Scripts.ParseScript(scriptLayoutText, fullLayoutPath, ScriptMode.FrontMatterAndContent);
@@ -242,10 +242,13 @@ namespace Lunet.Layouts
                         }
                     }
                 }
+
+                exit:
+                // No layout object
+                _layouts.Add(layoutKey, null);
+                return null;
             }
 
-            exit:
-            return null;
         }
 
         private static IEnumerable<UPath> SingleLayout(SiteObject site, string layoutName, string layoutType)
@@ -321,7 +324,7 @@ namespace Lunet.Layouts
             return layoutName;
         }
 
-        struct LayoutKey : IEquatable<LayoutKey>
+        private struct LayoutKey : IEquatable<LayoutKey>
         {
             public LayoutKey(string name, string type, ContentType contentType)
             {
@@ -330,15 +333,15 @@ namespace Lunet.Layouts
                 ContentType = contentType;
             }
 
-            public string Name;
+            public readonly string Name;
 
-            public string Type;
+            public readonly string Type;
 
-            public ContentType ContentType;
+            public readonly ContentType ContentType;
 
             public bool Equals(LayoutKey other)
             {
-                return string.Equals(Name, other.Name) && string.Equals(Type, other.Type) && ContentType.Equals(other.ContentType);
+                return string.Equals(Name, other.Name, StringComparison.Ordinal) && string.Equals(Type, other.Type, StringComparison.Ordinal) && ContentType.Equals(other.ContentType);
             }
 
             public override bool Equals(object obj)
@@ -370,7 +373,7 @@ namespace Lunet.Layouts
     [DebuggerDisplay("Layout: {" + nameof(Path) + "}")]
     public class LayoutContentObject : TemplateObject
     {
-        public LayoutContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance)
+        public LayoutContentObject(SiteObject site, in FileSystemItem sourceFileInfo, ScriptInstance scriptInstance) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance)
         {
             ScriptObjectLocal = new ScriptObject();
         }

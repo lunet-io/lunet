@@ -72,7 +72,7 @@ namespace Lunet
         {
             if (cancellationTokenSource == null) throw new ArgumentNullException(nameof(cancellationTokenSource));
             // The order modules are registered here is important
-            var app = new SiteApplication();
+            var app = new SiteApplication(Config);
             foreach (var module in Modules)
             {
                 app.Add(module);
