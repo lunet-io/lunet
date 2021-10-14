@@ -24,6 +24,25 @@ namespace Lunet.Core
     /// </summary>
     public static class SiteObjectExtensions
     {
+        public static void BeginEvent(this SiteObject site, string name)
+        {
+            BeginEvent(site, name, ProfilerColor.Default);
+        }
+
+        public static void BeginEvent(this SiteObject site, string name, ProfilerColor color)
+        {
+            var profiler = site.Config.Profiler;
+            if (profiler == null) return;
+            profiler.BeginEvent(name, null, color);
+        }
+
+        public static void EndEvent(this SiteObject site)
+        {
+            var profiler = site.Config.Profiler;
+            if (profiler == null) return;
+            profiler.EndEvent();
+        }
+
         public static bool CanTrace(this ISiteLoggerProvider site)
         {
             return site.Log.IsEnabled(LogLevel.Trace);

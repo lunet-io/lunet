@@ -1,11 +1,45 @@
-﻿namespace Lunet
+﻿using System.Linq;
+using System.Runtime.InteropServices;
+using Lunet.Core;
+
+namespace Lunet
 {
     class Program
     {
         static int Main(string[] args)
         {
-            var app = new LunetApp();
+            var config = new SiteConfiguration();
+            if (args.Any(x => x == "--profiler"))
+            {
+                // Remove --profiler arg
+                args = args.Where(x => x != "--profiler").ToArray();
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    var profiler = new SuperluminalProfiler();
+                    config.Profiler = profiler;
+                }
+            }
+
+            var app = new LunetApp(config);
             return app.Run(args);
+        }
+
+        private class SuperluminalProfiler : IProfiler
+        {
+            public SuperluminalProfiler()
+            {
+                SuperluminalPerf.Initialize();
+            }
+
+            public void BeginEvent(string name, string data, ProfilerColor color)
+            {
+                SuperluminalPerf.BeginEvent(name, data, new SuperluminalPerf.ProfilerColor(color.Value));
+            }
+
+            public void EndEvent()
+            {
+                SuperluminalPerf.EndEvent();
+            }
         }
     }
 }

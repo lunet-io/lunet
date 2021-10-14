@@ -54,7 +54,9 @@ namespace Lunet.Core
         public bool SingleThreaded { get; set; }
         
         public bool ShowStacktraceOnError { get; set; }
-        
+
+        public IProfiler Profiler { get; set; }
+
         public ConcurrentDictionary<object, object> SharedCache { get; }
 
         public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : ISitePlugin

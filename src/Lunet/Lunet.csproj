@@ -26,10 +26,18 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!--SuperluminalPerf as sources-->
+    <PackageSuperluminalPerfIncludeSource>true</PackageSuperluminalPerfIncludeSource>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="../../doc/images/lunet.png" Pack="true" PackagePath="" />
     <ProjectReference Include="..\Lunet.Application\Lunet.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SuperluminalPerf" Version="1.0.0" IncludeAssets="Build"/>
   </ItemGroup>
 </Project>
