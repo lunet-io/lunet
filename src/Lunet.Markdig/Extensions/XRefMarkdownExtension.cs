@@ -17,7 +17,7 @@ namespace Lunet.Markdown.Extensions
     {
         public void Setup(MarkdownPipelineBuilder pipeline)
         {
-            pipeline.InlineParsers.InsertBefore<AutolineInlineParser>(new XRefInlineParser());
+            pipeline.InlineParsers.InsertBefore<AutolinkInlineParser>(new XRefInlineParser());
             
         }
 
@@ -59,9 +59,8 @@ namespace Lunet.Markdown.Extensions
                 var endLink = endLinkXref - 1;
                 var link = slice.Text.Substring(startLink, endLink - startLink + 1);
                 
-                processor.Inline = new AutolinkInline()
+                processor.Inline = new AutolinkInline(link)
                 {
-                    Url = link,
                     Span = new SourceSpan(processor.GetSourcePosition(start.Start, out line, out column), processor.GetSourcePosition(endLinkXref)),
                     Line = line,
                     Column = column

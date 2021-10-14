@@ -49,7 +49,7 @@ namespace Lunet.Yaml
                     return null;
                 }
 
-                var parser = new Parser(new StringReader(yamlText));
+                var parser = Parser.CreateParser(new StringReader(yamlText));
                 var reader = new EventReader(parser);
 
                 if (!reader.Accept<StreamStart>())
