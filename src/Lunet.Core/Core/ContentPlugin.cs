@@ -451,9 +451,9 @@ namespace Lunet.Core
 
             // Load a content asynchronously
             var contentLoaderBlock = new TransformBlock<(FileEntry, int), ContentObject>(
-                async reference =>
+                reference =>
                 {
-                    var content = await LoadContent(reference.Item1);
+                    var content = LoadContent(reference.Item1);
                     // We transfer the weight to the content
                     if (content[PageVariables.Weight] == null)
                     {
@@ -568,16 +568,16 @@ namespace Lunet.Core
             }
         }
 
-        private async Task<ContentObject> LoadContent(FileEntry file)
+        private ContentObject LoadContent(FileEntry file)
         {
             ContentObject page = null;
-            var buffer = new byte[16];
+            Span<byte> buffer = stackalloc byte[16];
 
             var clock = Stopwatch.StartNew();
             var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             try
             {
-                var count = await stream.ReadAsync(buffer, 0, buffer.Length);
+                var count = stream.Read(buffer);
                 // Rewind to 0
                 stream.Position = 0;
 
@@ -593,11 +593,10 @@ namespace Lunet.Core
                     startFrontMatter = 3;
                 }
 
-                // TODO: avoid the chars alloc
-                var charBuffer = Encoding.UTF8.GetChars(buffer, startFrontMatter, buffer.Length - startFrontMatter);
+                var newBuffer = buffer.Slice(startFrontMatter);
                 foreach (var frontParser in Scripts.FrontMatterParsers)
                 {
-                    if (frontParser.CanHandle(charBuffer))
+                    if (frontParser.CanHandle(newBuffer))
                     {
                         for (int i = startFrontMatter + 3; i < count; i++)
                         {
@@ -626,7 +625,7 @@ namespace Lunet.Core
 
                 if (hasFrontMatter)
                 {
-                    page = await LoadPageScript(Site, stream, file, preContent);
+                    page = LoadPageScript(Site, stream, file, preContent);
                     stream = null;
                 }
                 else
@@ -653,12 +652,12 @@ namespace Lunet.Core
 
             return page;
         }
-        private static async Task<ContentObject> LoadPageScript(SiteObject site, Stream stream, FileEntry file, ScriptObject preContent)
+        private static ContentObject LoadPageScript(SiteObject site, Stream stream, FileEntry file, ScriptObject preContent)
         {
             var evalClock = Stopwatch.StartNew();
             // Read the stream
             var reader = new StreamReader(stream);
-            var content = await reader.ReadToEndAsync();
+            var content = reader.ReadToEnd();
             // Early dispose the stream
             stream.Dispose();
 

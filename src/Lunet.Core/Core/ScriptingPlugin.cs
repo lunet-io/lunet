@@ -395,6 +395,11 @@ namespace Lunet.Scripts
                 _scripting = scripting;
             }
             
+            public bool CanHandle(ReadOnlySpan<byte> header)
+            {
+                return header[0] == (byte)'+' && header[1] == (byte)'+' && header[2] == (byte)'+';
+            }
+
             public bool CanHandle(ReadOnlySpan<char> header)
             {
                 return header[0] == '+' && header[1] == '+' && header[2] == '+';
