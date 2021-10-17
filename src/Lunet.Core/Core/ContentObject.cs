@@ -20,7 +20,7 @@ namespace Lunet.Core
     {
         private ContentType _contentType;
 
-        protected ContentObject(SiteObject site, ContentObjectType objectType, FileEntry sourceFileInfo = null, ScriptInstance scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
+        protected ContentObject(SiteObject site, ContentObjectType objectType, in FileSystemItem sourceFileInfo = default, ScriptInstance scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
         {
         }
         
@@ -351,15 +351,13 @@ namespace Lunet.Core
     {
         private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-        public FileContentObject(SiteObject site, FileEntry sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null, ScriptObject preContent = null) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance, path)
+        public FileContentObject(SiteObject site, in FileSystemItem sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null, ScriptObject preContent = null) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance, path)
         {
-            if (sourceFileInfo == null) throw new ArgumentNullException(nameof(sourceFileInfo));
-
             preContent?.CopyTo(this);
 
             // TODO: Make this part pluggable
             // Parse a standard blog text
-            var match = ParsePostName.Match(sourceFileInfo.Name);
+            var match = ParsePostName.Match(sourceFileInfo.GetName());
             if (match.Success)
             {
                 var year = int.Parse(match.Groups[1].Value);

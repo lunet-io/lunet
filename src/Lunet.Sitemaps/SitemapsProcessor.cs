@@ -81,7 +81,7 @@ namespace Lunet.Sitemaps
 
             var sitemapUrl = new SitemapUrl(url)
             {
-                LastModified = file.ModifiedTime.Ticks == 0 ? DateTime.Now : file.ModifiedTime,
+                LastModified = file.ModifiedTime.Ticks == 0 ? DateTime.Now : file.ModifiedTime.DateTime,
             };
 
             if (file.ContainsKey(SitemapPageVariables.SitemapPriority))

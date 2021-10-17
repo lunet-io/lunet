@@ -13,7 +13,7 @@ namespace Lunet.Core
 {
     public abstract class TemplateObject : DynamicObject
     {
-        protected TemplateObject(SiteObject site, ContentObjectType objectType, FileEntry sourceFileInfo = null, ScriptInstance scriptInstance = null, UPath? path = null)
+        protected TemplateObject(SiteObject site, ContentObjectType objectType, in FileSystemItem sourceFileInfo = default, ScriptInstance scriptInstance = null, UPath? path = null)
         {
             Site = site ?? throw new ArgumentNullException(nameof(site));
             SourceFile = sourceFileInfo;
@@ -22,19 +22,23 @@ namespace Lunet.Core
             ObjectType = objectType;
             Dependencies = new List<ContentDependency>();
 
-
-            Path = path ?? SourceFile?.Path ?? null;
-            if (SourceFile != null)
+            if (!sourceFileInfo.IsEmpty)
             {
+                Path = SourceFile.Path;
                 Length = SourceFile.Length;
-                Extension = SourceFile.ExtensionWithDot?.ToLowerInvariant();
-                ModifiedTime = SourceFile.LastWriteTime;
+                Extension = SourceFile.Path.GetExtensionWithDot()?.ToLowerInvariant();
+                ModifiedTime = SourceFile.CreationTime > SourceFile.LastWriteTime ? SourceFile.CreationTime : SourceFile.LastWriteTime;
+            }
+
+            if (path.HasValue)
+            {
+                Path = path.Value;
             }
         }
 
         public SiteObject Site { get; }
 
-        public FileEntry SourceFile { get; }
+        public readonly FileSystemItem SourceFile;
 
         public long Length { get; }
 
@@ -44,7 +48,7 @@ namespace Lunet.Core
 
         public UPath Path { get; }
 
-        public DateTime ModifiedTime { get; }
+        public DateTimeOffset ModifiedTime { get; }
 
         public string Extension { get; }
 

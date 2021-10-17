@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Lunet.Core;
 using Lunet.Layouts;
 using Lunet.Markdown.Extensions;
@@ -28,11 +29,13 @@ namespace Lunet.Markdown
     {
         private readonly DynamicObject<MarkdownPlugin> _markdigOptions;
         private readonly DynamicObject<MarkdownPlugin> _markdownHelper;
+        private readonly ThreadLocal<MarkdownPipeline> _markdownPipeline;
 
         public MarkdownPlugin(SiteObject site, LayoutPlugin layoutPlugin) : base(site)
         {
             _markdigOptions = new DynamicObject<MarkdownPlugin>(this);
             _markdownHelper = new DynamicObject<MarkdownPlugin>(this);
+            _markdownPipeline = new ThreadLocal<MarkdownPipeline>();
 
             _markdownHelper.SetValue("options", _markdigOptions, true);
 
@@ -64,20 +67,28 @@ namespace Lunet.Markdown
 
         private MarkdownPipeline GetPipeline()
         {
-            var pipeline = new MarkdownPipelineBuilder();
+            // Cache the pipeline per thread
+            var pipeline = _markdownPipeline.Value;
+            if (pipeline == null)
+            {
+                var builder = new MarkdownPipelineBuilder();
 
-            if (_markdigOptions.Count == 0)
-            {
-                pipeline.UseAdvancedExtensions();
+                if (_markdigOptions.Count == 0)
+                {
+                    builder.UseAdvancedExtensions();
+                }
+                else
+                {
+                    // would need a different caching strategy
+                    // TODO: handle Markdig options
+                }
+
+                builder.Extensions.AddIfNotAlready<XRefMarkdownExtension>();
+                pipeline = builder.Build();
+                _markdownPipeline.Value = pipeline;
             }
-            else
-            {
-                // TODO: handle Markdig options
-            }
-            pipeline.Extensions.AddIfNotAlready<XRefMarkdownExtension>();
-            return pipeline.Build();
+            return pipeline;
         }
-
         private string ToHtmlFunction(string markdown)
         {
             var pipeline = GetPipeline();

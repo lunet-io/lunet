@@ -189,19 +189,22 @@ namespace Lunet.Bundles
                         link.Url = url;
                     }
 
-                    FileEntry entry = null;
+
+                    FileSystemItem entry = default;
 
                     // Process file by existing processors
                     if (currentContent == null)
                     {
                         // Check first site, then meta
-                        entry = new FileEntry(Site.FileSystem, path);
-                        if (!entry.Exists)
+                        entry = new FileSystemItem(Site.FileSystem, path, false);
+                        bool exists = entry.Exists();
+                        if (!exists)
                         {
-                            entry = new FileEntry(Site.MetaFileSystem, path);
+                            entry = new FileSystemItem(Site.MetaFileSystem, path, false);
+                            exists = entry.Exists();
                         }
 
-                        if (entry.Exists)
+                        if (exists)
                         {
                             currentContent = new FileContentObject(Site, entry);
                         }

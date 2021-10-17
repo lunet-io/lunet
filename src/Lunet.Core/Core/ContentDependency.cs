@@ -16,7 +16,7 @@ namespace Lunet.Core
     /// </summary>
     public abstract class ContentDependency
     {
-        public abstract IEnumerable<FileEntry> GetFiles();
+        //public abstract IEnumerable<FileEntry> GetFiles();
     }
 
     [DebuggerDisplay("Page: {Page.Path}")]
@@ -29,20 +29,22 @@ namespace Lunet.Core
 
         public ContentObject Page { get; }
 
-        public override IEnumerable<FileEntry> GetFiles()
-        {
-            if (Page.SourceFile != null)
-            {
-                yield return Page.SourceFile;
-            }
-            foreach (var dep in Page.Dependencies)
-            {
-                foreach (var file in dep.GetFiles())
-                {
-                    yield return file;
-                }
-            }
-        }
+        // TODO: should we keep dependencies?
+
+        //public override IEnumerable<FileEntry> GetFiles()
+        //{
+        //    if (!Page.SourceFile.IsEmpty)
+        //    {
+        //        yield return Page.SourceFile;
+        //    }
+        //    foreach (var dep in Page.Dependencies)
+        //    {
+        //        foreach (var file in dep.GetFiles())
+        //        {
+        //            yield return file;
+        //        }
+        //    }
+        //}
     }
 
     [DebuggerDisplay("File: {File}")]
@@ -55,9 +57,9 @@ namespace Lunet.Core
 
         public FileEntry File { get; }
 
-        public override IEnumerable<FileEntry> GetFiles()
-        {
-            yield return File;
-        }
+        //public override IEnumerable<FileEntry> GetFiles()
+        //{
+        //    yield return File;
+        //}
     }
 }

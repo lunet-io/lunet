@@ -28,9 +28,10 @@ namespace Lunet.Core
         /// The lock for tracking related dictionaries
         /// </summary>
         private readonly object _lockForTracking = new object();
-        private readonly HashSet<DirectoryEntry> _trackingPreviousOutputDirectories;
-        private readonly HashSet<FileEntry> _trackingPreviousOutputFiles;
-        private readonly Dictionary<FileEntry, FileEntry> _trackingFilesWritten;
+        private readonly HashSet<UPath> _trackingPreviousOutputDirectories;
+        private readonly HashSet<UPath> _trackingPreviousOutputFiles;
+        private readonly Dictionary<UPath, UPath> _trackingFilesWritten;
+        private Task _trackingPreviousTask;
         private const string SharedCacheContentKey = "content-cache-key";
         
         private readonly Dictionary<string, PageCollection> _mapTypeToPages;
@@ -39,10 +40,10 @@ namespace Lunet.Core
 
         public ContentPlugin(SiteObject site) : base(site)
         {
-            _trackingPreviousOutputDirectories = new HashSet<DirectoryEntry>();
-            _trackingPreviousOutputFiles = new HashSet<FileEntry>();
+            _trackingPreviousOutputDirectories = new HashSet<UPath>();
+            _trackingPreviousOutputFiles = new HashSet<UPath>();
             Scripts = Site.Scripts;
-            _trackingFilesWritten = new Dictionary<FileEntry, FileEntry>();
+            _trackingFilesWritten = new Dictionary<UPath, UPath>();
             _mapTypeToPages = new Dictionary<string, PageCollection>();
             _totalDuration = new Stopwatch();
             
@@ -99,23 +100,6 @@ namespace Lunet.Core
             return (layoutType != null && (layoutType.EndsWith("s") || layoutType.EndsWith("list")));
         }
         
-        private void Initialize()
-        {
-            _totalDuration.Restart();
-
-            // We collect all previous file entries in the output directory
-            CollectPreviousFileEntries();
-
-            _trackingFilesWritten.Clear();
-            Site.Statistics.Reset();
-
-            if (_isInitialized)
-            {
-                return;
-            }
-            _isInitialized = true;
-        }
-
         public void PreInitialize()
         {
             // Before loading content
@@ -124,7 +108,9 @@ namespace Lunet.Core
 
         public void Run()
         {
-            Initialize();
+            _totalDuration.Restart();
+            _trackingFilesWritten.Clear();
+            Site.Statistics.Reset();
 
             try
             {
@@ -134,32 +120,55 @@ namespace Lunet.Core
                     return;
                 }
 
+                // We collect all previous file entries in the output directory
+                CollectPreviousFileEntries();
+
                 // Make sure that all collections are cleared before building the content
                 Site.StaticFiles.Clear();
                 Site.Pages.Clear();
                 Site.DynamicPages.Clear();
-                
+
                 // Before loading content
+                Site.BeginEvent("BeforeLoadingProcessors");
                 if (!TryRunProcess(BeforeLoadingProcessors, ProcessingStage.BeforeLoadingContent))
                 {
                     // If we have any errors during processing, early exit
                     return;
                 }
+                Site.EndEvent();
 
                 // Load content
+                Site.BeginEvent("LoadAllContent");
                 if (!LoadAllContent())
                 {
                     return;
                 }
+                Site.EndEvent();
+
+                // Wait for collecting previous file entries concurrently
+                Site.BeginEvent("WaitPreviousFiles");
+                _trackingPreviousTask?.Wait();
+                _trackingPreviousTask = null;
+                Site.EndEvent();
 
                 // Run all content
+                Site.BeginEvent("RunAllContent");
                 RunAllContent();
+                Site.EndEvent();
 
                 // Before processing content
-                if (!TryRunProcess(BeforeProcessingProcessors, ProcessingStage.BeforeProcessingContent))
+                try
                 {
-                    // If we have any errors during processing, early exit
-                    return;
+                    Site.BeginEvent("BeforeProcessingContent");
+                    if (!TryRunProcess(BeforeProcessingProcessors, ProcessingStage.BeforeProcessingContent))
+                    {
+                        // If we have any errors during processing, early exit
+                        return;
+                    }
+                }
+                finally
+                {
+                    Site.EndEvent();
                 }
 
                 // Reset content to process
@@ -172,15 +181,21 @@ namespace Lunet.Core
                 CollectPagesPerLayoutType(Site.Pages);
                 // Process dynamic pages content (files with front matter)
                 CollectPagesPerLayoutType(Site.DynamicPages);
-                
+
                 // Process content per layout type
+                Site.BeginEvent("LayoutContent");
                 ProcessPagesPerLayoutType();
+                Site.EndEvent();
 
                 // End processing content
+                Site.BeginEvent("AfterProcessingContent");
                 TryRunProcess(AfterProcessingProcessors, ProcessingStage.AfterProcessingContent);
+                Site.EndEvent();
 
                 // Remove output files
+                Site.BeginEvent("CleanupOutputFiles");
                 CleanupOutputFiles();
+                Site.EndEvent();
             }
             finally
             {
@@ -206,7 +221,7 @@ namespace Lunet.Core
             {
                 throw new ArgumentException("Output directory cannot be empty", nameof(outputPath));
             }
-            TrackDestination(outputFile, fromFile.SourceFile);
+            TrackDestination(outputPath, fromFile.SourceFile.Path);
 
             var stat = Site.Statistics.GetContentStat(fromFile);
 
@@ -247,7 +262,7 @@ namespace Lunet.Core
                     }
                 }
                 // If the source file is not newer than the destination file, don't overwrite it
-                else if (fromFile.SourceFile != null && (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime)))
+                else if (!fromFile.SourceFile.IsEmpty && (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime)))
                 {
                     if (Site.CanTrace())
                     {
@@ -260,10 +275,8 @@ namespace Lunet.Core
                         outputFile.Attributes = outputFile.Attributes & ~FileAttributes.ReadOnly;
                     }
 
-                    fromFile.SourceFile.CopyTo(outputFile, true);
-
-                    // Don't copy readonly attributes for output folder
-                    outputFile.Attributes = fromFile.SourceFile.Attributes & ~FileAttributes.ReadOnly;
+                    // TODO: optimize copy if source and output end-up to be PhysicalFileSystem
+                    fromFile.SourceFile.FileSystem.CopyFileCross(fromFile.SourceFile.Path, outputFile.FileSystem, outputFile.Path, true, false);
 
                     // Update statistics
                     stat.Static = true;
@@ -272,7 +285,7 @@ namespace Lunet.Core
             }
             catch (Exception ex)
             {
-                Site.Error(ex, fromFile.SourceFile != null
+                Site.Error(ex, !fromFile.SourceFile.IsEmpty
                     ? $"Unable to copy file [{fromFile.SourceFile}] to [{outputFile}]. Reason:{ex.GetReason()}"
                     : $"Unable to copy file to [{outputFile}]. Reason:{ex.GetReason()}");
                 return false;
@@ -285,15 +298,13 @@ namespace Lunet.Core
             return true;
         }
 
-        public void TrackDestination(FileEntry outputFile, FileEntry sourceFile)
+        public void TrackDestination(UPath outputFile, UPath sourceFile)
         {
-            if (outputFile == null) throw new ArgumentNullException(nameof(outputFile));
-
             lock (_lockForTracking)
             {
-                if (sourceFile != null)
+                if (!sourceFile.IsEmpty)
                 {
-                    FileEntry previousSourceFile;
+                    UPath previousSourceFile;
                     if (_trackingFilesWritten.TryGetValue(outputFile, out previousSourceFile))
                     {
                         Site.Error($"The content [{previousSourceFile}] and [{sourceFile}] have the same Url output [{sourceFile}]");
@@ -307,11 +318,11 @@ namespace Lunet.Core
                 // If the directory is used for a new file, remove it from the list of previous directories
                 // Note that we remove even if things are not working after, so that previous files are kept 
                 // in case of an error
-                var previousDir = outputFile.Directory;
+                var previousDir = outputFile.GetDirectory();
                 while (previousDir != null)
                 {
                     _trackingPreviousOutputDirectories.Remove(previousDir);
-                    previousDir = previousDir.Parent;
+                    previousDir = previousDir.GetDirectory();
                 }
 
                 _trackingPreviousOutputFiles.Remove(outputFile);
@@ -384,7 +395,13 @@ namespace Lunet.Core
         public void ProcessPages(PageCollection pages, bool copyOutput)
         {
             if (pages == null) throw new ArgumentNullException(nameof(pages));
-            
+
+            //foreach (var page in pages)
+            //{
+            //    var pendingPageProcessors = new OrderedList<IContentProcessor>();
+            //    TryProcessPage(page, ContentProcessingStage.Processing, ContentProcessors, pendingPageProcessors, copyOutput);
+            //}
+
             // Process the content of all pages
             var pageActionBlock = new ActionBlock<ContentObject>(page =>
                 {
@@ -450,7 +467,7 @@ namespace Lunet.Core
             Site.Pages.Clear();
 
             // Load a content asynchronously
-            var contentLoaderBlock = new TransformBlock<(FileEntry, int), ContentObject>(
+            var contentLoaderBlock = new TransformBlock<(FileSystemItem, int), ContentObject>(
                 reference =>
                 {
                     var content = LoadContent(reference.Item1);
@@ -488,7 +505,7 @@ namespace Lunet.Core
                 var nextDirectory = directories.Dequeue();
                 // The weight is the order in the directory by name
                 int weight = 10;
-                foreach (var contentReference in LoadDirectory(nextDirectory, directories).OrderBy(x => x.Name))
+                foreach (var contentReference in LoadDirectory(nextDirectory, directories).OrderBy(x => x.Path))
                 {
                     contentLoaderBlock.Post((contentReference, weight));
                     weight += 10;
@@ -540,41 +557,37 @@ namespace Lunet.Core
             Site.Pages.Sort();
         }
 
-        private IEnumerable<FileEntry> LoadDirectory(DirectoryEntry directory, Queue<DirectoryEntry> directoryQueue)
+        private IEnumerable<FileSystemItem> LoadDirectory(DirectoryEntry directory, Queue<DirectoryEntry> directoryQueue)
         {
-            foreach (var entry in directory.EnumerateEntries())
+            foreach (var item in directory.EnumerateItems())
             {
-                if (!Site.IsHandlingPath(entry.Path))
+                if (!Site.IsHandlingPath(item.Path))
                 {
                     continue;
                 }
 
-                if (entry is FileEntry fileEntry)
+                if (item.IsDirectory)
                 {
-                    // Optimization, if an entry is coming from the aggregate, let's try to return the entry from the underlying system directly
-                    if (fileEntry.FileSystem is AggregateFileSystem aggregateFs)
+                    if (item.GetName() != SiteFileSystems.LunetFolder)
                     {
-                        yield return (FileEntry) aggregateFs.FindFirstFileSystemEntry(entry.Path);
-                    }
-                    else
-                    {
-                        yield return (FileEntry) entry;
+                        directoryQueue.Enqueue(new DirectoryEntry(directory.FileSystem, item.Path));
                     }
                 }
-                else if (entry.Name != SiteFileSystems.LunetFolderName )
+                else
                 {
-                    directoryQueue.Enqueue((DirectoryEntry)entry);
+                    yield return item;
                 }
             }
         }
-
-        private ContentObject LoadContent(FileEntry file)
+        
+        private ContentObject LoadContent(FileSystemItem item)
         {
             ContentObject page = null;
             Span<byte> buffer = stackalloc byte[16];
 
             var clock = Stopwatch.StartNew();
-            var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+            var stream = item.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             try
             {
                 var count = stream.Read(buffer);
@@ -620,19 +633,19 @@ namespace Lunet.Core
                 ScriptObject preContent = null;
                 foreach (var preLoadingContentProcessor in BeforeLoadingContentProcessors)
                 {
-                    preLoadingContentProcessor(file.Path, ref preContent);
+                    preLoadingContentProcessor(item.Path, ref preContent);
                 }
 
                 if (hasFrontMatter)
                 {
-                    page = LoadPageScript(Site, stream, file, preContent);
+                    page = LoadPageScript(Site, stream, item, preContent);
                     stream = null;
                 }
                 else
                 {
 
-                    page = new FileContentObject(Site, file, preContent: preContent);
-                    
+                    page = new FileContentObject(Site, item, preContent: preContent);
+
                     //// Run pre-processing on static content as well
                     //var pendingPageProcessors = new OrderedList<IContentProcessor>();
                     //TryProcessPage(page, ContentProcessingStage.AfterLoading, AfterLoadingProcessors, pendingPageProcessors, false);
@@ -652,19 +665,21 @@ namespace Lunet.Core
 
             return page;
         }
-        private static ContentObject LoadPageScript(SiteObject site, Stream stream, FileEntry file, ScriptObject preContent)
+
+        private static ContentObject LoadPageScript(SiteObject site, Stream stream, FileSystemItem file, ScriptObject preContent)
         {
             var evalClock = Stopwatch.StartNew();
             // Read the stream
-            var reader = new StreamReader(stream);
-            var content = reader.ReadToEnd();
-            // Early dispose the stream
-            stream.Dispose();
+            string content;
+            {
+                using var reader = new StreamReader(stream);
+                content = reader.ReadToEnd();
+            }
 
             ContentObject page = null;
 
             // Parse the page, using front-matter mode
-            var scriptInstance = site.Scripts.ParseScript(content, file.FullName, ScriptMode.FrontMatterAndContent);
+            var scriptInstance = site.Scripts.ParseScript(content, file.Path.FullName, ScriptMode.FrontMatterAndContent);
             if (!scriptInstance.HasErrors)
             {
                 page = new FileContentObject(site, file, scriptInstance, preContent: preContent);
@@ -782,22 +797,24 @@ namespace Lunet.Core
 
         private void CleanupOutputFiles()
         {
+            var outputFs = Site.OutputFileSystem;
             // Remove all previous files that have not been generated
             foreach (var outputFile in _trackingPreviousOutputFiles)
             {
                 try
                 {
-                    if (outputFile.Exists)
+                    if (outputFs.FileExists(outputFile))
                     {
                         if (Site.CanTrace())
                         {
                             Site.Trace($"Delete file [{outputFile}]");
                         }
-                        outputFile.Delete();
+                        outputFs.DeleteFile(outputFile);
                     }
                 }
                 catch (Exception)
                 {
+                    // ignore
                 }
             }
 
@@ -805,55 +822,92 @@ namespace Lunet.Core
             {
                 try
                 {
-                    if (outputDirectory.Exists)
+                    if (outputFs.DirectoryExists(outputDirectory))
                     {
                         if (Site.CanTrace())
                         {
                             Site.Trace($"Delete directory [{outputDirectory}]");
                         }
-                        outputDirectory.Delete(true);
+                        outputFs.DeleteDirectory(outputDirectory, true);
                     }
                 }
                 catch (Exception)
                 {
+                    // ignore
                 }
             }
         }
 
         private void CollectPreviousFileEntries()
         {
-            var outputDirectoryInfo = new DirectoryEntry(Site.OutputFileSystem, UPath.Root);
             _trackingPreviousOutputDirectories.Clear();
             _trackingPreviousOutputFiles.Clear();
 
-            if (!outputDirectoryInfo.Exists)
+            var outputFs = Site.OutputFileSystem;
+            _trackingPreviousTask = null;
+            if (!outputFs.DirectoryExists(UPath.Root))
             {
                 return;
             }
 
-            var directories = new Queue<DirectoryEntry>();
-            directories.Enqueue(outputDirectoryInfo);
-
-            while (directories.Count > 0)
+            _trackingPreviousTask = new Task(() =>
             {
-                var nextDirectory = directories.Dequeue();
-
-                if (!Equals(nextDirectory, outputDirectoryInfo))
+                Site.BeginEvent("Collect Previous Files");
+                foreach (var entry in outputFs.EnumerateItems(UPath.Root, SearchOption.AllDirectories))
                 {
-                    _trackingPreviousOutputDirectories.Add(nextDirectory);
-                }
-
-                foreach (var entry in nextDirectory.EnumerateEntries())
-                {
-                    if (entry is FileEntry)
+                    if (entry.IsDirectory)
                     {
-                        _trackingPreviousOutputFiles.Add(((FileEntry)entry));
+                        _trackingPreviousOutputDirectories.Add(entry.Path);
                     }
-                    else if (entry is DirectoryEntry)
+                    else
                     {
-                        directories.Enqueue((DirectoryEntry)entry);
+                        _trackingPreviousOutputFiles.Add(entry.Path);
                     }
                 }
+                Site.EndEvent();
+            }
+            );
+            _trackingPreviousTask.Start();
+        }
+
+        private readonly struct RawFileEntry : IEquatable<RawFileEntry>
+        {
+            public RawFileEntry(IFileSystem fileSystem, UPath absolutePath, UPath path)
+            {
+                FileSystem = fileSystem;
+                Path = path;
+                AbsolutePath = absolutePath;
+            }
+
+            public readonly IFileSystem FileSystem;
+
+            public readonly UPath Path;
+
+            public readonly UPath AbsolutePath;
+
+            public bool Equals(RawFileEntry other)
+            {
+                return FileSystem.Equals(other.FileSystem) && Path.Equals(other.Path);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is RawFileEntry other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(FileSystem, Path);
+            }
+
+            public static bool operator ==(RawFileEntry left, RawFileEntry right)
+            {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(RawFileEntry left, RawFileEntry right)
+            {
+                return !left.Equals(right);
             }
         }
     }

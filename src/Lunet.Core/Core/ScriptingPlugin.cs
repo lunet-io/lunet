@@ -3,8 +3,10 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Helpers;
@@ -19,8 +21,11 @@ namespace Lunet.Scripts
     public class ScriptingPlugin : SitePlugin
     {
         private readonly ITemplateLoader unauthorizedTemplateLoader;
+        private readonly TemplateLoaderFromIncludes _templateLoaderFromIncludes;
 
         private const string IncludesDirectoryName = "includes";
+
+        private readonly ThreadLocal<Stack<LunetTemplateContext>> _lunetTemplateContextFactory;
 
         internal ScriptingPlugin(SiteObject site) : base(site)
         {
@@ -28,6 +33,8 @@ namespace Lunet.Scripts
             ScribanBuiltins = TemplateContext.GetDefaultBuiltinObject();
             // Add default scriban frontmatter parser
             FrontMatterParsers = new OrderedList<IFrontMatterParser> {new ScribanFrontMatterParser(this)};
+            _templateLoaderFromIncludes = new TemplateLoaderFromIncludes(Site);
+            _lunetTemplateContextFactory = new ThreadLocal<Stack<LunetTemplateContext>>(() => new Stack<LunetTemplateContext>());
         }
 
         public ScriptObject ScribanBuiltins { get; }
@@ -92,18 +99,18 @@ namespace Lunet.Scripts
             return new ScriptInstance(template.HasErrors, (string)scriptPath, frontmatter, template.Page);
         }
 
-        public bool TryImportScript(string scriptText, UPath scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null, ScriptMode scriptMode = ScriptMode.ScriptOnly)
+        public bool TryImportScript(string scriptText, UPath scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, ScriptMode scriptMode = ScriptMode.ScriptOnly)
         {
             if (scriptText == null) throw new ArgumentNullException(nameof(scriptText));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
             result = null;
-            context ??= new LunetTemplateContext(ScribanBuiltins);
 
             var scriptResult = ParseScript(scriptText, scriptPath.FullName, scriptMode);
             if (!scriptResult.HasErrors)
             {
+                var context = GetOrCreateTemplateContext();
                 if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
                 {
                     context.PushGlobal(Site.Builtins);
@@ -112,7 +119,7 @@ namespace Lunet.Scripts
                 context.PushGlobal((ScriptObject)scriptObject);
                 context.PushSourceFile(scriptPath.FullName);
                 context.EnableOutput = false;
-                context.TemplateLoader =  (flags & ScriptFlags.AllowSiteFunctions) != 0 ? unauthorizedTemplateLoader : new TemplateLoaderFromIncludes(Site);
+                context.TemplateLoader =  (flags & ScriptFlags.AllowSiteFunctions) != 0 ? unauthorizedTemplateLoader : _templateLoaderFromIncludes;
 
                 try
                 {
@@ -125,23 +132,31 @@ namespace Lunet.Scripts
                 }
                 finally
                 {
-                    context.PopSourceFile();
-                    context.PopGlobal();
-                    if ((flags & ScriptFlags.AllowSiteFunctions) != 0)
-                    {
-                        context.PopGlobal();
-                    }
+                    ReleaseTemplateContext(context);
                 }
+
                 return true;
             }
             return false;
         }
 
-        public bool TryImportScriptStatement(string scriptStatement, ScriptObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null)
+        private LunetTemplateContext GetOrCreateTemplateContext()
+        {
+            var list = _lunetTemplateContextFactory.Value;
+            return list.Count == 0 ? new LunetTemplateContext(ScribanBuiltins) : list.Pop();
+        }
+
+        private void ReleaseTemplateContext(LunetTemplateContext context)
+        {
+            context.Reset();
+            _lunetTemplateContextFactory.Value.Push(context);
+        }
+
+        public bool TryImportScriptStatement(string scriptStatement, ScriptObject scriptObject, ScriptFlags flags, out object result)
         {
             if (scriptStatement == null) throw new ArgumentNullException(nameof(scriptStatement));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
-            return TryImportScript(scriptStatement, "__script__", scriptObject, flags, out result, context);
+            return TryImportScript(scriptStatement, "__script__", scriptObject, flags, out result);
         }
 
         public bool TryImportInclude(UPath includePath, ScriptObject toObject)
@@ -153,7 +168,7 @@ namespace Lunet.Scripts
             return TryImportScriptFromFile(new FileEntry(Site.MetaFileSystem, UPath.Root / IncludesDirectoryName / includePath), toObject, ScriptFlags.Expect, out _, scriptMode: ScriptMode.Default);
         }
 
-        public bool TryImportScriptFromFile(FileEntry scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, LunetTemplateContext context = null, ScriptMode scriptMode = ScriptMode.ScriptOnly)
+        public bool TryImportScriptFromFile(FileEntry scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, ScriptMode scriptMode = ScriptMode.ScriptOnly)
         {
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
             if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
@@ -172,7 +187,7 @@ namespace Lunet.Scripts
             if (scriptExist)
             {
                 var configAsText = scriptPath.ReadAllText();
-                return TryImportScript(configAsText, scriptPath.Path, scriptObject, flags, out result, context, scriptMode);
+                return TryImportScript(configAsText, scriptPath.Path, scriptObject, flags, out result, scriptMode);
             }
             return true;
         }
@@ -185,19 +200,21 @@ namespace Lunet.Scripts
             if (frontMatter == null) throw new ArgumentNullException(nameof(frontMatter));
             if (obj == null) throw new ArgumentNullException(nameof(obj));
 
-            var context = CreatePageContext();
+            var context = GetOrCreateTemplateContext();
+            context.PushGlobal(Site.Builtins);
             context.PushGlobal(obj);
             if (newGlobal != null)
             {
                 context.PushGlobal(newGlobal);
             }
 
+            var currentGlobal = context.CurrentGlobal;
             try
             {
                 context.EnableOutput = false;
-                context.TemplateLoader = new TemplateLoaderFromIncludes(Site);
+                context.TemplateLoader = _templateLoaderFromIncludes;
 
-                context.CurrentGlobal.SetValue(PageVariables.Site, Site, true);
+                currentGlobal.SetValue(PageVariables.Site, Site, true);
                 frontMatter.Evaluate(context);
             }
             catch (ScriptRuntimeException exception)
@@ -207,16 +224,10 @@ namespace Lunet.Scripts
             }
             finally
             {
-                context.CurrentGlobal.Remove(PageVariables.Site);
+                currentGlobal.Remove(PageVariables.Site);
+                ReleaseTemplateContext(context);
             }
             return true;
-        }
-        
-        public LunetTemplateContext CreatePageContext()
-        {
-            var context = new LunetTemplateContext(ScribanBuiltins);
-            context.PushGlobal(Site.Builtins);
-            return context;
         }
         
         /// <summary>
@@ -228,7 +239,8 @@ namespace Lunet.Scripts
             if (script == null) throw new ArgumentNullException(nameof(script));
             if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
 
-            var context = CreatePageContext();
+            var context = GetOrCreateTemplateContext();
+            context.PushGlobal(Site.Builtins);
             context.Page = page;
             foreach (var contextObject in contextObjects)
             {
@@ -244,8 +256,7 @@ namespace Lunet.Scripts
             try
             {
                 context.EnableOutput = true;
-                var includeLoader = new TemplateLoaderFromIncludes(Site);
-                context.TemplateLoader = includeLoader;
+                context.TemplateLoader = _templateLoaderFromIncludes;
 
                 currentScriptObject.SetValue(PageVariables.Site, Site, true);
                 currentScriptObject.SetValue(PageVariables.Page, page, true);
@@ -253,11 +264,10 @@ namespace Lunet.Scripts
                 // TODO: setup include paths for script
                 script.Evaluate(context);
 
-                foreach (var includeFile in includeLoader.IncludeFiles)
-                {
-                    page.Dependencies.Add(new FileContentDependency(includeFile));
-                }
-
+                //foreach (var includeFile in _templateLoaderFromIncludes.IncludeFiles)
+                //{
+                //    page.Dependencies.Add(new FileContentDependency(includeFile));
+                //}
             }
             catch (ScriptRuntimeException exception)
             {
@@ -269,10 +279,8 @@ namespace Lunet.Scripts
                 // We don't keep the site variable after this initialization
                 currentScriptObject.Remove(PageVariables.Site);
                 currentScriptObject.Remove(PageVariables.Page);
-
-                context.PopSourceFile();
-                context.PopGlobal();
                 page.Content = context.Output.ToString();
+                ReleaseTemplateContext(context);
             }
             return true;
         }
@@ -310,16 +318,16 @@ namespace Lunet.Scripts
 
         private class TemplateLoaderUnauthorized : ITemplateLoader
         {
-            private readonly SiteObject site;
+            private readonly SiteObject _site;
 
             public TemplateLoaderUnauthorized(SiteObject site)
             {
-                this.site = site;
+                this._site = site;
             }
 
             public string GetPath(TemplateContext context, SourceSpan callerSpan, string templateName)
             {
-                site.Error(callerSpan, $"The include statement is not allowed from this context. The include [{templateName}] cannot be loaded");
+                _site.Error(callerSpan, $"The include statement is not allowed from this context. The include [{templateName}] cannot be loaded");
                 return null;
             }
 
@@ -336,22 +344,27 @@ namespace Lunet.Scripts
 
         private class TemplateLoaderFromIncludes : ITemplateLoader
         {
-            private readonly SiteObject site;
+            private readonly SiteObject _site;
+
+            private readonly ConcurrentDictionary<string, string> _templates;
 
             public TemplateLoaderFromIncludes(SiteObject site)
             {
-                this.site = site;
-                IncludeFiles = new HashSet<FileEntry>();
+                this._site = site;
+                //IncludeFiles = new HashSet<FileEntry>();
+                _templates = new ConcurrentDictionary<string, string>();
             }
 
-            public HashSet<FileEntry> IncludeFiles { get; }
+            // Try to see how/if we can to have IncludeFiles still generated
+            // Would have to be a TLS per thread
+            //public HashSet<FileEntry> IncludeFiles { get; }
 
             public string GetPath(TemplateContext context, SourceSpan callerSpan, string templateName)
             {
                 templateName = templateName.Trim();
                 if (templateName.Contains("..") || templateName.StartsWith("/") || templateName.StartsWith("\\"))
                 {
-                    site.Error(callerSpan, $"The include [{templateName}] cannot contain '..' or start with '/' or '\\'");
+                    _site.Error(callerSpan, $"The include [{templateName}] cannot contain '..' or start with '/' or '\\'");
                     return null;
                 }
                 var templatePath = UPath.Root / IncludesDirectoryName / templateName;
@@ -360,9 +373,14 @@ namespace Lunet.Scripts
 
             public string Load(TemplateContext context, SourceSpan callerSpan, string templatePath)
             {
-                var templateFile = new FileEntry(site.MetaFileSystem, templatePath);
-                IncludeFiles.Add(templateFile);
-                return templateFile.ReadAllText();
+                if (!_templates.TryGetValue(templatePath, out var result))
+                {
+                    var templateFile = new FileEntry(_site.MetaFileSystem, templatePath);
+                    //IncludeFiles.Add(templateFile);
+                    result = templateFile.ReadAllText();
+                    _templates.TryAdd(templatePath, result);
+                }
+                return result;
             }
 
             public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
@@ -423,15 +441,25 @@ namespace Lunet.Scripts
 
     public class LunetTemplateContext : TemplateContext
     {
-        public LunetTemplateContext()
-        {
-        }
-
         public LunetTemplateContext(ScriptObject builtin) : base(builtin)
         {
+            Defaults();
         }
         
         public ContentObject Page { get; set; }
+
+        private void Defaults()
+        {
+            LoopLimit = int.MaxValue;
+            RecursiveLimit = int.MaxValue;
+            LimitToString = 0;
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            Page = null;
+        }
     }
 
 }
