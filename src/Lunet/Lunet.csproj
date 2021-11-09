@@ -15,8 +15,8 @@
     <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>git://github.com/lunet-io/lunet</RepositoryUrl>
-    <TargetFramework>net5.0</TargetFramework>
-    <RuntimeIdentifiers>win7-x64;osx.10.10-x64;ubuntu.14.04-x64</RuntimeIdentifiers>
+    <TargetFramework>net6.0</TargetFramework>
+    <!--<RuntimeIdentifiers>win7-x64;osx.10.10-x64;ubuntu.14.04-x64</RuntimeIdentifiers>-->
     <AssemblyName>lunet</AssemblyName>
     <!-- Package as tool -->
     <ApplicationIcon>..\..\doc\favicon.ico</ApplicationIcon>
@@ -30,6 +30,11 @@
     <PackageSuperluminalPerfIncludeSource>true</PackageSuperluminalPerfIncludeSource>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
+		<!--SingleFile-->
+		<!--<PublishSingleFile>true</PublishSingleFile>
+		<SelfContained>true</SelfContained>
+		<PublishTrimmed>true</PublishTrimmed>
+		<PublishReadyToRun>true</PublishReadyToRun>-->		
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,6 +43,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SuperluminalPerf" Version="1.0.0" IncludeAssets="Build"/>
+    <PackageReference Include="SuperluminalPerf" Version="1.0.0" IncludeAssets="Build" />
   </ItemGroup>
 </Project>
