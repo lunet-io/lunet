@@ -249,14 +249,14 @@ public class ContentPlugin : SitePlugin
                         Site.Trace($"Write file [{outputFile}]");
                     }
 
-                    using (var writer = new StreamWriter(outputFile.Open(FileMode.Create, FileAccess.Write), UTF8WithoutBOM))
+                    using (var stream = outputFile.Open(FileMode.Create, FileAccess.Write))
                     {
-                        writer.Write(fromFile.Content);
-                        writer.Flush();
+                        stream.WriteStringOptimized(fromFile.Content, UTF8WithoutBOM);
+                        stream.Flush();
 
                         // Update statistics
                         stat.Static = false;
-                        stat.OutputBytes += writer.BaseStream.Length;
+                        stat.OutputBytes += stream.Length;
                     }
 
                     // Store the new content hash
