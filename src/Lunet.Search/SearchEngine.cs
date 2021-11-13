@@ -1,3 +1,7 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,110 +11,109 @@ using Lunet.Helpers;
 using Markdig;
 using Zio;
 
-namespace Lunet.Search
+namespace Lunet.Search;
+
+public abstract class SearchEngine : ContentProcessor<SearchPlugin>
 {
-    public abstract class SearchEngine : ContentProcessor<SearchPlugin>
+    private readonly List<SearchPattern> _excludes;
+    private UPath _outputUrl;
+    private bool _isInitialized;
+
+    protected SearchEngine(SearchPlugin plugin, string name) : base(plugin)
     {
-        private readonly List<SearchPattern> _excludes;
-        private UPath _outputUrl;
-        private bool _isInitialized;
+        _excludes = new List<SearchPattern>();
+        Name = name;
+    }
 
-        protected SearchEngine(SearchPlugin plugin, string name) : base(plugin)
+    public override string Name { get; }
+
+    protected UPath OutputUrl => _outputUrl;
+
+    public abstract void Initialize();
+
+    public abstract void ProcessSearchContent(ContentObject file, string plainText);
+
+    public abstract void Terminate();
+
+    public override void Process(ProcessingStage stage)
+    {
+        if (stage == ProcessingStage.BeforeLoadingContent)
         {
-            _excludes = new List<SearchPattern>();
-            Name = name;
-        }
+            if (!Plugin.Enable) return;
 
-        public override string Name { get; }
-
-        protected UPath OutputUrl => _outputUrl;
-
-        public abstract void Initialize();
-
-        public abstract void ProcessSearchContent(ContentObject file, string plainText);
-
-        public abstract void Terminate();
-
-        public override void Process(ProcessingStage stage)
-        {
-            if (stage == ProcessingStage.BeforeLoadingContent)
+            if (Plugin.Url == null || !UPath.TryParse(Plugin.Url, out _outputUrl) || !_outputUrl.IsAbsolute)
             {
-                if (!Plugin.Enable) return;
+                Site.Error($"Invalid url `{Plugin.Url}` declared for search. Search will not be generated.");
+                return;
+            }
 
-                if (Plugin.Url == null || !UPath.TryParse(Plugin.Url, out _outputUrl) || !_outputUrl.IsAbsolute)
-                {
-                    Site.Error($"Invalid url `{Plugin.Url}` declared for search. Search will not be generated.");
-                    return;
-                }
+            _excludes.Clear();
 
-                _excludes.Clear();
-
-                // Exclude any files that are globally excluded
-                foreach (var excludeItem in Plugin.Excludes)
+            // Exclude any files that are globally excluded
+            foreach (var excludeItem in Plugin.Excludes)
+            {
+                if (excludeItem is string str && UPath.TryParse(str, out var excludePath) && excludePath.IsAbsolute)
                 {
-                    if (excludeItem is string str && UPath.TryParse(str, out var excludePath) && excludePath.IsAbsolute)
-                    {
-                        var searchPattern = excludePath.SearchPattern();
-                        _excludes.Add(searchPattern);
-                    }
-                }
-
-                try
-                {
-                    Initialize();
-                    _isInitialized = true;
-                }
-                catch (Exception ex)
-                {
-                    Site.Error(ex, $"Unable to initialize search processor `{Name}`. Reason: {ex.Message}");
+                    var searchPattern = excludePath.SearchPattern();
+                    _excludes.Add(searchPattern);
                 }
             }
-            else if (stage == ProcessingStage.BeforeProcessingContent)
+
+            try
             {
-               Terminate();
+                Initialize();
+                _isInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Site.Error(ex, $"Unable to initialize search processor `{Name}`. Reason: {ex.Message}");
             }
         }
-
-        private static readonly Regex FindSpacesRegexp = new Regex(@"\s+");
-
-        public override ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage)
+        else if (stage == ProcessingStage.BeforeProcessingContent)
         {
-            Debug.Assert(stage == ContentProcessingStage.Running);
+            Terminate();
+        }
+    }
 
-            if (!_isInitialized) return ContentResult.Continue;
+    private static readonly Regex FindSpacesRegexp = new Regex(@"\s+");
 
-            var contentType = file.ContentType;
+    public override ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage)
+    {
+        Debug.Assert(stage == ContentProcessingStage.Running);
 
-            // This plugin is only working on scss files
-            if (!contentType.IsHtmlLike())
+        if (!_isInitialized) return ContentResult.Continue;
+
+        var contentType = file.ContentType;
+
+        // This plugin is only working on scss files
+        if (!contentType.IsHtmlLike())
+        {
+            return ContentResult.Continue;
+        }
+
+        // Exclude any files that are globally excluded
+        foreach (var searchPattern in _excludes)
+        {
+            if (searchPattern.Match(file.Path))
             {
                 return ContentResult.Continue;
             }
-
-            // Exclude any files that are globally excluded
-            foreach (var searchPattern in _excludes)
-            {
-                if (searchPattern.Match(file.Path))
-                {
-                    return ContentResult.Continue;
-                }
-            }
-
-            if (file.Content == null)
-            {
-                file.Content = file.SourceFile.ReadAllText();
-            }
-
-            var plainText = contentType == ContentType.Markdown ? Markdown.ToHtml(file.Content) : file.Content;
-
-            // Remove any HTML from existing content
-            plainText = contentType == ContentType.Markdown ? NUglify.Uglify.HtmlToText($"<html><body>{plainText}</body></html>").Code : NUglify.Uglify.HtmlToText(plainText).Code;
-            // Remove any trailing 
-            plainText = FindSpacesRegexp.Replace(plainText, " ").Trim();
-
-            ProcessSearchContent(file, plainText);
-
-            return ContentResult.Continue;
         }
+
+        if (file.Content == null)
+        {
+            file.Content = file.SourceFile.ReadAllText();
+        }
+
+        var plainText = contentType == ContentType.Markdown ? Markdown.ToHtml(file.Content) : file.Content;
+
+        // Remove any HTML from existing content
+        plainText = contentType == ContentType.Markdown ? NUglify.Uglify.HtmlToText($"<html><body>{plainText}</body></html>").Code : NUglify.Uglify.HtmlToText(plainText).Code;
+        // Remove any trailing 
+        plainText = FindSpacesRegexp.Replace(plainText, " ").Trim();
+
+        ProcessSearchContent(file, plainText);
+
+        return ContentResult.Continue;
     }
 }

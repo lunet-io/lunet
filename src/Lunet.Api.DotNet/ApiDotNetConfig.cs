@@ -4,49 +4,48 @@
 
 using Scriban.Runtime;
 
-namespace Lunet.Api.DotNet
+namespace Lunet.Api.DotNet;
+
+public class ApiDotNetConfig : ApiConfig
 {
-    public class ApiDotNetConfig : ApiConfig
+    public ApiDotNetConfig()
     {
-        public ApiDotNetConfig()
-        {
-            SolutionConfiguration = "Release";
-        }
+        SolutionConfiguration = "Release";
+    }
 
-        public string Title
-        {
-            get => this.GetSafeValue<string>("title");
-            set => this.SetValue("title", value);
-        }
+    public string Title
+    {
+        get => this.GetSafeValue<string>("title");
+        set => this.SetValue("title", value);
+    }
 
-        public string SolutionConfiguration
-        {
-            get => this.GetSafeValue<string>("config");
-            set => this.SetValue("config", value);
-        }
+    public string SolutionConfiguration
+    {
+        get => this.GetSafeValue<string>("config");
+        set => this.SetValue("config", value);
+    }
         
-        public ScriptArray Projects
-        {
-            get => this.GetSafeValue<ScriptArray>("projects");
-            set => this.SetValue("projects", value);
-        }
+    public ScriptArray Projects
+    {
+        get => this.GetSafeValue<ScriptArray>("projects");
+        set => this.SetValue("projects", value);
+    }
 
-        public ScriptObject Properties
-        {
-            get => this.GetSafeValue<ScriptObject>("properties");
-            set => this.SetValue("properties", value);
-        }
+    public ScriptObject Properties
+    {
+        get => this.GetSafeValue<ScriptObject>("properties");
+        set => this.SetValue("properties", value);
+    }
 
-        public string IncludeHelper
-        {
-            get => this.GetSafeValue<string>("include_helper");
-            set => this.SetValue("include_helper", value);
-        }
+    public string IncludeHelper
+    {
+        get => this.GetSafeValue<string>("include_helper");
+        set => this.SetValue("include_helper", value);
+    }
 
-        public string Layout
-        {
-            get => this.GetSafeValue<string>("layout");
-            set => this.SetValue("layout", value);
-        }
+    public string Layout
+    {
+        get => this.GetSafeValue<string>("layout");
+        set => this.SetValue("layout", value);
     }
 }

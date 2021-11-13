@@ -4,19 +4,17 @@
 
 using System.Threading;
 
-namespace Lunet.Core
+namespace Lunet.Core;
+
+public interface ISiteCommandRunner
 {
-    public interface ISiteCommandRunner
-    {
-        RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken);
-    }
+    RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken);
+}
 
 
-    public enum RunnerResult
-    {
-        Exit,
-        Continue,
-        ExitWithError,
-    }
-
+public enum RunnerResult
+{
+    Exit,
+    Continue,
+    ExitWithError,
 }

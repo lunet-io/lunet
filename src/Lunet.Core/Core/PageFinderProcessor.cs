@@ -12,299 +12,298 @@ using Scriban.Functions;
 using Scriban.Runtime;
 using Zio;
 
-namespace Lunet.Core
+namespace Lunet.Core;
+
+public static class UidHelper
 {
-    public static class UidHelper
+    public static string Handleize(string uid)
     {
-        public static string Handleize(string uid)
+        var tempStringBuilder = new StringBuilder();
+        for (int index = 0; index < uid.Length; ++index)
         {
-            var tempStringBuilder = new StringBuilder();
-            for (int index = 0; index < uid.Length; ++index)
+            char c = uid[index];
+            if (char.IsLetterOrDigit(c) || c == '.' || c == '-')
             {
-                char c = uid[index];
-                if (char.IsLetterOrDigit(c) || c == '.' || c == '-')
-                {
-                    tempStringBuilder.Append(c);
-                }
-                else
-                {
-                    tempStringBuilder.Append('-');
-                }
+                tempStringBuilder.Append(c);
             }
-            if (tempStringBuilder.Length > 0 && tempStringBuilder[tempStringBuilder.Length - 1] == '-')
-                --tempStringBuilder.Length;
-            string str = tempStringBuilder.ToString();
-            return str;
+            else
+            {
+                tempStringBuilder.Append('-');
+            }
+        }
+        if (tempStringBuilder.Length > 0 && tempStringBuilder[tempStringBuilder.Length - 1] == '-')
+            --tempStringBuilder.Length;
+        string str = tempStringBuilder.ToString();
+        return str;
+    }
+}
+
+
+/// <summary>
+/// A processor to reference all uid used by static, user content and dynamic content.
+/// </summary>
+public class PageFinderProcessor : ProcessorBase<ContentPlugin>
+{
+    private readonly Dictionary<string, ContentObject> _mapUidToContent;
+    private readonly Dictionary<UPath, ContentObject> _mapPathToContent;
+    private readonly Dictionary<string, ExtraContent> _uidExtraContent;
+        
+    public PageFinderProcessor(ContentPlugin plugin) : base(plugin)
+    {
+        _mapUidToContent = new Dictionary<string, ContentObject>();
+        _mapPathToContent = new Dictionary<UPath, ContentObject>();
+        _uidExtraContent = new Dictionary<string, ExtraContent>();
+
+        Site.Builtins.SetValue("xref", DelegateCustomFunction.CreateFunc((Func<string, ScriptObject>)FunctionXRef), true);
+        Site.Builtins.SetValue("ref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRef), true);
+        Site.Builtins.SetValue("relref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRelRef), true);
+    }
+
+    /// <summary>
+    /// Tries to find a content object associated with the specified uid.
+    /// </summary>
+    /// <param name="uid">The uid to look a content object for.</param>
+    /// <param name="content">The content object if found.</param>
+    /// <returns>`true` if the content with the specified uid was found; `false` otherwise</returns>
+    public bool TryFindByUid(string uid, out ContentObject content)
+    {
+        content = null;
+        if (uid == null) return false;
+        if (_uidExtraContent.TryGetValue(uid, out var extraContent))
+        {
+            uid = extraContent.DefinitionUid ?? extraContent.Uid;
+        }
+            
+        return _mapUidToContent.TryGetValue(uid, out content);
+    }
+
+    public bool TryGetTitleByUid(string uid, out string title)
+    {
+        if (TryFindByUid(uid, out var uidContent))
+        {
+            title = uidContent[PageVariables.XRefName] as string ?? uidContent.Title;
+            return true;
+        }
+        else if (TryGetExternalUid(uid, out var name, out var fullName, out _))
+        {
+            // For external content, we use fullname.
+            title = fullName;
+            return true;
+        }
+
+        title = null;
+        return false;
+    }
+
+    public bool TryGetExternalUid(string uid, out string name, out string fullname, out string url)
+    {
+        if (_uidExtraContent.TryGetValue(uid, out var extraContent))
+        {
+            uid = extraContent.DefinitionUid ?? extraContent.Uid;
+            name = extraContent.Name;
+            fullname = extraContent.FullName;
+        }
+        else
+        {
+            name = null;
+            fullname = null;
+        }
+
+        // TODO: make this mapping pluggable via config
+        if (uid.StartsWith("System.") || uid.StartsWith("Microsoft."))
+        {
+            name ??= uid;
+            fullname ??= uid;
+            url = $"https://docs.microsoft.com/en-us/dotnet/api/{UidHelper.Handleize(uid)}";
+            return true;
+        }
+
+        fullname = null;
+        url = null;
+        return false;
+    }
+        
+    public bool TryFindByPath(string path, out ContentObject content)
+    {
+        return _mapPathToContent.TryGetValue(path, out content);
+    }
+
+    public override void Process(ProcessingStage stage)
+    {
+        foreach (var page in Site.StaticFiles)
+        {
+            _mapPathToContent[page.Path] = page;
+            RegisterUid(page);
+        }
+
+        foreach (var page in Site.Pages)
+        {
+            _mapPathToContent[page.Path] = page;
+            RegisterUid(page);
+        }
+            
+        foreach (var page in Site.DynamicPages)
+        {
+            _mapPathToContent[page.Path] = page;
+            RegisterUid(page);
+        }
+    }
+
+    public void RegisterExtraContent(ExtraContent extraContent)
+    {
+        if (extraContent == null) throw new ArgumentNullException(nameof(extraContent));
+        if (extraContent.Uid == null) throw new ArgumentException("The uid of this extra content cannot be null", nameof(extraContent));
+        _uidExtraContent[extraContent.Uid] = extraContent;
+    }
+
+    private void RegisterUid(ContentObject page)
+    {
+        var uid = page.Uid;
+        if (string.IsNullOrEmpty(uid)) return;
+                
+        if (_mapUidToContent.TryGetValue(uid, out var content))
+        {
+            if (!ReferenceEquals(content, page))
+            {
+                Site.Error($"Duplicated uid `{uid}` used. The content {(page.Path.IsNull ? page.Url : (string) page.Path)} has the same uid than {(content.Path.IsNull ? content.Url : (string) content.Path)}");
+            }
+        }
+        else
+        {
+            _mapUidToContent.Add(uid, page);
         }
     }
 
 
-    /// <summary>
-    /// A processor to reference all uid used by static, user content and dynamic content.
-    /// </summary>
-    public class PageFinderProcessor : ProcessorBase<ContentPlugin>
+    private ScriptObject FunctionXRef(string uid)
     {
-        private readonly Dictionary<string, ContentObject> _mapUidToContent;
-        private readonly Dictionary<UPath, ContentObject> _mapPathToContent;
-        private readonly Dictionary<string, ExtraContent> _uidExtraContent;
+        if (uid == null) return null;
+
+        if (TryFindByUid(uid, out var uidContent))
+        {
+            var name = uidContent[PageVariables.XRefName] as string ?? uidContent.Title;
+            var fullName = uidContent[PageVariables.XRefFullName] as string ?? name;
+            return new ScriptObject()
+            {
+                {"url", uidContent.Url},
+                {"name", name},
+                {"fullname", fullName},
+                {"page", uidContent },
+            };
+        }
+
+        if (TryGetExternalUid(uid, out var externalName, out var externalFullName, out var url))
+        {
+            // TODO: add friendly name and fullname for an external uid using References
+            return new ScriptObject()
+            {
+                {"url", url},
+                {"name", externalName},
+                {"fullname", externalFullName},
+            };
+        }
+
+        return null;
+    }
+
+    private string UrlRef(TemplateContext context, string url)
+    {
+        return UrlRef(context is LunetTemplateContext lunetContext ? lunetContext.Page : null, url);
+    }
+
+    public string UrlRef(ContentObject fromPage, string url)
+    {
+        return UrlRef(fromPage, url, false);
+    }
+
+    private string UrlRelRef(TemplateContext context, string url)
+    {
+        return UrlRelRef(context is LunetTemplateContext lunetContext ? lunetContext.Page : null, url);
+    }
+
+    public string UrlRelRef(ContentObject fromPage, string url)
+    {
+        return UrlRef(fromPage, url, true);
+    }
         
-        public PageFinderProcessor(ContentPlugin plugin) : base(plugin)
-        {
-            _mapUidToContent = new Dictionary<string, ContentObject>();
-            _mapPathToContent = new Dictionary<UPath, ContentObject>();
-            _uidExtraContent = new Dictionary<string, ExtraContent>();
+    private string UrlRef(ContentObject page, string url, bool rel)
+    {
+        url ??= "/";
 
-            Site.Builtins.SetValue("xref", DelegateCustomFunction.CreateFunc((Func<string, ScriptObject>)FunctionXRef), true);
-            Site.Builtins.SetValue("ref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRef), true);
-            Site.Builtins.SetValue("relref", DelegateCustomFunction.CreateFunc((Func<TemplateContext, string, string>)UrlRelRef), true);
+        var baseUrl = Site.BaseUrl;
+        var basePath = Site.BasePath;
+
+        // In case of using URL on an external URL (https:), don't error but return it as it is
+        if (url.Contains(':'))
+        {
+            if (url.StartsWith("xref:"))
+            {
+                var xref = url.Substring("xref:".Length);
+                if (TryFindByUid(xref, out var pageUid))
+                {
+                    url = pageUid.Url;
+                    return rel ? url : (string) (UPath) $"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
+                }
+
+                if (TryGetExternalUid(xref, out _, out _, out url))
+                {
+                    return url;
+                }
+
+                Site.Warning($"Unable to find xref {xref} in page {page.Url}");
+            }
+                
+            return url;
         }
 
-        /// <summary>
-        /// Tries to find a content object associated with the specified uid.
-        /// </summary>
-        /// <param name="uid">The uid to look a content object for.</param>
-        /// <param name="content">The content object if found.</param>
-        /// <returns>`true` if the content with the specified uid was found; `false` otherwise</returns>
-        public bool TryFindByUid(string uid, out ContentObject content)
+        // Validate the url
+        if (!UPath.TryParse(url, out var urlPath))
         {
-            content = null;
-            if (uid == null) return false;
-            if (_uidExtraContent.TryGetValue(uid, out var extraContent))
-            {
-                uid = extraContent.DefinitionUid ?? extraContent.Uid;
-            }
-            
-            return _mapUidToContent.TryGetValue(uid, out content);
+            throw new ArgumentException($"Malformed url `{url}`", nameof(url));
         }
 
-        public bool TryGetTitleByUid(string uid, out string title)
+        // If the URL is not absolute, we make it absolute from the current page
+        if (!url.StartsWith("/"))
         {
-            if (TryFindByUid(uid, out var uidContent))
+            if (page?.Url != null)
             {
-                title = uidContent[PageVariables.XRefName] as string ?? uidContent.Title;
-                return true;
-            }
-            else if (TryGetExternalUid(uid, out var name, out var fullName, out _))
-            {
-                // For external content, we use fullname.
-                title = fullName;
-                return true;
-            }
-
-            title = null;
-            return false;
-        }
-
-        public bool TryGetExternalUid(string uid, out string name, out string fullname, out string url)
-        {
-            if (_uidExtraContent.TryGetValue(uid, out var extraContent))
-            {
-                uid = extraContent.DefinitionUid ?? extraContent.Uid;
-                name = extraContent.Name;
-                fullname = extraContent.FullName;
+                var directory = page.GetDestinationDirectory();
+                url = (string)(directory / urlPath);
             }
             else
             {
-                name = null;
-                fullname = null;
+                throw new ArgumentException($"Invalid url `{url}`. Expecting an absolute url starting with /", nameof(url));
             }
-
-            // TODO: make this mapping pluggable via config
-            if (uid.StartsWith("System.") || uid.StartsWith("Microsoft."))
-            {
-                name ??= uid;
-                fullname ??= uid;
-                url = $"https://docs.microsoft.com/en-us/dotnet/api/{UidHelper.Handleize(uid)}";
-                return true;
-            }
-
-            fullname = null;
-            url = null;
-            return false;
         }
-        
-        public bool TryFindByPath(string path, out ContentObject content)
+
+        if (!UPath.TryParse(url, out _))
         {
-            return _mapPathToContent.TryGetValue(path, out content);
+            throw new ArgumentException($"Malformed url `{url}`", nameof(url));
         }
 
-        public override void Process(ProcessingStage stage)
+        var urlToValidate = $"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
+        if (!Uri.TryCreate(urlToValidate, UriKind.Absolute, out var uri))
         {
-            foreach (var page in Site.StaticFiles)
-            {
-                _mapPathToContent[page.Path] = page;
-                RegisterUid(page);
-            }
-
-            foreach (var page in Site.Pages)
-            {
-                _mapPathToContent[page.Path] = page;
-                RegisterUid(page);
-            }
-            
-            foreach (var page in Site.DynamicPages)
-            {
-                _mapPathToContent[page.Path] = page;
-                RegisterUid(page);
-            }
+            throw new ArgumentException($"Invalid url `{urlToValidate}`.", nameof(url));
         }
 
-        public void RegisterExtraContent(ExtraContent extraContent)
+        UPath.TryParse(uri.AbsolutePath, out var absPath);
+
+        // Resolve the page
+        if (_mapPathToContent.TryGetValue(absPath, out var pageLink))
         {
-            if (extraContent == null) throw new ArgumentNullException(nameof(extraContent));
-            if (extraContent.Uid == null) throw new ArgumentException("The uid of this extra content cannot be null", nameof(extraContent));
-            _uidExtraContent[extraContent.Uid] = extraContent;
+            var destPath = pageLink.GetDestinationPath();
+
+            var newUrl = (string)destPath;
+            if (newUrl.EndsWith("/index.html") || newUrl.EndsWith("/index.htm"))
+            {
+                newUrl = (string)destPath.GetDirectory();
+            }
+            absPath = newUrl;
         }
 
-        private void RegisterUid(ContentObject page)
-        {
-            var uid = page.Uid;
-            if (string.IsNullOrEmpty(uid)) return;
-                
-            if (_mapUidToContent.TryGetValue(uid, out var content))
-            {
-                if (!ReferenceEquals(content, page))
-                {
-                    Site.Error($"Duplicated uid `{uid}` used. The content {(page.Path.IsNull ? page.Url : (string) page.Path)} has the same uid than {(content.Path.IsNull ? content.Url : (string) content.Path)}");
-                }
-            }
-            else
-            {
-                _mapUidToContent.Add(uid, page);
-            }
-        }
-
-
-        private ScriptObject FunctionXRef(string uid)
-        {
-            if (uid == null) return null;
-
-            if (TryFindByUid(uid, out var uidContent))
-            {
-                var name = uidContent[PageVariables.XRefName] as string ?? uidContent.Title;
-                var fullName = uidContent[PageVariables.XRefFullName] as string ?? name;
-                return new ScriptObject()
-                {
-                    {"url", uidContent.Url},
-                    {"name", name},
-                    {"fullname", fullName},
-                    {"page", uidContent },
-                };
-            }
-
-            if (TryGetExternalUid(uid, out var externalName, out var externalFullName, out var url))
-            {
-                // TODO: add friendly name and fullname for an external uid using References
-                return new ScriptObject()
-                {
-                    {"url", url},
-                    {"name", externalName},
-                    {"fullname", externalFullName},
-                };
-            }
-
-            return null;
-        }
-
-        private string UrlRef(TemplateContext context, string url)
-        {
-            return UrlRef(context is LunetTemplateContext lunetContext ? lunetContext.Page : null, url);
-        }
-
-        public string UrlRef(ContentObject fromPage, string url)
-        {
-            return UrlRef(fromPage, url, false);
-        }
-
-        private string UrlRelRef(TemplateContext context, string url)
-        {
-            return UrlRelRef(context is LunetTemplateContext lunetContext ? lunetContext.Page : null, url);
-        }
-
-        public string UrlRelRef(ContentObject fromPage, string url)
-        {
-            return UrlRef(fromPage, url, true);
-        }
-        
-        private string UrlRef(ContentObject page, string url, bool rel)
-        {
-            url ??= "/";
-
-            var baseUrl = Site.BaseUrl;
-            var basePath = Site.BasePath;
-
-            // In case of using URL on an external URL (https:), don't error but return it as it is
-            if (url.Contains(':'))
-            {
-                if (url.StartsWith("xref:"))
-                {
-                    var xref = url.Substring("xref:".Length);
-                    if (TryFindByUid(xref, out var pageUid))
-                    {
-                        url = pageUid.Url;
-                        return rel ? url : (string) (UPath) $"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
-                    }
-
-                    if (TryGetExternalUid(xref, out _, out _, out url))
-                    {
-                        return url;
-                    }
-
-                    Site.Warning($"Unable to find xref {xref} in page {page.Url}");
-                }
-                
-                return url;
-            }
-
-            // Validate the url
-            if (!UPath.TryParse(url, out var urlPath))
-            {
-                throw new ArgumentException($"Malformed url `{url}`", nameof(url));
-            }
-
-            // If the URL is not absolute, we make it absolute from the current page
-            if (!url.StartsWith("/"))
-            {
-                if (page?.Url != null)
-                {
-                    var directory = page.GetDestinationDirectory();
-                    url = (string)(directory / urlPath);
-                }
-                else
-                {
-                    throw new ArgumentException($"Invalid url `{url}`. Expecting an absolute url starting with /", nameof(url));
-                }
-            }
-
-            if (!UPath.TryParse(url, out _))
-            {
-                throw new ArgumentException($"Malformed url `{url}`", nameof(url));
-            }
-
-            var urlToValidate = $"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
-            if (!Uri.TryCreate(urlToValidate, UriKind.Absolute, out var uri))
-            {
-                throw new ArgumentException($"Invalid url `{urlToValidate}`.", nameof(url));
-            }
-
-            UPath.TryParse(uri.AbsolutePath, out var absPath);
-
-            // Resolve the page
-            if (_mapPathToContent.TryGetValue(absPath, out var pageLink))
-            {
-                var destPath = pageLink.GetDestinationPath();
-
-                var newUrl = (string)destPath;
-                if (newUrl.EndsWith("/index.html") || newUrl.EndsWith("/index.htm"))
-                {
-                    newUrl = (string)destPath.GetDirectory();
-                }
-                absPath = newUrl;
-            }
-
-            return rel
-                ? $"{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}"
-                : $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? string.Empty : $":{uri.Port.ToString(CultureInfo.InvariantCulture)}")}{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}";
-        }
+        return rel
+            ? $"{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}"
+            : $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? string.Empty : $":{uri.Port.ToString(CultureInfo.InvariantCulture)}")}{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}";
     }
 }

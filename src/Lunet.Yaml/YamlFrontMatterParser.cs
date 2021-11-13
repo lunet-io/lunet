@@ -1,49 +1,52 @@
-﻿using System;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using System;
 using Lunet.Core;
 using Scriban;
 using Scriban.Parsing;
 using Scriban.Runtime;
 
-namespace Lunet.Yaml
+namespace Lunet.Yaml;
+
+public class YamlFrontMatterParser : IFrontMatterParser
 {
-    public class YamlFrontMatterParser : IFrontMatterParser
+    public bool CanHandle(ReadOnlySpan<byte> header)
     {
-        public bool CanHandle(ReadOnlySpan<byte> header)
-        {
-            return header[0] == (byte)'-' && header[1] == (byte)'-' && header[2] == (byte)'-';
-        }
+        return header[0] == (byte)'-' && header[1] == (byte)'-' && header[2] == (byte)'-';
+    }
 
-        public bool CanHandle(ReadOnlySpan<char> header)
-        {
-            return header[0] == '-' && header[1] == '-' && header[2] == '-';
-        }
+    public bool CanHandle(ReadOnlySpan<char> header)
+    {
+        return header[0] == '-' && header[1] == '-' && header[2] == '-';
+    }
 
-        public IFrontMatter TryParse(string text, string sourceFilePath, out TextPosition position)
+    public IFrontMatter TryParse(string text, string sourceFilePath, out TextPosition position)
+    {
+        var frontMatter = YamlUtil.FromYamlFrontMatter(text, out position, sourceFilePath);
+        if (frontMatter is ScriptObject obj)
         {
-            var frontMatter = YamlUtil.FromYamlFrontMatter(text, out position, sourceFilePath);
-            if (frontMatter is ScriptObject obj)
-            {
-                return new YamlFrontMatter(obj);
-            }
-            return null;
+            return new YamlFrontMatter(obj);
         }
+        return null;
+    }
 
-        private class YamlFrontMatter : IFrontMatter
+    private class YamlFrontMatter : IFrontMatter
+    {
+        public YamlFrontMatter(ScriptObject o)
         {
-            public YamlFrontMatter(ScriptObject o)
-            {
-                Object = o;
-            }
+            Object = o;
+        }
             
-            public ScriptObject Object { get; }
+        public ScriptObject Object { get; }
 
-            public void Evaluate(TemplateContext context)
+        public void Evaluate(TemplateContext context)
+        {
+            var dest = context.CurrentGlobal;
+            foreach (var keyPair in Object)
             {
-                var dest = context.CurrentGlobal;
-                foreach (var keyPair in Object)
-                {
-                    dest.SetValue(keyPair.Key, keyPair.Value, false);
-                }
+                dest.SetValue(keyPair.Key, keyPair.Value, false);
             }
         }
     }

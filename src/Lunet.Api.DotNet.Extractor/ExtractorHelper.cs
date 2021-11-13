@@ -25,6 +25,7 @@ namespace Lunet.Api.DotNet.Extractor
             {
                 results.Add(match.Groups[1].Value);
             }
+
             return results;
         }
     }

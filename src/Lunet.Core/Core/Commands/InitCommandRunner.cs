@@ -6,15 +6,14 @@ using System;
 using System.Threading;
 using Lunet.Helpers;
 
-namespace Lunet.Core.Commands
+namespace Lunet.Core.Commands;
+
+public class InitCommandRunner : ISiteCommandRunner
 {
-    public class InitCommandRunner : ISiteCommandRunner
-    {
-        public bool Force { get; set; }
+    public bool Force { get; set; }
         
-        public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
-        {
-            return runner.CurrentSite.Create(Force) != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
-        }
+    public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+    {
+        return runner.CurrentSite.Create(Force) != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
     }
 }

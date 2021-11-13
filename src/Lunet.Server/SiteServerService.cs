@@ -17,294 +17,293 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Lunet.Server
+namespace Lunet.Server;
+
+public class SiteServerService : ISiteService
 {
-    public class SiteServerService : ISiteService
+    private readonly SiteConfiguration _configuration;
+    private const string LiveReloadBasePath = "/__livereload__";
+    private readonly HashSet<WebSocket> _sockets;
+    private IWebHost _host;
+    private CancellationTokenSource _tokenSource;
+        
+    public const string DefaultBaseUrl = "http://localhost:4000";
+    public const string DefaultRedirect = "/404.html";
+    public const string DefaultEnvironment = "dev";
+        
+    public SiteServerService(SiteConfiguration configuration)
     {
-        private readonly SiteConfiguration _configuration;
-        private const string LiveReloadBasePath = "/__livereload__";
-        private readonly HashSet<WebSocket> _sockets;
-        private IWebHost _host;
-        private CancellationTokenSource _tokenSource;
+        _configuration = configuration;
+        AppBuilders = new OrderedList<Action<IApplicationBuilder>>();
+        _sockets = new HashSet<WebSocket>();
+        BaseUrl = DefaultBaseUrl;
+        Environment = DefaultEnvironment;
+        Logging = false;
+        LiveReload = true;
+        _tokenSource = new CancellationTokenSource();
+    }
+
+
+    public bool Update(SiteObject from)
+    {
+        var newErrorRedirect = from.ErrorRedirect ?? DefaultRedirect;
+        var newBaseUrl = from.BaseUrl ?? DefaultBaseUrl;
+        var newEnvironement = from.Environment ?? DefaultEnvironment;
+        var newLogging = from.Builtins.LogObject.GetSafeValue<bool>("server");
+        var newLiveReload = from.GetLiveReload();
+
+        var needNewHost = _host == null ||
+                          ErrorRedirect != newErrorRedirect ||
+                          BaseUrl != newBaseUrl ||
+                          Environment != newEnvironement ||
+                          Logging != newLogging ||
+                          LiveReload != newLiveReload;
+
+        ErrorRedirect = newErrorRedirect;
+        BaseUrl = newBaseUrl;
+        Environment = newEnvironement;
+        Logging = newLogging;
+        LiveReload = newLiveReload;
+
+        return needNewHost;
+    }
         
-        public const string DefaultBaseUrl = "http://localhost:4000";
-        public const string DefaultRedirect = "/404.html";
-        public const string DefaultEnvironment = "dev";
-        
-        public SiteServerService(SiteConfiguration configuration)
+    public void StartOrUpdate(CancellationToken token)
+    {
+        AppBuilders.Clear();
+
+        if (LiveReload)
         {
-            _configuration = configuration;
-            AppBuilders = new OrderedList<Action<IApplicationBuilder>>();
-            _sockets = new HashSet<WebSocket>();
-            BaseUrl = DefaultBaseUrl;
-            Environment = DefaultEnvironment;
-            Logging = false;
-            LiveReload = true;
-            _tokenSource = new CancellationTokenSource();
+            AppBuilders.Add(ConfigureLiveReload);
         }
 
-
-        public bool Update(SiteObject from)
+        if (_host != null)
         {
-            var newErrorRedirect = from.ErrorRedirect ?? DefaultRedirect;
-            var newBaseUrl = from.BaseUrl ?? DefaultBaseUrl;
-            var newEnvironement = from.Environment ?? DefaultEnvironment;
-            var newLogging = from.Builtins.LogObject.GetSafeValue<bool>("server");
-            var newLiveReload = from.GetLiveReload();
-
-            var needNewHost = _host == null ||
-                              ErrorRedirect != newErrorRedirect ||
-                              BaseUrl != newBaseUrl ||
-                              Environment != newEnvironement ||
-                              Logging != newLogging ||
-                              LiveReload != newLiveReload;
-
-            ErrorRedirect = newErrorRedirect;
-            BaseUrl = newBaseUrl;
-            Environment = newEnvironement;
-            Logging = newLogging;
-            LiveReload = newLiveReload;
-
-            return needNewHost;
+            ShutdownAndWaitForShutdown();
+            // Recreate a token source combined with the global token source
+            _tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
         }
-        
-        public void StartOrUpdate(CancellationToken token)
-        {
-            AppBuilders.Clear();
 
-            if (LiveReload)
+        _host = CreateWebHost();
+        RunAsync(_host, _tokenSource.Token, "Lunet server started.");
+    }
+
+    public void ShutdownAndWaitForShutdown()
+    {
+        _tokenSource.Cancel();
+        _host.WaitForShutdown();
+        _host.Dispose();
+
+        lock (_sockets)
+        {
+            foreach (var socket in _sockets)
             {
-                AppBuilders.Add(ConfigureLiveReload);
+                socket.Dispose();
             }
 
-            if (_host != null)
-            {
-                ShutdownAndWaitForShutdown();
-                // Recreate a token source combined with the global token source
-                _tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
-            }
-
-            _host = CreateWebHost();
-            RunAsync(_host, _tokenSource.Token, "Lunet server started.");
+            _sockets.Clear();
         }
 
-        public void ShutdownAndWaitForShutdown()
-        {
-            _tokenSource.Cancel();
-            _host.WaitForShutdown();
-            _host.Dispose();
+        _host = null;
+    }
 
-            lock (_sockets)
+    public string ErrorRedirect { get; set; }
+
+    public string BaseUrl { get; set; }
+        
+    public string Environment { get; set; }
+
+    public bool Logging { get; set; }
+
+    public bool LiveReload { get; set; }
+
+    private OrderedList<Action<IApplicationBuilder>> AppBuilders { get; }
+
+    private async void RunAsync(IWebHost host, CancellationToken token, string? startupMessage)
+    {
+        var logger = _configuration;
+        try
+        {
+            await host.StartAsync(token);
+
+            ICollection<string> addresses = host.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses;
+            if (addresses != null)
             {
-                foreach (var socket in _sockets)
+                foreach (string str in (IEnumerable<string>)addresses)
+                    logger.Info("Now listening on: " + str);
+            }
+            if (!string.IsNullOrEmpty(startupMessage))
+                logger.Info(startupMessage);
+
+            await WaitForTokenShutdownAsync(host, token);
+            logger.Info("Lunet server stopped.");
+        }
+        finally
+        {
+            if (host is IAsyncDisposable asyncDisposable)
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            else
+                host.Dispose();
+        }
+    }
+
+    private static async Task WaitForTokenShutdownAsync(IWebHost host, CancellationToken token)
+    {
+        IHostApplicationLifetime requiredService = host.Services.GetRequiredService<IHostApplicationLifetime>();
+        token.Register((Action<object>)(state =>
+        {
+            ((IHostApplicationLifetime) state).StopApplication();
+        }), (object)requiredService);
+        TaskCompletionSource completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        requiredService.ApplicationStopping.Register((Action<object>)(obj => ((TaskCompletionSource)obj).TrySetResult()), (object)completionSource);
+        await completionSource.Task;
+        await host.StopAsync();
+    }
+
+    public void Dispose()
+    {
+    }
+
+
+    private IWebHost CreateWebHost()
+    {
+        var hostBuilder = new WebHostBuilder()
+            .UseKestrel()
+            .UseUrls(BaseUrl ?? DefaultBaseUrl)
+            .Configure(ConfigureWebHost);
+
+        // Setup the environment
+        // TODO: access to Site.Scripts.SiteFunctions.LunetObject is too long!
+        hostBuilder.UseEnvironment(Environment ?? DefaultEnvironment);
+
+        // Active compression
+        hostBuilder.ConfigureServices(services =>
+        {
+            services.AddResponseCompression();
+
+            // Enable server log only if log.server = true
+            if (Logging)
+            {
+                services.Add(ServiceDescriptor.Singleton(_configuration.LoggerFactory));
+            }
+        });
+
+        return hostBuilder.Build();
+    }
+        
+    private void ConfigureWebHost(IApplicationBuilder app)
+    {
+        // Allow to configure the pipeline
+        foreach (var appBuilderAction in AppBuilders)
+        {
+            appBuilderAction(app);
+        }
+
+        app.UseStatusCodePagesWithReExecute(ErrorRedirect);
+
+        app.UseResponseCompression();
+
+        // By default we always serve files at last
+        app.UseFileServer(new FileServerOptions()
+        {
+            StaticFileOptions =
+            {
+                ServeUnknownFileTypes = true,
+                DefaultContentType = "application/octet-stream",
+            },
+            FileProvider = new SiteFileProvider(_configuration.FileSystems.OutputFileSystem)
+        });
+    }
+        
+    public static void SetupLiveReloadClient(SiteObject site)
+    {
+        const string builtinsLiveReloadHtml = "_builtins/livereload.sbn-html";
+        site.Html.Head.Includes.Add(builtinsLiveReloadHtml);
+
+        var liveReloadUrl = new Uri(new Uri(site.BaseUrl.Replace("http:", "ws:")), LiveReloadBasePath).ToString();
+        site.SetValue("livereload_url", liveReloadUrl, true);
+    }
+
+    public async void NotifyReloadToClients()
+    {
+        var localSockets = new List<WebSocket>();
+
+        lock (_sockets)
+        {
+            localSockets.Clear();
+            localSockets.AddRange(_sockets);
+        }
+
+        foreach (var socket in localSockets)
+        {
+            if (socket.State == WebSocketState.Open)
+            {
+                byte[] messageData = Encoding.UTF8.GetBytes("reload");
+                var outputBuffer = new ArraySegment<byte>(messageData);
+
+                try
                 {
-                    socket.Dispose();
+                    await socket.SendAsync(outputBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+                catch (ObjectDisposedException)
+                {
+
+                }
+            }
+        }
+    }
+
+    private void ConfigureLiveReload(IApplicationBuilder app)
+    {
+        app.UseWebSockets();
+        app.Use(HandleWebSockets);
+    }
+
+    private async Task HandleWebSockets(HttpContext http, Func<Task> next)
+    {
+        if (http.WebSockets.IsWebSocketRequest && http.Request.Path == LiveReloadBasePath)
+        {
+            var webSocket = await http.WebSockets.AcceptWebSocketAsync();
+
+            if (webSocket != null && webSocket.State == WebSocketState.Open)
+            {
+                lock (_sockets)
+                {
+                    if (!_sockets.Add(webSocket))
+                    {
+                        return;
+                    }
                 }
 
-                _sockets.Clear();
-            }
-
-            _host = null;
-        }
-
-        public string ErrorRedirect { get; set; }
-
-        public string BaseUrl { get; set; }
-        
-        public string Environment { get; set; }
-
-        public bool Logging { get; set; }
-
-        public bool LiveReload { get; set; }
-
-        private OrderedList<Action<IApplicationBuilder>> AppBuilders { get; }
-
-        private async void RunAsync(IWebHost host, CancellationToken token, string? startupMessage)
-        {
-            var logger = _configuration;
-            try
-            {
-                await host.StartAsync(token);
-
-                ICollection<string> addresses = host.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses;
-                if (addresses != null)
+                await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("hello")), WebSocketMessageType.Text, true, CancellationToken.None);
+                while (webSocket.State == WebSocketState.Open)
                 {
-                    foreach (string str in (IEnumerable<string>)addresses)
-                        logger.Info("Now listening on: " + str);
+                    await webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), CancellationToken.None);
                 }
-                if (!string.IsNullOrEmpty(startupMessage))
-                    logger.Info(startupMessage);
 
-                await WaitForTokenShutdownAsync(host, token);
-                logger.Info("Lunet server stopped.");
-            }
-            finally
-            {
-                if (host is IAsyncDisposable asyncDisposable)
-                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-                else
-                    host.Dispose();
-            }
-        }
-
-        private static async Task WaitForTokenShutdownAsync(IWebHost host, CancellationToken token)
-        {
-            IHostApplicationLifetime requiredService = host.Services.GetRequiredService<IHostApplicationLifetime>();
-            token.Register((Action<object>)(state =>
-            {
-                ((IHostApplicationLifetime) state).StopApplication();
-            }), (object)requiredService);
-            TaskCompletionSource completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            requiredService.ApplicationStopping.Register((Action<object>)(obj => ((TaskCompletionSource)obj).TrySetResult()), (object)completionSource);
-            await completionSource.Task;
-            await host.StopAsync();
-        }
-
-        public void Dispose()
-        {
-        }
-
-
-        private IWebHost CreateWebHost()
-        {
-            var hostBuilder = new WebHostBuilder()
-                .UseKestrel()
-                .UseUrls(BaseUrl ?? DefaultBaseUrl)
-                .Configure(ConfigureWebHost);
-
-            // Setup the environment
-            // TODO: access to Site.Scripts.SiteFunctions.LunetObject is too long!
-            hostBuilder.UseEnvironment(Environment ?? DefaultEnvironment);
-
-            // Active compression
-            hostBuilder.ConfigureServices(services =>
-            {
-                services.AddResponseCompression();
-
-                // Enable server log only if log.server = true
-                if (Logging)
+                if (webSocket.State == WebSocketState.CloseReceived)
                 {
-                    services.Add(ServiceDescriptor.Singleton(_configuration.LoggerFactory));
-                }
-            });
-
-            return hostBuilder.Build();
-        }
-        
-        private void ConfigureWebHost(IApplicationBuilder app)
-        {
-            // Allow to configure the pipeline
-            foreach (var appBuilderAction in AppBuilders)
-            {
-                appBuilderAction(app);
-            }
-
-            app.UseStatusCodePagesWithReExecute(ErrorRedirect);
-
-            app.UseResponseCompression();
-
-            // By default we always serve files at last
-            app.UseFileServer(new FileServerOptions()
-            {
-                StaticFileOptions =
-                {
-                    ServeUnknownFileTypes = true,
-                    DefaultContentType = "application/octet-stream",
-                },
-                FileProvider = new SiteFileProvider(_configuration.FileSystems.OutputFileSystem)
-            });
-        }
-        
-        public static void SetupLiveReloadClient(SiteObject site)
-        {
-            const string builtinsLiveReloadHtml = "_builtins/livereload.sbn-html";
-            site.Html.Head.Includes.Add(builtinsLiveReloadHtml);
-
-            var liveReloadUrl = new Uri(new Uri(site.BaseUrl.Replace("http:", "ws:")), LiveReloadBasePath).ToString();
-            site.SetValue("livereload_url", liveReloadUrl, true);
-        }
-
-        public async void NotifyReloadToClients()
-        {
-            var localSockets = new List<WebSocket>();
-
-            lock (_sockets)
-            {
-                localSockets.Clear();
-                localSockets.AddRange(_sockets);
-            }
-
-            foreach (var socket in localSockets)
-            {
-                if (socket.State == WebSocketState.Open)
-                {
-                    byte[] messageData = Encoding.UTF8.GetBytes("reload");
-                    var outputBuffer = new ArraySegment<byte>(messageData);
-
                     try
                     {
-                        await socket.SendAsync(outputBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                        await
+                            webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
                     }
                     catch (ObjectDisposedException)
                     {
 
                     }
                 }
-            }
-        }
 
-        private void ConfigureLiveReload(IApplicationBuilder app)
-        {
-            app.UseWebSockets();
-            app.Use(HandleWebSockets);
-        }
-
-        private async Task HandleWebSockets(HttpContext http, Func<Task> next)
-        {
-            if (http.WebSockets.IsWebSocketRequest && http.Request.Path == LiveReloadBasePath)
-            {
-                var webSocket = await http.WebSockets.AcceptWebSocketAsync();
-
-                if (webSocket != null && webSocket.State == WebSocketState.Open)
+                lock (_sockets)
                 {
-                    lock (_sockets)
-                    {
-                        if (!_sockets.Add(webSocket))
-                        {
-                            return;
-                        }
-                    }
-
-                    await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("hello")), WebSocketMessageType.Text, true, CancellationToken.None);
-                    while (webSocket.State == WebSocketState.Open)
-                    {
-                        await webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), CancellationToken.None);
-                    }
-
-                    if (webSocket.State == WebSocketState.CloseReceived)
-                    {
-                        try
-                        {
-                            await
-                                webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
-                        }
-                        catch (ObjectDisposedException)
-                        {
-
-                        }
-                    }
-
-                    lock (_sockets)
-                    {
-                        _sockets.Remove(webSocket);
-                    }
+                    _sockets.Remove(webSocket);
                 }
             }
-            else
-            {
-                // Nothing to do here, pass downstream.  
-                await next();
-            }
+        }
+        else
+        {
+            // Nothing to do here, pass downstream.  
+            await next();
         }
     }
 }

@@ -1,46 +1,48 @@
-﻿using System;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using System;
 using System.IO;
 using Zio;
 using Zio.FileSystems;
 
-namespace Lunet.Core
+namespace Lunet.Core;
+
+public abstract class SiteOptions
 {
-    public abstract class SiteOptions
+    public abstract IFileSystem BaseFileSystem { get; }
+
+    public abstract IFileSystem TempFileSystem { get; }
+
+    public abstract IFileSystem OutputFileSystem { get; }
+}
+
+public sealed class DefaultSiteOptions : SiteOptions
+{
+    public const string DefaultTempFolder = ".lunet";
+    public const string DefaultOutputFolder = DefaultTempFolder + "/www";
+
+    public DefaultSiteOptions(string rootDirectory = null)
     {
-        public abstract IFileSystem BaseFileSystem { get; }
+        rootDirectory = Path.GetFullPath(rootDirectory ?? Directory.GetCurrentDirectory());
 
-        public abstract IFileSystem TempFileSystem { get; }
-
-        public abstract IFileSystem OutputFileSystem { get; }
-    }
-
-    public sealed class DefaultSiteOptions : SiteOptions
-    {
-        public const string DefaultTempFolder = ".lunet";
-        public const string DefaultOutputFolder = DefaultTempFolder + "/www";
-
-        public DefaultSiteOptions(string rootDirectory = null)
+        if (!Directory.Exists(rootDirectory))
         {
-            rootDirectory = Path.GetFullPath(rootDirectory ?? Directory.GetCurrentDirectory());
-
-            if (!Directory.Exists(rootDirectory))
-            {
-                throw new DirectoryNotFoundException($"The directory `{rootDirectory}` was not found");
-            }
-
-            var basefs = new PhysicalFileSystem();
-            BaseFileSystem = new SubFileSystem(basefs, basefs.ConvertPathFromInternal(rootDirectory));
-
-            TempFileSystem = new SubFileSystem(BaseFileSystem, UPath.Root / DefaultTempFolder);
-
-            OutputFileSystem = new SubFileSystem(BaseFileSystem, UPath.Root / DefaultOutputFolder);
+            throw new DirectoryNotFoundException($"The directory `{rootDirectory}` was not found");
         }
 
-        public override IFileSystem BaseFileSystem { get; }
+        var basefs = new PhysicalFileSystem();
+        BaseFileSystem = new SubFileSystem(basefs, basefs.ConvertPathFromInternal(rootDirectory));
 
-        public override IFileSystem TempFileSystem { get; }
+        TempFileSystem = new SubFileSystem(BaseFileSystem, UPath.Root / DefaultTempFolder);
 
-        public override IFileSystem OutputFileSystem { get; }
+        OutputFileSystem = new SubFileSystem(BaseFileSystem, UPath.Root / DefaultOutputFolder);
     }
 
+    public override IFileSystem BaseFileSystem { get; }
+
+    public override IFileSystem TempFileSystem { get; }
+
+    public override IFileSystem OutputFileSystem { get; }
 }

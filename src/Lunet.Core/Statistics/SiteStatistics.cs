@@ -1,87 +1,86 @@
 ﻿// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using Lunet.Core;
 
-namespace Lunet.Statistics
+namespace Lunet.Statistics;
+
+public class SiteStatistics
 {
-    public class SiteStatistics
+    public SiteStatistics()
     {
-        public SiteStatistics()
+        Content = new Dictionary<ContentObject, ContentStat>();
+        Plugins = new Dictionary<ISitePluginCore, PluginStat>();
+    }
+
+    public Dictionary<ContentObject, ContentStat> Content { get; }
+
+    public Dictionary<ISitePluginCore, PluginStat> Plugins { get; }
+
+    public TimeSpan TotalTime { get; set; }
+
+    public string GetSummary()
+    {
+        long totalBytes = 0;
+        int contentFiles = 0;
+        contentFiles = Content.Count;
+        foreach (var content in Content)
         {
-            Content = new Dictionary<ContentObject, ContentStat>();
-            Plugins = new Dictionary<ISitePluginCore, PluginStat>();
+            totalBytes += content.Value.OutputBytes;
         }
 
-        public Dictionary<ContentObject, ContentStat> Content { get; }
+        return $"{contentFiles} files processed. {totalBytes} bytes written.";
+    }
 
-        public Dictionary<ISitePluginCore, PluginStat> Plugins { get; }
+    public ContentStat GetContentStat(ContentObject page)
+    {
+        if (page == null) throw new ArgumentNullException(nameof(page));
 
-        public TimeSpan TotalTime { get; set; }
-
-        public string GetSummary()
+        ContentStat stat;
+        lock (Content)
         {
-            long totalBytes = 0;
-            int contentFiles = 0;
-            contentFiles = Content.Count;
-            foreach (var content in Content)
+            if (!Content.TryGetValue(page, out stat))
             {
-                totalBytes += content.Value.OutputBytes;
+                stat = new ContentStat(page);
+                Content.Add(page, stat);
             }
-
-            return $"{contentFiles} files processed. {totalBytes} bytes written.";
         }
+        return stat;
+    }
 
-        public ContentStat GetContentStat(ContentObject page)
+    public PluginStat GetPluginStat(ISitePluginCore plugin)
+    {
+        if (plugin == null) throw new ArgumentNullException(nameof(plugin));
+
+        PluginStat stat;
+        lock (Plugins)
         {
-            if (page == null) throw new ArgumentNullException(nameof(page));
-
-            ContentStat stat;
-            lock (Content)
+            if (!Plugins.TryGetValue(plugin, out stat))
             {
-                if (!Content.TryGetValue(page, out stat))
-                {
-                    stat = new ContentStat(page);
-                    Content.Add(page, stat);
-                }
+                stat = new PluginStat(plugin);
+                Plugins.Add(plugin, stat);
             }
-            return stat;
         }
-
-        public PluginStat GetPluginStat(ISitePluginCore plugin)
-        {
-            if (plugin == null) throw new ArgumentNullException(nameof(plugin));
-
-            PluginStat stat;
-            lock (Plugins)
-            {
-                if (!Plugins.TryGetValue(plugin, out stat))
-                {
-                    stat = new PluginStat(plugin);
-                    Plugins.Add(plugin, stat);
-                }
-            }
             
-            return stat;
-        }
+        return stat;
+    }
 
-        public void Dump(Action<string> log)
-        {
-            if (log == null) throw new ArgumentNullException(nameof(log));
+    public void Dump(Action<string> log)
+    {
+        if (log == null) throw new ArgumentNullException(nameof(log));
 
-            log($"Total time: {TotalTime.TotalSeconds:0.###}s");
+        log($"Total time: {TotalTime.TotalSeconds:0.###}s");
 
-            // TODO: Add report
-        }
+        // TODO: Add report
+    }
 
-        public void Reset()
-        {
-            Plugins.Clear();
-            Content.Clear();
-            TotalTime = new TimeSpan(0);
-        }
+    public void Reset()
+    {
+        Plugins.Clear();
+        Content.Clear();
+        TotalTime = new TimeSpan(0);
     }
 }

@@ -4,16 +4,15 @@
 
 using System;
 
-namespace Lunet.Helpers
+namespace Lunet.Helpers;
+
+internal class HashUtil
 {
-    internal class HashUtil
+    public static unsafe void Blake3HashString(string content, out Blake3.Hash hash)
     {
-        public static unsafe void Blake3HashString(string content, out Blake3.Hash hash)
+        fixed (void* pData = content)
         {
-            fixed (void* pData = content)
-            {
-                hash = Blake3.Hasher.Hash(new ReadOnlySpan<byte>(pData, content.Length * 2));
-            }
+            hash = Blake3.Hasher.Hash(new ReadOnlySpan<byte>(pData, content.Length * 2));
         }
     }
 }

@@ -8,169 +8,168 @@ using System.Linq;
 using System.Threading;
 using Lunet.Helpers;
 
-namespace Lunet.Core
+namespace Lunet.Core;
+
+public class SiteRunner : IDisposable
 {
-    public class SiteRunner : IDisposable
+    private readonly List<ISiteService> _services;
+
+    public SiteRunner(SiteConfiguration config)
     {
-        private readonly List<ISiteService> _services;
+        Config = config ?? throw new ArgumentNullException(nameof(config));
+        _services = new List<ISiteService>();
+        CommandRunners = new List<ISiteCommandRunner>();
+        CommandRunners.AddRange(Config.CommandRunners);
+    }
 
-        public SiteRunner(SiteConfiguration config)
+    public SiteConfiguration Config { get; }
+
+    public IReadOnlyCollection<ISiteService> Services => _services;
+
+    public List<ISiteCommandRunner> CommandRunners { get; }
+
+    public TService GetService<TService>() where TService : class, ISiteService
+    {
+        return _services.OfType<TService>().FirstOrDefault();
+    }
+
+    public void RegisterService(ISiteService service)
+    {
+        if (service == null) throw new ArgumentNullException(nameof(service));
+        if (!_services.Contains(service))
         {
-            Config = config ?? throw new ArgumentNullException(nameof(config));
-            _services = new List<ISiteService>();
-            CommandRunners = new List<ISiteCommandRunner>();
-            CommandRunners.AddRange(Config.CommandRunners);
+            _services.Add(service);
         }
-
-        public SiteConfiguration Config { get; }
-
-        public IReadOnlyCollection<ISiteService> Services => _services;
-
-        public List<ISiteCommandRunner> CommandRunners { get; }
-
-        public TService GetService<TService>() where TService : class, ISiteService
-        {
-            return _services.OfType<TService>().FirstOrDefault();
-        }
-
-        public void RegisterService(ISiteService service)
-        {
-            if (service == null) throw new ArgumentNullException(nameof(service));
-            if (!_services.Contains(service))
-            {
-                _services.Add(service);
-            }
-        }
+    }
         
-        public SiteObject CurrentSite { get; private set; }
+    public SiteObject CurrentSite { get; private set; }
         
-        public int Run(CancellationTokenSource cancellationTokenSource = null)
+    public int Run(CancellationTokenSource cancellationTokenSource = null)
+    {
+        if (CommandRunners.Count == 0) return 0;
+
+        // Token source
+        cancellationTokenSource ??= new CancellationTokenSource();
+        var shutdownEvent = new ManualResetEventSlim(false);
+        using ConsoleLifetime consoleLifetime = new ConsoleLifetime(Config, cancellationTokenSource, shutdownEvent, "Lunet is shutting down.");
+
+        var result = RunnerResult.Exit;
+        try
         {
-            if (CommandRunners.Count == 0) return 0;
-
-            // Token source
-            cancellationTokenSource ??= new CancellationTokenSource();
-            var shutdownEvent = new ManualResetEventSlim(false);
-            using ConsoleLifetime consoleLifetime = new ConsoleLifetime(Config, cancellationTokenSource, shutdownEvent, "Lunet is shutting down.");
-
-            var result = RunnerResult.Exit;
-            try
+            CurrentSite = new SiteObject(Config);
+            while (CurrentSite != null)
             {
-                CurrentSite = new SiteObject(Config);
-                while (CurrentSite != null)
+                result = RunnerResult.Exit;
+
+                foreach (var runner in CommandRunners)
                 {
-                    result = RunnerResult.Exit;
-
-                    foreach (var runner in CommandRunners)
-                    {
-                        result = runner.Run(this, cancellationTokenSource.Token);
-                        if (result != RunnerResult.Continue)
-                        {
-                            break;
-                        }
-                    }
-
+                    result = runner.Run(this, cancellationTokenSource.Token);
                     if (result != RunnerResult.Continue)
                     {
                         break;
                     }
-
-                    CurrentSite = CurrentSite.Clone();
-
-                    // Force collection if requested
-                    if (Config.ShouldRunGarbageCollectorOnReload)
-                    {
-                        GC.Collect();
-                    }
                 }
 
-                consoleLifetime.SetExitedGracefully();
-            }
-            catch (Exception ex)
-            {
-                Config.Error(ex, $"Unexpected error while processing the site. Reason: {ex.GetReason()}");
-                result = RunnerResult.ExitWithError;
-            }
-            finally
-            {
-                shutdownEvent.Set();
+                if (result != RunnerResult.Continue)
+                {
+                    break;
+                }
+
+                CurrentSite = CurrentSite.Clone();
+
+                // Force collection if requested
+                if (Config.ShouldRunGarbageCollectorOnReload)
+                {
+                    GC.Collect();
+                }
             }
 
-            return result == RunnerResult.ExitWithError ? 1 : 0;
+            consoleLifetime.SetExitedGracefully();
         }
+        catch (Exception ex)
+        {
+            Config.Error(ex, $"Unexpected error while processing the site. Reason: {ex.GetReason()}");
+            result = RunnerResult.ExitWithError;
+        }
+        finally
+        {
+            shutdownEvent.Set();
+        }
+
+        return result == RunnerResult.ExitWithError ? 1 : 0;
+    }
+
+    public void Dispose()
+    {
+        foreach (var service in Services)
+        {
+            service.Dispose();
+        }
+    }
+        
+    internal class ConsoleLifetime : IDisposable
+    {
+        private readonly ISiteLoggerProvider _loggerProvider;
+        private readonly CancellationTokenSource _cts;
+        private readonly ManualResetEventSlim _resetEvent;
+        private readonly string _shutdownMessage;
+        private bool _disposed;
+        private bool _exitedGracefully;
+
+        public ConsoleLifetime(
+            ISiteLoggerProvider loggerProvider,
+            CancellationTokenSource cts,
+            ManualResetEventSlim resetEvent,
+            string shutdownMessage)
+        {
+            this._loggerProvider = loggerProvider;
+            this._cts = cts;
+            this._resetEvent = resetEvent;
+            this._shutdownMessage = shutdownMessage;
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(this.ProcessExit);
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(this.CancelKeyPress);
+        }
+
+        internal void SetExitedGracefully() => this._exitedGracefully = true;
 
         public void Dispose()
         {
-            foreach (var service in Services)
-            {
-                service.Dispose();
-            }
+            if (this._disposed)
+                return;
+            this._disposed = true;
+            AppDomain.CurrentDomain.ProcessExit -= new EventHandler(this.ProcessExit);
+            Console.CancelKeyPress -= new ConsoleCancelEventHandler(this.CancelKeyPress);
         }
-        
-        internal class ConsoleLifetime : IDisposable
+
+        private void CancelKeyPress(object sender, ConsoleCancelEventArgs eventArgs)
         {
-            private readonly ISiteLoggerProvider _loggerProvider;
-            private readonly CancellationTokenSource _cts;
-            private readonly ManualResetEventSlim _resetEvent;
-            private readonly string _shutdownMessage;
-            private bool _disposed;
-            private bool _exitedGracefully;
+            this.Shutdown();
+            eventArgs.Cancel = true;
+        }
 
-            public ConsoleLifetime(
-                ISiteLoggerProvider loggerProvider,
-                CancellationTokenSource cts,
-                ManualResetEventSlim resetEvent,
-                string shutdownMessage)
+        private void ProcessExit(object sender, EventArgs eventArgs)
+        {
+            this.Shutdown();
+            if (!this._exitedGracefully)
+                return;
+            Environment.ExitCode = 0;
+        }
+
+        private void Shutdown()
+        {
+            try
             {
-                this._loggerProvider = loggerProvider;
-                this._cts = cts;
-                this._resetEvent = resetEvent;
-                this._shutdownMessage = shutdownMessage;
-                AppDomain.CurrentDomain.ProcessExit += new EventHandler(this.ProcessExit);
-                Console.CancelKeyPress += new ConsoleCancelEventHandler(this.CancelKeyPress);
-            }
-
-            internal void SetExitedGracefully() => this._exitedGracefully = true;
-
-            public void Dispose()
-            {
-                if (this._disposed)
-                    return;
-                this._disposed = true;
-                AppDomain.CurrentDomain.ProcessExit -= new EventHandler(this.ProcessExit);
-                Console.CancelKeyPress -= new ConsoleCancelEventHandler(this.CancelKeyPress);
-            }
-
-            private void CancelKeyPress(object sender, ConsoleCancelEventArgs eventArgs)
-            {
-                this.Shutdown();
-                eventArgs.Cancel = true;
-            }
-
-            private void ProcessExit(object sender, EventArgs eventArgs)
-            {
-                this.Shutdown();
-                if (!this._exitedGracefully)
-                    return;
-                Environment.ExitCode = 0;
-            }
-
-            private void Shutdown()
-            {
-                try
+                if (!this._cts.IsCancellationRequested)
                 {
-                    if (!this._cts.IsCancellationRequested)
-                    {
-                        if (!string.IsNullOrEmpty(this._shutdownMessage))
-                            _loggerProvider.Info(_shutdownMessage);
-                        this._cts.Cancel();
-                    }
+                    if (!string.IsNullOrEmpty(this._shutdownMessage))
+                        _loggerProvider.Info(_shutdownMessage);
+                    this._cts.Cancel();
                 }
-                catch (Exception ex)
-                {
-                }
-                this._resetEvent.Wait();
             }
+            catch (Exception ex)
+            {
+            }
+            this._resetEvent.Wait();
         }
     }
 }

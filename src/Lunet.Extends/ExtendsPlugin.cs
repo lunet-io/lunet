@@ -1,5 +1,5 @@
 // Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System;
@@ -13,179 +13,177 @@ using Scriban.Runtime;
 using Zio;
 using Zio.FileSystems;
 
-namespace Lunet.Extends
-{
+namespace Lunet.Extends;
 
-    public class ExtendsModule : SiteModule<ExtendsPlugin>
+public class ExtendsModule : SiteModule<ExtendsPlugin>
+{
+}
+
+
+/// <summary>
+/// Manages themes.
+/// </summary>
+public sealed class ExtendsPlugin : SitePlugin
+{
+    private const string ExtendsFolderName = "extends";
+
+    private delegate object ExtendFunctionDelegate(object o);
+
+    public ExtendsPlugin(SiteObject site) : base(site)
     {
+        ExtendsFolder = UPath.Root / ExtendsFolderName;
+        PrivateExtendsFolder = UPath.Root / ExtendsFolderName;
+        Providers = new OrderedList<IExtendProvider>()
+        {
+            new DefaultExtendProvider()
+        };
+        CurrentList = new List<ExtendObject>();
+        Site.Builtins.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
+        Site.Builtins.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
     }
 
+    public UPath ExtendsFolder { get; }
+
+    public UPath PrivateExtendsFolder { get; }
+
+    public OrderedList<IExtendProvider> Providers { get; }
 
     /// <summary>
-    /// Manages themes.
+    /// Gets the list of themes currently used.
     /// </summary>
-    public sealed class ExtendsPlugin : SitePlugin
+    public List<ExtendObject> CurrentList { get; }
+
+    public IEnumerable<ExtendDescription> FindAll()
     {
-        private const string ExtendsFolderName = "extends";
-
-        private delegate object ExtendFunctionDelegate(object o);
-
-        public ExtendsPlugin(SiteObject site) : base(site)
+        foreach (var provider in Providers)
         {
-            ExtendsFolder = UPath.Root / ExtendsFolderName;
-            PrivateExtendsFolder = UPath.Root / ExtendsFolderName;
-            Providers = new OrderedList<IExtendProvider>()
+            foreach (var desc in provider.FindAll(Site))
             {
-                new DefaultExtendProvider()
-            };
-            CurrentList = new List<ExtendObject>();
-            Site.Builtins.SetValue(SiteVariables.Extends, CurrentList.AsReadOnly(), true);
-            Site.Builtins.Import(SiteVariables.ExtendFunction, (ExtendFunctionDelegate)ExtendFunction);
+                var copyDesc = desc;
+                copyDesc.Provider = provider;
+                yield return copyDesc;
+            }
         }
+    }
 
-        public UPath ExtendsFolder { get; }
-
-        public UPath PrivateExtendsFolder { get; }
-
-        public OrderedList<IExtendProvider> Providers { get; }
-
-        /// <summary>
-        /// Gets the list of themes currently used.
-        /// </summary>
-        public List<ExtendObject> CurrentList { get; }
-
-        public IEnumerable<ExtendDescription> FindAll()
+    public ExtendObject LoadExtend(string extendName, bool isPrivate)
+    {
+        if (extendName == null) throw new ArgumentNullException(nameof(extendName));
+        ExtendObject extendObject = null;
+        foreach (var existingExtend in CurrentList)
         {
-            foreach (var provider in Providers)
+            if (existingExtend.Name == extendName)
             {
-                foreach (var desc in provider.FindAll(Site))
-                {
-                    var copyDesc = desc;
-                    copyDesc.Provider = provider;
-                    yield return copyDesc;
-                }
+                extendObject = existingExtend;
+                break;
             }
         }
 
-        public ExtendObject LoadExtend(string extendName, bool isPrivate)
+        if (extendObject == null)
         {
-            if (extendName == null) throw new ArgumentNullException(nameof(extendName));
-            ExtendObject extendObject = null;
-            foreach (var existingExtend in CurrentList)
-            {
-                if (existingExtend.Name == extendName)
-                {
-                    extendObject = existingExtend;
-                    break;
-                }
-            }
-
+            extendObject = TryInstall(extendName, isPrivate);
             if (extendObject == null)
             {
-                extendObject = TryInstall(extendName, isPrivate);
-                if (extendObject == null)
-                {
-                    return null;
-                }
-                CurrentList.Add(extendObject);
-
-                var configPath = new FileEntry(extendObject.FileSystem, UPath.Root / SiteFileSystems.DefaultConfigFileName);
-                object result;
-                Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions, out result);
-            }
-
-            // Register the extensions as a content FileSystem
-            Site.AddContentFileSystem(extendObject.FileSystem);
-
-            if (Site.CanTrace())
-            {
-                Site.Trace($"Using extension/theme `{extendName}` from `{extendObject.FileSystem.ConvertPathToInternal(UPath.Root)}`");
-            }
-
-            return extendObject;
-        }
-
-        public ExtendObject TryInstall(string extendName, bool isPrivate = false)
-        {
-            if (extendName == null) throw new ArgumentNullException(nameof(extendName));
-            var extend = extendName;
-
-            string version = null;
-            var indexOfVersion = extend.IndexOf('@');
-            if (indexOfVersion > 0)
-            {
-                extend = extend.Substring(0, indexOfVersion);
-                version = extend.Substring(indexOfVersion + 1);
-            }
-
-            //var themePrivatePath = PrivateExtendsFolder / extendName;
-            var themeSiteDir = new DirectoryEntry(Site.MetaFileSystem, ExtendsFolder / extendName);
-            var themeTempDir = new DirectoryEntry(Site.CacheMetaFileSystem, ExtendsFolder / extendName);
-            IFileSystem extendPath = null;
-
-            if (themeSiteDir.Exists)
-            {
-                extendPath = new SubFileSystem(themeSiteDir.FileSystem, themeSiteDir.Path);
-            }
-            else if (themeTempDir.Exists)
-            {
-                extendPath = new SubFileSystem(themeTempDir.FileSystem, themeSiteDir.Path);
-            }
-
-            if (extendPath != null)
-            {
-                return new ExtendObject(Site, extendName, extend, version, null, null, extendPath);
-            }
-
-            extendPath = isPrivate
-                ? themeTempDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path)
-                : themeSiteDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path);
-
-            if (Providers.Count == 0)
-            {
-                Site.Error($"Unable to find the extension/theme [{extend}]. No provider list installed.");
                 return null;
             }
+            CurrentList.Add(extendObject);
 
-            foreach (var extendDesc in FindAll())
-            {
-                if (extendDesc.Name == extend)
-                {
-                    if (extendDesc.Provider.TryInstall(Site, extend, version, extendPath))
-                    {
-                        return new ExtendObject(Site, extendName, extend, version, extendDesc.Description, extendDesc.Url, extendPath);
-                    }
-                    return null;
-                }
-            }
+            var configPath = new FileEntry(extendObject.FileSystem, UPath.Root / SiteFileSystems.DefaultConfigFileName);
+            object result;
+            Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions, out result);
+        }
 
-            Site.Error($"Unable to find the extension/theme [{extend}] locally from [{themeSiteDir}] or [{themeTempDir}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
+        // Register the extensions as a content FileSystem
+        Site.AddContentFileSystem(extendObject.FileSystem);
+
+        if (Site.CanTrace())
+        {
+            Site.Trace($"Using extension/theme `{extendName}` from `{extendObject.FileSystem.ConvertPathToInternal(UPath.Root)}`");
+        }
+
+        return extendObject;
+    }
+
+    public ExtendObject TryInstall(string extendName, bool isPrivate = false)
+    {
+        if (extendName == null) throw new ArgumentNullException(nameof(extendName));
+        var extend = extendName;
+
+        string version = null;
+        var indexOfVersion = extend.IndexOf('@');
+        if (indexOfVersion > 0)
+        {
+            extend = extend.Substring(0, indexOfVersion);
+            version = extend.Substring(indexOfVersion + 1);
+        }
+
+        //var themePrivatePath = PrivateExtendsFolder / extendName;
+        var themeSiteDir = new DirectoryEntry(Site.MetaFileSystem, ExtendsFolder / extendName);
+        var themeTempDir = new DirectoryEntry(Site.CacheMetaFileSystem, ExtendsFolder / extendName);
+        IFileSystem extendPath = null;
+
+        if (themeSiteDir.Exists)
+        {
+            extendPath = new SubFileSystem(themeSiteDir.FileSystem, themeSiteDir.Path);
+        }
+        else if (themeTempDir.Exists)
+        {
+            extendPath = new SubFileSystem(themeTempDir.FileSystem, themeSiteDir.Path);
+        }
+
+        if (extendPath != null)
+        {
+            return new ExtendObject(Site, extendName, extend, version, null, null, extendPath);
+        }
+
+        extendPath = isPrivate
+            ? themeTempDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path)
+            : themeSiteDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path);
+
+        if (Providers.Count == 0)
+        {
+            Site.Error($"Unable to find the extension/theme [{extend}]. No provider list installed.");
             return null;
         }
 
-        private object ExtendFunction(object query)
+        foreach (var extendDesc in FindAll())
         {
-            var extendName = query as string;
-
-            var extendObj = query as ScriptObject;
-            bool isPrivate = true;
-            if (extendObj != null)
+            if (extendDesc.Name == extend)
             {
-                extendName = extendObj.GetSafeValue<string>("name");
-
-                if (extendObj.GetSafeValue<bool>("public"))
+                if (extendDesc.Provider.TryInstall(Site, extend, version, extendPath))
                 {
-                    isPrivate = false;
+                    return new ExtendObject(Site, extendName, extend, version, extendDesc.Description, extendDesc.Url, extendPath);
                 }
+                return null;
             }
-
-            if (extendName != null)
-            {
-                var resource = LoadExtend(extendName, isPrivate);
-                return resource;
-            }
-
-            throw new LunetException($"Unsupported extension/theme name [{query}]");
         }
+
+        Site.Error($"Unable to find the extension/theme [{extend}] locally from [{themeSiteDir}] or [{themeTempDir}] or from the provider list [{string.Join(",", Providers.Select(t => t.Name))}]");
+        return null;
+    }
+
+    private object ExtendFunction(object query)
+    {
+        var extendName = query as string;
+
+        var extendObj = query as ScriptObject;
+        bool isPrivate = true;
+        if (extendObj != null)
+        {
+            extendName = extendObj.GetSafeValue<string>("name");
+
+            if (extendObj.GetSafeValue<bool>("public"))
+            {
+                isPrivate = false;
+            }
+        }
+
+        if (extendName != null)
+        {
+            var resource = LoadExtend(extendName, isPrivate);
+            return resource;
+        }
+
+        throw new LunetException($"Unsupported extension/theme name [{query}]");
     }
 }

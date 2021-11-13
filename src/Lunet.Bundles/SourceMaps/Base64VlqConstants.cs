@@ -31,21 +31,20 @@
  * limitations under the License.
 */
 
-namespace Lunet.Bundles.SourceMaps
+namespace Lunet.Bundles.SourceMaps;
+
+/// <summary>
+/// Constants used in Base64 VLQ encode/decode
+/// </summary>
+internal static class Base64VlqConstants
 {
-	/// <summary>
-	/// Constants used in Base64 VLQ encode/decode
-	/// </summary>
-	internal static class Base64VlqConstants
-	{
-		// A Base64 VLQ digit can represent 5 bits, so it is base-32.
-		public const int VlqBaseShift = 5;
-		public const int VlqBase = 1 << VlqBaseShift;
+    // A Base64 VLQ digit can represent 5 bits, so it is base-32.
+    public const int VlqBaseShift = 5;
+    public const int VlqBase = 1 << VlqBaseShift;
 
-		// A mask of bits for a VLQ digit (11111), 31 decimal.
-		public const int VlqBaseMask = VlqBase - 1;
+    // A mask of bits for a VLQ digit (11111), 31 decimal.
+    public const int VlqBaseMask = VlqBase - 1;
 
-		// The continuation bit is the 6th bit.
-		public const int VlqContinuationBit = VlqBase;
-	}
+    // The continuation bit is the 6th bit.
+    public const int VlqContinuationBit = VlqBase;
 }

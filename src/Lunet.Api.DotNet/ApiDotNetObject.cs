@@ -5,40 +5,39 @@
 using Lunet.Core;
 using Scriban.Runtime;
 
-namespace Lunet.Api.DotNet
+namespace Lunet.Api.DotNet;
+
+public class ApiDotNetObject : ScriptObject
 {
-    public class ApiDotNetObject : ScriptObject
+    public ApiDotNetObject()
     {
-        public ApiDotNetObject()
-        {
-            Namespaces = new ScriptArray<ScriptObject>();
-            Objects = new ScriptObject();
-            References = new ScriptObject();
-        }
+        Namespaces = new ScriptArray<ScriptObject>();
+        Objects = new ScriptObject();
+        References = new ScriptObject();
+    }
 
-        public new void Clear()
-        {
-            Namespaces.Clear();
-            Objects.Clear();
-            References.Clear();
-        }
+    public new void Clear()
+    {
+        Namespaces.Clear();
+        Objects.Clear();
+        References.Clear();
+    }
 
-        public ScriptArray<ScriptObject> Namespaces
-        {
-            get => this.GetSafeValue<ScriptArray<ScriptObject>>("namespaces");
-            private init => this.SetValue("namespaces", value, true);
-        }
+    public ScriptArray<ScriptObject> Namespaces
+    {
+        get => this.GetSafeValue<ScriptArray<ScriptObject>>("namespaces");
+        private init => this.SetValue("namespaces", value, true);
+    }
 
-        public ScriptObject Objects
-        {
-            get => this.GetSafeValue<ScriptObject>("objects");
-            private init => this.SetValue("objects", value, true);
-        }
+    public ScriptObject Objects
+    {
+        get => this.GetSafeValue<ScriptObject>("objects");
+        private init => this.SetValue("objects", value, true);
+    }
 
-        public ScriptObject References
-        {
-            get => this.GetSafeValue<ScriptObject>("references");
-            private init => this.SetValue("references", value, true);
-        }
+    public ScriptObject References
+    {
+        get => this.GetSafeValue<ScriptObject>("references");
+        private init => this.SetValue("references", value, true);
     }
 }

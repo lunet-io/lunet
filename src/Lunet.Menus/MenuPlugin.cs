@@ -1,21 +1,24 @@
-﻿using Lunet.Core;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
 
-namespace Lunet.Menus
+using Lunet.Core;
+
+namespace Lunet.Menus;
+
+public class MenuModule : SiteModule<MenuPlugin>
 {
-    public class MenuModule : SiteModule<MenuPlugin>
+}
+
+public class MenuPlugin : SitePlugin
+{
+    public MenuPlugin(SiteObject site) : base(site)
     {
+        Processor = new MenuProcessor(this);
+        Site.SetValue("menu", this, true);
+        Site.Content.AfterRunningProcessors.Insert(0, Processor);
+        Site.Content.BeforeProcessingProcessors.Insert(0, Processor);
     }
 
-    public class MenuPlugin : SitePlugin
-    {
-        public MenuPlugin(SiteObject site) : base(site)
-        {
-            Processor = new MenuProcessor(this);
-            Site.SetValue("menu", this, true);
-            Site.Content.AfterRunningProcessors.Insert(0, Processor);
-            Site.Content.BeforeProcessingProcessors.Insert(0, Processor);
-        }
-
-        public MenuProcessor Processor { get; }
-    }
+    public MenuProcessor Processor { get; }
 }

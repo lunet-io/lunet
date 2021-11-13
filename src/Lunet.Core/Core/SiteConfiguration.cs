@@ -8,75 +8,74 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 
-namespace Lunet.Core
+namespace Lunet.Core;
+
+/// <summary>
+/// Configuration of a site to build:
+///
+/// - FileSystems
+/// - Plugins
+/// - Defines
+/// - LoggerFactory
+/// </summary>
+public class SiteConfiguration : ISiteLoggerProvider
 {
-    /// <summary>
-    /// Configuration of a site to build:
-    ///
-    /// - FileSystems
-    /// - Plugins
-    /// - Defines
-    /// - LoggerFactory
-    /// </summary>
-    public class SiteConfiguration : ISiteLoggerProvider
+    private readonly List<Type> _pluginTypes;
+
+    public SiteConfiguration(SiteLoggerFactory loggerFactory = null)
     {
-        private readonly List<Type> _pluginTypes;
+        _pluginTypes = new List<Type>();
+        Defines = new List<string>();
+        FileSystems = new SiteFileSystems();
+        LoggerFactory = loggerFactory ?? new SiteLoggerFactory();
+        CommandRunners = new List<ISiteCommandRunner>();
+        Log = LoggerFactory.CreateLogger("lunet");
+        ShouldRunGarbageCollectorOnReload = true;
+        SharedCache = new ConcurrentDictionary<object, object>();
+    }
 
-        public SiteConfiguration(SiteLoggerFactory loggerFactory = null)
+    public SiteFileSystems FileSystems { get; }
+
+    public List<string> Defines { get; }
+
+    public SiteLoggerFactory LoggerFactory { get; }
+
+    public ILogger Log { get; }
+        
+    public int LogEventId { get; set; }
+
+    public List<Type> PluginTypes() => new List<Type>(_pluginTypes);
+
+    public List<ISiteCommandRunner> CommandRunners { get; }
+
+    // TODO: make this configurable from the command line
+    public bool ShouldRunGarbageCollectorOnReload { get; set; }
+        
+    public bool SingleThreaded { get; set; }
+        
+    public bool ShowStacktraceOnError { get; set; }
+
+    public IProfiler Profiler { get; set; }
+
+    public ConcurrentDictionary<object, object> SharedCache { get; }
+
+    public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : ISitePlugin
+    {
+        RegisterPlugin(typeof(TPlugin));
+        return this;
+    }
+
+    public SiteConfiguration RegisterPlugin(Type pluginType)
+    {
+        if (pluginType == null) throw new ArgumentNullException(nameof(pluginType));
+        if (_pluginTypes.Contains(pluginType)) return this;
+
+        if (!typeof(ISitePlugin).GetTypeInfo().IsAssignableFrom(pluginType))
         {
-            _pluginTypes = new List<Type>();
-            Defines = new List<string>();
-            FileSystems = new SiteFileSystems();
-            LoggerFactory = loggerFactory ?? new SiteLoggerFactory();
-            CommandRunners = new List<ISiteCommandRunner>();
-            Log = LoggerFactory.CreateLogger("lunet");
-            ShouldRunGarbageCollectorOnReload = true;
-            SharedCache = new ConcurrentDictionary<object, object>();
+            throw new ArgumentException("Expecting a plugin type inheriting from ISitePlugin", nameof(pluginType));
         }
 
-        public SiteFileSystems FileSystems { get; }
-
-        public List<string> Defines { get; }
-
-        public SiteLoggerFactory LoggerFactory { get; }
-
-        public ILogger Log { get; }
-        
-        public int LogEventId { get; set; }
-
-        public List<Type> PluginTypes() => new List<Type>(_pluginTypes);
-
-        public List<ISiteCommandRunner> CommandRunners { get; }
-
-        // TODO: make this configurable from the command line
-        public bool ShouldRunGarbageCollectorOnReload { get; set; }
-        
-        public bool SingleThreaded { get; set; }
-        
-        public bool ShowStacktraceOnError { get; set; }
-
-        public IProfiler Profiler { get; set; }
-
-        public ConcurrentDictionary<object, object> SharedCache { get; }
-
-        public SiteConfiguration RegisterPlugin<TPlugin>() where TPlugin : ISitePlugin
-        {
-            RegisterPlugin(typeof(TPlugin));
-            return this;
-        }
-
-        public SiteConfiguration RegisterPlugin(Type pluginType)
-        {
-            if (pluginType == null) throw new ArgumentNullException(nameof(pluginType));
-            if (_pluginTypes.Contains(pluginType)) return this;
-
-            if (!typeof(ISitePlugin).GetTypeInfo().IsAssignableFrom(pluginType))
-            {
-                throw new ArgumentException("Expecting a plugin type inheriting from ISitePlugin", nameof(pluginType));
-            }
-
-            _pluginTypes.Add(pluginType);
-            return this;
-        }
+        _pluginTypes.Add(pluginType);
+        return this;
     }
 }

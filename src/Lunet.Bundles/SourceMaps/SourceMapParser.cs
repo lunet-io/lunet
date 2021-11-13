@@ -16,35 +16,34 @@
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Lunet.Bundles.SourceMaps
+namespace Lunet.Bundles.SourceMaps;
+
+public class SourceMapParser
 {
-	public class SourceMapParser
-	{
-		private readonly MappingsListParser _mappingsListParser;
+    private readonly MappingsListParser _mappingsListParser;
 
-		public SourceMapParser()
-		{
-			_mappingsListParser = new MappingsListParser();
-		}
+    public SourceMapParser()
+    {
+        _mappingsListParser = new MappingsListParser();
+    }
 
-		/// <summary>
-		/// Parses a stream representing a source map into a SourceMap object.
-		/// </summary>
-		public SourceMap ParseSourceMap(StreamReader sourceMapStream)
-		{
-			if (sourceMapStream == null)
-			{
-				return null;
-			}
-			using (JsonTextReader jsonTextReader = new JsonTextReader(sourceMapStream))
-			{
-				JsonSerializer serializer = new JsonSerializer();
+    /// <summary>
+    /// Parses a stream representing a source map into a SourceMap object.
+    /// </summary>
+    public SourceMap ParseSourceMap(StreamReader sourceMapStream)
+    {
+        if (sourceMapStream == null)
+        {
+            return null;
+        }
+        using (JsonTextReader jsonTextReader = new JsonTextReader(sourceMapStream))
+        {
+            JsonSerializer serializer = new JsonSerializer();
 
-				SourceMap result = serializer.Deserialize<SourceMap>(jsonTextReader);
-				result.ParsedMappings = _mappingsListParser.ParseMappings(result.Mappings, result.Names, result.Sources);
-				sourceMapStream.Close();
-				return result;
-			}
-		}
-	}
+            SourceMap result = serializer.Deserialize<SourceMap>(jsonTextReader);
+            result.ParsedMappings = _mappingsListParser.ParseMappings(result.Mappings, result.Names, result.Sources);
+            sourceMapStream.Close();
+            return result;
+        }
+    }
 }

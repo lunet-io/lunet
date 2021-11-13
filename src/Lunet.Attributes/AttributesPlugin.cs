@@ -1,22 +1,21 @@
 ﻿// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using Lunet.Core;
 
-namespace Lunet.Attributes
-{
-    public class AttributesModule : SiteModule<AttributesPlugin>
-    {
-    }
+namespace Lunet.Attributes;
 
-    public class AttributesPlugin : SitePlugin
+public class AttributesModule : SiteModule<AttributesPlugin>
+{
+}
+
+public class AttributesPlugin : SitePlugin
+{
+    public AttributesPlugin(SiteObject site) : base(site)
     {
-        public AttributesPlugin(SiteObject site) : base(site)
-        {
-            var attributesObject = new AttributesObject();
-            Site.Builtins.SetValue("attributes", attributesObject, true);
-            Site.Content.BeforeLoadingContentProcessors.Add(attributesObject.ProcessAttributesForPath);
-        }
+        var attributesObject = new AttributesObject();
+        Site.Builtins.SetValue("attributes", attributesObject, true);
+        Site.Content.BeforeLoadingContentProcessors.Add(attributesObject.ProcessAttributesForPath);
     }
 }

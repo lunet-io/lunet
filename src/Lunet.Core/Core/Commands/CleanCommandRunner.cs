@@ -4,13 +4,12 @@
 
 using System.Threading;
 
-namespace Lunet.Core.Commands
+namespace Lunet.Core.Commands;
+
+public class CleanCommandRunner : ISiteCommandRunner
 {
-    public class CleanCommandRunner : ISiteCommandRunner
+    public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
     {
-        public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
-        {
-            return runner.CurrentSite.Clean() != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
-        }
+        return runner.CurrentSite.Clean() != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
     }
 }

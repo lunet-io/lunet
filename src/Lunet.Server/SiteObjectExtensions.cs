@@ -4,20 +4,19 @@
 
 using Lunet.Core;
 
-namespace Lunet.Server
+namespace Lunet.Server;
+
+public static class SiteObjectExtensions
 {
-    public static class SiteObjectExtensions
+    private const string LiveReload = "livereload";
+
+    public static bool GetLiveReload(this SiteObject site)
     {
-        private const string LiveReload = "livereload";
+        return site.GetSafeValue<bool>(LiveReload);
+    }
 
-        public static bool GetLiveReload(this SiteObject site)
-        {
-            return site.GetSafeValue<bool>(LiveReload);
-        }
-
-        public static void SetLiveReload(this SiteObject site, bool value)
-        {
-            site[LiveReload] = value;
-        }
+    public static void SetLiveReload(this SiteObject site, bool value)
+    {
+        site[LiveReload] = value;
     }
 }

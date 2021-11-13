@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Lunet.Api;
@@ -28,77 +32,76 @@ using Lunet.Tracking;
 using Lunet.Watcher;
 using Lunet.Yaml;
 
-namespace Lunet
+namespace Lunet;
+
+public class LunetApp
 {
-    public class LunetApp
+    public LunetApp(SiteConfiguration config = null)
     {
-        public LunetApp(SiteConfiguration config = null)
+        Config = config ?? new SiteConfiguration();
+        Modules = new OrderedList<SiteModule>()
         {
-            Config = config ?? new SiteConfiguration();
-            Modules = new OrderedList<SiteModule>()
-            {
-                new ApiModule(),
-                new BundleModule(),
-                new ApiDotNetModule(),
-                new MenuModule(),
-                new ExtendsModule(),
-                new SummarizerModule(),
-                new MarkdownModule(),
-                new LayoutModule(),
-                new ResourceModule(),
-                new DatasModule(),
-                new ServerModule(),
-                new WatcherModule(),
-                new MinifierModule(),
-                new RssModule(),
-                new ScssModule(),
-                new TaxonomyModule(),
-                new CardsModule(),
-                new SearchModule(),
-                new SitemapsModule(),
-                new AttributesModule(),
-                new YamlModule(),
-                new JsonModule(),
-                new TomlModule(),
-                new TrackingModule(),
-            };
+            new ApiModule(),
+            new BundleModule(),
+            new ApiDotNetModule(),
+            new MenuModule(),
+            new ExtendsModule(),
+            new SummarizerModule(),
+            new MarkdownModule(),
+            new LayoutModule(),
+            new ResourceModule(),
+            new DatasModule(),
+            new ServerModule(),
+            new WatcherModule(),
+            new MinifierModule(),
+            new RssModule(),
+            new ScssModule(),
+            new TaxonomyModule(),
+            new CardsModule(),
+            new SearchModule(),
+            new SitemapsModule(),
+            new AttributesModule(),
+            new YamlModule(),
+            new JsonModule(),
+            new TomlModule(),
+            new TrackingModule(),
+        };
+    }
+
+    public SiteConfiguration Config { get; }
+
+    public OrderedList<SiteModule> Modules { get; }
+
+    public int Run(CancellationTokenSource cancellationTokenSource, params string[] args)
+    {
+        if (cancellationTokenSource == null) throw new ArgumentNullException(nameof(cancellationTokenSource));
+        // The order modules are registered here is important
+        var app = new SiteApplication(Config);
+        foreach (var module in Modules)
+        {
+            app.Add(module);
         }
 
-        public SiteConfiguration Config { get; }
-
-        public OrderedList<SiteModule> Modules { get; }
-
-        public int Run(CancellationTokenSource cancellationTokenSource, params string[] args)
+        try
         {
-            if (cancellationTokenSource == null) throw new ArgumentNullException(nameof(cancellationTokenSource));
-            // The order modules are registered here is important
-            var app = new SiteApplication(Config);
-            foreach (var module in Modules)
-            {
-                app.Add(module);
-            }
+            app.Parse(args);
 
-            try
-            {
-                app.Parse(args);
-
-                var runner = new SiteRunner(app.Config);
-                return runner.Run(cancellationTokenSource);
-            }
-            catch (Exception ex)
-            {
-                app.Config.Error(ex, ex.Message);
-                return 1;
-            }
-            finally
-            {
-                app.Config.LoggerFactory.Dispose();
-            }
+            var runner = new SiteRunner(app.Config);
+            return runner.Run(cancellationTokenSource);
         }
-
-        public int Run(params string[] args)
+        catch (Exception ex)
         {
-            return Run(new CancellationTokenSource(), args);
+            app.Config.Error(ex, ex.Message);
+            return 1;
         }
+        finally
+        {
+            app.Config.LoggerFactory.Dispose();
+        }
+    }
+
+    public int Run(params string[] args)
+    {
+        return Run(new CancellationTokenSource(), args);
     }
 }

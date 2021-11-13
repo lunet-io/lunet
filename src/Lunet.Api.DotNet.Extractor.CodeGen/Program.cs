@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -7,39 +11,39 @@ using Lunet.Api.DotNet.Extractor;
 using Newtonsoft.Json;
 using Scriban;
 
-namespace Lunet.Api.DotNet.Extractor.CodeGen
+namespace Lunet.Api.DotNet.Extractor.CodeGen;
+
+class Program
 {
-    class Program
+    static void Main(string[] args)
     {
-        static void Main(string[] args)
+        var assembly = typeof(ExtractorAnalyzer).Assembly;
+
+        var serializers = new Dictionary<string, List<(string, string)>>();
+
+        foreach (var type in assembly.GetTypes())
         {
-            var assembly = typeof(ExtractorAnalyzer).Assembly;
-
-            var serializers = new Dictionary<string, List<(string, string)>>();
-
-            foreach (var type in assembly.GetTypes())
+            var members = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            foreach (var prop in members)
             {
-                var members = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-                foreach (var prop in members)
+                var jsonAttr = prop.GetCustomAttribute<JsonPropertyAttribute>();
+                var ignore = prop.GetCustomAttribute<JsonIgnoreAttribute>();
+                if (jsonAttr == null || ignore != null) continue;
+                var fullName = type.FullName.Replace('+', '.');
+
+                if (!serializers.TryGetValue(fullName, out var props))
                 {
-                    var jsonAttr = prop.GetCustomAttribute<JsonPropertyAttribute>();
-                    var ignore = prop.GetCustomAttribute<JsonIgnoreAttribute>();
-                    if (jsonAttr == null || ignore != null) continue;
-                    var fullName = type.FullName.Replace('+', '.');
+                    props = new List<(string, string)>();
 
-                    if (!serializers.TryGetValue(fullName, out var props))
-                    {
-                        props = new List<(string, string)>();
-
-                        serializers.Add(fullName, props);
-                    }
-
-                    props.Add((jsonAttr.Name, prop.Name));
+                    serializers.Add(fullName, props);
                 }
+
+                props.Add((jsonAttr.Name, prop.Name));
             }
+        }
 
 
-            var templateText = @"
+        var templateText = @"
 using System;
 namespace Lunet.Api.DotNet.Extractor
 {
@@ -65,10 +69,9 @@ namespace Lunet.Api.DotNet.Extractor
     }
 }
 ";
-            var template = Template.Parse(templateText);
-            var result = template.Render(new {  types = serializers });
+        var template = Template.Parse(templateText);
+        var result = template.Render(new {  types = serializers });
 
-            File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Lunet.Api.DotNet.Extractor", "JsonSerializer.generated.cs"), result, new UTF8Encoding(false, false));
-        }
+        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Lunet.Api.DotNet.Extractor", "JsonSerializer.generated.cs"), result, new UTF8Encoding(false, false));
     }
 }

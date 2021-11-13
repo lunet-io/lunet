@@ -4,10 +4,9 @@
 
 using System;
 
-namespace Lunet.Core
+namespace Lunet.Core;
+
+public interface ISiteService : IDisposable
 {
-    public interface ISiteService : IDisposable
-    {
         
-    }
 }

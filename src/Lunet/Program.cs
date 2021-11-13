@@ -1,45 +1,48 @@
-﻿using System.Linq;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using System.Linq;
 using System.Runtime.InteropServices;
 using Lunet.Core;
 
-namespace Lunet
-{
-    class Program
-    {
-        static int Main(string[] args)
-        {
-            var config = new SiteConfiguration();
-            if (args.Any(x => x == "--profiler"))
-            {
-                // Remove --profiler arg
-                args = args.Where(x => x != "--profiler").ToArray();
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    var profiler = new SuperluminalProfiler();
-                    config.Profiler = profiler;
-                }
-            }
+namespace Lunet;
 
-            var app = new LunetApp(config);
-            return app.Run(args);
+class Program
+{
+    static int Main(string[] args)
+    {
+        var config = new SiteConfiguration();
+        if (args.Any(x => x == "--profiler"))
+        {
+            // Remove --profiler arg
+            args = args.Where(x => x != "--profiler").ToArray();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var profiler = new SuperluminalProfiler();
+                config.Profiler = profiler;
+            }
         }
 
-        private class SuperluminalProfiler : IProfiler
+        var app = new LunetApp(config);
+        return app.Run(args);
+    }
+
+    private class SuperluminalProfiler : IProfiler
+    {
+        public SuperluminalProfiler()
         {
-            public SuperluminalProfiler()
-            {
-                SuperluminalPerf.Initialize();
-            }
+            SuperluminalPerf.Initialize();
+        }
 
-            public void BeginEvent(string name, string data, ProfilerColor color)
-            {
-                SuperluminalPerf.BeginEvent(name, data, new SuperluminalPerf.ProfilerColor(color.Value));
-            }
+        public void BeginEvent(string name, string data, ProfilerColor color)
+        {
+            SuperluminalPerf.BeginEvent(name, data, new SuperluminalPerf.ProfilerColor(color.Value));
+        }
 
-            public void EndEvent()
-            {
-                SuperluminalPerf.EndEvent();
-            }
+        public void EndEvent()
+        {
+            SuperluminalPerf.EndEvent();
         }
     }
 }

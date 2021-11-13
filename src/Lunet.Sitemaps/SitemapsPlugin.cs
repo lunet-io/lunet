@@ -4,27 +4,26 @@
 
 using Lunet.Core;
 
-namespace Lunet.Sitemaps
+namespace Lunet.Sitemaps;
+
+public class SitemapsModule : SiteModule<SitemapsPlugin>
 {
-    public class SitemapsModule : SiteModule<SitemapsPlugin>
+}
+
+public class SitemapsPlugin : SitePlugin
+{
+    public SitemapsPlugin(SiteObject site) : base(site)
     {
+        Enable = true;
+        var processor = new SitemapsProcessor(this);
+        site.Content.BeforeLoadingProcessors.Add(processor);
+        site.Content.BeforeProcessingProcessors.Add(processor);
+        site.Content.AfterRunningProcessors.Add(processor);
     }
 
-    public class SitemapsPlugin : SitePlugin
+    public bool Enable
     {
-        public SitemapsPlugin(SiteObject site) : base(site)
-        {
-            Enable = true;
-            var processor = new SitemapsProcessor(this);
-            site.Content.BeforeLoadingProcessors.Add(processor);
-            site.Content.BeforeProcessingProcessors.Add(processor);
-            site.Content.AfterRunningProcessors.Add(processor);
-        }
-
-        public bool Enable
-        {
-            get => GetSafeValue<bool>("enable");
-            set => SetValue("enable", value);
-        }
+        get => GetSafeValue<bool>("enable");
+        set => SetValue("enable", value);
     }
 }

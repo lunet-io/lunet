@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Alexandre Mutel. All rights reserved.
-// This file is licensed under the BSD-Clause 2 license. 
+// This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System;
@@ -9,49 +9,48 @@ using NUglify;
 
 // Register this plugin
 
-namespace Lunet.Minifiers
+namespace Lunet.Minifiers;
+
+public class MinifierModule : SiteModule<MinifierPlugin>
 {
-    public class MinifierModule : SiteModule<MinifierPlugin>
+}
+
+public class MinifierPlugin : SitePlugin, IContentMinifier
+{
+    public MinifierPlugin(SiteObject site, BundlePlugin bundlePlugin) : base(site)
     {
+        if (bundlePlugin == null) throw new ArgumentNullException(nameof(bundlePlugin));
+        bundlePlugin.BundleProcessor.Minifiers.AddIfNotAlready(this);
     }
 
-    public class MinifierPlugin : SitePlugin, IContentMinifier
+    public string Minify(string type, string content, string contentPath)
     {
-        public MinifierPlugin(SiteObject site, BundlePlugin bundlePlugin) : base(site)
+        // TODO: handle filenames, options...etc.
+        UglifyResult result;
+        if (type == "js")
         {
-            if (bundlePlugin == null) throw new ArgumentNullException(nameof(bundlePlugin));
-            bundlePlugin.BundleProcessor.Minifiers.AddIfNotAlready(this);
+            result = Uglify.Js(content, contentPath);
+        }
+        else if (type == "css")
+        {
+            result = Uglify.Css(content, contentPath);
+        }
+        else
+        {
+            return content;
         }
 
-        public string Minify(string type, string content, string contentPath)
+        if (result.HasErrors)
         {
-            // TODO: handle filenames, options...etc.
-            UglifyResult result;
-            if (type == "js")
+            foreach (var error in result.Errors)
             {
-                result = Uglify.Js(content, contentPath);
-            }
-            else if (type == "css")
-            {
-                result = Uglify.Css(content, contentPath);
-            }
-            else
-            {
-                return content;
+                error.Message = $"Minifying error: {error.Message}";
+                Site.Warning(error.ToString());
             }
 
-            if (result.HasErrors)
-            {
-                foreach (var error in result.Errors)
-                {
-                    error.Message = $"Minifying error: {error.Message}";
-                    Site.Warning(error.ToString());
-                }
-
-                return content;
-            }
-
-            return result.Code;
+            return content;
         }
+
+        return result.Code;
     }
 }

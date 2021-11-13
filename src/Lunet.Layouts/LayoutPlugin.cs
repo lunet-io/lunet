@@ -1,20 +1,23 @@
-﻿using System.Data;
+﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using System.Data;
 using Lunet.Core;
 
-namespace Lunet.Layouts
+namespace Lunet.Layouts;
+
+public class LayoutModule : SiteModule<LayoutPlugin>
 {
-    public class LayoutModule : SiteModule<LayoutPlugin>
+}
+
+public class LayoutPlugin : SitePlugin
+{
+    public LayoutPlugin(SiteObject site) : base(site)
     {
+        Processor = new LayoutProcessor(this);
+        site.Content.ContentProcessors.Insert(0, Processor);
     }
 
-    public class LayoutPlugin : SitePlugin
-    {
-        public LayoutPlugin(SiteObject site) : base(site)
-        {
-            Processor = new LayoutProcessor(this);
-            site.Content.ContentProcessors.Insert(0, Processor);
-        }
-
-        public LayoutProcessor Processor { get; }
-    }
+    public LayoutProcessor Processor { get; }
 }

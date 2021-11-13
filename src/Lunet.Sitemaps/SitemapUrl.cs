@@ -5,49 +5,48 @@
 using System;
 using Lunet.Core;
 
-namespace Lunet.Sitemaps
+namespace Lunet.Sitemaps;
+
+public class SitemapUrl : DynamicObject
 {
-    public class SitemapUrl : DynamicObject
+    public SitemapUrl()
     {
-        public SitemapUrl()
-        {
-        }
+    }
 
-        public SitemapUrl(string url)
-        {
-            Url = url;
-        }
+    public SitemapUrl(string url)
+    {
+        Url = url;
+    }
 
-        public string Url
-        {
-            get => GetSafeValue<string>("loc"); 
-            set => SetValue("loc", value);
-        }
+    public string Url
+    {
+        get => GetSafeValue<string>("loc"); 
+        set => SetValue("loc", value);
+    }
 
-        public DateTime? LastModified
+    public DateTime? LastModified
+    {
+        get
         {
-            get
-            {
-                var dateStr = GetSafeValue<string>("lastmod");
-                return DateTime.TryParse(dateStr, out var date) ? date : null;
-            }
-            set => SetValue("lastmod", value?.ToString("yyyy-MM-dd"));
+            var dateStr = GetSafeValue<string>("lastmod");
+            return DateTime.TryParse(dateStr, out var date) ? date : null;
         }
+        set => SetValue("lastmod", value?.ToString("yyyy-MM-dd"));
+    }
         
-        public string ChangeFrequency
-        {
-            get => GetSafeValue<string>("changefreq");
-            set => SetValue("changefreq", value);
-        }
+    public string ChangeFrequency
+    {
+        get => GetSafeValue<string>("changefreq");
+        set => SetValue("changefreq", value);
+    }
 
-        public float? Priority
+    public float? Priority
+    {
+        get
         {
-            get
-            {
-                var priorityStr = GetSafeValue<string>("priority");
-                return float.TryParse(priorityStr, out var priority) ? priority : null;
-            }
-            set => SetValue("priority", value?.ToString("0.0"));
+            var priorityStr = GetSafeValue<string>("priority");
+            return float.TryParse(priorityStr, out var priority) ? priority : null;
         }
+        set => SetValue("priority", value?.ToString("0.0"));
     }
 }

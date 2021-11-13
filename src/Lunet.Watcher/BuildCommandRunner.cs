@@ -5,34 +5,33 @@
 using System.Threading;
 using Lunet.Core;
 
-namespace Lunet.Watcher
+namespace Lunet.Watcher;
+
+public class BuildCommandRunner : ISiteCommandRunner
 {
-    public class BuildCommandRunner : ISiteCommandRunner
-    {
-        public bool Watch { get; set; }
+    public bool Watch { get; set; }
         
-        public bool SingleThreaded { get; set; }
+    public bool SingleThreaded { get; set; }
 
-        public bool Development { get; set; }
+    public bool Development { get; set; }
 
-        public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+    public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+    {
+        // Setup the environment
+        runner.CurrentSite.Environment = Development ? "dev" : "prod";
+        runner.Config.SingleThreaded = SingleThreaded;
+        return RunImpl(runner, cancellationToken);
+    }
+
+    protected virtual RunnerResult RunImpl(SiteRunner runner, CancellationToken cancellationToken)
+    {
+        runner.CurrentSite.Build();
+
+        if (Watch)
         {
-            // Setup the environment
-            runner.CurrentSite.Environment = Development ? "dev" : "prod";
-            runner.Config.SingleThreaded = SingleThreaded;
-            return RunImpl(runner, cancellationToken);
+            return SiteWatcherService.Run(runner, cancellationToken);
         }
 
-        protected virtual RunnerResult RunImpl(SiteRunner runner, CancellationToken cancellationToken)
-        {
-            runner.CurrentSite.Build();
-
-            if (Watch)
-            {
-                return SiteWatcherService.Run(runner, cancellationToken);
-            }
-
-            return runner.CurrentSite.HasErrors ? RunnerResult.ExitWithError : RunnerResult.Exit;
-        }
+        return runner.CurrentSite.HasErrors ? RunnerResult.ExitWithError : RunnerResult.Exit;
     }
 }

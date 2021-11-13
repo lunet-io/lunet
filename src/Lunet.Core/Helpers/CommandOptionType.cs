@@ -1,14 +1,13 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
 
+namespace Lunet.Helpers;
 
-namespace Lunet.Helpers
+public enum CommandOptionType
 {
-    public enum CommandOptionType
-    {
-        MultipleValue,
-        SingleValue,
-        BoolValue,
-        NoValue
-    }
+    MultipleValue,
+    SingleValue,
+    BoolValue,
+    NoValue
 }
