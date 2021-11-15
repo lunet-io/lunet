@@ -24,8 +24,6 @@ namespace Lunet.Core;
 
 public class ContentPlugin : SitePlugin
 {
-    private static readonly Encoding UTF8WithoutBOM = new UTF8Encoding(false, false);
-
     /// <summary>
     /// The lock for tracking related dictionaries
     /// </summary>
@@ -251,7 +249,6 @@ public class ContentPlugin : SitePlugin
 
                     using (var stream = outputFile.Open(FileMode.Create, FileAccess.Write))
                     {
-                        stream.WriteStringOptimized(fromFile.Content, UTF8WithoutBOM);
                         stream.Flush();
 
                         // Update statistics
