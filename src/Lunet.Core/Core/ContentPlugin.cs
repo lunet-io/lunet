@@ -249,6 +249,7 @@ public class ContentPlugin : SitePlugin
 
                     using (var stream = outputFile.Open(FileMode.Create, FileAccess.Write))
                     {
+                        stream.WriteStringOptimized(fromFile.Content, Encoding.Default);
                         stream.Flush();
 
                         // Update statistics
@@ -529,7 +530,7 @@ public class ContentPlugin : SitePlugin
     {
         // Uncomment to dispatch on multithread
         //const int MaxDegreeOfParallelism = DataflowBlockOptions.Unbounded;
-        const int MaxDegreeOfParallelism = 1;
+        //const int MaxDegreeOfParallelism = 1;
 
         // Run script content asynchronously
         var contentRunnerBlock = new ActionBlock<ContentObject>(
