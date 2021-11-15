@@ -18,6 +18,8 @@ public class BundleModule : SiteModule<BundlePlugin>
 /// </summary>
 public class BundlePlugin : SitePlugin
 {
+    private readonly object _lock = new();
+
     public const string DefaultBundleName = "site";
 
     public BundlePlugin(SiteObject site) : base(site)
@@ -43,6 +45,31 @@ public class BundlePlugin : SitePlugin
 
     public BundleObject FindBundle(string bundleName)
     {
+        lock (_lock)
+        {
+            return FindBundleInternal(bundleName);
+        }
+    }
+
+    public BundleObject GetOrCreateBundle(string bundleName)
+    {
+        bundleName = GetDefaultBundleName(bundleName);
+        lock (_lock)
+        {
+            var bundle = FindBundleInternal(bundleName);
+            if (bundle != null)
+            {
+                return bundle;
+            }
+
+            bundle = new BundleObject(this, bundleName);
+            List.Add(bundle);
+            return bundle;
+        }
+    }
+
+    private BundleObject FindBundleInternal(string bundleName)
+    {
         bundleName = GetDefaultBundleName(bundleName);
         foreach (var bundle in List)
         {
@@ -52,21 +79,6 @@ public class BundlePlugin : SitePlugin
             }
         }
         return null;
-    }
-
-    public BundleObject GetOrCreateBundle(string bundleName)
-    {
-        bundleName = GetDefaultBundleName(bundleName);
-        var bundle = FindBundle(bundleName);
-        if (bundle != null)
-        {
-            return bundle;
-        }
-
-        bundle = new BundleObject(this, bundleName);
-        List.Add(bundle);
-
-        return bundle;
     }
 
     private string GetDefaultBundleName(string bundleName)
