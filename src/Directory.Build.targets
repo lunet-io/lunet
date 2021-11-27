@@ -1,5 +1,5 @@
 <Project>
-    <ItemGroup>
+    <ItemGroup Condition="'$(GITHUB_ACTIONS)' != ''">
         <!-- git versioning -->
         <PackageReference Include="MSBuildGitHash" Version="2.0.2">
             <PrivateAssets>all</PrivateAssets>
