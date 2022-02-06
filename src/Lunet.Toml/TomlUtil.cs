@@ -67,9 +67,6 @@ public static class TomlUtil
                 }
                 return tableArray;
 
-            case TomlValue tomlValue:
-                return tomlValue.ValueAsObject;
-
             case string str:
                 return str;
             case int value:
@@ -80,6 +77,8 @@ public static class TomlUtil
                 return valued;
             case long valuel:
                 return valuel;
+            case TomlDateTime tomlDateTime:
+                return tomlDateTime.DateTime;
             case DateTime datetime:
                 return datetime;
             case bool bValue:

@@ -43,7 +43,7 @@ public class LunrSearchEngine : SearchEngine
     public override void Terminate()
     {
         var docs = new List<Document>();
-        var index = Task.Run(() => Index.Build(async builder =>
+        var index = Task.Run(async () => await Index.Build(async builder =>
         {
             builder.MetadataAllowList.Add("position");
             builder.AddField("href", 3);
