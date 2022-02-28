@@ -1,0 +1,8 @@
+# configuration file for dotnet-releaser
+# Disable default packs - It will only publish NuGet and the Changelog
+profile = "custom"
+[msbuild]
+project = "lunet.sln"
+[github]
+user = "lunet-io"
+repo = "lunet"
