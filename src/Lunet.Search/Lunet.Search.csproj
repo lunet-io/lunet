@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="LunrCore" Version="2.3.10" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.2" />
     <PackageReference Include="NUglify" Version="1.17.10" />
   </ItemGroup>
 
