@@ -6,3 +6,5 @@ project = "lunet.sln"
 [github]
 user = "lunet-io"
 repo = "lunet"
+[changelog]
+owners = "xoofx" # To avoid having @xoofx tagged in release notes
