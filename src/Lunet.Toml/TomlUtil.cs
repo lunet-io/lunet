@@ -29,8 +29,7 @@ public static class TomlUtil
         try
         {
             if (string.IsNullOrWhiteSpace(text)) return null;
-            var syntax = Tomlyn.Toml.Parse(text, tomlFile);
-            var model = syntax.ToModel();
+            var model = Tomlyn.Toml.ToModel(text, tomlFile);
             return ConvertFromToml(model);
         }
         catch (Exception ex)
@@ -89,7 +88,5 @@ public static class TomlUtil
             default:
                 throw new NotSupportedException($"The TomlObject {element?.GetType()} is not supported");
         }
-
-        return null;
     }
 }
