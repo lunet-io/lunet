@@ -43,6 +43,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SuperluminalPerf" Version="1.0.0" IncludeAssets="Build" />
+    <PackageReference Include="SuperluminalPerf" Version="1.1.0" IncludeAssets="Build" />
   </ItemGroup>
 </Project>
