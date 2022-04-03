@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using Lunet.Extensions.Logging.SpectreConsole;
 using Lunet.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -32,9 +33,10 @@ public class SiteLoggerFactory : ILoggerFactory
             {
                 // Similar to builder.AddSimpleConsole
                 // But we are using our own console that stays on the same line if the message doesn't have new lines
-                builder.AddConsoleFormatter<SimpleConsoleFormatter, SimpleConsoleFormatterOptions>(configure => { configure.SingleLine = true; });
-                builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, ConsoleLoggerProvider>());
-                LoggerProviderOptions.RegisterProviderOptions<ConsoleLoggerOptions, ConsoleLoggerProvider>(builder.Services);
+                builder.AddSpectreConsole(new SpectreConsoleLoggerOptions()
+                {
+                    IncludeNewLineBeforeMessage = false,
+                });
             }
         });
         _serviceProvider = services.BuildServiceProvider();

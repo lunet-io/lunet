@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using Lunet.Core.Commands;
 using Lunet.Helpers;
+using Spectre.Console;
 using Zio;
 using Zio.FileSystems;
 
@@ -52,7 +53,7 @@ public class SiteApplication : CommandLineApplication, IEnumerable
 
             if (RemainingArguments.Count > 0)
             {
-                Reporter.Output.WriteLine($"Invalid command arguments : {string.Join(" ", RemainingArguments)}".Red());
+                AnsiConsole.WriteLine($"[red]Invalid command arguments : {Markup.Escape(string.Join(" ", RemainingArguments))}[/]");
             }
         };
 
