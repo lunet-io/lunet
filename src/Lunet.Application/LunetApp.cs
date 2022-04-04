@@ -83,7 +83,7 @@ public class LunetApp
 
         try
         {
-            app.Parse(args);
+            app.Execute(args);
 
             var runner = new SiteRunner(app.Config);
             return runner.Run(cancellationTokenSource);

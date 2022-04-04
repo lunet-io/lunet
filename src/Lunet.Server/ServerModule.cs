@@ -4,6 +4,7 @@
 
 using Lunet.Core;
 using Lunet.Helpers;
+using McMaster.Extensions.CommandLineUtils;
 
 namespace Lunet.Server;
 
@@ -21,12 +22,12 @@ public class ServerModule : SiteModule<ServerPlugin>
             var noWatchOption = newApp.Option("--no-watch", "Disables watching files and triggering of a new run", CommandOptionType.NoValue);
             var singleThreadedOption = newApp.Option("--no-threads", "Disables multi-threading", CommandOptionType.NoValue);
 
-            newApp.Invoke = () =>
+            newApp.OnExecute(() =>
             {
                 var command = application.CreateCommandRunner<ServeCommandRunner>();
                 command.Watch = !noWatchOption.HasValue();
                 command.SingleThreaded = singleThreadedOption.HasValue();
-            };
+            });
         });
     }
 

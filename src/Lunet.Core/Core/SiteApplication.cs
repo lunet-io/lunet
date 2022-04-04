@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using Lunet.Core.Commands;
 using Lunet.Helpers;
+using McMaster.Extensions.CommandLineUtils;
 using Spectre.Console;
 using Zio;
 using Zio.FileSystems;
@@ -27,7 +28,6 @@ public class SiteApplication : CommandLineApplication, IEnumerable
         Name = "lunet";
         FullName = "Lunet Static Website Engine";
         Description = "LunetCommand to generate static website";
-        HandleResponseFiles = false;
         AllowArgumentSeparator = true;
 
         HelpOption("-h|--help");
@@ -38,13 +38,13 @@ public class SiteApplication : CommandLineApplication, IEnumerable
         var version = VersionOption("-v|--version", versionText, infoVersionText);
 
         // The defines to setup before initializing config.sban
-        DefinesOption = Option("-d|--define <variable=value>", "Defines a site variable", CommandOptionType.MultipleValue);
+        DefinesOption = Option("-d|--define <variable_and_value>", "Defines a site variable. Example --define my_variable=5.", CommandOptionType.MultipleValue);
         OutputDirectoryOption = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteFileSystems.DefaultOutputFolderName}'", CommandOptionType.SingleValue);
         InputDirectoryOption = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
 
         ShowStacktraceOnErrorOption = Option("--stacktrace", "Shows full stacktrace when an error occurs. Default is false.", CommandOptionType.NoValue);
 
-        Invoke = () =>
+        this.OnExecute(() =>
         {
             if (!this.OptionHelp.HasValue() || !version.HasValue())
             {
@@ -55,7 +55,7 @@ public class SiteApplication : CommandLineApplication, IEnumerable
             {
                 AnsiConsole.WriteLine($"[red]Invalid command arguments : {Markup.Escape(string.Join(" ", RemainingArguments))}[/]");
             }
-        };
+        });
 
         // New command
         InitCommand = Command("init", newApp =>
@@ -70,21 +70,13 @@ public class SiteApplication : CommandLineApplication, IEnumerable
             // TODO: List the supported type on --help -h
             newApp.HelpOption("-h|--help");
 
-            newApp.Invoke = () =>
+            newApp.OnExecute(() =>
             {
                 var inputFolder = folderArgument.Value ?? ".";
-                if (InputDirectoryOption.Values.Count > 0)
-                {
-                    InputDirectoryOption.Values[0] = inputFolder;
-                }
-                else
-                {
-                    InputDirectoryOption.Values.Add(inputFolder);
-                }
-
+                _inputDirectoryFolder = inputFolder;
                 var initCommand = CreateCommandRunner<InitCommandRunner>();
                 initCommand.Force = forceOption.HasValue();
-            };
+            });
         });
 
 
@@ -112,11 +104,10 @@ public class SiteApplication : CommandLineApplication, IEnumerable
             newApp.Description = "Cleans temporary folder";
             newApp.HelpOption("-h|--help");
 
-            newApp.Invoke = () =>
+            newApp.OnExecute(() =>
             {
                 CreateCommandRunner<CleanCommandRunner>();
-            };
-
+            });
         });
     }
 
@@ -137,7 +128,9 @@ public class SiteApplication : CommandLineApplication, IEnumerable
     private CommandOption OutputDirectoryOption { get; }
 
     private CommandOption InputDirectoryOption { get; }
-        
+
+    private string _inputDirectoryFolder;
+
     private CommandOption ShowStacktraceOnErrorOption { get; }
         
     public SiteApplication Add(SiteModule module)
@@ -149,7 +142,7 @@ public class SiteApplication : CommandLineApplication, IEnumerable
 
     private void InitializeConfig()
     {
-        Config.FileSystems.Initialize(InputDirectoryOption.Value(), OutputDirectoryOption.Value());
+        Config.FileSystems.Initialize(_inputDirectoryFolder ?? InputDirectoryOption.Value(), OutputDirectoryOption.Value());
         Config.Defines.Clear();
         Config.Defines.AddRange(DefinesOption.Values);
         Config.ShowStacktraceOnError = ShowStacktraceOnErrorOption.HasValue();

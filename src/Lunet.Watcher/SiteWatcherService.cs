@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Threading;
 using Lunet.Core;
 using Lunet.Helpers;
+using McMaster.Extensions.CommandLineUtils;
 using Zio;
 
 namespace Lunet.Watcher;
@@ -36,13 +37,13 @@ public class WatcherModule : SiteModule
             var singleThreadedOption = newApp.Option("--no-threads", "Disables multi-threading", CommandOptionType.NoValue);
             var devOption = newApp.Option("--dev", "Enables development environment. Default environment is prod.", CommandOptionType.NoValue);
 
-            newApp.Invoke = () =>
+            newApp.OnExecute(() =>
             {
                 var buildAndWatch = application.CreateCommandRunner<BuildCommandRunner>();
                 buildAndWatch.Watch = watchOption.HasValue();
                 buildAndWatch.SingleThreaded = singleThreadedOption.HasValue();
                 buildAndWatch.Development = devOption.HasValue();
-            };
+            });
 
         });
     }
