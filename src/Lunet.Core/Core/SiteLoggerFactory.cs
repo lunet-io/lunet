@@ -4,12 +4,8 @@
 
 using System;
 using Lunet.Extensions.Logging.SpectreConsole;
-using Lunet.Helpers;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Configuration;
-using Microsoft.Extensions.Logging.Console;
 
 namespace Lunet.Core;
 
@@ -23,9 +19,7 @@ public class SiteLoggerFactory : ILoggerFactory
         var services = new ServiceCollection();
         services.AddLogging(builder =>
         {
-            builder.AddConfiguration();
-            builder.AddProvider(new LoggerProviderIntercept(this))
-                .AddFilter(LogFilterImpl);
+            builder.AddProvider(new LoggerProviderIntercept(this)).AddFilter(LogFilterImpl);
 
             logBuilderAction?.Invoke(builder);
 
@@ -36,6 +30,7 @@ public class SiteLoggerFactory : ILoggerFactory
                 builder.AddSpectreConsole(new SpectreConsoleLoggerOptions()
                 {
                     IncludeNewLineBeforeMessage = false,
+                    IndentAfterNewLine = false,
                 });
             }
         });
