@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tomlyn" Version="0.14.1" />
+    <PackageReference Include="Tomlyn" Version="0.14.2" />
   </ItemGroup>
 
   <ItemGroup>
