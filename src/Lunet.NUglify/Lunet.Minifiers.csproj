@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Lunet.Bundles\Lunet.Bundles.csproj" />
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
-    <PackageReference Include="NUglify" Version="1.20.0" />
+    <PackageReference Include="NUglify" Version="1.20.7" />
   </ItemGroup>
 
 </Project>
