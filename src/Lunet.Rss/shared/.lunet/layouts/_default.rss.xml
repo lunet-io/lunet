@@ -18,7 +18,7 @@
     <lastBuildDate>{{ date.now | date.to_rfc822 | html.escape }}</lastBuildDate>
     {{~ $limit = page.rss_limit ?? site.rss.limit ?? 1000; ~}}
     {{~ for post in site.pages.by_date.reverse ~}}
-    {{~ if post.layout_type != 'single'; continue; end ~}}
+    {{~ if post.layout_type != null && post.layout_type != 'single'; continue; end ~}}
     {{~ if page.rss_section != null && post.section != page.rss_section; continue; end ~}}
       {{~ $limit = $limit - 1; if $limit < 0; break; end; ~}}
     <item>
