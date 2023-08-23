@@ -276,7 +276,7 @@ public class ContentPlugin : SitePlugin
                 }
 
                 // TODO: optimize copy if source and output end-up to be PhysicalFileSystem
-                fromFile.SourceFile.FileSystem.CopyFileCross(fromFile.SourceFile.Path, outputFile.FileSystem, outputFile.Path, true, false);
+                fromFile.SourceFile.FileSystem.CopyFileCross(fromFile.SourceFile.AbsolutePath, outputFile.FileSystem, outputFile.Path, true, false);
 
                 // Update statistics
                 stat.Static = true;
