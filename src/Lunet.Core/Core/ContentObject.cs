@@ -187,7 +187,8 @@ public abstract class ContentObject : TemplateObject
         // Special case handling, if the content is going to be Html,
         // we process its URL to map to a folder if necessary (if e.g this is index.html or readme.md)
         var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
-        if (isHtml)
+        // If the URL ends with HTML, we should leave it as it is.
+        if (isHtml && !url.EndsWith(".html"))
         {
             var urlAsPath = (UPath)url;
             var name = urlAsPath.GetNameWithoutExtension();
@@ -202,9 +203,10 @@ public abstract class ContentObject : TemplateObject
             }
             else if (HasFrontMatter && !Site.UrlAsFile)
             {
-                if (!string.IsNullOrEmpty(Extension))
+                var extension = System.IO.Path.GetExtension(url);
+                if (!string.IsNullOrEmpty(extension))
                 {
-                    url = url.Substring(0, url.Length - Extension.Length);
+                    url = url.Substring(0, url.Length - extension.Length);
                 }
 
                 url = PathUtil.NormalizeUrl(url, true);
@@ -253,7 +255,6 @@ public abstract class ContentObject : TemplateObject
 
         return urlAsPath;
     }
-
 
     internal void InitializeAfterRun()
     {
