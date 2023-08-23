@@ -113,6 +113,10 @@ public class SqliteSearchEngine : SearchEngine
         _connection.Close();
         _connection.Dispose();
 
+        // Now required https://learn.microsoft.com/en-us/ef/core/what-is-new/ef-core-6.0/breaking-changes#connection-pool
+        // otherwise the local file will be locked and we won't be able to copy it
+        SqliteConnection.ClearPool(_connection);
+
         // Add our dynamic content to the output
         var fs = new PhysicalFileSystem();
         var srcPath = fs.ConvertPathFromInternal(_dbPathOnDisk);
