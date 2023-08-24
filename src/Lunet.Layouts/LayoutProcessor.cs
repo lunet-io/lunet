@@ -44,6 +44,8 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
         RegisterLayoutPathProvider(ContentLayoutTypes.List, DefaultLayout);
     }
 
+    public override string Name => "layout";
+
     public void RegisterLayoutPathProvider(string layoutType, GetLayoutPathsDelegate layoutPathsDelegate)
     {
         if (layoutType == null) throw new ArgumentNullException(nameof(layoutType));

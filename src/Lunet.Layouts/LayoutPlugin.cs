@@ -16,6 +16,8 @@ public class LayoutPlugin : SitePlugin
     public LayoutPlugin(SiteObject site) : base(site)
     {
         Processor = new LayoutProcessor(this);
+
+        // We insert the layout processor last
         site.Content.ContentProcessors.Add(Processor);
     }
 

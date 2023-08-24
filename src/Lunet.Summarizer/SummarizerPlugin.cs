@@ -17,7 +17,7 @@ public class SummarizerPlugin : SitePlugin
     {
         var processor = new SummarizerProcessor(this);
 
-        // Run the summarizer processor after the markdown only
-        site.Content.ContentProcessors.Insert(0, processor);
+        // Run the summarizer processor after the layout (so insert before the layout)
+        site.Content.ContentProcessors.InsertBefore("layout", processor);
     }
 }

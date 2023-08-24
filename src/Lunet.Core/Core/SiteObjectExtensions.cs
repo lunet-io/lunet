@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
 
@@ -24,6 +25,20 @@ public interface ISiteLoggerProvider
 /// </summary>
 public static class SiteObjectExtensions
 {
+    public static void InsertBefore<T>(this OrderedList<T> list, string name, T value) where T: ISitePluginCore
+    {
+        for (var i = 0; i < list.Count; i++)
+        {
+            var item = list[i];
+            if (item.Name == name)
+            {
+                list.Insert(i, value);
+                return;
+            }
+        }
+        list.Add(value);
+    }
+
     public static void BeginEvent(this SiteObject site, string name)
     {
         BeginEvent(site, name, ProfilerColor.Default);
