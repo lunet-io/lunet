@@ -4,10 +4,6 @@
     <TargetFramework>net7.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.IO.FileSystem.Watcher" Version="4.3.0" />
-  </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
