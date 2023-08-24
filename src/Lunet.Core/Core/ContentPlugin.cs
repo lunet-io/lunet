@@ -35,7 +35,6 @@ public class ContentPlugin : SitePlugin
     private const string SharedCacheContentKey = "content-cache-key";
         
     private readonly Dictionary<string, PageCollection> _mapTypeToPages;
-    private bool _isInitialized;
     private readonly Stopwatch _totalDuration;
 
     public ContentPlugin(SiteObject site) : base(site)

@@ -23,20 +23,17 @@ public class ContentTypeManager
     public void AddContentType(string extension, ContentType contentType)
     {
         if (extension == null) throw new ArgumentNullException(nameof(extension));
-        if (contentType == null) throw new ArgumentNullException(nameof(contentType));
         extension = PathUtil.NormalizeExtension(extension);
         _extensionToContentType[extension] = contentType;
     }
 
     public bool IsHtmlContentType(ContentType contentType)
     {
-        if (contentType == null) throw new ArgumentNullException(nameof(contentType));
         return _htmlContentType.Contains(contentType);
     }
 
     public void RegisterHtmlContentType(ContentType contentType)
     {
-        if (contentType == null) throw new ArgumentNullException(nameof(contentType));
         _htmlContentType.Add(contentType);
     }
 

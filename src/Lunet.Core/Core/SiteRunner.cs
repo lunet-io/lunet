@@ -166,8 +166,9 @@ public class SiteRunner : IDisposable
                     this._cts.Cancel();
                 }
             }
-            catch (Exception ex)
+            catch
             {
+                // ignore
             }
             this._resetEvent.Wait();
         }

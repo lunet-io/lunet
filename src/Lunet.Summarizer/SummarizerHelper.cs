@@ -24,7 +24,7 @@ public static class SummarizerHelper
             RemoveComments = false,
             RemoveOptionalTags = false,
             RemoveEmptyAttributes = false,
-            RemoveQuotedAttributes = false,
+            RemoveAttributeQuotes = false,
             DecodeEntityCharacters = true,
             RemoveScriptStyleTypeAttribute = false,
             ShortBooleanAttribute = false,

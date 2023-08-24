@@ -95,7 +95,7 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
 
     private static string ToRFC822(DateTime date)
     {
-        int offset = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now).Hours;
+        int offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now).Hours;
         string timeZone = "+" + offset.ToString(CultureInfo.InvariantCulture).PadLeft(2, '0');
         if (offset < 0)
         {

@@ -43,9 +43,9 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
         private sealed class CachedKey : IEquatable<CachedKey>
         {
-            public ISymbol Symbol { get; set; }
+            public ISymbol Symbol { get; }
 
-            public bool WantProtectedMember { get; set; }
+            public bool WantProtectedMember { get; }
 
             public CachedKey(ISymbol symbol, bool wantProtectedMember)
             {
@@ -65,7 +65,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     return true;
                 }
 
-                return Symbol.Equals(other.Symbol) && WantProtectedMember == other.WantProtectedMember;
+                return SymbolEqualityComparer.Default.Equals(Symbol, other.Symbol) && WantProtectedMember == other.WantProtectedMember;
             }
 
             public override bool Equals(object obj)
@@ -75,7 +75,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
             public override int GetHashCode()
             {
-                return Symbol.GetHashCode() + (WantProtectedMember ? 0 : 12234345);
+                return SymbolEqualityComparer.Default.GetHashCode(Symbol) + (WantProtectedMember ? 0 : 12234345);
             }
         }
     }
