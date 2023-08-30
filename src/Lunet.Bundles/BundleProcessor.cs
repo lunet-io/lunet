@@ -399,7 +399,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             // so we are handling this case by setting charset rule at the beginning of the concat
             if (Kind == "css" && content.StartsWith("@charset "))
             {
-                var endOfCharset = content.IndexOf('\n');
+                var endOfCharset = content.IndexOf(';');
                 string charset = null;
                 if (endOfCharset > 0)
                 {
