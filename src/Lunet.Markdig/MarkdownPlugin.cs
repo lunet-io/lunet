@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -11,6 +12,7 @@ using Lunet.Layouts;
 using Lunet.Markdown.Extensions;
 using Markdig;
 using Markdig.Renderers;
+using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Scriban.Functions;
@@ -27,13 +29,13 @@ public class MarkdownModule : SiteModule<MarkdownPlugin>
 
 public class MarkdownPlugin : SitePlugin, ILayoutConverter
 {
-    private readonly DynamicObject<MarkdownPlugin> _markdigOptions;
+    private readonly MarkdownOptions _markdigOptions;
     private readonly DynamicObject<MarkdownPlugin> _markdownHelper;
     private readonly ThreadLocal<MarkdownPipeline> _markdownPipeline;
 
     public MarkdownPlugin(SiteObject site, LayoutPlugin layoutPlugin) : base(site)
     {
-        _markdigOptions = new DynamicObject<MarkdownPlugin>(this);
+        _markdigOptions = new MarkdownOptions(this);
         _markdownHelper = new DynamicObject<MarkdownPlugin>(this);
         _markdownPipeline = new ThreadLocal<MarkdownPipeline>();
 
@@ -73,16 +75,16 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         {
             var builder = new MarkdownPipelineBuilder();
 
-            if (_markdigOptions.Count == 0)
+            switch (_markdigOptions.Extensions)
             {
-                builder.UseAdvancedExtensions();
-            }
-            else
-            {
-                // would need a different caching strategy
-                // TODO: handle Markdig options
-            }
+                // TODO: Add support for other extensions.
 
+                case "advanced":
+                default:
+                    builder.UseAdvancedExtensions();
+                    break;
+            }
+            
             builder.Extensions.AddIfNotAlready<XRefMarkdownExtension>();
             pipeline = builder.Build();
             _markdownPipeline.Value = pipeline;
@@ -105,6 +107,10 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         var markdown = page.Content;
         var markdownDocument = Markdig.Markdown.Parse(markdown, pipeline);
 
+        // Get css_img_attr
+        string cssImgAttr = _markdigOptions.CssImageAttribute;
+        var cssImgAttrParts = cssImgAttr is null ? Array.Empty<string>() : cssImgAttr.Split(',');
+        
         foreach (var inline in markdownDocument.Descendants<Inline>())
         {
             string url = null;
@@ -166,6 +172,16 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
                 link.AppendChild(new LiteralInline(label));
             }
             link.Url = resolvedUrl;
+
+            // Apply css_img_attr by adding class attribute to all images
+            if (link.IsImage && cssImgAttrParts.Length > 0)
+            {
+                var attr = link.GetAttributes();
+                foreach (var cssClass in cssImgAttrParts)
+                {
+                    attr.AddClass(cssClass);
+                }
+            }
         }
 
         var renderer = new HtmlRenderer(new StringWriter());
