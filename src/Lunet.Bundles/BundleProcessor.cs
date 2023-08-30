@@ -156,8 +156,10 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             {
                 Site.Warning($"Minify is setup for bundle [{bundle.Name}] but no minifiers are registered (Minified requested: {minifierName ?? "default"})");
             }
-        }            
-            
+        }
+
+        bool bundleAsIs = !bundle.Minify && !bundle.Concat;
+        
         // Process links
         for (int i = 0; i < bundle.Links.Count; i++)
         {
@@ -189,23 +191,32 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                     link.Url = url;
                 }
 
-
                 FileSystemItem entry = default;
 
                 // Process file by existing processors
                 if (currentContent == null)
                 {
                     // Check first site, then meta
-                    entry = new FileSystemItem(Site.FileSystem, path, false);
+                    var fs = Site.FileSystem;
+                    entry = new FileSystemItem(fs, path, false);
                     bool exists = entry.Exists();
                     if (!exists)
                     {
+                        fs = Site.MetaFileSystem;
                         entry = new FileSystemItem(Site.MetaFileSystem, path, false);
                         exists = entry.Exists();
                     }
-
+                    
                     if (exists)
                     {
+                        // Fetch the datetime of the content if we don't process it for concat/minify
+                        if (bundleAsIs)
+                        {
+                            entry.CreationTime = fs.GetCreationTime(path);
+                            entry.LastAccessTime = fs.GetLastAccessTime(path);
+                            entry.LastWriteTime = fs.GetLastWriteTime(path);
+                        }
+
                         currentContent = new FileContentObject(Site, entry);
                     }
                     else
