@@ -3,16 +3,17 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.IO.Hashing;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Lunet.Helpers;
 
 internal class HashUtil
 {
-    public static unsafe void Blake3HashString(string content, out Blake3.Hash hash)
+    public static unsafe UInt128 HashString(string content)
     {
-        fixed (void* pData = content)
-        {
-            hash = Blake3.Hasher.Hash(new ReadOnlySpan<byte>(pData, content.Length * 2));
-        }
+        return XxHash128.HashToUInt128(MemoryMarshal.Cast<char, byte>(content.AsSpan()));
     }
 }

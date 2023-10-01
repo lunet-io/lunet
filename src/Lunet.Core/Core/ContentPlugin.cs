@@ -12,7 +12,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
-using Blake3;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Scriban.Parsing;
@@ -205,7 +204,7 @@ public class ContentPlugin : SitePlugin
     }
 
     // Used only to create a shared instance for hash
-    private readonly ConcurrentDictionary<UPath, Blake3.Hash> _cacheHashInstance = new ConcurrentDictionary<UPath, Hash>();
+    private readonly ConcurrentDictionary<UPath, UInt128> _cacheHashInstance = new ConcurrentDictionary<UPath, UInt128>();
 
     public bool TryCopyContentToOutput(ContentObject fromFile, UPath outputPath)
     {
@@ -232,13 +231,13 @@ public class ContentPlugin : SitePlugin
             if (fromFile.Content != null)
             {
                 // Use a site wide cache for content hash
-                if (!Site.Config.SharedCache.TryGetValue(SharedCacheContentKey, out var values) || !(values is ConcurrentDictionary<UPath, Blake3.Hash> mapPathToHash))
+                if (!Site.Config.SharedCache.TryGetValue(SharedCacheContentKey, out var values) || !(values is ConcurrentDictionary<UPath, UInt128> mapPathToHash))
                 {
-                    mapPathToHash = (ConcurrentDictionary<UPath, Blake3.Hash>) Site.Config.SharedCache.GetOrAdd(SharedCacheContentKey, _cacheHashInstance);
+                    mapPathToHash = (ConcurrentDictionary<UPath, UInt128>) Site.Config.SharedCache.GetOrAdd(SharedCacheContentKey, _cacheHashInstance);
                 }
 
                 // Don't output the file if the hash hasn't changed
-                HashUtil.Blake3HashString(fromFile.Content, out var contentHash);
+                var contentHash = HashUtil.HashString(fromFile.Content);
                 if (!mapPathToHash.TryGetValue(outputPath, out var previousHash) || contentHash != previousHash)
                 {
                     if (Site.CanTrace())
