@@ -16,7 +16,7 @@ The logo used for the Lunet project is called Moon Waning Crescent by [Gregory S
 
 ## Author
 
-Alexandre MUTEL aka [xoofx](http://xoofx.com)
+Alexandre MUTEL aka [xoofx](https://xoofx.github.io)
 
 
 
