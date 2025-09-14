@@ -1,4 +1,4 @@
-# lunet [![Build Status](https://github.com/lunet-io/lunet/workflows/ci/badge.svg?branch=master)](https://github.com/lunet-io/lunet/actions) [![NuGet](https://img.shields.io/nuget/v/lunet.svg)](https://www.nuget.org/packages/lunet/)
+# lunet [![ci](https://github.com/lunet-io/lunet/actions/workflows/ci.yml/badge.svg)](https://github.com/lunet-io/lunet/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/nuget/v/lunet.svg)](https://www.nuget.org/packages/lunet/)
 
 <img align="right" width="96px" height="96px" src="doc/images/lunet.png">
 
