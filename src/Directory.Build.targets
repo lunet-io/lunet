@@ -1,12 +1,10 @@
 <Project>
     <ItemGroup>
         <!-- git versioning -->
-        <PackageReference Include="MinVer" Version="4.3.0">
+        <PackageReference Include="MinVer" Version="6.0.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
-        <!--Add support for sourcelink-->
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.*" PrivateAssets="All" />
     </ItemGroup>
 
 	<Target Name="PatchVersion" AfterTargets="MinVer">
