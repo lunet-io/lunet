@@ -241,6 +241,8 @@ public class MenuObject : DynamicObject
 
         var linkClassFromOptions = (isActive ? options?["link_class_active"] : null) ?? options?["link_class"];
         var linkClassFromMenu = (isActive ? this["link_class_active"] : null) ?? this["link_class"];
+        var linkArgsFromOptions = ((isActive ? options?["link_args_active"] : null) ?? options?["link_args"]) ?? string.Empty;
+        var linkArgsFromMenu = ((isActive ? this["link_args_active"] : null) ?? this["link_args"]) ?? string.Empty;
         var title = Title ?? Page?.Title;
         if (!isActive || !isBreadcrumb)
         {
@@ -254,7 +256,7 @@ public class MenuObject : DynamicObject
                     title ??= pageContent.Title;
                 }
             }
-            builder.Append($"<a href='{url}'{(Target != null ? $" target='{Target}'" : string.Empty)} class='{kind}-link {linkClassFromOptions} {linkClassFromMenu}'>");
+            builder.Append($"<a href='{url}'{(Target != null ? $" target='{Target}'" : string.Empty)} class='{kind}-link {linkClassFromOptions} {linkClassFromMenu}'{linkArgsFromOptions}{linkArgsFromMenu}>");
         }
         builder.Append($"{Pre}{title}{Post}");
 
