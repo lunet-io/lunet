@@ -2,22 +2,21 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.Threading;
 using Lunet.Core;
 using Lunet.Layouts;
 using Lunet.Markdown.Extensions;
 using Markdig;
+using Markdig.Extensions.Alerts;
+using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Scriban.Functions;
-using Scriban.Parsing;
 using Scriban.Runtime;
+using System;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Threading;
 
 // Register this plugin
 
@@ -82,6 +81,10 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
                 case "advanced":
                 default:
                     builder.UseAdvancedExtensions();
+
+                    // We replace the AlertExtension with our own LunetAlertExtension
+                    builder.Extensions.TryRemove<AlertExtension>();
+                    builder.Extensions.ReplaceOrAdd<LunetAlertExtension>(new LunetAlertExtension());
                     break;
             }
             
@@ -91,6 +94,7 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         }
         return pipeline;
     }
+
     private string ToHtmlFunction(string markdown)
     {
         var pipeline = GetPipeline();
@@ -190,5 +194,68 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         renderer.Writer.Flush();
         var str = renderer.Writer.ToString();
         return str;
+    }
+
+    /// <summary>
+    /// Replace the AlertExtension with our own LunetAlertExtension
+    /// </summary>
+    private class LunetAlertExtension : IMarkdownExtension
+    {
+        /// <inheritdoc />
+        public void Setup(MarkdownPipelineBuilder pipeline)
+        {
+            var inlineParser = pipeline.InlineParsers.Find<AlertInlineParser>();
+            if (inlineParser == null)
+            {
+                pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AlertInlineParser());
+            }
+        }
+
+        /// <inheritdoc />
+        public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
+        {
+            var blockRenderer = renderer.ObjectRenderers.FindExact<AlertBlockRenderer>();
+            if (blockRenderer == null)
+            {
+                renderer.ObjectRenderers.InsertBefore<QuoteBlockRenderer>(new LunetAlertBlockRenderer());
+            }
+        }
+    }
+    
+    /// <summary>
+    /// This is matching the <see cref="BuiltinsObject"/> ALERT block rendering, but this is not customizable.
+    /// </summary>
+    private class LunetAlertBlockRenderer : HtmlObjectRenderer<AlertBlock>
+    {
+        protected override void Write(HtmlRenderer renderer, AlertBlock obj)
+        {
+            var alertType = obj.Kind.ToString().ToLowerInvariant();
+
+            var attributes = obj.GetAttributes();
+            var cls = $"lunet-alert-{alertType}";
+            if (attributes.Classes is null || !attributes.Classes.Contains(cls))
+            {
+                attributes.AddClass(cls);
+            }
+
+            renderer.EnsureLine();
+            renderer.Write("<div");
+            renderer.WriteAttributes(obj);
+            renderer.WriteLine('>');
+
+            renderer.Write($"<div class='lunet-alert-{alertType}-heading'>").WriteLine();
+            renderer.Write($"<span class='lunet-alert-{alertType}-icon'></span>");
+            renderer.Write($"<span class='lunet-alert-{alertType}-heading-text'></span>").WriteLine();
+            renderer.Write("</div>");
+
+            renderer.Write($"<div class='lunet-alert-{alertType}-content'>").WriteLine();
+            var savedImplicitParagraph = renderer.ImplicitParagraph;
+            renderer.ImplicitParagraph = false;
+            renderer.WriteChildren(obj);
+            renderer.ImplicitParagraph = savedImplicitParagraph;
+
+            renderer.WriteLine("</div></div>");
+            renderer.EnsureLine();
+        }
     }
 }
