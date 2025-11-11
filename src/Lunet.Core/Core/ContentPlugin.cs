@@ -1,4 +1,4 @@
-﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
@@ -761,6 +761,16 @@ public class ContentPlugin : SitePlugin
         // Copy only if the file are marked as include
         if (copyOutput && !breakProcessing && !page.Discard)
         {
+            // Apply defer after processing
+            try
+            {
+                page.ApplyDefer();
+            }
+            catch (Exception ex)
+            {
+                Site.Error(ex, $"Error while applying defer for page {page.Path}.");
+            }
+
             Site.Content.TryCopyContentToOutput(page, page.GetDestinationPath());
         }
 

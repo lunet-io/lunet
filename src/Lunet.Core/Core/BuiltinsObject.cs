@@ -1,4 +1,4 @@
-﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
@@ -7,10 +7,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Threading.Tasks;
 using Lunet.Scripts;
 using Scriban;
 using Scriban.Functions;
+using Scriban.Parsing;
 using Scriban.Runtime;
+using Scriban.Syntax;
 using Zio;
 
 namespace Lunet.Core;
@@ -44,6 +47,9 @@ public class BuiltinsObject : DynamicObject<SiteObject>
         // Setup global Lunet object
         LunetObject = new LunetObject(Site);
         SetValue("lunet", LunetObject, true);
+
+        // Add defer function
+        SetValue("defer", new DeferScriptFunction());
     }
 
     public DynamicObject LogObject { get; }
@@ -85,8 +91,6 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
     private void LogTrace(string message) => Site.Trace(message);
     private void LogDebug(string message) => Site.Debug(message);
 
-
-
     public object Head
     {
         get => GetSafeValue<object>("Head");
@@ -103,5 +107,43 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
             timeZone = "-" + i.ToString(CultureInfo.InvariantCulture).PadLeft(2, '0');
         }
         return date.ToString("ddd, dd MMM yyyy HH:mm:ss " + timeZone.PadRight(5, '0'));
+    }
+    
+    private class DeferScriptFunction : IScriptCustomFunction
+    {
+        private static readonly ScriptVariableGlobal PageVariable = new ScriptVariableGlobal("page");
+
+        public ScriptParameterInfo GetParameterInfo(int index)
+        {
+            return index == 0 ? new ScriptParameterInfo(typeof(ScriptExpression), "callback") : throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
+        public int RequiredParameterCount => 1;
+
+        public int ParameterCount => 1;
+
+        public ScriptVarParamKind VarParamKind => ScriptVarParamKind.Direct;
+
+        public Type ReturnType => typeof(string);
+
+        public object Invoke(TemplateContext context, ScriptNode callerContext, ScriptArray arguments, ScriptBlockStatement blockStatement)
+        {
+            var guid = $"lunet-defer:{Guid.NewGuid()}";
+            var pageObj = context.GetValue(PageVariable);
+            if (pageObj is ContentObject page)
+            {
+                var callback = arguments[0] as ScriptExpression;
+                if (callback != null)
+                {
+                    page.AddDefer(guid, callback);
+                    return guid;
+                }
+            }
+
+            return null;
+        }
+
+        public ValueTask<object> InvokeAsync(TemplateContext context, ScriptNode callerContext, ScriptArray arguments, ScriptBlockStatement blockStatement)
+            => new(Invoke(context, callerContext, arguments, blockStatement));
     }
 }

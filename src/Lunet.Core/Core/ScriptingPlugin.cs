@@ -1,4 +1,4 @@
-﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
@@ -225,6 +225,54 @@ public class ScriptingPlugin : SitePlugin
         finally
         {
             currentGlobal.Remove(PageVariables.Site);
+            ReleaseTemplateContext(context);
+        }
+        return true;
+    }
+
+    public bool TryEvaluateExpression(ContentObject page, ScriptExpression expression, out string result)
+    {
+        if (page == null) throw new ArgumentNullException(nameof(page));
+        if (expression == null) throw new ArgumentNullException(nameof(expression));
+
+        var context = GetOrCreateTemplateContext();
+        context.PushGlobal(Site.Builtins);
+        context.Page = page;
+
+        context.PushGlobal(new ScriptObject());
+
+        var currentScriptObject = (ScriptObject)context.CurrentGlobal;
+        result = null;
+
+        try
+        {
+            context.EnableOutput = true;
+            context.TemplateLoader = _templateLoaderFromIncludes;
+
+            currentScriptObject.SetValue(PageVariables.Site, Site, true);
+            currentScriptObject.SetValue(PageVariables.Page, page, true);
+            
+            // Substitute function alias expression
+            if (expression is ScriptUnaryExpression unaryExpression && unaryExpression.Operator == ScriptUnaryOperator.FunctionAlias)
+            {
+                expression = unaryExpression.Right;
+            }
+            
+            // TODO: setup include paths for script
+            context.Evaluate(expression);
+
+            result = context.Output.ToString();
+        }
+        catch (ScriptRuntimeException exception)
+        {
+            LogException(exception);
+            return false;
+        }
+        finally
+        {
+            // We don't keep the site variable after this initialization
+            currentScriptObject.Remove(PageVariables.Site);
+            currentScriptObject.Remove(PageVariables.Page);
             ReleaseTemplateContext(context);
         }
         return true;

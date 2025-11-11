@@ -1,4 +1,4 @@
-﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
@@ -15,7 +15,10 @@ namespace Lunet.Summarizer;
 public static class SummarizerHelper
 {
     public const int DefaultSummaryWordCount = 70;
-        
+
+    // Add <!-- lunet:summarize --> to indicate the main content start for summary purposes
+    private const string LunetSummarizeComment = "lunet:summarize";
+
     public static void UpdateSummary(ContentObject page)
     {
         // Use specific settings to extract text from html
@@ -34,7 +37,9 @@ public static class SummarizerHelper
 
         };
 
-        var parser = new HtmlParser($"<body>{page.Content}</body>", (string)page.SourceFile.Path, settings);
+        var content = page.Content is not null && page.Content.Contains("<body", StringComparison.OrdinalIgnoreCase) ? page.Content : $"<body>{page.Content}</body>";
+
+        var parser = new HtmlParser(content, (string)page.SourceFile.Path, settings);
         var document = parser.Parse();
 
         //var errors = new List<UglifyError>(parser.Errors);
@@ -60,7 +65,17 @@ public static class SummarizerHelper
                 hasMore = true;
             }
 
-                
+            bool hasLunetSummarize = false;
+            try
+            {
+                var checkHasLunetContent = new HtmlVisitHasLunetContent();
+                checkHasLunetContent.Write(document);
+            }
+            catch (HtmlWriterEarlyExitException)
+            {
+                hasLunetSummarize = true;
+            }
+            
             // Write the content with early exit
             var writer = new StringWriter();
             try
@@ -68,6 +83,7 @@ public static class SummarizerHelper
                 var htmlWriter = new HtmlWriterToSummary(writer, keepFormatting ? HtmlToTextOptions.KeepFormatting : HtmlToTextOptions.KeepHtmlEscape)
                 {
                     HasMore = hasMore, 
+                    HasLunetSummarize = hasLunetSummarize,
                     MaxSummaryWordCount = maxSummaryCountWord
                 };
                 htmlWriter.Write(document);
@@ -77,7 +93,7 @@ public static class SummarizerHelper
                 // ignore
             }
 
-            var fullText = writer.ToString();
+            var fullText = writer.ToString().Trim();
             var summary = hasMore ? fullText : StringFunctions.Truncatewords(fullText, maxSummaryCountWord);
 
             page.Summary = summary;
@@ -103,6 +119,7 @@ public static class SummarizerHelper
     {
         private static readonly Regex CountWordsRegex = new Regex(@"\w+");
         private int _totalRunningNumberOfWords;
+        private bool _hasReachedLunetContent;
             
         public HtmlWriterToSummary(TextWriter writer, HtmlToTextOptions options) : base(writer, options)
         {
@@ -112,14 +129,23 @@ public static class SummarizerHelper
             
         public bool HasMore { get; set; }
 
+        public bool HasLunetSummarize { get; set; }
+
         protected override void Write(HtmlComment node)
         {
             var sliceText = node.Slice.ToString().Trim();
             if (sliceText == "more") throw new HtmlWriterEarlyExitException();
+            if (sliceText == LunetSummarizeComment)
+            {
+                _hasReachedLunetContent = true;
+            }
         }
 
         protected override void Write(string text)
         {
+            // If we are looking for lunet content and we haven't reached it yet, skip writing
+            if (HasLunetSummarize && !_hasReachedLunetContent) return;
+
             base.Write(text);
                 
             // If we are looking more <!-- more --> then don't limit by word count
@@ -130,7 +156,24 @@ public static class SummarizerHelper
             }
         }
     }
+    
+    private class HtmlVisitHasLunetContent : HtmlWriterBase
+    {
+        protected override void Write(HtmlComment node)
+        {
+            var sliceText = node.Slice.ToString().Trim();
+            if (sliceText == LunetSummarizeComment) throw new HtmlWriterEarlyExitException();
+        }
 
+        protected override void Write(string text)
+        {
+        }
+
+        protected override void Write(char c)
+        {
+        }
+    }
+    
     private class HtmlVisitHasMore : HtmlWriterBase
     {
         protected override void Write(HtmlComment node)

@@ -1,9 +1,26 @@
-﻿{{~ with site.cards.twitter; if enable ~}}
-    <meta name="twitter:card" content="{{ page.twitter_card ?? card ?? "summary" }}">
-    <meta name="twitter:site" content="@{{ page.twitter_user ?? user }}">
-    <meta name="twitter:title" content="{{ page.twitter_title ?? title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title) }}">
-    <meta name="twitter:description" content="{{ page.twitter_description ?? description ?? page.summary ?? site.description }}">
+{{
+~ if site.cards.twitter.enable || site.cards.og.enable;
+    page.defer_summary = defer @(do; page.summary | string.replace '"' "&quot;"; end);
+end ~
+}}
+{{~ with site.cards.twitter; if enable ~}}
+<meta name="twitter:card" content="{{ page.twitter_card ?? card ?? "summary" }}">
+<meta name="twitter:site" content="@{{ page.twitter_user ?? user }}">
+<meta name="twitter:title" content="{{ page.twitter_title ?? title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title) }}">
+<meta name="twitter:description" content="{{ page.twitter_description ?? page.defer_summary ?? description ?? site.description }}">
 {{~ if image || page.twitter_image ~}}
-    <meta name="twitter:image" content="{{ ref (page.twitter_image ?? image) }}">
-    <meta name="twitter:image:alt" content="{{ page.twitter_image_alt ?? image_alt ?? page.twitter_title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title)}}">    
+<meta name="twitter:image" content="{{ ref (page.twitter_image ?? image) }}">
+<meta name="twitter:image:alt" content="{{ page.twitter_image_alt ?? image_alt ?? page.twitter_title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title)}}">
+{{~ end; end; end ~}}
+{{~ with site.cards.og; if enable; $og_type = page.og_type ?? type ?? "article"; ~}}
+<meta property="og:title" content="{{ page.og_title ?? title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title) }}">
+<meta property="og:type" content="{{ $og_type }}">
+<meta property="og:url" content="{{ ref page.url }}">
+<meta property="og:description" content="{{ page.og_description ?? page.defer_summary ?? description ?? site.description }}">
+{{~ if locale || page.og_locale ~}}
+<meta property="og:locale" content="{{ page.og_locate ?? locale }}">
+{{~ end ~}}
+{{~ if image || page.og_image ~}}
+<meta property="og:image" content="{{ ref (page.og_image ?? image) }}">
+<meta property="og:image:alt" content="{{ page.og_image_alt ?? image_alt ?? page.og_title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title)}}">
 {{~ end; end; end ~}}

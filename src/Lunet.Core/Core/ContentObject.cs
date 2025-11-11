@@ -1,8 +1,9 @@
-﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -13,6 +14,7 @@ using Scriban.Functions;
 using Scriban.Helpers;
 using Scriban.Parsing;
 using Scriban.Runtime;
+using Scriban.Syntax;
 using Zio;
 
 namespace Lunet.Core;
@@ -23,6 +25,7 @@ namespace Lunet.Core;
 public abstract class ContentObject : TemplateObject
 {
     private ContentType _contentType;
+    private Dictionary<string, ScriptExpression> _mapTextToReplaceToDynamicExpression;
 
     protected ContentObject(SiteObject site, ContentObjectType objectType, in FileSystemItem sourceFileInfo = default, ScriptInstance scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
     {
@@ -254,6 +257,43 @@ public abstract class ContentObject : TemplateObject
         }
 
         return urlAsPath;
+    }
+
+    /// <summary>
+    /// Add a deferred expression to be evaluated later and replace the specified text in the content.
+    /// </summary>
+    /// <param name="textToReplace">The text to replace in the content.</param>
+    /// <param name="expression">The expression to evaluate.</param>
+    public void AddDefer(string textToReplace, ScriptExpression expression)
+    {
+        if (_mapTextToReplaceToDynamicExpression is null)
+        {
+            _mapTextToReplaceToDynamicExpression = new Dictionary<string, ScriptExpression>();
+        }
+        _mapTextToReplaceToDynamicExpression[textToReplace] = expression;
+    }
+
+    /// <summary>
+    /// Applies deferred replacements to the content by evaluating dynamic expressions and updating the content
+    /// accordingly.
+    /// </summary>
+    /// <remarks>This method evaluates expressions mapped to specific text placeholders and replaces the
+    /// placeholders in the content  with the evaluated results. If the content or the mapping dictionary is null, or if
+    /// the mapping dictionary is empty,  the method performs no operation. After processing, the mapping dictionary is
+    /// cleared.</remarks>
+    public void ApplyDefer()
+    {
+        if (Content is null || _mapTextToReplaceToDynamicExpression is null || _mapTextToReplaceToDynamicExpression.Count == 0) return;
+
+        foreach (var pair in _mapTextToReplaceToDynamicExpression)
+        {
+            if (Site.Scripts.TryEvaluateExpression(this, pair.Value, out var result))
+            {
+                Content = Content.Replace(pair.Key, result, StringComparison.Ordinal);
+            }
+        }
+
+        _mapTextToReplaceToDynamicExpression.Clear();
     }
 
     internal void InitializeAfterRun()
