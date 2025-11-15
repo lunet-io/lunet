@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="NuGet.Versioning" Version="6.14.0" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="NuGet.Versioning" />
   </ItemGroup>
 
   <ItemGroup>

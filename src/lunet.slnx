@@ -1,0 +1,45 @@
+<Solution>
+  <Folder Name="/build/">
+    <File Path="../.github/workflows/ci.yml" />
+    <File Path="../.gitignore" />
+    <File Path="../changelog.md" />
+    <File Path="../readme.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="dotnet-releaser.toml" />
+    <File Path="global.json" />
+  </Folder>
+  <Project Path="Lunet.Api.DotNet.Extractor.CodeGen/Lunet.Api.DotNet.Extractor.CodeGen.csproj" />
+  <Project Path="Lunet.Api.DotNet.Extractor/Lunet.Api.DotNet.Extractor.csproj" />
+  <Project Path="Lunet.Api.DotNet/Lunet.Api.DotNet.csproj">
+    <BuildDependency Project="Lunet.Api.DotNet.Extractor/Lunet.Api.DotNet.Extractor.csproj" />
+  </Project>
+  <Project Path="Lunet.Api/Lunet.Api.csproj" />
+  <Project Path="Lunet.Application/Lunet.Application.csproj" />
+  <Project Path="Lunet.Attributes/Lunet.Attributes.csproj" />
+  <Project Path="Lunet.Bundles/Lunet.Bundles.csproj" />
+  <Project Path="Lunet.Cards/Lunet.Cards.csproj" />
+  <Project Path="Lunet.Core/Lunet.Core.csproj" />
+  <Project Path="Lunet.Datas/Lunet.Datas.csproj" />
+  <Project Path="Lunet.Extends/Lunet.Extends.csproj" />
+  <Project Path="Lunet.Json/Lunet.Json.csproj" />
+  <Project Path="Lunet.Layouts/Lunet.Layouts.csproj" />
+  <Project Path="Lunet.Markdig/Lunet.Markdown.csproj" />
+  <Project Path="Lunet.Menus/Lunet.Menus.csproj" />
+  <Project Path="Lunet.NUglify/Lunet.Minifiers.csproj" />
+  <Project Path="Lunet.Resources/Lunet.Resources.csproj" />
+  <Project Path="Lunet.Rss/Lunet.Rss.csproj" />
+  <Project Path="Lunet.Scss/Lunet.Scss.csproj" />
+  <Project Path="Lunet.Search/Lunet.Search.csproj" />
+  <Project Path="Lunet.Server/Lunet.Server.csproj" />
+  <Project Path="Lunet.Sitemaps/Lunet.Sitemaps.csproj" />
+  <Project Path="Lunet.Summarizer/Lunet.Summarizer.csproj" />
+  <Project Path="Lunet.Taxonomies/Lunet.Taxonomies.csproj" />
+  <Project Path="Lunet.Tests/Lunet.Tests.csproj" />
+  <Project Path="Lunet.Toml/Lunet.Toml.csproj" />
+  <Project Path="Lunet.Tracking/Lunet.Tracking.csproj" />
+  <Project Path="Lunet.Watcher/Lunet.Watcher.csproj" />
+  <Project Path="Lunet.Yaml/Lunet.Yaml.csproj" />
+  <Project Path="Lunet/Lunet.csproj" />
+</Solution>

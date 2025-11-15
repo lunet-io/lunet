@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LunrCore" Version="2.3.10" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.10" />
-    <PackageReference Include="NUglify" Version="1.21.17" />
+    <PackageReference Include="LunrCore" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="NUglify" />
   </ItemGroup>
 
   <ItemGroup>

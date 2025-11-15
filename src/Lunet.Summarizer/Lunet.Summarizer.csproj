@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>    
     <TargetFramework>net9.0</TargetFramework>
@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUglify" Version="1.21.17" />
+    <PackageReference Include="NUglify" />
   </ItemGroup>
 
 </Project>

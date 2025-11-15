@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Autofac" Version="8.4.0" />
+    <PackageVersion Include="DotNet.Glob" Version="3.1.3" />
+    <PackageVersion Include="Lunet.Extensions.Logging.SpectreConsole" Version="1.2.0" />
+    <PackageVersion Include="LunrCore" Version="2.3.10" />
+    <PackageVersion Include="Markdig" Version="0.43.0" />
+    <PackageVersion Include="McMaster.Extensions.CommandLineUtils" Version="4.1.1" />
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.2.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic" Version="4.14.0" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="MinVer" Version="6.0.0" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageVersion Include="NuGet.Versioning" Version="6.14.0" />
+    <PackageVersion Include="NUglify" Version="1.21.17" />
+    <PackageVersion Include="NUnit" Version="4.4.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="5.2.0" />
+    <PackageVersion Include="Scriban" Version="6.5.0" />
+    <PackageVersion Include="SharpScss" Version="3.0.0" />
+    <PackageVersion Include="SharpYaml" Version="2.1.4" />
+    <PackageVersion Include="SuperluminalPerf" Version="1.3.0" />
+    <PackageVersion Include="System.Collections.Immutable" Version="1.5.0" />
+    <PackageVersion Include="System.IO.Hashing" Version="9.0.10" />
+    <PackageVersion Include="Tomlyn" Version="0.19.0" />
+    <PackageVersion Include="Zio" Version="0.21.2" />
+  </ItemGroup>
+</Project>

@@ -1,7 +1,7 @@
 <Project>
     <ItemGroup>
         <!-- git versioning -->
-        <PackageReference Include="MinVer" Version="6.0.0">
+        <PackageReference Include="MinVer">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>

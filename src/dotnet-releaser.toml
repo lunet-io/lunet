@@ -2,7 +2,7 @@
 # Disable default packs - It will only publish NuGet and the Changelog
 profile = "custom"
 [msbuild]
-project = "lunet.sln"
+project = "lunet.slnx"
 [github]
 user = "lunet-io"
 repo = "lunet"
