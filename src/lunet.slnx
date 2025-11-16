@@ -30,7 +30,7 @@
   <Project Path="Lunet.NUglify/Lunet.Minifiers.csproj" />
   <Project Path="Lunet.Resources/Lunet.Resources.csproj" />
   <Project Path="Lunet.Rss/Lunet.Rss.csproj" />
-  <Project Path="Lunet.Scss/Lunet.Scss.csproj" />
+  <Project Path="Lunet.Sass/Lunet.Sass.csproj" />
   <Project Path="Lunet.Search/Lunet.Search.csproj" />
   <Project Path="Lunet.Server/Lunet.Server.csproj" />
   <Project Path="Lunet.Sitemaps/Lunet.Sitemaps.csproj" />

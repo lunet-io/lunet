@@ -24,7 +24,7 @@
     <ProjectReference Include="..\Lunet.Markdig\Lunet.Markdown.csproj" />
     <ProjectReference Include="..\Lunet.NUglify\Lunet.Minifiers.csproj" />
     <ProjectReference Include="..\Lunet.Resources\Lunet.Resources.csproj" />
-    <ProjectReference Include="..\Lunet.Scss\Lunet.Scss.csproj" />
+    <ProjectReference Include="..\Lunet.Sass\Lunet.Sass.csproj" />
     <ProjectReference Include="..\Lunet.Sitemaps\Lunet.Sitemaps.csproj" />
     <ProjectReference Include="..\Lunet.Summarizer\Lunet.Summarizer.csproj" />
     <ProjectReference Include="..\Lunet.Taxonomies\Lunet.Taxonomies.csproj" />

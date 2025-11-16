@@ -5,6 +5,7 @@
 using System;
 using Lunet.Bundles;
 using Lunet.Core;
+using Lunet.Sass;
 using NUglify;
 
 // Register this plugin
@@ -33,7 +34,7 @@ public class MinifierPlugin : SitePlugin, IContentMinifier
         }
         else if (type == "css")
         {
-            result = Uglify.Css(content, contentPath);
+            return DartSassTransform.Minify(content);
         }
         else
         {

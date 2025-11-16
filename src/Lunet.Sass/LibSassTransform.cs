@@ -4,65 +4,23 @@
 
 using System.Collections.Generic;
 using Lunet.Core;
-using Lunet.Layouts;
 using SharpScss;
 using Zio;
 
-namespace Lunet.Scss;
+namespace Lunet.Sass;
 
-public class ScssModule : SiteModule<ScssPlugin>
+internal class LibSassTransform
 {
-}
-
-public class ScssPlugin : SitePlugin, ILayoutConverter
-{
-    public static readonly ContentType ScssType = new ContentType("scss");
-
-    public ScssPlugin(SiteObject site, LayoutPlugin layoutPlugin) : base(site)
-    {
-        Includes = new PathCollection();
-        SetValue("includes", Includes, true);
-        site.SetValue("scss", this, true);
-        layoutPlugin.Processor.RegisterConverter(ScssType, this);
-    }
-
-    public override string Name => "scss";
-
-    public PathCollection Includes { get; }
-
-    public bool ShouldConvertIfNoLayout => true;
-
-    public void Convert(ContentObject file)
+    public static void Convert(ContentObject file, List<DirectoryEntry> includePaths, SiteObject site)
     {
         var contentType = file.ContentType;
 
-        // This plugin is only working on scss files
-        if (contentType != ScssType)
+        var content = file.GetOrLoadContent();
+
+        var options = new ScssOptions
         {
-            return;
-        }
-
-        file.Content ??= file.SourceFile.ReadAllText();
-
-        var content = file.Content;
-
-        var options = new ScssOptions();
-        options.InputFile = (string)file.Path;
-
-        var includePaths = new List<DirectoryEntry>();
-
-        foreach (var pathObj in Includes)
-        {
-            var path = pathObj as string;
-            if (path != null && UPath.TryParse(path, out var validPath) && Site.MetaFileSystem.DirectoryExists(validPath))
-            {
-                includePaths.Add(new DirectoryEntry(Site.MetaFileSystem, validPath));
-            }
-            else
-            {
-                Site.Error($"Invalid folder path `{pathObj}` found in site.scss.includes.");
-            }
-        }
+            InputFile = (string)file.Path
+        };
 
         var tempIncludePaths = new List<DirectoryEntry>();
 
@@ -84,18 +42,18 @@ public class ScssPlugin : SitePlugin, ILayoutConverter
             if (!directoryName.IsNull && directoryName.IsAbsolute)
             {
                 DirectoryEntry localDirEntry = null;
-                if (Site.FileSystem.DirectoryExists(directoryName))
+                if (site.FileSystem.DirectoryExists(directoryName))
                 {
-                    localDirEntry = new DirectoryEntry(Site.FileSystem, directoryName);
+                    localDirEntry = new DirectoryEntry(site.FileSystem, directoryName);
                     if (!tempIncludePaths.Contains(localDirEntry))
                     {
                         tempIncludePaths.Add(localDirEntry);
                     }
                 }
 
-                if (Site.MetaFileSystem.DirectoryExists(directoryName))
+                if (site.MetaFileSystem.DirectoryExists(directoryName))
                 {
-                    localDirEntry = new DirectoryEntry(Site.MetaFileSystem, directoryName);
+                    localDirEntry = new DirectoryEntry(site.MetaFileSystem, directoryName);
                     if (!tempIncludePaths.Contains(localDirEntry))
                     {
                         tempIncludePaths.Add(localDirEntry);

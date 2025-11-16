@@ -20,8 +20,8 @@ using Lunet.Menus;
 using Lunet.Minifiers;
 using Lunet.Resources;
 using Lunet.Rss;
+using Lunet.Sass;
 using Lunet.Taxonomies;
-using Lunet.Scss;
 using Lunet.Search;
 using Lunet.Server;
 using Lunet.Sitemaps;
@@ -54,7 +54,7 @@ public class LunetApp
             new WatcherModule(),
             new MinifierModule(),
             new RssModule(),
-            new ScssModule(),
+            new SassModule(),
             new TaxonomyModule(),
             new CardsModule(),
             new SearchModule(),
