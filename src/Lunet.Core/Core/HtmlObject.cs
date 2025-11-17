@@ -39,7 +39,6 @@ public class HtmlHead : HtmlElement
         SetValue("includes", Includes, true);
 
         Metas.Add(@"<meta charset=""utf-8"">");
-        Metas.Add(@"<meta http-equiv=""X-UA-Compatible"" content=""IE=edge"">");
         Metas.Add(@"<meta name=""viewport"" content=""width=device-width, initial-scale=1"">");
         Metas.Add(@"<meta name=""generator"" content=""lunet {{lunet.version}}"">");
     }
