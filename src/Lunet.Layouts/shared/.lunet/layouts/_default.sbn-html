@@ -3,7 +3,7 @@
   <head>
     {{~ Head ~}}
   </head>
-  <body>
+  <body {{~ if site.html.body.attributes }} {{ site.html.body.attributes; end }}>
 {{~ content ~}}
   </body>
 </html>

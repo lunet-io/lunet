@@ -2,9 +2,6 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using System;
-using Scriban;
-using Scriban.Parsing;
 using Scriban.Runtime;
 
 namespace Lunet.Core;
@@ -22,10 +19,14 @@ public class HtmlPage : HtmlElement
     {
         parent.SetValue(SiteVariables.Html, this, true);
         Head = new HtmlHead(this);
+        Body = new HtmlBody(this);
         SetValue("head", Head, true);
+        SetValue("body", Body, true);
     }
 
     public HtmlHead Head { get; }
+
+    public HtmlBody Body { get; }
 }
 
 public class HtmlHead : HtmlElement
@@ -53,3 +54,5 @@ public class HtmlHead : HtmlElement
 
     public ScriptCollection Includes { get; }
 }
+
+public class HtmlBody(ScriptObject parent) : HtmlElement(parent);
