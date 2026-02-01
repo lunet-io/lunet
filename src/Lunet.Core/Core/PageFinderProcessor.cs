@@ -262,33 +262,20 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             throw new ArgumentException($"Malformed url `{url}`", nameof(url));
         }
 
+        UPath absPath = url;
         // If the URL is not absolute, we make it absolute from the current page
-        if (!url.StartsWith("/"))
+        if (absPath.IsRelative)
         {
             if (page?.Url != null)
             {
-                var directory = page.GetDestinationDirectory();
-                url = (string)(directory / urlPath);
+                var directory = page.Path.GetDirectory();
+                absPath = (string)(directory / urlPath);
             }
             else
             {
                 throw new ArgumentException($"Invalid url `{url}`. Expecting an absolute url starting with /", nameof(url));
             }
         }
-
-        if (!UPath.TryParse(url, out _))
-        {
-            throw new ArgumentException($"Malformed url `{url}`", nameof(url));
-        }
-
-        var urlToValidate = $"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
-        if (!Uri.TryCreate(urlToValidate, UriKind.Absolute, out var uri))
-        {
-            throw new ArgumentException($"Invalid url `{urlToValidate}`.", nameof(url));
-        }
-
-        UPath.TryParse(uri.AbsolutePath, out var absPath);
-
         // Resolve the page
         if (_mapPathToContent.TryGetValue(absPath, out var pageLink))
         {
@@ -302,6 +289,22 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             absPath = newUrl;
         }
 
+        string urlToValidate;
+        if (!string.IsNullOrEmpty(basePath))
+        {
+            absPath = UPath.Combine(basePath, "." + absPath);
+            urlToValidate = $"{baseUrl}/{basePath}/{url}";
+        }
+        else
+        {
+            urlToValidate = $"{baseUrl}/{url}";
+        }
+
+        if (!Uri.TryCreate(urlToValidate, UriKind.Absolute, out var uri))
+        {
+            throw new ArgumentException($"Invalid url `{urlToValidate}`.", nameof(url));
+        }
+        
         return rel
             ? $"{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}"
             : $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? string.Empty : $":{uri.Port.ToString(CultureInfo.InvariantCulture)}")}{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}";
