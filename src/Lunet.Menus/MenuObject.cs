@@ -77,6 +77,12 @@ public class MenuObject : DynamicObject
         set => SetValue("folder", value);
     }
 
+    public bool Separator
+    {
+        get => GetSafeValue<bool>("separator");
+        set => SetValue("separator", value);
+    }
+
     public MenuCollection Children { get; }
 
     public MenuObject Parent { get; set; }
@@ -244,7 +250,12 @@ public class MenuObject : DynamicObject
         var linkArgsFromOptions = ((isActive ? options?["link_args_active"] : null) ?? options?["link_args"]) ?? string.Empty;
         var linkArgsFromMenu = ((isActive ? this["link_args_active"] : null) ?? this["link_args"]) ?? string.Empty;
         var title = Title ?? Page?.Title;
-        if (!isActive || !isBreadcrumb)
+        var isSeparator = Separator;
+        if (isSeparator)
+        {
+            builder.Append($"<span class='{kind}-separator {linkClassFromOptions} {linkClassFromMenu}'{linkArgsFromOptions}{linkArgsFromMenu}>");
+        }
+        else if (!isActive || !isBreadcrumb)
         {
             var url = (Url ?? Page?.Url ?? "#");
             if (url.StartsWith("xref:"))
@@ -256,11 +267,18 @@ public class MenuObject : DynamicObject
                     title ??= pageContent.Title;
                 }
             }
+
             builder.Append($"<a href='{url}'{(Target != null ? $" target='{Target}'" : string.Empty)} class='{kind}-link {linkClassFromOptions} {linkClassFromMenu}'{linkArgsFromOptions}{linkArgsFromMenu}>");
         }
+
+        // Append the title
         builder.Append($"{Pre}{title}{Post}");
 
-        if (!isActive || !isBreadcrumb)
+        if (isSeparator)
+        {
+            builder.Append($"</span>");
+        }
+        else if (!isActive || !isBreadcrumb)
         {
             builder.Append($"</a>");
         }
