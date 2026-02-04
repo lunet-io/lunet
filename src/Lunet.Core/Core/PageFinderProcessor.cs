@@ -289,20 +289,31 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             absPath = newUrl;
         }
 
-        string urlToValidate;
+        string finalUrl;
         if (!string.IsNullOrEmpty(basePath))
         {
+            // Normalize base path
+            if (!basePath.StartsWith('/'))
+            {
+                basePath = "/" + basePath;
+            }
+
+            if (basePath.EndsWith('/'))
+            {
+                basePath = basePath.TrimEnd('/');
+            }
+
             absPath = UPath.Combine(basePath, "." + absPath);
-            urlToValidate = $"{baseUrl}/{basePath}/{url}";
+            finalUrl = $"{baseUrl}{basePath}{url}";
         }
         else
         {
-            urlToValidate = $"{baseUrl}/{url}";
+            finalUrl = $"{baseUrl}{url}";
         }
 
-        if (!Uri.TryCreate(urlToValidate, UriKind.Absolute, out var uri))
+        if (!Uri.TryCreate(finalUrl, UriKind.Absolute, out var uri))
         {
-            throw new ArgumentException($"Invalid url `{urlToValidate}`.", nameof(url));
+            throw new ArgumentException($"Invalid url `{finalUrl}`.", nameof(url));
         }
         
         return rel
