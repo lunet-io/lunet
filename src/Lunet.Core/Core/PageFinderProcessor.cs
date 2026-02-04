@@ -289,7 +289,6 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             absPath = newUrl;
         }
 
-        string finalUrl;
         if (!string.IsNullOrEmpty(basePath))
         {
             // Normalize base path
@@ -304,12 +303,9 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             }
 
             absPath = UPath.Combine(basePath, "." + absPath);
-            finalUrl = $"{baseUrl}{basePath}{url}";
         }
-        else
-        {
-            finalUrl = $"{baseUrl}{url}";
-        }
+
+        var finalUrl = $"{baseUrl}{absPath}";
 
         if (!Uri.TryCreate(finalUrl, UriKind.Absolute, out var uri))
         {
