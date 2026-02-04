@@ -11,7 +11,7 @@
 {{~ with site.cards.og; if enable; $og_type = page.og_type ?? type ?? "article"; ~}}
 <meta property="og:title" content="{{ page.og_title ?? title ?? page.full_title ?? site.html.head.title ?? (page.title + " - " + site.title) }}">
 <meta property="og:type" content="{{ $og_type }}">
-<meta property="og:url" content="{{ ref page.url }}">
+<meta property="og:url" content="{{ ref page.url_without_base_path }}">
 <meta property="og:description" content="{{ page.og_description ?? page.defer_summary ?? description ?? site.description }}">
 {{~ if locale || page.og_locale ~}}
 <meta property="og:locale" content="{{ page.og_locate ?? locale }}">

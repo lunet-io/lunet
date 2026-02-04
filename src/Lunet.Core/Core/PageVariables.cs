@@ -14,6 +14,8 @@ public class PageVariables : FileVariables
 
     public const string Url = "url";
 
+    public const string UrlWithoutBasePath = "url_without_basepath";
+
     public const string Uid = "uid";
 
     public const string Date = "date";

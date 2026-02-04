@@ -87,12 +87,20 @@ public abstract class ContentObject : TemplateObject
         }
     }
 
+    // Url with Site.BasePath
     public string Url
     {
         get => GetSafeValue<string>(PageVariables.Url);
         set => this[PageVariables.Url] = value;
     }
-        
+
+    // Url without BasePath
+    public string UrlWithoutBasePath
+    {
+        get => GetSafeValue<string>(PageVariables.UrlWithoutBasePath);
+        set => this[PageVariables.UrlWithoutBasePath] = value;
+    }
+
     public string Uid
     {
         get => GetSafeValue<string>(PageVariables.Uid);
@@ -180,44 +188,61 @@ public abstract class ContentObject : TemplateObject
         {
             url = (string)Path;
         }
-
+        
         // Don't try to patch an URL that is already specifying a "folder" url
-        if (url.EndsWith("/"))
+        if (!url.EndsWith("/"))
         {
-            return;
+            // Special case handling, if the content is going to be Html,
+            // we process its URL to map to a folder if necessary (if e.g this is index.html or readme.md)
+            var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
+            // If the URL ends with HTML, we should leave it as it is.
+            if (isHtml && !url.EndsWith(".html"))
+            {
+                var urlAsPath = (UPath)url;
+                var name = urlAsPath.GetNameWithoutExtension();
+                var isIndex = name == "index" || (Site.ReadmeAsIndex && name.ToLowerInvariant() == "readme");
+                if (isIndex)
+                {
+                    url = urlAsPath.GetDirectory().FullName;
+                    if (!url.EndsWith("/"))
+                    {
+                        url += "/";
+                    }
+                }
+                else if (HasFrontMatter && !Site.UrlAsFile)
+                {
+                    var extension = System.IO.Path.GetExtension(url);
+                    if (!string.IsNullOrEmpty(extension))
+                    {
+                        url = url.Substring(0, url.Length - extension.Length);
+                    }
+
+                    url = PathUtil.NormalizeUrl(url, true);
+                }
+            }
         }
             
-        // Special case handling, if the content is going to be Html,
-        // we process its URL to map to a folder if necessary (if e.g this is index.html or readme.md)
-        var isHtml = Site.ContentTypes.IsHtmlContentType(ContentType);
-        // If the URL ends with HTML, we should leave it as it is.
-        if (isHtml && !url.EndsWith(".html"))
+        var basePath = Site.BasePath;
+        string urlWithoutBasePath = url;
+        if (!string.IsNullOrEmpty(basePath))
         {
-            var urlAsPath = (UPath)url;
-            var name = urlAsPath.GetNameWithoutExtension();
-            var isIndex = name == "index" || (Site.ReadmeAsIndex && name.ToLowerInvariant() == "readme");
-            if (isIndex)
+            // Normalize base path
+            if (!basePath.StartsWith('/'))
             {
-                url = urlAsPath.GetDirectory().FullName;
-                if (!url.EndsWith("/"))
-                {
-                    url += "/";
-                }
+                basePath = "/" + basePath;
             }
-            else if (HasFrontMatter && !Site.UrlAsFile)
-            {
-                var extension = System.IO.Path.GetExtension(url);
-                if (!string.IsNullOrEmpty(extension))
-                {
-                    url = url.Substring(0, url.Length - extension.Length);
-                }
 
-                url = PathUtil.NormalizeUrl(url, true);
+            if (basePath.EndsWith('/'))
+            {
+                basePath = basePath.TrimEnd('/');
             }
+
+            var urlWithBasePath = UPath.Combine(basePath, "." + url);
+            url = url.EndsWith('/') ? $"{urlWithBasePath.FullName}/" : url;
         }
 
-        // Replace the final URL
         Url = url;
+        UrlWithoutBasePath = urlWithoutBasePath;
     }
 
     public void ChangeContentType(ContentType newContentType)
@@ -242,7 +267,7 @@ public abstract class ContentObject : TemplateObject
 
     public UPath GetDestinationPath()
     {
-        var urlAsPath = Url;
+        var urlAsPath = UrlWithoutBasePath;
 
         Uri uri;
         if (!Uri.TryCreate(urlAsPath, UriKind.Relative, out uri))
@@ -438,6 +463,7 @@ public class FileContentObject : ContentObject
         // Same for the URL
         // Note that SetupUrl() must be called for potential HTML content or content with front matter
         Url ??= (string)Path;
+        UrlWithoutBasePath ??= Url;
 
         // Replicate readonly values to the Scripting object
         InitializeReadOnlyVariables();
@@ -462,6 +488,7 @@ public class DynamicContentObject : ContentObject
     public DynamicContentObject(SiteObject site, string url, string section = null, UPath? path = null) : base(site, ContentObjectType.Dynamic, path: path)
     {
         Url = url;
+        UrlWithoutBasePath = url;
         Section = section;
 
         // Replicate readonly values to the Scripting object

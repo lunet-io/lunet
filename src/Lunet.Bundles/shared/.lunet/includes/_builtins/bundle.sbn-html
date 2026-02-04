@@ -1,11 +1,11 @@
 ﻿{{~ # Generates bundle links ~}}
 {{~ for $link in (bundle page.bundle).links ~}}
     {{~ if $link.type == "css" ~}}
-    <link rel="stylesheet" href="{{$link.url}}">
+    <link rel="stylesheet" href="{{$"{site.basepath}{$link.url}"}}">
     {{~ end ~}}
 {{~ end ~}}
 {{~ for $link in (bundle page.bundle).links ~}}
     {{~ if $link.type == "js" ~}}
-    <script src="{{$link.url}}" {{if $link.mode != ""; $link.mode; end }}></script>
+    <script src="{{$"{site.basepath}{$link.url}"}}" {{if $link.mode != ""; $link.mode; end }}></script>
     {{~ end ~}}
 {{~ end ~}}
