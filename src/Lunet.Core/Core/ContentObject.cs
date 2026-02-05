@@ -253,9 +253,11 @@ public abstract class ContentObject : TemplateObject
         {
             newExtension = Site.GetSafeDefaultPageExtension();
         }
+
         if (!Url.EndsWith("/"))
         {
             Url = System.IO.Path.ChangeExtension(Url, newExtension);
+            UrlWithoutBasePath = System.IO.Path.ChangeExtension(UrlWithoutBasePath, newExtension);
         }
     }
 
@@ -460,10 +462,6 @@ public class FileContentObject : ContentObject
 
         // Layout could have been already setup by pre-content, so we keep it in that case
         Layout ??= Section;
-        // Same for the URL
-        // Note that SetupUrl() must be called for potential HTML content or content with front matter
-        Url ??= (string)Path;
-        UrlWithoutBasePath ??= Url;
 
         // Replicate readonly values to the Scripting object
         InitializeReadOnlyVariables();
@@ -487,7 +485,7 @@ public class DynamicContentObject : ContentObject
 {
     public DynamicContentObject(SiteObject site, string url, string section = null, UPath? path = null) : base(site, ContentObjectType.Dynamic, path: path)
     {
-        Url = url;
+        Url = new UPath($"{site.BasePath}/{url}").FullName;
         UrlWithoutBasePath = url;
         Section = section;
 

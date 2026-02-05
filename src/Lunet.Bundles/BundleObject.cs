@@ -95,7 +95,13 @@ public class BundleObject : DynamicObject<BundlePlugin>
             throw new ArgumentException($"Invalid url [{path}]. Must end with a `/` if the path contains a wildcard.", nameof(url));
         }
 
-        var link = new BundleLink(this, type, path, url, mode);
+        string urlBasePath = null;
+        if (url is not null)
+        {
+            urlBasePath = url;
+            url = new UPath($"{this.Parent.Site.BasePath}/{url}").FullName;
+        }
+        var link = new BundleLink(this, type, path, url, urlBasePath, mode);
         Links.Insert(index, link);
     }
 

@@ -85,12 +85,16 @@ public class MenuObject : DynamicObject
 
     public MenuCollection Children { get; }
 
-    public MenuObject Parent { get; set; }
-
-    public string ParentAsString
+    public MenuObject Parent
     {
-        get => GetSafeValue<string>("parent");
+        get => GetSafeValue<MenuObject>("parent");
         set => SetValue("parent", value, true);
+    }
+
+    public override string ToString(string format, IFormatProvider formatProvider)
+    {
+        // As it is a recursive structure, we protect against recursive ToString() calls
+        return $"Menu: {DebuggerDisplay}";
     }
 
     public ContentObject Page
@@ -148,7 +152,7 @@ public class MenuObject : DynamicObject
         }
 
         var kind = options["kind"]?.ToString() ?? "menu";
-        var collapsible = options["collapsible"] is bool v && v;
+        var showCollapse = options["collapsible"] is bool v && v;
             
         bool hasChildren = Children.Count > 0 && this != parent; // Don't render recursively
         string menuId = $"{kind}-id-{root.Name}-{index}";
@@ -168,16 +172,23 @@ public class MenuObject : DynamicObject
 
         if (level > 0)
         {
-            RenderItem(page, builder, level, kind, options, level >= maxDepth, hasChildren, menuId, isCurrentPageInMenuPath, collapsible);
+            RenderItem(page, builder, level, kind, options, level >= maxDepth, hasChildren, menuId, isCurrentPageInMenuPath, showCollapse);
         }
 
         if (hasChildren && level < maxDepth) 
         {
             builder.Append(' ', level * IndentSize);
             var listKind = (kind == "nav" ? "navbar-nav" : kind);
-            builder.AppendLine($"<ol id='{menuId}' class='{listKind} {kind}-level{level} {(collapsible? $"collapse {(isCurrentPageInMenuPath ? " show" : string.Empty)}": string.Empty)} {options["list_class"]}'>");
+            var collapse = level > 0 && showCollapse ? "collapse" : "show";
+            builder.AppendLine($"<ol id='{menuId}' class='{listKind} {kind}-level{level} {collapse} {options["list_class"]}'>");
             foreach (var item in this.Children)
             {
+                if (level > 0 && item.Path == this.Path)
+                {
+                    // Avoid showing the same menu item as a child of itself, e.g. when put as a first child
+                    continue;
+                }
+
                 index++;
                 item.Render(page, builder, level + 1, options, this, root, ref index);
             }
@@ -258,6 +269,13 @@ public class MenuObject : DynamicObject
         else if (!isActive || !isBreadcrumb)
         {
             var url = (Url ?? Page?.Url ?? "#");
+
+            // If this is the top menu file, we link to the base path
+            if (url == $"/{MenuProcessor.MenuFileName}")
+            {
+                url = $"{page.Site.BasePath}/";
+            }
+
             if (url.StartsWith("xref:"))
             {
                 var uid = url.Substring("xref:".Length);
@@ -285,7 +303,7 @@ public class MenuObject : DynamicObject
 
         if (hasChildren && showCollapse)
         {
-            builder.Append(@$"<a href='#{subMenuId}' role='button'  data-toggle='collapse' aria-expanded='{(isInCurrentPath ? "true" : "false")}' aria-controls='{subMenuId}' class='{kind}-link-show{(isInCurrentPath ? "" : " collapsed")}'></a>");
+            builder.Append(@$"<a href='#{subMenuId}' role='button' data-bs-toggle='collapse' aria-expanded='{(isInCurrentPath ? "true" : "false")}' aria-controls='{subMenuId}' class='{kind}-link-show{(isInCurrentPath ? "" : " collapsed")}'></a>");
         }
 
         if (!isBreadcrumb)
@@ -304,7 +322,7 @@ public class MenuObject : DynamicObject
     private void RenderBreadcrumb(ContentObject page, StringBuilder builder, ScriptObject options)
     {
         var menus = new Stack<MenuObject>();
-        var menu = page.GetSafeValue<MenuObject>("menu");
+        var menu = page.GetSafeValue<MenuObject>("menu_item");
 
         ContentObject previousPage = null;
         while (menu != null)

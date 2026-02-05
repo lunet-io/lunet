@@ -121,6 +121,7 @@ public class SqliteSearchEngine : SearchEngine
         var fs = new PhysicalFileSystem();
         var srcPath = fs.ConvertPathFromInternal(_dbPathOnDisk);
         var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("sqlite"));
+        content.Initialize();
         Site.DynamicPages.Add(content);
 
         _currentTransaction = null;

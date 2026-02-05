@@ -2,8 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Transactions;
 using Lunet.Core;
 using Lunet.Yaml;
 using Scriban.Runtime;
@@ -39,7 +41,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
                 }
 
                 menu.Page = page;
-                SetPageMenu(page, menu);
+                SetPageMenu(page, menu, false);
 
                 if (!menu.Folder) continue;
 
@@ -62,6 +64,11 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
                             {
                                 parentMenu.Children[indexInParent] = otherMenu;
                                 otherMenu.Parent = parentMenu;
+                                otherMenu.Title = menu.Title;
+                                otherMenu.Pre = menu.Pre;
+                                otherMenu.Post = menu.Post;
+                                otherMenu.Separator = menu.Separator;
+                                SetPageMenu(page, otherMenu, true);
                             }
                         }
 
@@ -106,7 +113,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
                 foreach (var keyPair in obj)
                 {
                     var menuName = keyPair.Key;
-                    var menuObject = new MenuObject {Path = (string) menuFile.Path, Name = menuName};
+                    var menuObject = new MenuObject {Path = (string) menuFile.Path, Name = menuName, Title = Plugin.HomeTitle};
                     _menus.Add(menuObject);
                     Plugin.SetValue(menuName, menuObject);
                     DecodeMenu(keyPair.Value, menuFile, menuObject, false);
@@ -198,8 +205,25 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
         }
     }
 
-    private void SetPageMenu(ContentObject page, MenuObject menu)
+    private void SetPageMenu(ContentObject page, MenuObject menu, bool force)
     {
-        page.SetValue("menu", menu);
+        // If a menu is already set, we keep it as the first one is the most relevant one
+        if (!page.ContainsKey("menu_item") || force)
+        {
+            page.SetValue("menu_item", menu);
+
+            Func<MenuObject> resolveMenu = () =>
+            {
+                var parentMenu = menu;
+                while (parentMenu is not null && parentMenu.Children.Count == 0)
+                {
+                    parentMenu = parentMenu.Parent;
+                }
+
+                return parentMenu;
+            };
+
+            page.SetValue("menu", DelegateCustomFunction.CreateFunc(resolveMenu));
+        }
     }
 }

@@ -1,6 +1,23 @@
+// Get the directory where this script is located
+function getScriptBasePath() {
+    if (typeof importScripts === 'function') {
+        // Web Worker context - use self.location
+        const url = new URL(self.location.href);
+        return url.href.substring(0, url.href.lastIndexOf('/') + 1);
+    } else if (document.currentScript) {
+        // Regular script context
+        const src = document.currentScript.src;
+        return src.substring(0, src.lastIndexOf('/') + 1);
+    }
+    // Fallback to current page location
+    return new URL('./', window.location.href).href;
+}
+
+const LUNET_SCRIPT_BASE_PATH = getScriptBasePath();
+
 // Case of web-worker, we pre-initialize sql.js
 if (typeof importScripts === 'function') {
-    importScripts("lunet-sql-wasm.js");
+    importScripts(LUNET_SCRIPT_BASE_PATH + "lunet-sql-wasm.js");
 }
 
 class LunetSearch {
@@ -55,7 +72,7 @@ class LunetSearch {
         });
     }
 
-    initialize(dbUrl = "/js/lunet-search.sqlite", locateSqliteWasm = (file) => `/js/lunet-${file}`)
+    initialize(dbUrl = LUNET_SCRIPT_BASE_PATH + "lunet-search.sqlite", locateSqliteWasm = (file) => LUNET_SCRIPT_BASE_PATH + `lunet-${file}`)
     {
         const thisInstance = this;
         if ("caches" in self && "fetch" in self) {

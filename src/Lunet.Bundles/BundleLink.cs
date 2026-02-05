@@ -3,16 +3,18 @@
 // See the license.txt file in the project root for more information.
 
 using Lunet.Core;
+using Zio;
 
 namespace Lunet.Bundles;
 
 public class BundleLink : DynamicObject<BundleObject>
 {
-    public BundleLink(BundleObject parent, string type, string path, string url, string mode) : base(parent)
+    public BundleLink(BundleObject parent, string type, string path, string url, string urlWithoutBasePath, string mode) : base(parent)
     {
         Type = type;
         Path = path;
         Url = url;
+        UrlWithoutBasePath = urlWithoutBasePath;
         Mode = mode ?? "";
     }
 
@@ -33,6 +35,12 @@ public class BundleLink : DynamicObject<BundleObject>
     {
         get => GetSafeValue<string>("url");
         set => this["url"] = value;
+    }
+    
+    public string UrlWithoutBasePath
+    {
+        get => GetSafeValue<string>("url_without_basepath");
+        set => this["url_without_basepath"] = value;
     }
 
     public string Mode

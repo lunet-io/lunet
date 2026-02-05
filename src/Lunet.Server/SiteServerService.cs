@@ -39,6 +39,7 @@ public class SiteServerService : ISiteService
         BaseUrl = DefaultBaseUrl;
         Environment = DefaultEnvironment;
         Logging = false;
+        BasePath = "";
         LiveReload = true;
         _tokenSource = new CancellationTokenSource();
     }
@@ -61,6 +62,7 @@ public class SiteServerService : ISiteService
 
         ErrorRedirect = newErrorRedirect;
         BaseUrl = newBaseUrl;
+        BasePath = from.BasePath ?? "";
         Environment = newEnvironement;
         Logging = newLogging;
         LiveReload = newLiveReload;
@@ -110,6 +112,8 @@ public class SiteServerService : ISiteService
     public string ErrorRedirect { get; set; }
 
     public string BaseUrl { get; set; }
+
+    public string BasePath { get; set; }
         
     public string Environment { get; set; }
 
@@ -130,7 +134,7 @@ public class SiteServerService : ISiteService
             if (addresses != null)
             {
                 foreach (string str in (IEnumerable<string>)addresses)
-                    logger.Info("Now listening on: " + str);
+                    logger.Info($"Now listening on: {str}{BasePath}");
             }
             if (!string.IsNullOrEmpty(startupMessage))
                 logger.Info(startupMessage);
@@ -206,6 +210,7 @@ public class SiteServerService : ISiteService
         // By default we always serve files at last
         app.UseFileServer(new FileServerOptions()
         {
+            RequestPath = BasePath,
             StaticFileOptions =
             {
                 ServeUnknownFileTypes = true,

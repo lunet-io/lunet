@@ -110,6 +110,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             var link = bundle.Links[i];
             var path = link.Path;
             var url = link.Url;
+            var urlWithoutBasePath = link.UrlWithoutBasePath;
             if (!path.Contains("*")) continue;
 
             // Always remove the link
@@ -120,7 +121,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             bool matchingInFileSystem = false;
             foreach (var file in Site.FileSystem.EnumerateFileSystemEntries(upath.GetDirectory(), upath.GetName()))
             {
-                var newLink = new BundleLink(bundle, link.Type, (string)file.Path, url + file.Path.GetName(), link.Mode);
+                var newLink = new BundleLink(bundle, link.Type, (string)file.Path, url + file.Path.GetName(), urlWithoutBasePath + file.Path.GetName(), link.Mode);
                 bundle.Links.Insert(i++, newLink);
                 matchingInFileSystem = true;
             }
@@ -129,7 +130,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             {
                 foreach (var file in Site.MetaFileSystem.EnumerateFileSystemEntries(upath.GetDirectory(), upath.GetName()))
                 {
-                    var newLink = new BundleLink(bundle, link.Type, (string)file.Path, url + file.Path.GetName(), link.Mode);
+                    var newLink = new BundleLink(bundle, link.Type, (string)file.Path, url + file.Path.GetName(), urlWithoutBasePath + file.Path.GetName(), link.Mode);
                     bundle.Links.Insert(i++, newLink);
                 }
             }
@@ -166,6 +167,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             var link = bundle.Links[i];
             var path = link.Path;
             var url = link.Url;
+            var urlWithoutPath = link.UrlWithoutBasePath;
             if (url != null)
             {
                 if (!UPath.TryParse(url, out _))
@@ -187,8 +189,10 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                     var outputUrlDirectory = bundle.UrlDestination[link.Type];
                     // If the file is private or meta, we need to copy to the output
                     // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
-                    url = outputUrlDirectory + Path.GetFileName(path);
+                    urlWithoutPath = outputUrlDirectory + Path.GetFileName(path);
+                    url = new UPath($"{Site.BasePath}/.{urlWithoutPath}").FullName;
                     link.Url = url;
+                    link.UrlWithoutBasePath = urlWithoutPath;
                 }
 
                 FileSystemItem entry = default;
@@ -228,6 +232,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                 if (currentContent != null)
                 {
                     currentContent.Url = url;
+                    currentContent.UrlWithoutBasePath = urlWithoutPath;
                         
                     var listTemp = new PageCollection() { currentContent };
                     Site.Content.ProcessPages(listTemp, false);
@@ -307,7 +312,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                             newStaticFile.Dependencies.Add(new PageContentDependency(page));
                         }
 
-                        var link = new BundleLink(bundle, type, null, url, mode)
+                        var link = new BundleLink(bundle, type, null, url, newStaticFile.UrlWithoutBasePath, mode)
                         {
                             Content = newStaticFile.Content,
                             ContentObject = newStaticFile

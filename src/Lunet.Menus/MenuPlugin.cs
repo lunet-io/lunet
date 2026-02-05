@@ -18,6 +18,13 @@ public class MenuPlugin : SitePlugin
         Site.SetValue("menu", this, true);
         Site.Content.AfterRunningProcessors.Insert(0, Processor);
         Site.Content.BeforeProcessingProcessors.Insert(0, Processor);
+        HomeTitle = "Home";
+    }
+    
+    public string HomeTitle
+    {
+        get => GetSafeValue<string>("home_title");
+        set => SetValue("home_title", value);
     }
 
     public MenuProcessor Processor { get; }
