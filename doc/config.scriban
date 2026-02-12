@@ -4,11 +4,24 @@ basepath = ""
 baseurl = baseurl ?? "http://xoofx.com"
 
 resource "npm:prismjs"
-# extend "jquery"
 
 ##
-# Testing local extension
-extend "gold"
+# Local extension (already available under /.lunet/extends/<name>)
+# extend "gold"
+
+# GitHub extension (latest main, extracts /dist)
+# extend "lunet-io/lunet-extends-jquery"
+
+# GitHub extension pinned to a tag
+# extend "lunet-io/lunet-extends-jquery@v1.2.3"
+
+# Object syntax
+# extend {
+#   repo: "lunet-io/lunet-extends-jquery",
+#   tag: "v1.2.3",
+#   directory: "dist",
+#   public: true
+# }
 
 # resource "npm:prismjs"
 
