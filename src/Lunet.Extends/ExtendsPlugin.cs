@@ -107,8 +107,9 @@ public sealed class ExtendsPlugin : SitePlugin
     private ExtendObject TryInstall(ExtendRequest request)
     {
         var installPath = GetInstallPath(request);
-        var themeSiteDir = new DirectoryEntry(Site.MetaFileSystem, installPath);
-        var themeTempDir = new DirectoryEntry(Site.CacheMetaFileSystem, installPath);
+        var localMetaPath = SiteFileSystems.LunetFolder / installPath;
+        var localExtendDir = new DirectoryEntry(Site.SiteFileSystem, localMetaPath);
+        var cacheExtendDir = new DirectoryEntry(Site.CacheMetaFileSystem, installPath);
         IFileSystem extendFileSystem = null;
 
         bool isLatestMainRequest = request.IsGitHub && string.IsNullOrEmpty(request.Tag);
@@ -116,13 +117,13 @@ public sealed class ExtendsPlugin : SitePlugin
 
         if (!shouldRefreshLatestMain)
         {
-            if (themeSiteDir.Exists)
+            if (cacheExtendDir.Exists)
             {
-                extendFileSystem = new SubFileSystem(themeSiteDir.FileSystem, themeSiteDir.Path);
+                extendFileSystem = new SubFileSystem(cacheExtendDir.FileSystem, cacheExtendDir.Path);
             }
-            else if (themeTempDir.Exists)
+            else if (localExtendDir.Exists)
             {
-                extendFileSystem = new SubFileSystem(themeTempDir.FileSystem, themeTempDir.Path);
+                extendFileSystem = new SubFileSystem(localExtendDir.FileSystem, localExtendDir.Path);
             }
         }
 
@@ -133,23 +134,23 @@ public sealed class ExtendsPlugin : SitePlugin
 
         if (!request.IsGitHub)
         {
-            Site.Error($"Unable to find local extension/theme [{request.Name}] from [{themeSiteDir}] or [{themeTempDir}]. To load from GitHub, use extend \"owner/repo\" or extend {{ repo: \"owner/repo\", tag: \"v1.2.3\" }}.");
+            Site.Error($"Unable to find local extension/theme [{request.Name}] from [{localExtendDir}] or [{cacheExtendDir}]. To load from GitHub, use extend \"owner/repo\" or extend {{ repo: \"owner/repo\", tag: \"v1.2.3\" }}.");
             return null;
         }
 
-        if (themeSiteDir.Exists && !request.IsPrivate)
+        if (localExtendDir.Exists && !request.IsPrivate)
         {
-            themeSiteDir.Delete(true);
+            localExtendDir.Delete(true);
         }
 
-        if (themeTempDir.Exists && request.IsPrivate)
+        if (cacheExtendDir.Exists && request.IsPrivate)
         {
-            themeTempDir.Delete(true);
+            cacheExtendDir.Delete(true);
         }
 
         var destinationDirectory = request.IsPrivate
-            ? themeTempDir.FileSystem.GetOrCreateSubFileSystem(themeTempDir.Path)
-            : themeSiteDir.FileSystem.GetOrCreateSubFileSystem(themeSiteDir.Path);
+            ? cacheExtendDir.FileSystem.GetOrCreateSubFileSystem(cacheExtendDir.Path)
+            : localExtendDir.FileSystem.GetOrCreateSubFileSystem(localExtendDir.Path);
 
         var outputDirectory = new DirectoryEntry(destinationDirectory, UPath.Root);
         if (!TryInstallFromGitHub(request, outputDirectory))
