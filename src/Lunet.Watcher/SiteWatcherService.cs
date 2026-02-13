@@ -87,7 +87,7 @@ public class SiteWatcherService : ISiteService
 
     public Func<UPath, bool> IsHandlingPath;
         
-    public static RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+    public static async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
         var site = runner.CurrentSite;
         var runnerResult = RunnerResult.Continue;

@@ -19,6 +19,7 @@ public class SqliteSearchEngine : SearchEngine
     private SqliteConnection _connection;
     private string _dbPathOnDisk;
     private SqliteTransaction _currentTransaction;
+    private readonly object _connectionLock = new();
 
     public const string EngineName = "sqlite";
 
@@ -65,27 +66,30 @@ public class SqliteSearchEngine : SearchEngine
 
     public override void ProcessSearchContent(ContentObject file, string plainText)
     {
-        // Create the insert command that will be used by the content processing stage
-        using (var insertContentCommand = _connection.CreateCommand())
+        lock (_connectionLock)
         {
-            var urlParameter = insertContentCommand.CreateParameter();
-            urlParameter.ParameterName = "$url";
-            var titleParameter = insertContentCommand.CreateParameter();
-            titleParameter.ParameterName = "$title";
-            var contentParameter = insertContentCommand.CreateParameter();
-            contentParameter.ParameterName = "$content";
+            // Create the insert command that will be used by the content processing stage
+            using (var insertContentCommand = _connection.CreateCommand())
+            {
+                var urlParameter = insertContentCommand.CreateParameter();
+                urlParameter.ParameterName = "$url";
+                var titleParameter = insertContentCommand.CreateParameter();
+                titleParameter.ParameterName = "$title";
+                var contentParameter = insertContentCommand.CreateParameter();
+                contentParameter.ParameterName = "$content";
 
-            insertContentCommand.CommandText = $"INSERT INTO pages(url, title, content) VALUES({urlParameter.ParameterName}, {titleParameter.ParameterName}, {contentParameter.ParameterName});";
+                insertContentCommand.CommandText = $"INSERT INTO pages(url, title, content) VALUES({urlParameter.ParameterName}, {titleParameter.ParameterName}, {contentParameter.ParameterName});";
 
-            insertContentCommand.Parameters.Add(urlParameter);
-            insertContentCommand.Parameters.Add(titleParameter);
-            insertContentCommand.Parameters.Add(contentParameter);
+                insertContentCommand.Parameters.Add(urlParameter);
+                insertContentCommand.Parameters.Add(titleParameter);
+                insertContentCommand.Parameters.Add(contentParameter);
 
-            urlParameter.Value = file.Url ?? string.Empty;
-            titleParameter.Value = file.Title ?? string.Empty;
-            contentParameter.Value = plainText ?? string.Empty;
+                urlParameter.Value = file.Url ?? string.Empty;
+                titleParameter.Value = file.Title ?? string.Empty;
+                contentParameter.Value = plainText ?? string.Empty;
 
-            insertContentCommand.ExecuteNonQuery();
+                insertContentCommand.ExecuteNonQuery();
+            }
         }
     }
 

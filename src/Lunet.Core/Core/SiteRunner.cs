@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Lunet.Helpers;
 
 namespace Lunet.Core;
@@ -44,7 +45,7 @@ public class SiteRunner : IDisposable
         
     public SiteObject CurrentSite { get; private set; }
         
-    public int Run(CancellationTokenSource cancellationTokenSource = null)
+    public async Task<int> RunAsync(CancellationTokenSource cancellationTokenSource = null)
     {
         if (CommandRunners.Count == 0) return 0;
 
@@ -64,7 +65,7 @@ public class SiteRunner : IDisposable
 
                 foreach (var runner in CommandRunners)
                 {
-                    result = runner.Run(this, cancellationTokenSource.Token);
+                    result = await runner.RunAsync(this, cancellationTokenSource.Token);
                     if (result != RunnerResult.Continue)
                     {
                         break;

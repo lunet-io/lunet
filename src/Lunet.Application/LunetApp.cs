@@ -4,6 +4,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Lunet.Api;
 using Lunet.Api.DotNet;
 using Lunet.Attributes;
@@ -71,7 +72,7 @@ public class LunetApp
 
     public OrderedList<SiteModule> Modules { get; }
 
-    public int Run(CancellationTokenSource cancellationTokenSource, params string[] args)
+    public async Task<int> RunAsync(CancellationTokenSource cancellationTokenSource, params string[] args)
     {
         if (cancellationTokenSource == null) throw new ArgumentNullException(nameof(cancellationTokenSource));
         // The order modules are registered here is important
@@ -86,7 +87,7 @@ public class LunetApp
             app.Execute(args);
 
             var runner = new SiteRunner(app.Config);
-            return runner.Run(cancellationTokenSource);
+            return await runner.RunAsync(cancellationTokenSource);
         }
         catch (Exception ex)
         {
@@ -99,8 +100,8 @@ public class LunetApp
         }
     }
 
-    public int Run(params string[] args)
+    public async Task<int> RunAsync(params string[] args)
     {
-        return Run(new CancellationTokenSource(), args);
+        return await RunAsync(new CancellationTokenSource(), args);
     }
 }

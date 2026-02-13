@@ -3,12 +3,13 @@
 // See the license.txt file in the project root for more information.
 
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Lunet.Core;
 
 public interface ISiteCommandRunner
 {
-    RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken);
+    Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken);
 }
 
 

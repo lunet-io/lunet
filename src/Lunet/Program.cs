@@ -4,13 +4,14 @@
 
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Lunet.Core;
 
 namespace Lunet;
 
 class Program
 {
-    static int Main(string[] args)
+    static async Task<int> Main(string[] args)
     {
         var config = new SiteConfiguration();
         if (args.Any(x => x == "--profiler"))
@@ -25,7 +26,7 @@ class Program
         }
 
         var app = new LunetApp(config);
-        return app.Run(args);
+        return await app.RunAsync(args);
     }
 
     private class SuperluminalProfiler : IProfiler

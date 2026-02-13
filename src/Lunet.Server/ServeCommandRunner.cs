@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.Threading;
+using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Watcher;
 
@@ -19,7 +20,7 @@ public class ServeCommandRunner : BuildCommandRunner
         Development = true;
     }
        
-    protected override RunnerResult RunImpl(SiteRunner runner, CancellationToken cancellationToken)
+    protected override async Task<RunnerResult> RunAsyncImpl(SiteRunner runner, CancellationToken cancellationToken)
     {
         var site = runner.CurrentSite;
         var runnerResult = RunnerResult.Exit;
@@ -59,18 +60,18 @@ public class ServeCommandRunner : BuildCommandRunner
             if (needRestart)
             {
                 // Run the web server if necessary
-                serverService.StartOrUpdate(cancellationToken);
+                await serverService.StartOrUpdateAsync(cancellationToken);
             }
             else if (serverService.LiveReload)
             {
-                serverService.NotifyReloadToClients();
+                await serverService.NotifyReloadToClients();
             }
         }
 
         // Watch events
         if (Watch)
         {
-            runnerResult = SiteWatcherService.Run(runner, cancellationToken);
+            runnerResult = await SiteWatcherService.RunAsync(runner, cancellationToken);
 
             // Wait also for the termination of the web server
             if (cancellationToken.IsCancellationRequested)

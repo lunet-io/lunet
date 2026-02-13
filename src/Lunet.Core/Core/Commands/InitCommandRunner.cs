@@ -2,9 +2,8 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
-using System;
 using System.Threading;
-using Lunet.Helpers;
+using System.Threading.Tasks;
 
 namespace Lunet.Core.Commands;
 
@@ -12,7 +11,7 @@ public class InitCommandRunner : ISiteCommandRunner
 {
     public bool Force { get; set; }
         
-    public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+    public async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
         return runner.CurrentSite.Create(Force) != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
     }

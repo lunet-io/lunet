@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System.Threading;
+using System.Threading.Tasks;
 using Lunet.Core;
 
 namespace Lunet.Watcher;
@@ -15,21 +16,21 @@ public class BuildCommandRunner : ISiteCommandRunner
 
     public bool Development { get; set; }
 
-    public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+    public async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
         // Setup the environment
         runner.CurrentSite.Environment = Development ? "dev" : "prod";
         runner.Config.SingleThreaded = SingleThreaded;
-        return RunImpl(runner, cancellationToken);
+        return await RunAsyncImpl(runner, cancellationToken);
     }
 
-    protected virtual RunnerResult RunImpl(SiteRunner runner, CancellationToken cancellationToken)
+    protected virtual async Task<RunnerResult> RunAsyncImpl(SiteRunner runner, CancellationToken cancellationToken)
     {
         runner.CurrentSite.Build();
 
         if (Watch)
         {
-            return SiteWatcherService.Run(runner, cancellationToken);
+            return await SiteWatcherService.RunAsync(runner, cancellationToken);
         }
 
         return runner.CurrentSite.HasErrors ? RunnerResult.ExitWithError : RunnerResult.Exit;

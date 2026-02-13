@@ -25,6 +25,7 @@ public class SiteServerService : ISiteService
     private const string LiveReloadBasePath = "/__livereload__";
     private readonly HashSet<WebSocket> _sockets;
     private IWebHost _host;
+    private Task _runTask;
     private CancellationTokenSource _tokenSource;
         
     public const string DefaultBaseUrl = "http://localhost:4000";
@@ -49,28 +50,28 @@ public class SiteServerService : ISiteService
     {
         var newErrorRedirect = from.ErrorRedirect ?? DefaultRedirect;
         var newBaseUrl = from.BaseUrl ?? DefaultBaseUrl;
-        var newEnvironement = from.Environment ?? DefaultEnvironment;
+        var newEnvironment = from.Environment ?? DefaultEnvironment;
         var newLogging = from.Builtins.LogObject.GetSafeValue<bool>("server");
         var newLiveReload = from.GetLiveReload();
 
         var needNewHost = _host == null ||
                           ErrorRedirect != newErrorRedirect ||
                           BaseUrl != newBaseUrl ||
-                          Environment != newEnvironement ||
+                          Environment != newEnvironment ||
                           Logging != newLogging ||
                           LiveReload != newLiveReload;
 
         ErrorRedirect = newErrorRedirect;
         BaseUrl = newBaseUrl;
         BasePath = from.BasePath ?? "";
-        Environment = newEnvironement;
+        Environment = newEnvironment;
         Logging = newLogging;
         LiveReload = newLiveReload;
 
         return needNewHost;
     }
         
-    public void StartOrUpdate(CancellationToken token)
+    public Task StartOrUpdateAsync(CancellationToken token)
     {
         AppBuilders.Clear();
 
@@ -82,19 +83,29 @@ public class SiteServerService : ISiteService
         if (_host != null)
         {
             ShutdownAndWaitForShutdown();
-            // Recreate a token source combined with the global token source
-            _tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
         }
 
+        // Create a token source combined with the global token source
+        _tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+
         _host = CreateWebHost();
-        RunAsync(_host, _tokenSource.Token, "Lunet server started.");
+        _runTask = RunAsync(_host, _tokenSource.Token, "Lunet server started.");
+        return Task.CompletedTask;
     }
 
     public void ShutdownAndWaitForShutdown()
     {
         _tokenSource.Cancel();
-        _host.WaitForShutdown();
-        _host.Dispose();
+
+        // Wait for the background RunAsync task to complete
+        try
+        {
+            _runTask?.GetAwaiter().GetResult();
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when shutting down via cancellation
+        }
 
         lock (_sockets)
         {
@@ -107,6 +118,7 @@ public class SiteServerService : ISiteService
         }
 
         _host = null;
+        _runTask = null;
     }
 
     public string ErrorRedirect { get; set; }
@@ -123,7 +135,7 @@ public class SiteServerService : ISiteService
 
     private OrderedList<Action<IApplicationBuilder>> AppBuilders { get; }
 
-    private async void RunAsync(IWebHost host, CancellationToken token, string? startupMessage)
+    private async Task RunAsync(IWebHost host, CancellationToken token, string? startupMessage)
     {
         var logger = _configuration;
         try
@@ -161,7 +173,7 @@ public class SiteServerService : ISiteService
         TaskCompletionSource completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         requiredService.ApplicationStopping.Register((Action<object>)(obj => ((TaskCompletionSource)obj).TrySetResult()), (object)completionSource);
         await completionSource.Task;
-        await host.StopAsync();
+        await host.StopAsync(CancellationToken.None);
     }
 
     public void Dispose()
@@ -223,7 +235,7 @@ public class SiteServerService : ISiteService
         site.SetValue("livereload_url", liveReloadUrl, true);
     }
 
-    public async void NotifyReloadToClients()
+    public async Task NotifyReloadToClients()
     {
         var localSockets = new List<WebSocket>();
 
@@ -274,28 +286,43 @@ public class SiteServerService : ISiteService
                     }
                 }
 
-                await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("hello")), WebSocketMessageType.Text, true, CancellationToken.None);
-                while (webSocket.State == WebSocketState.Open)
+                try
                 {
-                    await webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), CancellationToken.None);
-                }
-
-                if (webSocket.State == WebSocketState.CloseReceived)
-                {
-                    try
+                    var shutdownToken = _tokenSource.Token;
+                    await webSocket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes("hello")), WebSocketMessageType.Text, true, shutdownToken);
+                    while (webSocket.State == WebSocketState.Open)
                     {
-                        await
-                            webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
+                        await webSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), shutdownToken);
                     }
-                    catch (ObjectDisposedException)
-                    {
 
+                    if (webSocket.State == WebSocketState.CloseReceived)
+                    {
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "closing", CancellationToken.None);
                     }
                 }
-
-                lock (_sockets)
+                catch (OperationCanceledException)
                 {
-                    _sockets.Remove(webSocket);
+                    // Server is shutting down, close the socket gracefully
+                    if (webSocket.State is WebSocketState.Open or WebSocketState.CloseReceived)
+                    {
+                        try
+                        {
+                            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "server shutting down", CancellationToken.None);
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                        }
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+                finally
+                {
+                    lock (_sockets)
+                    {
+                        _sockets.Remove(webSocket);
+                    }
                 }
             }
         }

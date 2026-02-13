@@ -3,12 +3,13 @@
 // See the license.txt file in the project root for more information.
 
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Lunet.Core.Commands;
 
 public class CleanCommandRunner : ISiteCommandRunner
 {
-    public RunnerResult Run(SiteRunner runner, CancellationToken cancellationToken)
+    public async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
         return runner.CurrentSite.Clean() != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
     }
