@@ -54,6 +54,7 @@ public class SiteRunner : IDisposable
         using ConsoleLifetime consoleLifetime = new ConsoleLifetime(Config, cancellationTokenSource, shutdownEvent, "Lunet is shutting down.");
 
         var result = RunnerResult.Exit;
+        bool hasErrors = false;
         try
         {
             CurrentSite = new SiteObject(Config);
@@ -72,6 +73,7 @@ public class SiteRunner : IDisposable
 
                 if (result != RunnerResult.Continue)
                 {
+                    hasErrors = CurrentSite.HasErrors || CurrentSite.LoggerFactory.HasErrors;
                     break;
                 }
 
@@ -85,6 +87,10 @@ public class SiteRunner : IDisposable
             }
 
             consoleLifetime.SetExitedGracefully();
+            if (hasErrors)
+            {
+                result = RunnerResult.ExitWithError;
+            }
         }
         catch (Exception ex)
         {

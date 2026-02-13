@@ -6,6 +6,7 @@ using System;
 using Lunet.Helpers;
 using Microsoft.Extensions.Logging;
 using Scriban.Parsing;
+using Spectre.Console;
 
 namespace Lunet.Core;
 
@@ -86,6 +87,11 @@ public static class SiteObjectExtensions
     public static void Error(this ISiteLoggerProvider site, Exception exception, string message, params object[] args)
     {
         site.Log.LogError(new EventId(site.LogEventId++), site.ShowStacktraceOnError ? exception : null,  message, args);
+        // Workaround: Spectre log might not work properly with exceptions
+        if (site.ShowStacktraceOnError && exception is not null)
+        {
+            AnsiConsole.WriteLine(exception.ToString());
+        }
     }
 
     public static void Warning(this ISiteLoggerProvider site, string message, params object[] args)
