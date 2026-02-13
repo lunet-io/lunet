@@ -10,7 +10,7 @@ using Autofac;
 using Lunet.Helpers;
 using Lunet.Scripts;
 using Lunet.Statistics;
-using Microsoft.Extensions.Logging;
+using XenoAtom.Logging;
 using Zio;
 
 namespace Lunet.Core;
@@ -147,7 +147,7 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
     /// <summary>
     /// Gets the site logger.
     /// </summary>
-    public ILogger Log => Config.Log;
+    public SiteLogger Log => Config.Log;
 
     public bool ShowStacktraceOnError
     {
@@ -236,7 +236,7 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
     private bool LogFilter(string category, LogLevel level)
     {
         var levelStr = Builtins.LogObject.GetSafeValue<string>("level")?.ToLowerInvariant() ?? "info";
-        var filterLevel = LogLevel.Information;
+        var filterLevel = LogLevel.Info;
         switch (levelStr)
         {
             case "trace":
@@ -245,17 +245,20 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
             case "debug":
                 filterLevel = LogLevel.Debug;
                 break;
+            case "information":
             case "info":
-                filterLevel = LogLevel.Information;
+                filterLevel = LogLevel.Info;
                 break;
             case "warning":
-                filterLevel = LogLevel.Warning;
+            case "warn":
+                filterLevel = LogLevel.Warn;
                 break;
             case "error":
                 filterLevel = LogLevel.Error;
                 break;
             case "critical":
-                filterLevel = LogLevel.Critical;
+            case "fatal":
+                filterLevel = LogLevel.Fatal;
                 break;
         }
 
@@ -371,7 +374,6 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
         if (!_pluginInitialized)
         {
             var pluginBuilders = new ContainerBuilder();
-            pluginBuilders.RegisterInstance(LoggerFactory).As<ILoggerFactory>();
             pluginBuilders.RegisterInstance(this);
             foreach (var pluginType in _pluginTypes)
             {

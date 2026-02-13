@@ -2,9 +2,10 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Helpers;
-using McMaster.Extensions.CommandLineUtils;
+using XenoAtom.CommandLine;
 
 namespace Lunet.Server;
 
@@ -15,21 +16,23 @@ public class ServerModule : SiteModule<ServerPlugin>
         base.Configure(application);
 
         // Adds the server command
-        ServerCommand = application.Command("serve", newApp =>
+        ServerCommand = application.AddCommand("serve", "Builds the website, runs a web server and watches for changes", newApp =>
         {
-            newApp.Description = "Builds the website, runs a web server and watches for changes";
-            newApp.HelpOption("-h|--help");
-            var noWatchOption = newApp.Option("--no-watch", "Disables watching files and triggering of a new run", CommandOptionType.NoValue);
-            var singleThreadedOption = newApp.Option("--no-threads", "Disables multi-threading", CommandOptionType.NoValue);
+            var noWatchOption = false;
+            var singleThreadedOption = false;
+            newApp.Add(new HelpOption("h|help"));
+            newApp.Add("no-watch", "Disables watching files and triggering of a new run", _ => noWatchOption = true);
+            newApp.Add("no-threads", "Disables multi-threading", _ => singleThreadedOption = true);
 
-            newApp.OnExecute(() =>
+            newApp.Add((_, _) =>
             {
                 var command = application.CreateCommandRunner<ServeCommandRunner>();
-                command.Watch = !noWatchOption.HasValue();
-                command.SingleThreaded = singleThreadedOption.HasValue();
+                command.Watch = !noWatchOption;
+                command.SingleThreaded = singleThreadedOption;
+                return ValueTask.FromResult(0);
             });
         });
     }
 
-    public CommandLineApplication ServerCommand { get; private set; }
+    public Command ServerCommand { get; private set; }
 }

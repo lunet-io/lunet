@@ -6,7 +6,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
-using Microsoft.Extensions.Logging;
 
 namespace Lunet.Core;
 
@@ -41,7 +40,7 @@ public class SiteConfiguration : ISiteLoggerProvider
 
     public SiteLoggerFactory LoggerFactory { get; }
 
-    public ILogger Log { get; }
+    public SiteLogger Log { get; }
         
     public int LogEventId { get; set; }
 

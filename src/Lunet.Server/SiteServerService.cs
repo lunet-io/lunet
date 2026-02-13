@@ -184,12 +184,6 @@ public class SiteServerService : ISiteService
         hostBuilder.ConfigureServices(services =>
         {
             services.AddResponseCompression();
-
-            // Enable server log only if log.server = true
-            if (Logging)
-            {
-                services.Add(ServiceDescriptor.Singleton(_configuration.LoggerFactory));
-            }
         });
 
         return hostBuilder.Build();

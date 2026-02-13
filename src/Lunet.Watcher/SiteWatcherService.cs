@@ -7,9 +7,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Helpers;
-using McMaster.Extensions.CommandLineUtils;
+using XenoAtom.CommandLine;
 using Zio;
 
 namespace Lunet.Watcher;
@@ -29,26 +30,29 @@ public class WatcherModule : SiteModule
     protected override void Configure(SiteApplication application)
     {
         // The run command
-        BuildAndWatchCommand = application.Command("build", newApp =>
+        BuildAndWatchCommand = application.AddCommand("build", "Builds the website", newApp =>
         {
-            newApp.Description = "Builds the website";
-            newApp.HelpOption("-h|--help");
-            var watchOption = newApp.Option("--watch", "Enables watching files and triggering of a new run", CommandOptionType.NoValue);
-            var singleThreadedOption = newApp.Option("--no-threads", "Disables multi-threading", CommandOptionType.NoValue);
-            var devOption = newApp.Option("--dev", "Enables development environment. Default environment is prod.", CommandOptionType.NoValue);
+            var watchOption = false;
+            var singleThreadedOption = false;
+            var devOption = false;
+            newApp.Add(new HelpOption("h|help"));
+            newApp.Add("watch", "Enables watching files and triggering of a new run", _ => watchOption = true);
+            newApp.Add("no-threads", "Disables multi-threading", _ => singleThreadedOption = true);
+            newApp.Add("dev", "Enables development environment. Default environment is prod.", _ => devOption = true);
 
-            newApp.OnExecute(() =>
+            newApp.Add((_, _) =>
             {
                 var buildAndWatch = application.CreateCommandRunner<BuildCommandRunner>();
-                buildAndWatch.Watch = watchOption.HasValue();
-                buildAndWatch.SingleThreaded = singleThreadedOption.HasValue();
-                buildAndWatch.Development = devOption.HasValue();
+                buildAndWatch.Watch = watchOption;
+                buildAndWatch.SingleThreaded = singleThreadedOption;
+                buildAndWatch.Development = devOption;
+                return ValueTask.FromResult(0);
             });
 
         });
     }
 
-    public CommandLineApplication BuildAndWatchCommand { get; private set; }
+    public Command BuildAndWatchCommand { get; private set; }
 }
 
 public class SiteWatcherService : ISiteService

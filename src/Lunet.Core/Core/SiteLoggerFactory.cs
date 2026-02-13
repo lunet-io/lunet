@@ -1,118 +1,127 @@
-﻿// Copyright (c) Alexandre Mutel. All rights reserved.
+// Copyright (c) Alexandre Mutel. All rights reserved.
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
 using System;
-using Lunet.Extensions.Logging.SpectreConsole;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using XenoAtom.Logging;
+using XenoAtom.Logging.Writers;
 
 namespace Lunet.Core;
 
-public class SiteLoggerFactory : ILoggerFactory
+public sealed class SiteLoggerFactory : IDisposable
 {
-    private readonly ILoggerFactory _defaultFactory;
-    private readonly ServiceProvider _serviceProvider;
+    private static readonly object LockObject = new();
+    private static int _instanceCount;
+    private static bool _initializedByFactory;
+    private bool _disposed;
 
-    public SiteLoggerFactory(Action<ILoggingBuilder> logBuilderAction = null, bool defaultConsole = true)
+    public SiteLoggerFactory(bool defaultConsole = true)
     {
-        var services = new ServiceCollection();
-        services.AddLogging(builder =>
+        lock (LockObject)
         {
-            builder.AddProvider(new LoggerProviderIntercept(this)).AddFilter(LogFilterImpl);
-
-            logBuilderAction?.Invoke(builder);
-
-            if (defaultConsole)
+            if (!LogManager.IsInitialized)
             {
-                // Similar to builder.AddSimpleConsole
-                // But we are using our own console that stays on the same line if the message doesn't have new lines
-                builder.AddSpectreConsole(new SpectreConsoleLoggerOptions()
+                var config = new LogManagerConfig();
+                config.RootLogger.MinimumLevel = LogLevel.Trace;
+                if (defaultConsole)
                 {
-                    IncludeNewLineBeforeMessage = false,
-                    IndentAfterNewLine = false,
-                });
+                    config.RootLogger.Writers.Add(new TerminalLogWriter());
+                }
+
+                LogManager.Initialize(config);
+                _initializedByFactory = true;
             }
-        });
-        _serviceProvider = services.BuildServiceProvider();
-        _defaultFactory = _serviceProvider.GetService<ILoggerFactory>();
+
+            _instanceCount++;
+        }
     }
 
     public bool HasErrors { get; private set; }
-        
+    
     public Func<string, LogLevel, bool> LogFilter { get; set; }
 
-    private bool LogFilterImpl(string category, LogLevel level)
+    public SiteLogger CreateLogger(string categoryName)
     {
-        var logFilter = LogFilter;
-        if (logFilter != null)
-        {
-            return logFilter(category, level);
-        }
-
-        return true;
+        ArgumentException.ThrowIfNullOrWhiteSpace(categoryName);
+        return new SiteLogger(this, categoryName, LogManager.GetLogger(categoryName));
     }
 
-    private class LoggerProviderIntercept : ILoggerProvider
+    internal bool IsEnabled(string category, LogLevel level)
     {
-        private readonly SiteLoggerFactory _factory;
-
-        public LoggerProviderIntercept(SiteLoggerFactory factory)
-        {
-            this._factory = factory;
-        }
-
-        public void Dispose()
-        {
-        }
-
-        public ILogger CreateLogger(string categoryName)
-        {
-            return new LoggerIntercept(_factory);
-        }
+        var filter = LogFilter;
+        return filter is null || filter(category, level);
     }
 
-    private class LoggerIntercept : ILogger
+    internal void NotifyLogged(LogLevel level)
     {
-        private readonly SiteLoggerFactory _factory;
-
-        public LoggerIntercept(SiteLoggerFactory factory)
+        if (level is LogLevel.Error or LogLevel.Fatal)
         {
-            _factory = factory;
-        }
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-        {
-            if (logLevel == LogLevel.Critical || logLevel == LogLevel.Error)
-            {
-                _factory.HasErrors = true;
-            }
-        }
-
-        public bool IsEnabled(LogLevel logLevel)
-        {
-            return logLevel == LogLevel.Critical || logLevel == LogLevel.Error;
-        }
-
-        public IDisposable BeginScope<TState>(TState state)
-        {
-            return null;
+            HasErrors = true;
         }
     }
 
     public void Dispose()
     {
-        _defaultFactory.Dispose();
-        _serviceProvider.Dispose();
+        lock (LockObject)
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            _instanceCount--;
+            if (_instanceCount == 0 && _initializedByFactory)
+            {
+                LogManager.Shutdown();
+                _initializedByFactory = false;
+            }
+        }
+    }
+}
+
+public sealed class SiteLogger
+{
+    private readonly SiteLoggerFactory _factory;
+    private readonly Logger _logger;
+
+    internal SiteLogger(SiteLoggerFactory factory, string category, Logger logger)
+    {
+        _factory = factory;
+        Category = category;
+        _logger = logger;
     }
 
-    public ILogger CreateLogger(string categoryName)
+    public string Category { get; }
+
+    public bool IsEnabled(LogLevel level)
     {
-        return _defaultFactory.CreateLogger(categoryName);
+        return _factory.IsEnabled(Category, level) && _logger.IsEnabled(level);
     }
 
-    public void AddProvider(ILoggerProvider provider)
+    public void Log(LogLevel level, LogEventId eventId, string message)
     {
-        _defaultFactory.AddProvider(provider);
+        if (!IsEnabled(level)) return;
+
+        switch (level)
+        {
+            case LogLevel.Trace:
+                _logger.Trace(eventId, message);
+                break;
+            case LogLevel.Debug:
+                _logger.Debug(eventId, message);
+                break;
+            case LogLevel.Info:
+                _logger.Info(eventId, message);
+                break;
+            case LogLevel.Warn:
+                _logger.Warn(eventId, message);
+                break;
+            case LogLevel.Error:
+                _logger.Error(eventId, message);
+                break;
+            case LogLevel.Fatal:
+                _logger.Fatal(eventId, message);
+                break;
+        }
+
+        _factory.NotifyLogged(level);
     }
 }

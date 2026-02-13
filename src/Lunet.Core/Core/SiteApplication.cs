@@ -3,135 +3,117 @@
 // See the license.txt file in the project root for more information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Lunet.Core.Commands;
-using Lunet.Helpers;
-using McMaster.Extensions.CommandLineUtils;
-using Spectre.Console;
-using Zio;
-using Zio.FileSystems;
+using XenoAtom.CommandLine;
+using XenoAtom.CommandLine.Terminal;
 
 namespace Lunet.Core;
 
-public class SiteApplication : CommandLineApplication, IEnumerable
+public class SiteApplication
 {
-    private readonly List<SiteModule> _modules;
-        
+    private readonly CommandApp _app;
+
     public SiteApplication(SiteConfiguration config = null)
     {
         Config = config ?? new SiteConfiguration();
-        _modules = new List<SiteModule>();
-
-        Name = "lunet";
-        FullName = "Lunet Static Website Engine";
-        Description = "LunetCommand to generate static website";
-        AllowArgumentSeparator = true;
-
-        HelpOption("-h|--help");
+        DefinesOption = new List<string>();
 
         var versionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
         var infoVersionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-
-        var version = VersionOption("-v|--version", versionText, infoVersionText);
-
-        // The defines to setup before initializing config.sban
-        DefinesOption = Option("-d|--define <variable_and_value>", "Defines a site variable. Example --define my_variable=5.", CommandOptionType.MultipleValue);
-        OutputDirectoryOption = Option("-o|--output-dir <dir>", $"The output directory of the generated website. Default is '{SiteFileSystems.DefaultOutputFolderName}'", CommandOptionType.SingleValue);
-        InputDirectoryOption = Option("-i|--input-dir <dir>", "The input directory of the website content to generate from. Default is '.'", CommandOptionType.SingleValue);
-
-        ShowStacktraceOnErrorOption = Option("--stacktrace", "Shows full stacktrace when an error occurs. Default is false.", CommandOptionType.NoValue);
-
-        this.OnExecute(() =>
+        _app = new CommandApp("lunet", "Lunet Static Website Engine", new CommandConfig
         {
-            if (!this.OptionHelp.HasValue() || !version.HasValue())
-            {
-                this.ShowHint();
-            }
-
-            if (RemainingArguments.Count > 0)
-            {
-                AnsiConsole.WriteLine($"[red]Invalid command arguments : {Markup.Escape(string.Join(" ", RemainingArguments))}[/]");
-            }
+            OutputFactory = _ => new TerminalMarkupCommandOutput(),
         });
 
-        // New command
-        InitCommand = Command("init", newApp =>
+        _app.Add(new HelpOption("h|help"));
+        _app.Add(new VersionOption(infoVersionText ?? versionText, "v|version"));
+
+        _app.Add("d|define=", "Defines a site variable. Example --define my_variable=5.", DefinesOption);
+        _app.Add("o|output-dir=", $"The output directory of the generated website. Default is '{SiteFileSystems.DefaultOutputFolderName}'", value => OutputDirectoryOption = value);
+        _app.Add("i|input-dir=", "The input directory of the website content to generate from. Default is '.'", value => InputDirectoryOption = value);
+        _app.Add("stacktrace", "Shows full stacktrace when an error occurs. Default is false.", _ => ShowStacktraceOnErrorOption = true);
+        _app.Add((context, _) =>
         {
-            newApp.Description = "Creates a new website";
+            _app.ShowHelp(context.RunConfig);
+            return ValueTask.FromResult(0);
+        });
 
-            var forceOption = newApp.Option("-f|--force",
-                "Force the creation of the website even if the folder is not empty", CommandOptionType.NoValue);
+        InitCommand = AddCommand("init", "Creates a new website", newApp =>
+        {
+            var force = false;
+            string folder = null;
 
-            CommandArgument folderArgument = newApp.Argument("[folder]", "Destination folder. Default is current directory.");
-
-            // TODO: List the supported type on --help -h
-            newApp.HelpOption("-h|--help");
-
-            newApp.OnExecute(() =>
+            newApp.Add(new HelpOption("h|help"));
+            newApp.Add("f|force", "Force the creation of the website even if the folder is not empty", _ => force = true);
+            newApp.Add("[folder]", "Destination folder. Default is current directory.", value => folder = value);
+            newApp.Add((_, _) =>
             {
-                var inputFolder = folderArgument.Value ?? ".";
-                _inputDirectoryFolder = inputFolder;
+                _inputDirectoryFolder = folder ?? ".";
                 var initCommand = CreateCommandRunner<InitCommandRunner>();
-                initCommand.Force = forceOption.HasValue();
+                initCommand.Force = force;
+                return ValueTask.FromResult(0);
             });
         });
 
-
-        // New command
-        NewCommand = Command("new", newApp =>
+        NewCommand = AddCommand("new", "Creates a new content for the website from an archetype", newApp =>
         {
-            newApp.Description = "Creates a new content for the website from an archetype";
-
-            CommandArgument typeArgument = newApp.Argument("<type>", "Type of the content to generate");
-
-            // TODO: List the supported type on --help -h
-            newApp.HelpOption("-h|--help");
+            newApp.Add(new HelpOption("h|help"));
+            newApp.Add("<type>", "Type of the content to generate", _ => {});
+            newApp.Add((_, _) => ValueTask.FromResult(0));
         });
 
-        // config command
-        ConfigCommand = Command("config", newApp =>
+        ConfigCommand = AddCommand("config", "Displays the configuration variables from an existing config or the defaults", newApp =>
         {
-            newApp.Description = "Displays the configuration variables from an existing config or the defaults";
-            newApp.HelpOption("-h|--help");
+            newApp.Add(new HelpOption("h|help"));
+            newApp.Add((_, _) => ValueTask.FromResult(0));
         });
 
-        // The clean command
-        CleanCommand = Command("clean", newApp =>
+        CleanCommand = AddCommand("clean", "Cleans temporary folder", newApp =>
         {
-            newApp.Description = "Cleans temporary folder";
-            newApp.HelpOption("-h|--help");
-
-            newApp.OnExecute(() =>
+            newApp.Add(new HelpOption("h|help"));
+            newApp.Add((_, _) =>
             {
                 CreateCommandRunner<CleanCommandRunner>();
+                return ValueTask.FromResult(0);
             });
         });
     }
 
     public SiteConfiguration Config { get; }
 
-    public CommandLineApplication InitCommand { get; }
+    public Command InitCommand { get; }
 
-    public CommandLineApplication NewCommand { get; }
+    public Command NewCommand { get; }
 
-    public CommandLineApplication ConfigCommand { get; }
+    public Command ConfigCommand { get; }
 
-    public CommandLineApplication RunCommand { get; }
+    public Command RunCommand { get; private set; }
 
-    public CommandLineApplication CleanCommand { get; }
+    public Command CleanCommand { get; }
 
-    private CommandOption DefinesOption { get; }
+    private List<string> DefinesOption { get; }
 
-    private CommandOption OutputDirectoryOption { get; }
+    private string OutputDirectoryOption { get; set; }
 
-    private CommandOption InputDirectoryOption { get; }
+    private string InputDirectoryOption { get; set; }
 
     private string _inputDirectoryFolder;
 
-    private CommandOption ShowStacktraceOnErrorOption { get; }
+    private bool ShowStacktraceOnErrorOption { get; set; }
+
+    public Command AddCommand(string name, string description, Action<Command> configure)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(configure);
+        var command = new Command(name, description);
+        configure(command);
+        _app.Add(command);
+        return command;
+    }
         
     public SiteApplication Add(SiteModule module)
     {
@@ -142,10 +124,10 @@ public class SiteApplication : CommandLineApplication, IEnumerable
 
     private void InitializeConfig()
     {
-        Config.FileSystems.Initialize(_inputDirectoryFolder ?? InputDirectoryOption.Value(), OutputDirectoryOption.Value());
+        Config.FileSystems.Initialize(_inputDirectoryFolder ?? InputDirectoryOption, OutputDirectoryOption);
         Config.Defines.Clear();
-        Config.Defines.AddRange(DefinesOption.Values);
-        Config.ShowStacktraceOnError = ShowStacktraceOnErrorOption.HasValue();
+        Config.Defines.AddRange(DefinesOption);
+        Config.ShowStacktraceOnError = ShowStacktraceOnErrorOption;
     }
 
     public TCommandRunner CreateCommandRunner<TCommandRunner>() where TCommandRunner : ISiteCommandRunner, new()
@@ -156,8 +138,13 @@ public class SiteApplication : CommandLineApplication, IEnumerable
         return commandRunner;
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
+    public void Execute(params string[] args)
     {
-        return ((IEnumerable) _modules).GetEnumerator();
+        DefinesOption.Clear();
+        OutputDirectoryOption = null;
+        InputDirectoryOption = null;
+        _inputDirectoryFolder = null;
+        ShowStacktraceOnErrorOption = false;
+        _app.RunAsync(args).GetAwaiter().GetResult();
     }
 }
