@@ -222,3 +222,6 @@ _Pvt_Extensions
 
 # Remove artifacts produced by dotnet-releaser
 artifacts-dotnet-releaser/
+
+# Local debug launch settings
+**/Properties/launchSettings.json

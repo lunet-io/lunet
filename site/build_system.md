@@ -1,5 +1,7 @@
-+++
-+++
+---
+title: "Build system notes (internal)"
+discard: true
+---
 
 ## taxonomies (many-to-many)
 

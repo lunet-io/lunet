@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Lunet banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b0b10"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="880" cy="260" r="240" fill="url(#accent)" opacity="0.22"/>
+  <circle cx="980" cy="380" r="180" fill="url(#accent)" opacity="0.14"/>
+  <rect x="84" y="110" width="160" height="160" rx="40" fill="#0b0b10" stroke="url(#accent)" stroke-width="6"/>
+  <circle cx="164" cy="190" r="56" fill="url(#accent)" opacity="0.95"/>
+  <circle cx="185" cy="172" r="13" fill="#0b0b10" opacity="0.85"/>
+  <path d="M128 214c13 15 30 24 52 24" fill="none" stroke="#0b0b10" stroke-width="10" stroke-linecap="round" opacity="0.85"/>
+  <text x="280" y="188" font-size="72" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" fill="#e5e7eb" font-weight="700">Lunet</text>
+  <text x="280" y="248" font-size="28" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" fill="#a5b4fc">Static site generator for .NET • Powered by Scriban</text>
+</svg>
+

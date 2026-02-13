@@ -1,0 +1,11 @@
+doc:
+  - {path: readme.md, title: "<i class='bi bi-book' aria-hidden='true'></i> User Guide"}
+  - {path: getting-started.md, title: "<i class='bi bi-rocket-takeoff' aria-hidden='true'></i> Getting started"}
+  - {path: cli.md, title: "<i class='bi bi-terminal' aria-hidden='true'></i> CLI"}
+  - {path: site-structure.md, title: "<i class='bi bi-folder2-open' aria-hidden='true'></i> Site structure"}
+  - {path: configuration.md, title: "<i class='bi bi-sliders' aria-hidden='true'></i> Configuration"}
+  - {path: content-and-frontmatter.md, title: "<i class='bi bi-file-text' aria-hidden='true'></i> Content & front matter"}
+  - {path: layouts-and-includes.md, title: "<i class='bi bi-layout-text-window-reverse' aria-hidden='true'></i> Layouts & includes"}
+  - {path: themes-and-extends.md, title: "<i class='bi bi-palette' aria-hidden='true'></i> Themes & extends"}
+  - {path: plugins/readme.md, title: "<i class='bi bi-plug' aria-hidden='true'></i> Modules", folder: true}
+

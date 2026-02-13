@@ -1,0 +1,26 @@
+plugins:
+  - {path: readme.md, title: "<i class='bi bi-plug' aria-hidden='true'></i> Modules"}
+  - {path: extends.md, title: "<i class='bi bi-layers' aria-hidden='true'></i> Extends (themes)"}
+  - {path: resources.md, title: "<i class='bi bi-box-seam' aria-hidden='true'></i> Resources (npm)"}
+  - {path: bundles.md, title: "<i class='bi bi-collection' aria-hidden='true'></i> Bundles"}
+  - {path: markdown.md, title: "<i class='bi bi-markdown' aria-hidden='true'></i> Markdown"}
+  - {path: scss.md, title: "<i class='bi bi-paint-bucket' aria-hidden='true'></i> SCSS"}
+  - {path: minifier.md, title: "<i class='bi bi-magic' aria-hidden='true'></i> Minifier"}
+  - {path: summarizer.md, title: "<i class='bi bi-file-earmark-text' aria-hidden='true'></i> Summarizer"}
+  - {path: menus.md, title: "<i class='bi bi-list' aria-hidden='true'></i> Menus"}
+  - {path: taxonomies.md, title: "<i class='bi bi-tags' aria-hidden='true'></i> Taxonomies"}
+  - {path: rss.md, title: "<i class='bi bi-rss' aria-hidden='true'></i> RSS"}
+  - {path: sitemaps.md, title: "<i class='bi bi-diagram-3' aria-hidden='true'></i> Sitemaps"}
+  - {path: search.md, title: "<i class='bi bi-search' aria-hidden='true'></i> Search"}
+  - {path: cards.md, title: "<i class='bi bi-card-heading' aria-hidden='true'></i> Cards"}
+  - {path: tracking.md, title: "<i class='bi bi-graph-up' aria-hidden='true'></i> Tracking"}
+  - {path: server.md, title: "<i class='bi bi-hdd-network' aria-hidden='true'></i> Server"}
+  - {path: watcher.md, title: "<i class='bi bi-eye' aria-hidden='true'></i> Watcher"}
+  - {path: datas.md, title: "<i class='bi bi-database' aria-hidden='true'></i> Datas"}
+  - {path: data.md, title: "<i class='bi bi-database' aria-hidden='true'></i> Data (site.data)"}
+  - {path: yaml.md, title: "<i class='bi bi-filetype-yml' aria-hidden='true'></i> YAML"}
+  - {path: json.md, title: "<i class='bi bi-filetype-json' aria-hidden='true'></i> JSON"}
+  - {path: toml.md, title: "<i class='bi bi-filetype-toml' aria-hidden='true'></i> TOML"}
+  - {path: attributes.md, title: "<i class='bi bi-link-45deg' aria-hidden='true'></i> Attributes"}
+  - {path: api.md, title: "<i class='bi bi-braces' aria-hidden='true'></i> API"}
+  - {path: api-dotnet.md, title: "<i class='bi bi-dot' aria-hidden='true'></i> API (.NET)"}

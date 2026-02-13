@@ -1,78 +1,57 @@
-title = "Test site"
+# Lunet documentation site (self-dogfooding).
+# Build from this folder with:
+#   lunet build
+#   lunet serve
+#
+# This site uses a shared theme/template published as a Lunet extension.
+extend "XenoAtom/lunet_template@1.0.0"
 
-basepath = ""
-baseurl = baseurl ?? "http://xoofx.com"
+# -----------------------------------------------------------------------------
+# TEMPLATE OVERRIDES (only if different from the template defaults)
+# -----------------------------------------------------------------------------
+template_baseurl = "https://lunet-io.github.io"
+template_project_github_user = "lunet-io"
+template_footer_site_generator_name = "lunet"
+template_footer_site_generator_url = "https://github.com/lunet-io/lunet"
 
-resource "npm:prismjs"
+# -----------------------------------------------------------------------------
+# SITE SECTION (project-specific values only)
+# -----------------------------------------------------------------------------
+site_project_name = "Lunet"
+site_project_description = "A fast, scriptable static site generator for .NET, powered by Scriban."
+site_project_logo_path = "/img/lunet-logo.svg"
+site_project_social_banner_path = "/img/lunet-social-banner.svg"
+site_project_banner_background_path = "/img/lunet-social-banner.svg"
+site_project_package_id = "lunet"
+site_project_github_repo = "lunet"
+site_project_basepath = "/lunet"
 
-##
-# Local extension (already available under /.lunet/extends/<name>)
-# extend "gold"
+site_project_init
 
-# GitHub extension (latest main, extracts /dist)
-# extend "lunet-io/lunet-extends-jquery"
+# -----------------------------------------------------------------------------
+# Docs site settings
+# -----------------------------------------------------------------------------
 
-# GitHub extension pinned to a tag
-# extend "lunet-io/lunet-extends-jquery@v1.2.3"
+# In development builds (`lunet build --dev`), keep the basepath empty so local links work.
+if environment == "dev"
+    basepath = ""
+end
 
-# Object syntax
-# extend {
-#   repo: "lunet-io/lunet-extends-jquery",
-#   tag: "v1.2.3",
-#   directory: "dist",
-#   public: true
-# }
+# Ensure the docs always compile SCSS via Dart Sass.
+with scss
+    use_dart_sass = true
+end
 
-# resource "npm:prismjs"
+# Configure search for this docs site.
+with search
+    enable = true
+    engine = "sqlite"
+    worker = true
+    excludes.add ["/architecture.md", "/build_system.md", "/docs/todos/**"]
+end
 
-# io.copy $jquery.path + "dist/jquery.min.js" "js/"
-# taxonomy.add "tags" "tag"
+# Extra taxonomy names are allowed; default `tags` + `categories` already exist.
 with taxonomies
-	tags = "tag"
-	categories = "category"
+    tags = "tag"
+    categories = "category"
 end
-
-# Load jquery extension
-
-
-with bundle
-	# tether
-	$tether = resource "npm:tether"
-	js $tether.main
-	
-	# bootstrap
-	$bootstrap = resource "npm:bootstrap@4.0.0-alpha.6"
-	js $bootstrap.path + "dist/js/bootstrap.js"
-
-	# purecss
-	$purecss = resource "npm:purecss"
-
-	# Add bootstrap scss folder to global scss include path
-	scss.includes << $bootstrap.path + "scss"
-	
-	# log.info "Scss Includes: " + scss.includes
-
-	# Add main css file
-	css "css/test.scss"
-	
-	concat = false
-	minify = false	
-	
-	# Uncomment the following line to change the extension used to after minifaction
-	# minify_ext = ".min"
-end
-
-# log.info bundles
-
-# log.fatal "plugin: " + jquery.name + " path: " + jquery.path
-
-# Defines the top-level toc
-# The doc can also be defined in a toc.sban file
-
-toc "
-- tutorial/index.md
-- guideline/index.md
-- spec/index.md
-- docfxapi
-"
-##

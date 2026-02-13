@@ -1,3 +1,8 @@
+---
+title: "Architecture (internal)"
+discard: true
+---
+
 # Lunet Architecture (Agent Cheat Sheet)
 
 Compact reference meant for AI agents working in this repo. Keep diffs focused; see `AGENTS.md` for contribution rules and build/test commands.

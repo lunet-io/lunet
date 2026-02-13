@@ -19,7 +19,7 @@
     <!--<RuntimeIdentifiers>win7-x64;osx.10.10-x64;ubuntu.14.04-x64</RuntimeIdentifiers>-->
     <AssemblyName>lunet</AssemblyName>
     <!-- Package as tool -->
-    <ApplicationIcon>..\..\doc\favicon.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\site\favicon.ico</ApplicationIcon>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>lunet</ToolCommandName>
     <!--Add support for sourcelink-->
@@ -38,7 +38,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../../doc/images/lunet.png" Pack="true" PackagePath="" />
+    <None Include="../../site/img/lunet.png" Pack="true" PackagePath="" />
     <ProjectReference Include="..\Lunet.Application\Lunet.Application.csproj" />
   </ItemGroup>
 
