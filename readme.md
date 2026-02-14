@@ -1,6 +1,6 @@
 # lunet [![ci](https://github.com/lunet-io/lunet/actions/workflows/ci.yml/badge.svg)](https://github.com/lunet-io/lunet/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/nuget/v/lunet.svg)](https://www.nuget.org/packages/lunet/)
 
-<img align="right" width="96px" height="96px" src="doc/images/lunet.png">
+<img align="right" width="256px" height="256px" src="site/img/lunet.png">
 
 A fast and powerful static website generator written in C#
 
