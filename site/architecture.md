@@ -1,6 +1,6 @@
 ---
 title: "Architecture (internal)"
-discard: true
+discard: true # Discard for public site. Internal reference only.
 ---
 
 # Lunet Architecture (Agent Cheat Sheet)

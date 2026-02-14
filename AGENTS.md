@@ -13,12 +13,12 @@ Paths/commands below are relative to this directory.
 - **Core library**: `src/Lunet.Core/` — foundation: `SiteObject`, content pipeline, scripting, plugin base classes. All plugins depend on this. RootNamespace = `Lunet`.
 - **Plugin libraries**: `src/Lunet.{PluginName}/` — each is a small self-contained library implementing one feature.
 - **Tests**: `src/Lunet.Tests/` (NUnit 4.4, classic assert aliases). References Core, Yaml, Api.DotNet.Extractor.
-- **Docs**: `readme.md` and `doc/**/*.md` — keep in sync with behavior.
-- **Solution**: `src/lunet.slnx`. Central package management via `src/Directory.Packages.props`. All projects target `net9.0` (except `Lunet.Api.DotNet.Extractor` → `netstandard2.0`).
+- **Docs**: `readme.md` and `site/**/*.md` — keep in sync with behavior.
+- **Solution**: `src/lunet.slnx`. Central package management via `src/Directory.Packages.props`. All projects target `net10.0` (except `Lunet.Api.DotNet.Extractor` -> `netstandard2.0`).
 
 ## Architecture
 
-**Must read**: [`doc/architecture.md`](doc/architecture.md) — dependency graph, plugin system, class hierarchy, content pipeline, virtual file system, Scriban templating, and `shared/` folder conventions.
+**Must read**: [`site/architecture.md`](site/architecture.md) — dependency graph, plugin system, class hierarchy, content pipeline, virtual file system, Scriban templating, and `shared/` folder conventions.
 
 ## Build & Test
 
@@ -27,9 +27,13 @@ Paths/commands below are relative to this directory.
 cd src
 dotnet build -c Release
 dotnet test -c Release
+
+# build the website with the local lunet build (dogfooding)
+cd ../site
+dotnet ../src/Lunet/bin/Release/net10.0/lunet.dll --stacktrace build --dev
 ```
 
-All tests must pass and docs must be updated before submitting.
+All tests must pass and docs must be updated before submitting. Do not use a globally installed `lunet` to validate `site/` in this repository.
 
 ## Contribution Rules (Do/Don't)
 

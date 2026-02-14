@@ -20,3 +20,8 @@ jobs:
         uses: xoofx/.github/.github/actions/dotnet-releaser-action@main
         with:
           NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+
+      - name: "Build website with local lunet"
+        shell: pwsh
+        working-directory: site
+        run: dotnet ../src/Lunet/bin/Release/net10.0/lunet.dll --stacktrace build --dev
