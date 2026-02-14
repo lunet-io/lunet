@@ -1,22 +1,80 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Lunet banner">
+  <!--
+    Lunet social banner palette:
+    - Edit only the :root custom properties below to recolor the banner.
+    - Geometry remains untouched; classes reference centralized color tokens.
+  -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0b0b10"/>
-      <stop offset="1" stop-color="#111827"/>
+    <style>
+      :root {
+        --lunet-accent-start: #7c3aed;
+        --lunet-accent-end: #22d3ee;
+        --lunet-bg-start: #0b0b10;
+        --lunet-bg-end: #111827;
+        --lunet-card-bg: #14141d;
+        --lunet-cutout: #0b0b10;
+        --lunet-title: #e5e7eb;
+        --lunet-subtitle: #a5b4fc;
+        --lunet-font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      }
+
+      .bg-start { stop-color: var(--lunet-bg-start); }
+      .bg-end { stop-color: var(--lunet-bg-end); }
+      .accent-start { stop-color: var(--lunet-accent-start); }
+      .accent-end { stop-color: var(--lunet-accent-end); }
+
+      .banner-bg { fill: url(#banner-bg-gradient); }
+      .ambient-primary { fill: url(#banner-accent-gradient); opacity: 0.22; }
+      .ambient-secondary { fill: url(#banner-accent-gradient); opacity: 0.14; }
+
+      .logo-card {
+        fill: var(--lunet-card-bg);
+        stroke: url(#banner-accent-gradient);
+        stroke-width: 6;
+      }
+
+      .logo-face { fill: url(#banner-accent-gradient); opacity: 0.95; }
+      .logo-cutout { fill: var(--lunet-cutout); opacity: 0.85; }
+      .logo-smile {
+        fill: none;
+        stroke: var(--lunet-cutout);
+        stroke-width: 10;
+        stroke-linecap: round;
+        opacity: 0.85;
+      }
+
+      .title {
+        fill: var(--lunet-title);
+        font-family: var(--lunet-font-family);
+        font-size: 72px;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        fill: var(--lunet-subtitle);
+        font-family: var(--lunet-font-family);
+        font-size: 28px;
+      }
+    </style>
+
+    <linearGradient id="banner-bg-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop class="bg-start" offset="0"/>
+      <stop class="bg-end" offset="1"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#7c3aed"/>
-      <stop offset="1" stop-color="#22d3ee"/>
+
+    <linearGradient id="banner-accent-gradient" x1="0" y1="0" x2="1" y2="0">
+      <stop class="accent-start" offset="0"/>
+      <stop class="accent-end" offset="1"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <circle cx="880" cy="260" r="240" fill="url(#accent)" opacity="0.22"/>
-  <circle cx="980" cy="380" r="180" fill="url(#accent)" opacity="0.14"/>
-  <rect x="84" y="110" width="160" height="160" rx="40" fill="#0b0b10" stroke="url(#accent)" stroke-width="6"/>
-  <circle cx="164" cy="190" r="56" fill="url(#accent)" opacity="0.95"/>
-  <circle cx="185" cy="172" r="13" fill="#0b0b10" opacity="0.85"/>
-  <path d="M128 214c13 15 30 24 52 24" fill="none" stroke="#0b0b10" stroke-width="10" stroke-linecap="round" opacity="0.85"/>
-  <text x="280" y="188" font-size="72" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" fill="#e5e7eb" font-weight="700">Lunet</text>
-  <text x="280" y="248" font-size="28" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" fill="#a5b4fc">Static site generator for .NET • Powered by Scriban</text>
-</svg>
 
+  <rect class="banner-bg" width="1200" height="630"/>
+  <circle class="ambient-primary" cx="880" cy="260" r="240"/>
+  <circle class="ambient-secondary" cx="980" cy="380" r="180"/>
+  <rect class="logo-card" x="84" y="110" width="160" height="160" rx="40"/>
+  <circle class="logo-face" cx="164" cy="190" r="56"/>
+  <circle class="logo-cutout" cx="185" cy="172" r="13"/>
+  <path class="logo-smile" d="M128 214c13 15 30 24 52 24"/>
+  <text class="title" x="280" y="188">Lunet</text>
+  <text class="subtitle" x="280" y="248">Static site generator for .NET • Powered by Scriban</text>
+</svg>
