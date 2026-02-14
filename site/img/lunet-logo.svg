@@ -7,13 +7,15 @@
   <defs>
     <style>
       :root {
-        --lunet-accent-start: #7c3aed;
+        --lunet-accent-start: #ff2f8f;
+        --lunet-accent-middle: #2f8dff;
         --lunet-accent-end: #22d3ee;
         --lunet-card-bg: #14141d;
         --lunet-cutout: #0b0b10;
       }
 
       .accent-start { stop-color: var(--lunet-accent-start); }
+      .accent-middle { stop-color: var(--lunet-accent-middle); }
       .accent-end { stop-color: var(--lunet-accent-end); }
 
       .logo-card {
@@ -35,6 +37,7 @@
 
     <linearGradient id="logo-accent-gradient" x1="0" y1="0" x2="1" y2="1">
       <stop class="accent-start" offset="0"/>
+      <stop class="accent-middle" offset="0.5"/>
       <stop class="accent-end" offset="1"/>
     </linearGradient>
   </defs>

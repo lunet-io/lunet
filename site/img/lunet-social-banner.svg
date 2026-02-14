@@ -7,7 +7,8 @@
   <defs>
     <style>
       :root {
-        --lunet-accent-start: #7c3aed;
+        --lunet-accent-start: #ff2f8f;
+        --lunet-accent-middle: #2f8dff;
         --lunet-accent-end: #22d3ee;
         --lunet-bg-start: #0b0b10;
         --lunet-bg-end: #111827;
@@ -21,6 +22,7 @@
       .bg-start { stop-color: var(--lunet-bg-start); }
       .bg-end { stop-color: var(--lunet-bg-end); }
       .accent-start { stop-color: var(--lunet-accent-start); }
+      .accent-middle { stop-color: var(--lunet-accent-middle); }
       .accent-end { stop-color: var(--lunet-accent-end); }
 
       .banner-bg { fill: url(#banner-bg-gradient); }
@@ -64,6 +66,7 @@
 
     <linearGradient id="banner-accent-gradient" x1="0" y1="0" x2="1" y2="0">
       <stop class="accent-start" offset="0"/>
+      <stop class="accent-middle" offset="0.5"/>
       <stop class="accent-end" offset="1"/>
     </linearGradient>
   </defs>
@@ -76,5 +79,5 @@
   <circle class="logo-cutout" cx="185" cy="172" r="13"/>
   <path class="logo-smile" d="M128 214c13 15 30 24 52 24"/>
   <text class="title" x="280" y="188">Lunet</text>
-  <text class="subtitle" x="280" y="248">Static site generator for .NET • Powered by Scriban</text>
+  <text class="subtitle" x="280" y="248">Static site generator for .NET • Powered by Scriban and Markdig</text>
 </svg>
