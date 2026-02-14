@@ -9,7 +9,7 @@ namespace Lunet.Helpers;
 
 public static class ExceptionUtil
 {
-    public static string GetReason(this Exception exception)
+    public static string GetReason(this Exception? exception)
     {
         var stringBuilder = new StringBuilder();
         bool requireSeparator = true;
@@ -20,8 +20,11 @@ public static class ExceptionUtil
                 stringBuilder.Append(".");
             }
             stringBuilder.Append(" ");
-            var message = exception.Message;
-            message = message.Trim();
+            var message = exception.Message?.Trim();
+            if (string.IsNullOrEmpty(message))
+            {
+                message = exception.GetType().Name;
+            }
             stringBuilder.Append(message);
             requireSeparator = message.EndsWith(".");
             exception = exception.InnerException;

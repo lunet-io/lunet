@@ -34,5 +34,5 @@ public class ServerModule : SiteModule<ServerPlugin>
         });
     }
 
-    public Command ServerCommand { get; private set; }
+    public Command ServerCommand { get; private set; } = null!;
 }

@@ -16,7 +16,7 @@ internal static class StreamWriterHelper
     private const int DefaultSize = 16384;
 
     [ThreadStatic]
-    private static byte[] _writeBuffer;
+    private static byte[]? _writeBuffer;
 
     public static void WriteStringOptimized(this Stream stream, string content, Encoding encoding)
     {

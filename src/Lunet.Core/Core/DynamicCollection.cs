@@ -66,7 +66,7 @@ public abstract class DynamicCollection<T, TInstance> : ScriptArray<T> where T :
         return new TInstance();
     }
         
-    public TItem GetSafeValue<TItem>(string name)
+    public TItem? GetSafeValue<TItem>(string name)
     {
         return this.ScriptObject[name] is TItem tvalue ? tvalue : default;
     }

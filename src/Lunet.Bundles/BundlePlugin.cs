@@ -43,7 +43,7 @@ public class BundlePlugin : SitePlugin
 
     public List<BundleObject> List { get; }
 
-    public BundleObject FindBundle(string bundleName)
+    public BundleObject? FindBundle(string? bundleName)
     {
         lock (_lock)
         {
@@ -51,7 +51,7 @@ public class BundlePlugin : SitePlugin
         }
     }
 
-    public BundleObject GetOrCreateBundle(string bundleName)
+    public BundleObject GetOrCreateBundle(string? bundleName)
     {
         bundleName = GetDefaultBundleName(bundleName);
         lock (_lock)
@@ -68,7 +68,7 @@ public class BundlePlugin : SitePlugin
         }
     }
 
-    private BundleObject FindBundleInternal(string bundleName)
+    private BundleObject? FindBundleInternal(string? bundleName)
     {
         bundleName = GetDefaultBundleName(bundleName);
         foreach (var bundle in List)
@@ -81,14 +81,14 @@ public class BundlePlugin : SitePlugin
         return null;
     }
 
-    private string GetDefaultBundleName(string bundleName)
+    private string GetDefaultBundleName(string? bundleName)
     {
         var newBundleName = bundleName;
         if (string.IsNullOrWhiteSpace(bundleName))
         {
             newBundleName = DefaultBundleName;
         }
-        return newBundleName;
+        return newBundleName!;
     }
 
     /// <summary>

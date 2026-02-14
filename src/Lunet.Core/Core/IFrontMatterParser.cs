@@ -13,5 +13,5 @@ public interface IFrontMatterParser
 
     bool CanHandle(ReadOnlySpan<char> header);
 
-    IFrontMatter TryParse(string text, string sourceFilePath, out TextPosition position);
+    IFrontMatter? TryParse(string text, string sourceFilePath, out TextPosition position);
 }

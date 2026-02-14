@@ -12,4 +12,4 @@ public interface IContentProcessor : ISiteProcessor
     ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage);
 }
 
-public delegate void TryProcessPreContentDelegate(UPath path, ref ScriptObject preContent);
+public delegate void TryProcessPreContentDelegate(UPath path, ref ScriptObject? preContent);

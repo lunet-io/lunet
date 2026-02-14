@@ -74,7 +74,7 @@ public class SourceMapGenerator
     /// <summary>
     /// Convenience wrapper around SerializeMapping, but returns a base 64 encoded string instead
     /// </summary>
-    public string GenerateSourceMapInlineComment(SourceMap sourceMap, JsonSerializerSettings jsonSerializerSettings = null)
+    public string GenerateSourceMapInlineComment(SourceMap sourceMap, JsonSerializerSettings? jsonSerializerSettings = null)
     {
         string mappings = SerializeMapping(sourceMap, jsonSerializerSettings);
         byte[] bytes = System.Text.Encoding.UTF8.GetBytes(mappings);
@@ -87,7 +87,7 @@ public class SourceMapGenerator
     /// <summary>
     /// Serialize SourceMap object to json string with given serialize settings
     /// </summary>
-    public string SerializeMapping(SourceMap sourceMap, JsonSerializerSettings jsonSerializerSettings = null)
+    public string SerializeMapping(SourceMap sourceMap, JsonSerializerSettings? jsonSerializerSettings = null)
     {
         if (sourceMap == null)
         {
@@ -104,7 +104,7 @@ public class SourceMapGenerator
 
         if (sourceMap.ParsedMappings != null && sourceMap.ParsedMappings.Count > 0)
         {
-            MappingGenerateState state = new MappingGenerateState(sourceMap.Names, sourceMap.Sources);
+            MappingGenerateState state = new MappingGenerateState(sourceMap.Names ?? new List<string>(), sourceMap.Sources ?? new List<string>());
             List<char> output = new List<char>();
 
             foreach (MappingEntry entry in sourceMap.ParsedMappings)
@@ -172,7 +172,7 @@ public class SourceMapGenerator
         Base64VlqEncoder.Encode(output, entry.GeneratedSourcePosition.ZeroBasedColumnNumber - state.LastGeneratedPosition.ZeroBasedColumnNumber);
         state.LastGeneratedPosition.ZeroBasedColumnNumber = entry.GeneratedSourcePosition.ZeroBasedColumnNumber;
 
-        if (entry.OriginalFileName != null)
+        if (entry.OriginalFileName != null && entry.OriginalSourcePosition != null)
         {
             int sourceIndex = state.Sources.IndexOf(entry.OriginalFileName);
             if (sourceIndex < 0)

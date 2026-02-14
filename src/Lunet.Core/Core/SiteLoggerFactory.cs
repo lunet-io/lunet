@@ -38,7 +38,7 @@ public sealed class SiteLoggerFactory : IDisposable
 
     public bool HasErrors { get; private set; }
     
-    public Func<string, LogLevel, bool> LogFilter { get; set; }
+    public Func<string, LogLevel, bool>? LogFilter { get; set; }
 
     public SiteLogger CreateLogger(string categoryName)
     {

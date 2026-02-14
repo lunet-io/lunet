@@ -9,7 +9,7 @@ namespace Lunet.Bundles;
 
 public class BundleLink : DynamicObject<BundleObject>
 {
-    public BundleLink(BundleObject parent, string type, string path, string url, string urlWithoutBasePath, string mode) : base(parent)
+    public BundleLink(BundleObject parent, string type, string? path, string? url, string? urlWithoutBasePath, string? mode) : base(parent)
     {
         Type = type;
         Path = path;
@@ -20,24 +20,24 @@ public class BundleLink : DynamicObject<BundleObject>
 
     public string Type
     {
-        get => GetSafeValue<string>("type");
+        get => GetSafeValue<string>("type") ?? string.Empty;
         set => this["type"] = value;
     }
 
 
-    public string Path
+    public string? Path
     {
         get => GetSafeValue<string>("path");
         set => this["path"] = value;
     }
 
-    public string Url
+    public string? Url
     {
         get => GetSafeValue<string>("url");
         set => this["url"] = value;
     }
     
-    public string UrlWithoutBasePath
+    public string? UrlWithoutBasePath
     {
         get => GetSafeValue<string>("url_without_basepath");
         set => this["url_without_basepath"] = value;
@@ -49,7 +49,7 @@ public class BundleLink : DynamicObject<BundleObject>
         set => this["mode"] = value;
     }
 
-    public string Content { get; set; }
+    public string? Content { get; set; }
 
-    public ContentObject ContentObject { get; set; }
+    public ContentObject? ContentObject { get; set; }
 }

@@ -32,7 +32,7 @@ public sealed class ExtendsPlugin : SitePlugin
     private const string DefaultContentDirectory = "dist";
     private static readonly object DownloadedMainRefsCacheKey = new object();
 
-    private delegate object ExtendFunctionDelegate(object o);
+    private delegate object? ExtendFunctionDelegate(object? o);
 
     public ExtendsPlugin(SiteObject site) : base(site)
     {
@@ -52,23 +52,23 @@ public sealed class ExtendsPlugin : SitePlugin
     /// </summary>
     public List<ExtendObject> CurrentList { get; }
 
-    public ExtendObject LoadExtend(string extendName, bool isPrivate)
+    public ExtendObject? LoadExtend(string extendName, bool isPrivate)
     {
         if (extendName == null) throw new ArgumentNullException(nameof(extendName));
         var request = ParseQuery(extendName, isPrivate);
         return LoadExtend(request);
     }
 
-    public ExtendObject TryInstall(string extendName, bool isPrivate = false)
+    public ExtendObject? TryInstall(string extendName, bool isPrivate = false)
     {
         if (extendName == null) throw new ArgumentNullException(nameof(extendName));
         var request = ParseQuery(extendName, isPrivate);
         return TryInstall(request);
     }
 
-    private ExtendObject LoadExtend(ExtendRequest request)
+    private ExtendObject? LoadExtend(ExtendRequest request)
     {
-        ExtendObject extendObject = null;
+        ExtendObject? extendObject = null;
 
         foreach (var existingExtend in CurrentList)
         {
@@ -89,7 +89,7 @@ public sealed class ExtendsPlugin : SitePlugin
             CurrentList.Add(extendObject);
 
             var configPath = new FileEntry(extendObject.FileSystem, UPath.Root / SiteFileSystems.DefaultConfigFileName);
-            object result;
+            object? result;
             Site.Scripts.TryImportScriptFromFile(configPath, Site, ScriptFlags.AllowSiteFunctions, out result);
         }
 
@@ -104,13 +104,13 @@ public sealed class ExtendsPlugin : SitePlugin
         return extendObject;
     }
 
-    private ExtendObject TryInstall(ExtendRequest request)
+    private ExtendObject? TryInstall(ExtendRequest request)
     {
         var installPath = GetInstallPath(request);
         var localMetaPath = SiteFileSystems.LunetFolder / installPath;
         var localExtendDir = new DirectoryEntry(Site.SiteFileSystem, localMetaPath);
         var cacheExtendDir = new DirectoryEntry(Site.CacheMetaFileSystem, installPath);
-        IFileSystem extendFileSystem = null;
+        IFileSystem? extendFileSystem = null;
 
         bool isLatestMainRequest = request.IsGitHub && string.IsNullOrEmpty(request.Tag);
         bool shouldRefreshLatestMain = isLatestMainRequest && ShouldRefreshLatestMain(request.CacheKey);
@@ -199,7 +199,7 @@ public sealed class ExtendsPlugin : SitePlugin
         }
     }
 
-    private static bool TryGetFilterPath(ZipArchive zip, string directory, out string filterPath)
+    private static bool TryGetFilterPath(ZipArchive zip, string directory, out string? filterPath)
     {
         filterPath = null;
         directory = NormalizeDirectory(directory);
@@ -250,8 +250,8 @@ public sealed class ExtendsPlugin : SitePlugin
 
         return ExtendsFolder
             / GitHubFolderName
-            / SanitizePathSegment(request.Owner)
-            / SanitizePathSegment(request.RepositoryName)
+            / SanitizePathSegment(request.Owner ?? string.Empty)
+            / SanitizePathSegment(request.RepositoryName ?? string.Empty)
             / SanitizePathSegment(request.Tag ?? DefaultGitHubBranch)
             / SanitizePathSegment(NormalizeDirectory(request.Directory));
     }
@@ -309,7 +309,7 @@ public sealed class ExtendsPlugin : SitePlugin
         return hashSet;
     }
 
-    private ExtendRequest ParseQuery(object query)
+    private ExtendRequest ParseQuery(object? query)
     {
         if (query is string queryAsString)
         {
@@ -383,7 +383,7 @@ public sealed class ExtendsPlugin : SitePlugin
         return new ExtendRequest(normalizedQuery, normalizedQuery, null, null, null, null, DefaultContentDirectory, isPrivate);
     }
 
-    private static string NormalizeString(string value)
+    private static string? NormalizeString(string? value)
     {
         if (value == null)
         {
@@ -394,7 +394,7 @@ public sealed class ExtendsPlugin : SitePlugin
         return value.Length == 0 ? null : value;
     }
 
-    private static bool LooksLikeGitHubReference(string query)
+    private static bool LooksLikeGitHubReference(string? query)
     {
         if (query == null)
         {
@@ -411,7 +411,7 @@ public sealed class ExtendsPlugin : SitePlugin
         return parts.Length == 2 && parts[0].Length > 0 && parts[1].Length > 0;
     }
 
-    private static void SplitVersion(string query, out string queryWithoutVersion, out string version)
+    private static void SplitVersion(string query, out string queryWithoutVersion, out string? version)
     {
         version = null;
         queryWithoutVersion = query;
@@ -431,7 +431,7 @@ public sealed class ExtendsPlugin : SitePlugin
         version = query.Substring(atIndex + 1);
     }
 
-    private static bool TryNormalizeGitHubRepository(string repositoryQuery, out string repository, out string owner, out string repositoryName)
+    private static bool TryNormalizeGitHubRepository(string? repositoryQuery, out string? repository, out string? owner, out string? repositoryName)
     {
         repository = null;
         owner = null;
@@ -496,7 +496,7 @@ public sealed class ExtendsPlugin : SitePlugin
         return true;
     }
 
-    private object ExtendFunction(object query)
+    private object? ExtendFunction(object? query)
     {
         var request = ParseQuery(query);
         return LoadExtend(request);
@@ -504,10 +504,10 @@ public sealed class ExtendsPlugin : SitePlugin
 
     private readonly struct ExtendRequest
     {
-        public ExtendRequest(string name, string fullName, string repository, string owner, string repositoryName, string tag, string directory, bool isPrivate)
+        public ExtendRequest(string? name, string? fullName, string? repository, string? owner, string? repositoryName, string? tag, string directory, bool isPrivate)
         {
-            Name = name;
-            FullName = fullName;
+            Name = name ?? string.Empty;
+            FullName = fullName ?? Name;
             Repository = repository;
             Owner = owner;
             RepositoryName = repositoryName;
@@ -520,13 +520,13 @@ public sealed class ExtendsPlugin : SitePlugin
 
         public string FullName { get; }
 
-        public string Repository { get; }
+        public string? Repository { get; }
 
-        public string Owner { get; }
+        public string? Owner { get; }
 
-        public string RepositoryName { get; }
+        public string? RepositoryName { get; }
 
-        public string Tag { get; }
+        public string? Tag { get; }
 
         public string Directory { get; }
 
@@ -534,8 +534,8 @@ public sealed class ExtendsPlugin : SitePlugin
 
         public bool IsGitHub => Repository != null;
 
-        public string Url => IsGitHub ? $"https://github.com/{Repository}" : null;
+        public string? Url => IsGitHub ? $"https://github.com/{Repository}" : null;
 
-        public string CacheKey => IsGitHub ? $"{Repository}@{Tag ?? DefaultGitHubBranch}/{Directory}" : Name;
+        public string CacheKey => IsGitHub ? $"{Repository!}@{Tag ?? DefaultGitHubBranch}/{Directory}" : Name;
     }
 }

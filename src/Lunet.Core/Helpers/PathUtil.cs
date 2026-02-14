@@ -16,7 +16,7 @@ public static class PathUtil
     public static SearchPattern SearchPattern(this UPath path)
     {
         var rootPath = UPath.Root;
-        string searchPath = null;
+        string? searchPath = null;
         var items = path.Split();
         foreach (var item in items)
         {
@@ -82,7 +82,7 @@ public static class PathUtil
         if (filePath == null) throw new ArgumentNullException(nameof(filePath));
         filePath = filePath.Trim();
 
-        StringBuilder builder = null;
+        StringBuilder? builder = null;
         int index = -1;
         int previousOffset = 0;
         while ((index = filePath.IndexOf('\\', previousOffset)) >= 0)

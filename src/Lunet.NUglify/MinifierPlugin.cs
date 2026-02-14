@@ -24,7 +24,7 @@ public class MinifierPlugin : SitePlugin, IContentMinifier
         bundlePlugin.BundleProcessor.Minifiers.AddIfNotAlready(this);
     }
 
-    public string Minify(string type, string content, string contentPath)
+    public string Minify(string type, string content, string? contentPath)
     {
         // TODO: handle filenames, options...etc.
         UglifyResult result;

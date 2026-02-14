@@ -52,12 +52,12 @@ public class WatcherModule : SiteModule
         });
     }
 
-    public Command BuildAndWatchCommand { get; private set; }
+    public Command BuildAndWatchCommand { get; private set; } = null!;
 }
 
 public class SiteWatcherService : ISiteService
 {
-    private DirectoryEntry _siteDirectory;
+    private DirectoryEntry _siteDirectory = null!;
 
     private const int SleepForward = 48;
     private const int MillisTimeout = 200;
@@ -67,7 +67,7 @@ public class SiteWatcherService : ISiteService
     private readonly Thread _processEventsThread;
     private readonly object _batchLock;
     private readonly Stopwatch _clock;
-    private FileSystemEventBatchArgs _batchEvents;
+    private FileSystemEventBatchArgs? _batchEvents;
     private readonly ManualResetEvent _onClosingEvent;
     private bool _threadStarted = false;
     private readonly SiteConfiguration _siteConfig;
@@ -85,11 +85,15 @@ public class SiteWatcherService : ISiteService
 
     public BlockingCollection<FileSystemEventBatchArgs> FileSystemEvents { get; }
 
-    public Func<UPath, bool> IsHandlingPath;
+    public Func<UPath, bool>? IsHandlingPath;
         
     public static async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
         var site = runner.CurrentSite;
+        if (site is null)
+        {
+            return RunnerResult.ExitWithError;
+        }
         var runnerResult = RunnerResult.Continue;
         var watcherService = runner.GetService<SiteWatcherService>();
 
@@ -151,7 +155,7 @@ public class SiteWatcherService : ISiteService
         _threadStarted = true;
         while (true)
         {
-            FileSystemEventBatchArgs batchEventsCopy = null;
+            FileSystemEventBatchArgs? batchEventsCopy = null;
 
             if (_onClosingEvent.WaitOne(SleepForward))
             {
@@ -181,6 +185,11 @@ public class SiteWatcherService : ISiteService
             // Invoke listeners
             try
             {
+                if (batchEventsCopy is null)
+                {
+                    continue;
+                }
+
                 SquashAndLogChanges(batchEventsCopy);
 
                 // Squash can discard events (e.g if files excluded)
@@ -256,7 +265,7 @@ public class SiteWatcherService : ISiteService
             return Equals(FileSystem, other.FileSystem) && FullPath.Equals(other.FullPath);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SimpleFileChangedEventArgs other && Equals(other);
         }
@@ -344,8 +353,7 @@ public class SiteWatcherService : ISiteService
                 return;
             }
 
-            IFileSystemWatcher watcher;
-            if (_watchers.TryGetValue(directory, out watcher))
+            if (_watchers.TryGetValue(directory, out var watcher))
             {
                 return;
             }
@@ -400,7 +408,7 @@ public class SiteWatcherService : ISiteService
         watcher.Dispose();
     }
 
-    private void OnFileSystemEvent(object sender, FileChangedEventArgs e)
+    private void OnFileSystemEvent(object? sender, FileChangedEventArgs e)
     {
         // Don't log events until the thread is started
         if (!_threadStarted) return;
@@ -425,7 +433,7 @@ public class SiteWatcherService : ISiteService
                     break;
                 case WatcherChangeTypes.Created:
                     // Create watcher only for top-level directories
-                    if (isDirectory && dir.Parent != null && dir.Parent == _siteDirectory)
+                    if (isDirectory && dir.Path.GetDirectory() == _siteDirectory.Path)
                     {
                         WatchFolder(dir);
                     }
@@ -440,7 +448,7 @@ public class SiteWatcherService : ISiteService
                             DisposeWatcher(previousDirectory);
 
                             // Create watcher only for top-level directories
-                            if (dir.Parent != null && dir.Parent == _siteDirectory)
+                            if (dir.Path.GetDirectory() == _siteDirectory.Path)
                             {
                                 WatchFolder(dir);
                             }
@@ -463,7 +471,7 @@ public class SiteWatcherService : ISiteService
         }
     }
 
-    private void WatcherOnError(object sender, FileSystemErrorEventArgs errorEventArgs)
+    private void WatcherOnError(object? sender, FileSystemErrorEventArgs errorEventArgs)
     {
         // Not sure if we have something to do with the errors, so don't log them for now
         var watcher = sender as IFileSystemWatcher;
@@ -473,6 +481,6 @@ public class SiteWatcherService : ISiteService
     public void Dispose()
     {
         Stop();
-        _onClosingEvent?.Dispose();
+        _onClosingEvent.Dispose();
     }
 }

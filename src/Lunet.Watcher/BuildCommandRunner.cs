@@ -18,6 +18,11 @@ public class BuildCommandRunner : ISiteCommandRunner
 
     public async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
+        if (runner.CurrentSite is null)
+        {
+            return RunnerResult.ExitWithError;
+        }
+
         // Setup the environment
         runner.CurrentSite.Environment = Development ? "dev" : "prod";
         runner.Config.SingleThreaded = SingleThreaded;
@@ -26,6 +31,11 @@ public class BuildCommandRunner : ISiteCommandRunner
 
     protected virtual async Task<RunnerResult> RunAsyncImpl(SiteRunner runner, CancellationToken cancellationToken)
     {
+        if (runner.CurrentSite is null)
+        {
+            return RunnerResult.ExitWithError;
+        }
+
         runner.CurrentSite.Build();
 
         if (Watch)

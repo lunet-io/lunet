@@ -29,27 +29,27 @@ public class SourceMap
     /// <summary>
     /// The name of the generated file to which this source map corresponds
     /// </summary>
-    public string File;
+    public string? File;
 
     /// <summary>
     /// The raw, unparsed mappings entry of the soure map
     /// </summary>
-    public string Mappings;
+    public string? Mappings;
 
     /// <summary>
     /// The list of source files that were the inputs used to generate this output file
     /// </summary>
-    public List<string> Sources;
+    public List<string>? Sources;
 
     /// <summary>
     /// A list of known original names for entries in this file
     /// </summary>
-    public List<string> Names;
+    public List<string>? Names;
 
     /// <summary>
     /// Parsed version of the mappings string that is used for getting original names and source positions
     /// </summary>
-    public List<MappingEntry> ParsedMappings;
+    public List<MappingEntry>? ParsedMappings;
 
     public SourceMap Clone()
     {
@@ -58,9 +58,9 @@ public class SourceMap
             Version = this.Version,
             File = this.File,
             Mappings = this.Mappings,
-            Sources = new List<string>(this.Sources),
-            Names = new List<string>(this.Names),
-            ParsedMappings = new List<MappingEntry>(this.ParsedMappings.Select(m => m.Clone()))
+            Sources = this.Sources == null ? null : new List<string>(this.Sources),
+            Names = this.Names == null ? null : new List<string>(this.Names),
+            ParsedMappings = this.ParsedMappings == null ? null : new List<MappingEntry>(this.ParsedMappings.Select(m => m.Clone()))
         };
     }
 
@@ -73,7 +73,7 @@ public class SourceMap
     /// <param name="sourceFile">The filename of the source file. If not specified, submap's File property will be used</param>
     /// <returns>A new source map</returns>
     /// </summary>
-    public SourceMap ApplySourceMap(SourceMap submap, string sourceFile = null)
+    public SourceMap ApplySourceMap(SourceMap submap, string? sourceFile = null)
     {
         if (submap == null)
         {
@@ -100,13 +100,13 @@ public class SourceMap
         };
 
         // transform mappings in this source map
-        foreach (MappingEntry mappingEntry in this.ParsedMappings)
+        foreach (MappingEntry mappingEntry in this.ParsedMappings ?? [])
         {
             MappingEntry newMappingEntry = mappingEntry.Clone();
 
             if (mappingEntry.OriginalFileName == sourceFile && mappingEntry.OriginalSourcePosition != null)
             {
-                MappingEntry correspondingSubMapMappingEntry = submap.GetMappingEntryForGeneratedSourcePosition(mappingEntry.OriginalSourcePosition);
+                var correspondingSubMapMappingEntry = submap.GetMappingEntryForGeneratedSourcePosition(mappingEntry.OriginalSourcePosition);
 
                 if (correspondingSubMapMappingEntry != null)
                 {
@@ -114,7 +114,7 @@ public class SourceMap
                     newMappingEntry = new MappingEntry
                     {
                         GeneratedSourcePosition = mappingEntry.GeneratedSourcePosition.Clone(),
-                        OriginalSourcePosition = correspondingSubMapMappingEntry.OriginalSourcePosition.Clone(),
+                        OriginalSourcePosition = correspondingSubMapMappingEntry.OriginalSourcePosition?.Clone(),
                         OriginalName = correspondingSubMapMappingEntry.OriginalName?? mappingEntry.OriginalName,
                         OriginalFileName = correspondingSubMapMappingEntry.OriginalFileName?? mappingEntry.OriginalFileName
                     };
@@ -122,8 +122,8 @@ public class SourceMap
             }
 
             // Copy into "Sources" and "Names"
-            string originalFileName = newMappingEntry.OriginalFileName;
-            string originalName = newMappingEntry.OriginalName;
+            string? originalFileName = newMappingEntry.OriginalFileName;
+            string? originalName = newMappingEntry.OriginalName;
 
             if (originalFileName != null && !newSourceMap.Sources.Contains(originalFileName))
             {
@@ -147,7 +147,7 @@ public class SourceMap
     /// </summary>
     /// <param name="generatedSourcePosition">The location in generated code for which we want to discover a mapping entry</param>
     /// <returns>A mapping entry that is a close match for the desired generated code location</returns>
-    public virtual MappingEntry GetMappingEntryForGeneratedSourcePosition(SourcePosition generatedSourcePosition)
+    public virtual MappingEntry? GetMappingEntryForGeneratedSourcePosition(SourcePosition generatedSourcePosition)
     {
         if (ParsedMappings == null)
         {

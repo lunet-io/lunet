@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using Lunet.Scripts;
@@ -65,7 +66,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
     /// <param name="uid">The uid to look a content object for.</param>
     /// <param name="content">The content object if found.</param>
     /// <returns>`true` if the content with the specified uid was found; `false` otherwise</returns>
-    public bool TryFindByUid(string uid, out ContentObject content)
+    public bool TryFindByUid(string? uid, [NotNullWhen(true)] out ContentObject? content)
     {
         content = null;
         if (uid == null) return false;
@@ -77,7 +78,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         return _mapUidToContent.TryGetValue(uid, out content);
     }
 
-    public bool TryGetTitleByUid(string uid, out string title)
+    public bool TryGetTitleByUid(string uid, out string? title)
     {
         if (TryFindByUid(uid, out var uidContent))
         {
@@ -95,7 +96,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         return false;
     }
 
-    public bool TryGetExternalUid(string uid, out string name, out string fullname, out string url)
+    public bool TryGetExternalUid(string uid, out string? name, out string? fullname, out string? url)
     {
         if (_uidExtraContent.TryGetValue(uid, out var extraContent))
         {
@@ -123,7 +124,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         return false;
     }
         
-    public bool TryFindByPath(string path, out ContentObject content)
+    public bool TryFindByPath(string path, [NotNullWhen(true)] out ContentObject? content)
     {
         return _mapPathToContent.TryGetValue(path, out content);
     }
@@ -177,7 +178,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
 
     private ScriptObject FunctionXRef(string uid)
     {
-        if (uid == null) return null;
+        if (uid == null) return null!;
 
         if (TryFindByUid(uid, out var uidContent))
         {
@@ -203,7 +204,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             };
         }
 
-        return null;
+        return null!;
     }
 
     private string UrlRef(TemplateContext context, string url)
@@ -211,7 +212,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         return UrlRef(context is LunetTemplateContext lunetContext ? lunetContext.Page : null, url);
     }
 
-    public string UrlRef(ContentObject fromPage, string url)
+    public string UrlRef(ContentObject? fromPage, string url)
     {
         return UrlRef(fromPage, url, false);
     }
@@ -221,12 +222,12 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         return UrlRelRef(context is LunetTemplateContext lunetContext ? lunetContext.Page : null, url);
     }
 
-    public string UrlRelRef(ContentObject fromPage, string url)
+    public string UrlRelRef(ContentObject? fromPage, string url)
     {
         return UrlRef(fromPage, url, true);
     }
         
-    private string UrlRef(ContentObject page, string url, bool rel)
+    private string UrlRef(ContentObject? page, string? url, bool rel)
     {
         url ??= "/";
 
@@ -241,19 +242,19 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
                 var xref = url.Substring("xref:".Length);
                 if (TryFindByUid(xref, out var pageUid))
                 {
-                    url = pageUid.Url;
-                    return rel ? url : (string) (UPath) $"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
+                    url = pageUid.Url ?? string.Empty;
+                    return rel ? url : (string)(UPath)$"{baseUrl}/{(basePath ?? string.Empty)}/{url}";
                 }
 
                 if (TryGetExternalUid(xref, out _, out _, out url))
                 {
-                    return url;
+                    return url ?? string.Empty;
                 }
 
-                Site.Warning($"Unable to find xref {xref} in page {page.Url}");
+                Site.Warning($"Unable to find xref {xref} in page {page?.Url}");
             }
                 
-            return url;
+            return url ?? string.Empty;
         }
 
         // Validate the url

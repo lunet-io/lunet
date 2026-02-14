@@ -23,6 +23,10 @@ public class ServeCommandRunner : BuildCommandRunner
     protected override async Task<RunnerResult> RunAsyncImpl(SiteRunner runner, CancellationToken cancellationToken)
     {
         var site = runner.CurrentSite;
+        if (site is null)
+        {
+            return RunnerResult.ExitWithError;
+        }
         var runnerResult = RunnerResult.Exit;
 
         // Start or Update the web server

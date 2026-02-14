@@ -61,7 +61,7 @@ public class SearchPlugin : SitePlugin
 
     public string Engine
     {
-        get => GetSafeValue<string>("engine");
+        get => GetSafeValue<string>("engine") ?? DefaultKind;
         set => SetValue("engine", value);
     }
 
@@ -75,13 +75,13 @@ public class SearchPlugin : SitePlugin
 
     public string Url
     {
-        get => GetSafeValue<string>("url");
+        get => GetSafeValue<string>("url") ?? (string)DefaultUrl;
         set => SetValue("url", value);
     }
 
     private class SearchProcessorDispatch : ContentProcessor<SearchPlugin>
     {
-        private SearchEngine _selectedEngine;
+        private SearchEngine? _selectedEngine;
 
         public SearchProcessorDispatch(SearchPlugin plugin) : base(plugin)
         {

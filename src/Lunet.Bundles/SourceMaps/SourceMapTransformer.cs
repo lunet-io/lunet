@@ -38,7 +38,7 @@ public static class SourceMapTransformer
 
         HashSet<int> visitedLines = new HashSet<int>();
 
-        foreach (MappingEntry mapping in sourceMap.ParsedMappings)
+        foreach (MappingEntry mapping in sourceMap.ParsedMappings ?? [])
         {
             int generatedLine = mapping.GeneratedSourcePosition.ZeroBasedLineNumber;
 
@@ -47,7 +47,10 @@ public static class SourceMapTransformer
                 visitedLines.Add(generatedLine);
                 var newMapping = mapping.Clone();
                 newMapping.GeneratedSourcePosition.ZeroBasedColumnNumber = 0;
-                newMapping.OriginalSourcePosition.ZeroBasedColumnNumber = 0;
+                if (newMapping.OriginalSourcePosition != null)
+                {
+                    newMapping.OriginalSourcePosition.ZeroBasedColumnNumber = 0;
+                }
                 newMap.ParsedMappings.Add(newMapping);
             }
         }

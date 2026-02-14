@@ -49,7 +49,7 @@ public static class SiteObjectExtensions
     {
         var profiler = site.Config.Profiler;
         if (profiler == null) return;
-        profiler.BeginEvent(name, null, color);
+        profiler.BeginEvent(name, string.Empty, color);
     }
 
     public static void EndEvent(this SiteObject site)
@@ -161,6 +161,6 @@ public static class SiteObjectExtensions
 
     private static LogEventId NewEventId(ISiteLoggerProvider site)
     {
-        return new LogEventId(site.LogEventId++, null);
+        return new LogEventId(site.LogEventId++, string.Empty);
     }
 }

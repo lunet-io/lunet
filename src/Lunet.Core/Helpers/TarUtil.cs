@@ -29,10 +29,8 @@ public
     /// <param name="filterPath">The path inside the archive to filter entries from</param>
     /// <exception cref="System.ArgumentNullException">if outputDirectory is null</exception>
     /// <exception cref="InvalidDataException">If an invalid entry was found</exception>
-    public static void UntarTo(this Stream stream, DirectoryEntry outputDirectory, string filterPath = null)
+    public static void UntarTo(this Stream stream, DirectoryEntry outputDirectory, string? filterPath = null)
     {
-        if (outputDirectory == null) throw new ArgumentNullException(nameof(outputDirectory));
-
         if (filterPath != null && !filterPath.EndsWith("/"))
         {
             filterPath = filterPath.Replace("\\", "/") + "/";

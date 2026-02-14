@@ -31,12 +31,12 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
         ErrorRedirect = "/404.html";
 
         SharedFileSystem = Config.FileSystems.SharedFileSystem;
-        SiteFileSystem = Config.FileSystems.InputFileSystem;
-        CacheSiteFileSystem = Config.FileSystems.CacheSiteFileSystem;
+        SiteFileSystem = Config.FileSystems.InputFileSystem ?? Config.FileSystems.FileSystem;
+        CacheSiteFileSystem = Config.FileSystems.CacheSiteFileSystem ?? Config.FileSystems.FileSystem;
         FileSystem = Config.FileSystems.FileSystem;
         OutputFileSystem = Config.FileSystems.OutputFileSystem;
         SharedMetaFileSystem = Config.FileSystems.SharedMetaFileSystem;
-        CacheMetaFileSystem = Config.FileSystems.CacheMetaFileSystem;
+        CacheMetaFileSystem = Config.FileSystems.CacheMetaFileSystem ?? Config.FileSystems.SharedMetaFileSystem;
         MetaFileSystem = Config.FileSystems.MetaFileSystem;
         ConfigFile = Config.FileSystems.ConfigFile;
 
@@ -179,13 +179,13 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
 
     public HtmlPage Html { get; }
 
-    public string BasePath
+    public string? BasePath
     {
         get => GetSafeValue<string>(SiteVariables.BasePath);
         set => this[SiteVariables.BasePath] = value;
     }
 
-    public string BaseUrl
+    public string? BaseUrl
     {
         get => GetSafeValue<string>(SiteVariables.BaseUrl);
         set => this[SiteVariables.BaseUrl] = value;
@@ -205,13 +205,13 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
 
     public string DefaultPageExtension
     {
-        get => GetSafeValue<string>(SiteVariables.DefaultPageExtension);
+        get => GetSafeValue<string>(SiteVariables.DefaultPageExtension) ?? DefaultPageExtensionValue;
         set => this[SiteVariables.DefaultPageExtension] = value;
     }
 
     public string ErrorRedirect
     {
-        get => GetSafeValue<string>(SiteVariables.ErrorRedirect);
+        get => GetSafeValue<string>(SiteVariables.ErrorRedirect) ?? "/404.html";
         set => this[SiteVariables.ErrorRedirect] = value;
     }
 
@@ -223,11 +223,11 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
         
     public string Environment
     {
-        get => GetSafeValue<string>(SiteVariables.Environment);
+        get => GetSafeValue<string>(SiteVariables.Environment) ?? "prod";
         set => SetValue(SiteVariables.Environment, value);
     }
 
-    public string Layout
+    public string? Layout
     {
         get => GetSafeValue<string>(SiteVariables.Layout);
         set => SetValue(SiteVariables.Layout, value);
@@ -294,7 +294,7 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
     public void AddDefine(string defineStatement)
     {
         if (defineStatement == null) throw new ArgumentNullException(nameof(defineStatement));
-        object result;
+        object? result;
         Scripts.TryImportScriptStatement(defineStatement, this, ScriptFlags.AllowSiteFunctions, out result);
     }
 

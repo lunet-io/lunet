@@ -126,6 +126,6 @@ public class LunrSearchEngine : SearchEngine
 
         public Dictionary<string, Dictionary<string, object>> Docs { get; }
 
-        public Index Index { get; set; }
+        public Index Index { get; set; } = null!;
     }
 }

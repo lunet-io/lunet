@@ -27,12 +27,12 @@ public class DynamicObject : ScriptObject
     {
     }
 
-    public T GetSafeValue<T>(string name)
+    public T? GetSafeValue<T>(string name)
     {
         return this[name] is T tvalue ? tvalue : default;
     }
         
-    public void SetValue(string name, object value)
+    public void SetValue(string name, object? value)
     {
         base.SetValue(name, value, false);
     }
@@ -84,12 +84,12 @@ public class DynamicObject<T> : DynamicObject where T : class
 
 public static class DynamicObjectExtensions
 {
-    public static T GetSafeValue<T>(this IScriptObject obj, string name)
+    public static T? GetSafeValue<T>(this IScriptObject obj, string name)
     {
         return obj.TryGetValue(name, out var value) && value is T tvalue ? tvalue : default;
     }
 
-    public static T GetSafeValueFromPageOrSite<T>(this TemplateObject obj, string name, T defaultValue = default)
+    public static T? GetSafeValueFromPageOrSite<T>(this TemplateObject obj, string name, T? defaultValue = default)
     {
         if (!obj.TryGetValue(name, out var value))
         {

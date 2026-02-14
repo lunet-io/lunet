@@ -81,7 +81,7 @@ internal class SiteFileProvider : IFileProvider
             _filter = filter;
         }
 
-        public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+        public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
             return new ChangeTokenCallback();
         }

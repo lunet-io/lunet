@@ -36,7 +36,7 @@ public class SiteFileSystems
     private readonly AggregateFileSystem _fileSystem;
     private readonly AggregateFileSystem _metaFileSystem;
     private readonly List<IFileSystem> _contentFileSystems;
-    private IFileSystem _inputFileSystem;
+    private IFileSystem? _inputFileSystem;
 
     public SiteFileSystems()
     {
@@ -58,7 +58,7 @@ public class SiteFileSystems
         ConfigFile = new FileEntry(FileSystem, UPath.Root / DefaultConfigFileName);
     }
 
-    public IFileSystem InputFileSystem
+    public IFileSystem? InputFileSystem
     {
         get => _inputFileSystem;
         set
@@ -72,9 +72,9 @@ public class SiteFileSystems
 
     public FileEntry ConfigFile { get; }
 
-    public FileSystem OutputFileSystem { get; set; }
+    public FileSystem OutputFileSystem { get; set; } = null!;
         
-    public IFileSystem CacheSiteFileSystem { get; private set; }
+    public IFileSystem? CacheSiteFileSystem { get; private set; }
 
     public IFileSystem FileSystem => _fileSystem;
 
@@ -83,12 +83,12 @@ public class SiteFileSystems
 
     public IFileSystem SharedMetaFileSystem { get; }
 
-    public IFileSystem CacheMetaFileSystem { get; private set; }
+    public IFileSystem? CacheMetaFileSystem { get; private set; }
 
     public IFileSystem MetaFileSystem { get; }
 
 
-    public void Initialize(string inputDirectory = null, string outputDirectory = null)
+    public void Initialize(string? inputDirectory = null, string? outputDirectory = null)
     {
         var diskFs = new PhysicalFileSystem();
         var rootFolder = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, inputDirectory ?? "."));

@@ -91,7 +91,7 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
     private void LogTrace(string message) => Site.Trace(message);
     private void LogDebug(string message) => Site.Debug(message);
 
-    public object Head
+    public object? Head
     {
         get => GetSafeValue<object>("Head");
         set => SetValue("Head", value);
@@ -140,7 +140,7 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
                 }
             }
 
-            return null;
+            return null!;
         }
 
         public ValueTask<object> InvokeAsync(TemplateContext context, ScriptNode callerContext, ScriptArray arguments, ScriptBlockStatement blockStatement)

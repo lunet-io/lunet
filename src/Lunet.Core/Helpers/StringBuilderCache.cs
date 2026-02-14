@@ -13,7 +13,7 @@ internal static class StringBuilderCache
     /// A StringBuilder that can be used locally in a method body only.
     /// </summary>
     [ThreadStatic]
-    private static StringBuilder local;
+    private static StringBuilder? local;
 
     /// <summary>
     /// Provides a string builder that can only be used locally in a method. This StringBuilder MUST not be stored.

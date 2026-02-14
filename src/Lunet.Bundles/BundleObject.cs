@@ -57,22 +57,22 @@ public class BundleObject : DynamicObject<BundlePlugin>
 
     public string MinifyExtension
     {
-        get { return GetSafeValue<string>(BundleObjectProperties.MinifyExtension); }
+        get { return GetSafeValue<string>(BundleObjectProperties.MinifyExtension) ?? ".min"; }
         set { this[BundleObjectProperties.MinifyExtension] = value; }
     }
 
-    public string Minifier
+    public string? Minifier
     {
         get { return GetSafeValue<string>(BundleObjectProperties.Minifier); }
         set { this[BundleObjectProperties.Minifier] = value; }
     }
 
-    public void AddLink(string type, string path, string url = null, string mode = null)
+    public void AddLink(string type, string path, string? url = null, string? mode = null)
     {
         InsertLink(Links.Count, type, path, url, mode);
     }
 
-    public void InsertLink(int index, string type, string path, string url = null, string mode = null)
+    public void InsertLink(int index, string type, string path, string? url = null, string? mode = null)
     {
         if (type == null) throw new ArgumentNullException(nameof(type));
         if (path == null) throw new ArgumentNullException(nameof(path));
@@ -95,7 +95,7 @@ public class BundleObject : DynamicObject<BundlePlugin>
             throw new ArgumentException($"Invalid url [{path}]. Must end with a `/` if the path contains a wildcard.", nameof(url));
         }
 
-        string urlBasePath = null;
+        string? urlBasePath = null;
         if (url is not null)
         {
             urlBasePath = url;
@@ -105,23 +105,23 @@ public class BundleObject : DynamicObject<BundlePlugin>
         Links.Insert(index, link);
     }
 
-    public void AddJs(object resourceOrPath, string path = null, string mode = "defer")
+    public void AddJs(object resourceOrPath, string? path = null, string mode = "defer")
     {
         AddLink(BundleObjectProperties.JsType, resourceOrPath, path, mode: mode);
     }
 
-    public void AddCss(object resourceOrPath, string path = null)
+    public void AddCss(object resourceOrPath, string? path = null)
     {
         if (resourceOrPath == null) throw new ArgumentNullException(nameof(resourceOrPath));
         AddLink(BundleObjectProperties.CssType, resourceOrPath, path);
     }
 
-    public void AddContent(object resourceOrPath, string pathOrUrl, string url = null)
+    public void AddContent(object resourceOrPath, string pathOrUrl, string? url = null)
     {
         AddLink(BundleObjectProperties.ContentType, resourceOrPath, resourceOrPath is string ? null : pathOrUrl, resourceOrPath is string ? pathOrUrl : url);
     }
         
-    private void AddLink(string kind, object resourceOrPath, string path, string url = null, string mode = null)
+    private void AddLink(string kind, object resourceOrPath, string? path, string? url = null, string? mode = null)
     {
         if (resourceOrPath == null) throw new ArgumentNullException(nameof(resourceOrPath));
         if (resourceOrPath is ResourceObject resource)

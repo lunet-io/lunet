@@ -14,6 +14,7 @@
 // IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System.IO;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Lunet.Bundles.SourceMaps;
@@ -30,7 +31,7 @@ public class SourceMapParser
     /// <summary>
     /// Parses a stream representing a source map into a SourceMap object.
     /// </summary>
-    public SourceMap ParseSourceMap(StreamReader sourceMapStream)
+    public SourceMap? ParseSourceMap(StreamReader? sourceMapStream)
     {
         if (sourceMapStream == null)
         {
@@ -40,8 +41,12 @@ public class SourceMapParser
         {
             JsonSerializer serializer = new JsonSerializer();
 
-            SourceMap result = serializer.Deserialize<SourceMap>(jsonTextReader);
-            result.ParsedMappings = _mappingsListParser.ParseMappings(result.Mappings, result.Names, result.Sources);
+            var result = serializer.Deserialize<SourceMap>(jsonTextReader);
+            if (result == null)
+            {
+                return null;
+            }
+            result.ParsedMappings = _mappingsListParser.ParseMappings(result.Mappings ?? string.Empty, result.Names ?? new List<string>(), result.Sources ?? new List<string>());
             sourceMapStream.Close();
             return result;
         }

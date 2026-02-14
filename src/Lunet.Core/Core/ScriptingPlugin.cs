@@ -69,9 +69,9 @@ public class ScriptingPlugin : SitePlugin
     public ScriptInstance ParseScript(string scriptContent, UPath scriptPath, ScriptMode parsingMode)
     {
         if (scriptContent == null) throw new ArgumentNullException(nameof(scriptContent));
-        if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
+        if (scriptPath.IsNull) throw new ArgumentNullException(nameof(scriptPath));
 
-        IFrontMatter frontmatter = null;
+        IFrontMatter? frontmatter = null;
         TextPosition startPosition = default;
         if (parsingMode == ScriptMode.FrontMatterAndContent && scriptContent.Length > 3)
         {
@@ -88,7 +88,7 @@ public class ScriptingPlugin : SitePlugin
         }
 
         // Load parse the template
-        var template = Template.Parse(scriptContent, scriptPath.FullName, null, new LexerOptions() { StartPosition = startPosition, Mode = parsingMode });
+        var template = Template.Parse(scriptContent, scriptPath.FullName, lexerOptions: new LexerOptions() { StartPosition = startPosition, Mode = parsingMode });
 
         // If we have any errors, log them and set the errors flag on this instance
         if (template.HasErrors)
@@ -99,10 +99,10 @@ public class ScriptingPlugin : SitePlugin
         return new ScriptInstance(template.HasErrors, (string)scriptPath, frontmatter, template.Page);
     }
 
-    public bool TryImportScript(string scriptText, UPath scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, ScriptMode scriptMode = ScriptMode.ScriptOnly)
+    public bool TryImportScript(string scriptText, UPath scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object? result, ScriptMode scriptMode = ScriptMode.ScriptOnly)
     {
         if (scriptText == null) throw new ArgumentNullException(nameof(scriptText));
-        if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
+        if (scriptPath.IsNull) throw new ArgumentNullException(nameof(scriptPath));
         if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
 
         result = null;
@@ -142,17 +142,17 @@ public class ScriptingPlugin : SitePlugin
 
     private LunetTemplateContext GetOrCreateTemplateContext()
     {
-        var list = _lunetTemplateContextFactory.Value;
+        var list = _lunetTemplateContextFactory.Value ??= new Stack<LunetTemplateContext>();
         return list.Count == 0 ? new LunetTemplateContext(ScribanBuiltins) : list.Pop();
     }
 
     private void ReleaseTemplateContext(LunetTemplateContext context)
     {
         context.Reset();
-        _lunetTemplateContextFactory.Value.Push(context);
+        (_lunetTemplateContextFactory.Value ??= new Stack<LunetTemplateContext>()).Push(context);
     }
 
-    public bool TryImportScriptStatement(string scriptStatement, ScriptObject scriptObject, ScriptFlags flags, out object result)
+    public bool TryImportScriptStatement(string scriptStatement, ScriptObject scriptObject, ScriptFlags flags, out object? result)
     {
         if (scriptStatement == null) throw new ArgumentNullException(nameof(scriptStatement));
         if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
@@ -168,9 +168,8 @@ public class ScriptingPlugin : SitePlugin
         return TryImportScriptFromFile(new FileEntry(Site.MetaFileSystem, UPath.Root / IncludesDirectoryName / includePath), toObject, ScriptFlags.Expect, out _, scriptMode: ScriptMode.Default);
     }
 
-    public bool TryImportScriptFromFile(FileEntry scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object result, ScriptMode scriptMode = ScriptMode.ScriptOnly)
+    public bool TryImportScriptFromFile(FileEntry scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object? result, ScriptMode scriptMode = ScriptMode.ScriptOnly)
     {
-        if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
         if (scriptObject == null) throw new ArgumentNullException(nameof(scriptObject));
         result = null;
 
@@ -195,7 +194,7 @@ public class ScriptingPlugin : SitePlugin
     /// <summary>
     /// Initializes this instance.
     /// </summary>
-    public bool TryRunFrontMatter(IFrontMatter frontMatter, TemplateObject obj, ScriptObject newGlobal = null)
+    public bool TryRunFrontMatter(IFrontMatter frontMatter, TemplateObject obj, ScriptObject? newGlobal = null)
     {
         if (frontMatter == null) throw new ArgumentNullException(nameof(frontMatter));
         if (obj == null) throw new ArgumentNullException(nameof(obj));
@@ -208,7 +207,12 @@ public class ScriptingPlugin : SitePlugin
             context.PushGlobal(newGlobal);
         }
 
-        var currentGlobal = context.CurrentGlobal;
+        var currentGlobal = context.CurrentGlobal as ScriptObject;
+        if (currentGlobal is null)
+        {
+            ReleaseTemplateContext(context);
+            return false;
+        }
         try
         {
             context.EnableOutput = false;
@@ -230,7 +234,7 @@ public class ScriptingPlugin : SitePlugin
         return true;
     }
 
-    public bool TryEvaluateExpression(ContentObject page, ScriptExpression expression, out string result)
+    public bool TryEvaluateExpression(ContentObject page, ScriptExpression expression, out string? result)
     {
         if (page == null) throw new ArgumentNullException(nameof(page));
         if (expression == null) throw new ArgumentNullException(nameof(expression));
@@ -241,7 +245,13 @@ public class ScriptingPlugin : SitePlugin
 
         context.PushGlobal(new ScriptObject());
 
-        var currentScriptObject = (ScriptObject)context.CurrentGlobal;
+        var currentScriptObject = context.CurrentGlobal as ScriptObject;
+        if (currentScriptObject is null)
+        {
+            ReleaseTemplateContext(context);
+            result = null;
+            return false;
+        }
         result = null;
 
         try
@@ -281,11 +291,11 @@ public class ScriptingPlugin : SitePlugin
     /// <summary>
     /// Initializes this instance.
     /// </summary>
-    public bool TryEvaluatePage(ContentObject page, ScriptPage script, UPath scriptPath, params ScriptObject[] contextObjects)
+    public bool TryEvaluatePage(ContentObject page, ScriptPage script, UPath scriptPath, params ScriptObject?[] contextObjects)
     {
         if (page == null) throw new ArgumentNullException(nameof(page));
         if (script == null) throw new ArgumentNullException(nameof(script));
-        if (scriptPath == null) throw new ArgumentNullException(nameof(scriptPath));
+        if (scriptPath.IsNull) throw new ArgumentNullException(nameof(scriptPath));
 
         var context = GetOrCreateTemplateContext();
         context.PushGlobal(Site.Builtins);
@@ -299,7 +309,12 @@ public class ScriptingPlugin : SitePlugin
         }
         context.PushSourceFile((string)scriptPath);
 
-        var currentScriptObject = (ScriptObject)context.CurrentGlobal;
+        var currentScriptObject = context.CurrentGlobal as ScriptObject;
+        if (currentScriptObject is null)
+        {
+            ReleaseTemplateContext(context);
+            return false;
+        }
 
         try
         {
@@ -376,7 +391,7 @@ public class ScriptingPlugin : SitePlugin
         public string GetPath(TemplateContext context, SourceSpan callerSpan, string templateName)
         {
             _site.Error(callerSpan, $"The include statement is not allowed from this context. The include [{templateName}] cannot be loaded");
-            return null;
+            return null!;
         }
 
         public string Load(TemplateContext context, SourceSpan callerSpan, string templatePath)
@@ -413,7 +428,7 @@ public class ScriptingPlugin : SitePlugin
             if (templateName.Contains("..") || templateName.StartsWith("/") || templateName.StartsWith("\\"))
             {
                 _site.Error(callerSpan, $"The include [{templateName}] cannot contain '..' or start with '/' or '\\'");
-                return null;
+                return null!;
             }
             var templatePath = UPath.Root / IncludesDirectoryName / templateName;
             return (string) templatePath;
@@ -471,7 +486,7 @@ public class ScriptingPlugin : SitePlugin
             return header[0] == '+' && header[1] == '+' && header[2] == '+';
         }
 
-        public IFrontMatter TryParse(string text, string sourceFilePath, out TextPosition position)
+        public IFrontMatter? TryParse(string text, string sourceFilePath, out TextPosition position)
         {
             position = default;
             var frontMatter = Template.Parse(text, sourceFilePath, lexerOptions: new LexerOptions() {FrontMatterMarker = "+++", Mode = ScriptMode.FrontMatterOnly});
@@ -494,7 +509,7 @@ public class LunetTemplateContext : TemplateContext
         Defaults();
     }
         
-    public ContentObject Page { get; set; }
+    public ContentObject? Page { get; set; }
 
     private void Defaults()
     {

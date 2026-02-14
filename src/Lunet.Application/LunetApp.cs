@@ -36,7 +36,7 @@ namespace Lunet;
 
 public class LunetApp
 {
-    public LunetApp(SiteConfiguration config = null)
+    public LunetApp(SiteConfiguration? config = null)
     {
         Config = config ?? new SiteConfiguration();
         Modules = new OrderedList<SiteModule>()

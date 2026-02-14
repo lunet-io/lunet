@@ -21,7 +21,7 @@ public class SiteConfiguration : ISiteLoggerProvider
 {
     private readonly List<Type> _pluginTypes;
 
-    public SiteConfiguration(SiteLoggerFactory loggerFactory = null)
+    public SiteConfiguration(SiteLoggerFactory? loggerFactory = null)
     {
         LogEventId = 1;
         _pluginTypes = new List<Type>();
@@ -55,7 +55,7 @@ public class SiteConfiguration : ISiteLoggerProvider
         
     public bool ShowStacktraceOnError { get; set; }
 
-    public IProfiler Profiler { get; set; }
+    public IProfiler? Profiler { get; set; }
 
     public ConcurrentDictionary<object, object> SharedCache { get; }
 

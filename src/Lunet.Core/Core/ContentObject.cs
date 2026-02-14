@@ -25,13 +25,13 @@ namespace Lunet.Core;
 public abstract class ContentObject : TemplateObject
 {
     private ContentType _contentType;
-    private Dictionary<string, ScriptExpression> _mapTextToReplaceToDynamicExpression;
+    private Dictionary<string, ScriptExpression>? _mapTextToReplaceToDynamicExpression;
 
-    protected ContentObject(SiteObject site, ContentObjectType objectType, in FileSystemItem sourceFileInfo = default, ScriptInstance scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
+    protected ContentObject(SiteObject site, ContentObjectType objectType, in FileSystemItem sourceFileInfo = default, ScriptInstance? scriptInstance = null, UPath? path = null) : base(site, objectType, sourceFileInfo, scriptInstance, path)
     {
     }
         
-    public string Section { get; protected set; }
+    public string? Section { get; protected set; }
 
     public UPath PathInSection { get; protected set; }
 
@@ -45,7 +45,7 @@ public abstract class ContentObject : TemplateObject
     /// <summary>
     /// Gets or sets the output of the script.
     /// </summary>
-    public string Content
+    public string? Content
     {
         get => GetSafeValue<string>(PageVariables.Content);
         set => this[PageVariables.Content] = value;
@@ -66,7 +66,7 @@ public abstract class ContentObject : TemplateObject
     /// <summary>
     /// Gets or sets the summary of this page.
     /// </summary>
-    public string Summary
+    public string? Summary
     {
         get => GetSafeValue<string>(PageVariables.Summary);
         set => this[PageVariables.Summary] = value;
@@ -88,20 +88,20 @@ public abstract class ContentObject : TemplateObject
     }
 
     // Url with Site.BasePath
-    public string Url
+    public string? Url
     {
         get => GetSafeValue<string>(PageVariables.Url);
         set => this[PageVariables.Url] = value;
     }
 
     // Url without BasePath
-    public string UrlWithoutBasePath
+    public string? UrlWithoutBasePath
     {
         get => GetSafeValue<string>(PageVariables.UrlWithoutBasePath);
         set => this[PageVariables.UrlWithoutBasePath] = value;
     }
 
-    public string Uid
+    public string? Uid
     {
         get => GetSafeValue<string>(PageVariables.Uid);
         set => this[PageVariables.Uid] = value;
@@ -133,7 +133,7 @@ public abstract class ContentObject : TemplateObject
         set => this[PageVariables.Weight] = value;
     }
 
-    public string Title
+    public string? Title
     {
         get => GetSafeValue<string>(PageVariables.Title);
         set => this[PageVariables.Title] = value;
@@ -141,17 +141,17 @@ public abstract class ContentObject : TemplateObject
 
     public string Slug
     {
-        get => GetSafeValue<string>(PageVariables.Slug) ?? StringFunctions.Handleize(Title);
+        get => GetSafeValue<string>(PageVariables.Slug) ?? StringFunctions.Handleize(Title ?? string.Empty);
         set => this[PageVariables.Slug] = value;
     }
 
-    public string Layout
+    public string? Layout
     {
         get => GetSafeValue<string>(PageVariables.Layout);
         set => this[PageVariables.Layout] = value;
     }
 
-    public string LayoutType
+    public string? LayoutType
     {
         get => GetSafeValue<string>(PageVariables.LayoutType);
         set => this[PageVariables.LayoutType] = value;
@@ -199,7 +199,7 @@ public abstract class ContentObject : TemplateObject
             if (isHtml && !url.EndsWith(".html"))
             {
                 var urlAsPath = (UPath)url;
-                var name = urlAsPath.GetNameWithoutExtension();
+                var name = urlAsPath.GetNameWithoutExtension() ?? string.Empty;
                 var isIndex = name == "index" || (Site.ReadmeAsIndex && name.ToLowerInvariant() == "readme");
                 if (isIndex)
                 {
@@ -223,7 +223,7 @@ public abstract class ContentObject : TemplateObject
         }
             
         var basePath = Site.BasePath;
-        string urlWithoutBasePath = url;
+        var urlWithoutBasePath = url;
         if (!string.IsNullOrEmpty(basePath))
         {
             // Normalize base path
@@ -254,7 +254,7 @@ public abstract class ContentObject : TemplateObject
             newExtension = Site.GetSafeDefaultPageExtension();
         }
 
-        if (!Url.EndsWith("/"))
+        if (!string.IsNullOrEmpty(Url) && !Url.EndsWith("/"))
         {
             Url = System.IO.Path.ChangeExtension(Url, newExtension);
             UrlWithoutBasePath = System.IO.Path.ChangeExtension(UrlWithoutBasePath, newExtension);
@@ -269,9 +269,9 @@ public abstract class ContentObject : TemplateObject
 
     public UPath GetDestinationPath()
     {
-        var urlAsPath = UrlWithoutBasePath;
+        var urlAsPath = UrlWithoutBasePath ?? string.Empty;
 
-        Uri uri;
+        Uri? uri;
         if (!Uri.TryCreate(urlAsPath, UriKind.Relative, out uri))
         {
             Site.Warning($"Invalid Url [{urlAsPath}] for page [{Path}]. Reverting to page default.");
@@ -314,7 +314,7 @@ public abstract class ContentObject : TemplateObject
 
         foreach (var pair in _mapTextToReplaceToDynamicExpression)
         {
-            if (Site.Scripts.TryEvaluateExpression(this, pair.Value, out var result))
+            if (Site.Scripts.TryEvaluateExpression(this, pair.Value, out var result) && result != null)
             {
                 Content = Content.Replace(pair.Key, result, StringComparison.Ordinal);
             }
@@ -352,7 +352,7 @@ public abstract class ContentObject : TemplateObject
         return string.IsNullOrEmpty(result) ? string.Empty : $"{match.Groups[1].Value}{result}";
     }
 
-    private string PlaceHolderRegexEvaluator(Match match)
+    private string? PlaceHolderRegexEvaluator(Match match)
     {
         var placeHolder = match.Groups[2].Value;
         switch (placeHolder)
@@ -423,7 +423,7 @@ public class FileContentObject : ContentObject
 {
     private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-    public FileContentObject(SiteObject site, in FileSystemItem sourceFileInfo, ScriptInstance scriptInstance = null, UPath? path = null, ScriptObject preContent = null) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance, path)
+    public FileContentObject(SiteObject site, in FileSystemItem sourceFileInfo, ScriptInstance? scriptInstance = null, UPath? path = null, ScriptObject? preContent = null) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance, path)
     {
         preContent?.CopyTo(this);
 
@@ -445,7 +445,7 @@ public class FileContentObject : ContentObject
             Date = DateTime.Now;
         }
 
-        ContentType = Site.ContentTypes.GetContentType(Extension);
+        ContentType = Site.ContentTypes.GetContentType(Extension ?? string.Empty);
 
         // Extract the section of this content
         // section cannot be setup by the pre-content
@@ -483,7 +483,7 @@ public class FileContentObject : ContentObject
 [DebuggerDisplay("Dynamic: {" + nameof(Url) + "}")]
 public class DynamicContentObject : ContentObject
 {
-    public DynamicContentObject(SiteObject site, string url, string section = null, UPath? path = null) : base(site, ContentObjectType.Dynamic, path: path)
+    public DynamicContentObject(SiteObject site, string url, string? section = null, UPath? path = null) : base(site, ContentObjectType.Dynamic, path: path)
     {
         Url = new UPath($"{site.BasePath}/{url}").FullName;
         UrlWithoutBasePath = url;

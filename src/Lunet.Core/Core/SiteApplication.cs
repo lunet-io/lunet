@@ -17,20 +17,20 @@ public class SiteApplication
 {
     private readonly CommandApp _app;
 
-    public SiteApplication(SiteConfiguration config = null)
+    public SiteApplication(SiteConfiguration? config = null)
     {
         Config = config ?? new SiteConfiguration();
         DefinesOption = new List<string>();
 
-        var versionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>().Version;
-        var infoVersionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        var versionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
+        var infoVersionText = typeof(SiteObject).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         _app = new CommandApp("lunet", "Lunet Static Website Engine", new CommandConfig
         {
             OutputFactory = _ => new TerminalMarkupCommandOutput(),
         });
 
         _app.Add(new HelpOption("h|help"));
-        _app.Add(new VersionOption(infoVersionText ?? versionText, "v|version"));
+        _app.Add(new VersionOption(infoVersionText ?? versionText ?? "0.0.0", "v|version"));
 
         _app.Add("d|define=", "Defines a site variable. Example --define my_variable=5.", DefinesOption);
         _app.Add("o|output-dir=", $"The output directory of the generated website. Default is '{SiteFileSystems.DefaultOutputFolderName}'", value => OutputDirectoryOption = value);
@@ -45,7 +45,7 @@ public class SiteApplication
         InitCommand = AddCommand("init", "Creates a new website", newApp =>
         {
             var force = false;
-            string folder = null;
+            string? folder = null;
 
             newApp.Add(new HelpOption("h|help"));
             newApp.Add("f|force", "Force the creation of the website even if the folder is not empty", _ => force = true);
@@ -91,17 +91,17 @@ public class SiteApplication
 
     public Command ConfigCommand { get; }
 
-    public Command RunCommand { get; private set; }
+    public Command? RunCommand { get; private set; }
 
     public Command CleanCommand { get; }
 
     private List<string> DefinesOption { get; }
 
-    private string OutputDirectoryOption { get; set; }
+    private string? OutputDirectoryOption { get; set; }
 
-    private string InputDirectoryOption { get; set; }
+    private string? InputDirectoryOption { get; set; }
 
-    private string _inputDirectoryFolder;
+    private string? _inputDirectoryFolder;
 
     private bool ShowStacktraceOnErrorOption { get; set; }
 

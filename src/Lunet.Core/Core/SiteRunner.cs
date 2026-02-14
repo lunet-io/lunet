@@ -29,7 +29,7 @@ public class SiteRunner : IDisposable
 
     public List<ISiteCommandRunner> CommandRunners { get; }
 
-    public TService GetService<TService>() where TService : class, ISiteService
+    public TService? GetService<TService>() where TService : class, ISiteService
     {
         return _services.OfType<TService>().FirstOrDefault();
     }
@@ -43,9 +43,9 @@ public class SiteRunner : IDisposable
         }
     }
         
-    public SiteObject CurrentSite { get; private set; }
+    public SiteObject? CurrentSite { get; private set; }
         
-    public async Task<int> RunAsync(CancellationTokenSource cancellationTokenSource = null)
+    public async Task<int> RunAsync(CancellationTokenSource? cancellationTokenSource = null)
     {
         if (CommandRunners.Count == 0) return 0;
 
@@ -74,7 +74,7 @@ public class SiteRunner : IDisposable
 
                 if (result != RunnerResult.Continue)
                 {
-                    hasErrors = CurrentSite.HasErrors || CurrentSite.LoggerFactory.HasErrors;
+                    hasErrors = (CurrentSite?.HasErrors ?? false) || (CurrentSite?.LoggerFactory.HasErrors ?? false);
                     break;
                 }
 
@@ -148,13 +148,13 @@ public class SiteRunner : IDisposable
             Console.CancelKeyPress -= new ConsoleCancelEventHandler(this.CancelKeyPress);
         }
 
-        private void CancelKeyPress(object sender, ConsoleCancelEventArgs eventArgs)
+        private void CancelKeyPress(object? sender, ConsoleCancelEventArgs eventArgs)
         {
             this.Shutdown();
             eventArgs.Cancel = true;
         }
 
-        private void ProcessExit(object sender, EventArgs eventArgs)
+        private void ProcessExit(object? sender, EventArgs eventArgs)
         {
             this.Shutdown();
             if (!this._exitedGracefully)

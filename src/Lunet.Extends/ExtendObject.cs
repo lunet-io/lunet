@@ -10,7 +10,7 @@ namespace Lunet.Extends;
 
 public sealed class ExtendObject : DynamicObject
 {
-    internal ExtendObject(SiteObject site, string fullName, string name, string version, string description, string url, IFileSystem fileSystem)
+    internal ExtendObject(SiteObject site, string fullName, string name, string? version, string? description, string? url, IFileSystem fileSystem)
     {
         Site = site ?? throw new ArgumentNullException(nameof(site));
         FullName = fullName ?? throw new ArgumentNullException(nameof(fullName));
@@ -33,9 +33,9 @@ public sealed class ExtendObject : DynamicObject
 
     public string FullName { get; }
 
-    public string Version { get; }
+    public string? Version { get; }
 
-    public string Description { get; }
+    public string? Description { get; }
 
-    public string Url { get; }
+    public string? Url { get; }
 }

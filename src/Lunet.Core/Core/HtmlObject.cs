@@ -46,7 +46,7 @@ public class HtmlHead : HtmlElement
 
     public ScriptCollection Metas { get; }
 
-    public object Title
+    public object? Title
     {
         get => GetSafeValue<object>("title");
         set => SetValue("title", value);

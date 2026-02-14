@@ -40,28 +40,29 @@ public class OrderedList<T> : Collection<T>
         return false;
     }
 
-    public TElement Find<TElement>() where TElement : T
+    public TElement? Find<TElement>() where TElement : T
     {
         for (int i = 0; i < Count; i++)
         {
-            if (this[i] is TElement)
+            if (this[i] is TElement element)
             {
-                return (TElement)this[i];
+                return element;
             }
         }
-        return default(TElement);
+        return default;
     }
 
-    public TElement FindExact<TElement>() where TElement : T
+    public TElement? FindExact<TElement>() where TElement : T
     {
         for (int i = 0; i < Count; i++)
         {
-            if (this[i].GetType() == typeof(TElement))
+            var item = this[i];
+            if (item is not null && item.GetType() == typeof(TElement))
             {
-                return (TElement)this[i];
+                return (TElement)item;
             }
         }
-        return default(TElement);
+        return default;
     }
 
     public void AddIfNotAlready<TElement>() where TElement : class, T, new()

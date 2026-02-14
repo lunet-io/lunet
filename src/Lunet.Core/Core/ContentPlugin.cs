@@ -30,7 +30,7 @@ public class ContentPlugin : SitePlugin
     private readonly HashSet<UPath> _trackingPreviousOutputDirectories;
     private readonly HashSet<UPath> _trackingPreviousOutputFiles;
     private readonly Dictionary<UPath, UPath> _trackingFilesWritten;
-    private Task _trackingPreviousTask;
+    private Task? _trackingPreviousTask;
     private const string SharedCacheContentKey = "content-cache-key";
         
     private readonly Dictionary<string, PageCollection> _mapTypeToPages;
@@ -213,12 +213,8 @@ public class ContentPlugin : SitePlugin
 
         var clock = Stopwatch.StartNew();
 
-        var outputFile = new FileEntry(Site.OutputFileSystem, outputPath);
+        var outputFile = new FileEntry(Site.OutputFileSystem!, outputPath);
         var outputDir = outputFile.Directory;
-        if (outputDir == null)
-        {
-            throw new ArgumentException("Output directory cannot be empty", nameof(outputPath));
-        }
         TrackDestination(outputPath, fromFile.SourceFile.Path);
 
         var stat = Site.Statistics.GetContentStat(fromFile);
@@ -274,7 +270,7 @@ public class ContentPlugin : SitePlugin
                 }
 
                 // TODO: optimize copy if source and output end-up to be PhysicalFileSystem
-                fromFile.SourceFile.FileSystem.CopyFileCross(fromFile.SourceFile.AbsolutePath, outputFile.FileSystem, outputFile.Path, true, false);
+                fromFile.SourceFile.FileSystem!.CopyFileCross(fromFile.SourceFile.AbsolutePath, outputFile.FileSystem!, outputFile.Path, true, false);
 
                 // Update statistics
                 stat.Static = true;
@@ -317,7 +313,7 @@ public class ContentPlugin : SitePlugin
             // Note that we remove even if things are not working after, so that previous files are kept 
             // in case of an error
             var previousDir = outputFile.GetDirectory();
-            while (previousDir != null)
+            while (!previousDir.IsNull)
             {
                 _trackingPreviousOutputDirectories.Remove(previousDir);
                 previousDir = previousDir.GetDirectory();
@@ -465,12 +461,12 @@ public class ContentPlugin : SitePlugin
         Site.Pages.Clear();
 
         // Load a content asynchronously
-        var contentLoaderBlock = new TransformBlock<(FileSystemItem, int), ContentObject>(
+        var contentLoaderBlock = new TransformBlock<(FileSystemItem, int), ContentObject?>(
             reference =>
             {
                 var content = LoadContent(reference.Item1);
                 // We transfer the weight to the content
-                if (content[PageVariables.Weight] == null)
+                if (content != null && content[PageVariables.Weight] == null)
                 {
                     content.Weight = reference.Item2;
                 }
@@ -483,8 +479,12 @@ public class ContentPlugin : SitePlugin
             });
 
         // Add the content loaded to the correct list (static vs pages)
-        var contentAdderBlock = new ActionBlock<ContentObject>(content =>
+        var contentAdderBlock = new ActionBlock<ContentObject?>(content =>
         {
+            if (content is null)
+            {
+                return;
+            }
             // We don't need lock as this block has a MaxDegreeOfParallelism = 1
             var list = content.Script != null ? Site.Pages : Site.StaticFiles;
             list.Add(content);
@@ -578,9 +578,9 @@ public class ContentPlugin : SitePlugin
         }
     }
         
-    private ContentObject LoadContent(FileSystemItem item)
+    private ContentObject? LoadContent(FileSystemItem item)
     {
-        ContentObject page = null;
+        ContentObject? page = null;
         Span<byte> buffer = stackalloc byte[16];
 
         var clock = Stopwatch.StartNew();
@@ -628,7 +628,7 @@ public class ContentPlugin : SitePlugin
             }
 
             // Run pre-content (e.g AttributesPlugin)
-            ScriptObject preContent = null;
+            ScriptObject? preContent = null;
             foreach (var preLoadingContentProcessor in BeforeLoadingContentProcessors)
             {
                 preLoadingContentProcessor(item.Path, ref preContent);
@@ -659,12 +659,15 @@ public class ContentPlugin : SitePlugin
         }
 
         clock.Stop();
-        Site.Statistics.GetContentStat(page).LoadingParsingTime += clock.Elapsed;
+        if (page != null)
+        {
+            Site.Statistics.GetContentStat(page).LoadingParsingTime += clock.Elapsed;
+        }
 
         return page;
     }
 
-    private static ContentObject LoadPageScript(SiteObject site, Stream stream, FileSystemItem file, ScriptObject preContent)
+    private static ContentObject? LoadPageScript(SiteObject site, Stream stream, FileSystemItem file, ScriptObject? preContent)
     {
         var evalClock = Stopwatch.StartNew();
         // Read the stream
@@ -674,7 +677,7 @@ public class ContentPlugin : SitePlugin
             content = reader.ReadToEnd();
         }
 
-        ContentObject page = null;
+        ContentObject? page = null;
 
         // Parse the page, using front-matter mode
         var scriptInstance = site.Scripts.ParseScript(content, file.Path.FullName, ScriptMode.FrontMatterAndContent);
@@ -685,8 +688,11 @@ public class ContentPlugin : SitePlugin
         evalClock.Stop();
 
         // Update statistics
-        var contentStat = site.Statistics.GetContentStat(page);
-        contentStat.LoadingTime += evalClock.Elapsed;
+        if (page != null)
+        {
+            var contentStat = site.Statistics.GetContentStat(page);
+            contentStat.LoadingTime += evalClock.Elapsed;
+        }
 
         return page;
     }
@@ -780,6 +786,10 @@ public class ContentPlugin : SitePlugin
     private bool TryRunPageWithScript(ContentObject page)
     {
         page.ScriptObjectLocal ??= new ScriptObject();
+        if (page.Script is null)
+        {
+            return false;
+        }
         return Site.Scripts.TryEvaluatePage(page, page.Script, page.SourceFile.Path, page);
     }
 
@@ -805,7 +815,7 @@ public class ContentPlugin : SitePlugin
 
     private void CleanupOutputFiles()
     {
-        var outputFs = Site.OutputFileSystem;
+        var outputFs = Site.OutputFileSystem!;
         // Remove all previous files that have not been generated
         foreach (var outputFile in _trackingPreviousOutputFiles)
         {
@@ -851,7 +861,7 @@ public class ContentPlugin : SitePlugin
         _trackingPreviousOutputDirectories.Clear();
         _trackingPreviousOutputFiles.Clear();
 
-        var outputFs = Site.OutputFileSystem;
+        var outputFs = Site.OutputFileSystem!;
         _trackingPreviousTask = null;
         if (!outputFs.DirectoryExists(UPath.Root))
         {
@@ -898,7 +908,7 @@ public class ContentPlugin : SitePlugin
             return FileSystem.Equals(other.FileSystem) && Path.Equals(other.Path);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is RawFileEntry other && Equals(other);
         }

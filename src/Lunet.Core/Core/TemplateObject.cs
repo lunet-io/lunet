@@ -13,7 +13,7 @@ namespace Lunet.Core;
 
 public abstract class TemplateObject : DynamicObject
 {
-    protected TemplateObject(SiteObject site, ContentObjectType objectType, in FileSystemItem sourceFileInfo = default, ScriptInstance scriptInstance = null, UPath? path = null)
+    protected TemplateObject(SiteObject site, ContentObjectType objectType, in FileSystemItem sourceFileInfo = default, ScriptInstance? scriptInstance = null, UPath? path = null)
     {
         Site = site ?? throw new ArgumentNullException(nameof(site));
         SourceFile = sourceFileInfo;
@@ -44,20 +44,20 @@ public abstract class TemplateObject : DynamicObject
 
     public ContentObjectType ObjectType { get; }
 
-    public IFrontMatter FrontMatter { get; set; }
+    public IFrontMatter? FrontMatter { get; set; }
 
     public UPath Path { get; }
 
     public DateTimeOffset ModifiedTime { get; }
 
-    public string Extension { get; }
+    public string? Extension { get; }
 
     /// <summary>
     /// Gets or sets the script attached to this page if any.
     /// </summary>
-    public ScriptPage Script { get; }
+    public ScriptPage? Script { get; }
 
-    public ScriptObject ScriptObjectLocal { get; set; }
+    public ScriptObject? ScriptObjectLocal { get; set; }
 
     public bool HasFrontMatter => FrontMatter != null;
 

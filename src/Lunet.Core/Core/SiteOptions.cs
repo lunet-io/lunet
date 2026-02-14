@@ -23,7 +23,7 @@ public sealed class DefaultSiteOptions : SiteOptions
     public const string DefaultTempFolder = ".lunet";
     public const string DefaultOutputFolder = DefaultTempFolder + "/www";
 
-    public DefaultSiteOptions(string rootDirectory = null)
+    public DefaultSiteOptions(string? rootDirectory = null)
     {
         rootDirectory = Path.GetFullPath(rootDirectory ?? Directory.GetCurrentDirectory());
 

@@ -19,13 +19,15 @@ using Microsoft.Extensions.Hosting;
 
 namespace Lunet.Server;
 
+#pragma warning disable ASPDEPR004, ASPDEPR008
+
 public class SiteServerService : ISiteService
 {
     private readonly SiteConfiguration _configuration;
     private const string LiveReloadBasePath = "/__livereload__";
     private readonly HashSet<WebSocket> _sockets;
-    private IWebHost _host;
-    private Task _runTask;
+    private IWebHost? _host;
+    private Task? _runTask;
     private CancellationTokenSource _tokenSource;
         
     public const string DefaultBaseUrl = "http://localhost:4000";
@@ -42,6 +44,7 @@ public class SiteServerService : ISiteService
         Logging = false;
         BasePath = "";
         LiveReload = true;
+        ErrorRedirect = DefaultRedirect;
         _tokenSource = new CancellationTokenSource();
     }
 
@@ -142,7 +145,7 @@ public class SiteServerService : ISiteService
         {
             await host.StartAsync(token);
 
-            ICollection<string> addresses = host.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses;
+            ICollection<string>? addresses = host.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses;
             if (addresses != null)
             {
                 foreach (string str in (IEnumerable<string>)addresses)
@@ -166,12 +169,12 @@ public class SiteServerService : ISiteService
     private static async Task WaitForTokenShutdownAsync(IWebHost host, CancellationToken token)
     {
         IHostApplicationLifetime requiredService = host.Services.GetRequiredService<IHostApplicationLifetime>();
-        token.Register((Action<object>)(state =>
+        token.Register((Action<object?>)(state =>
         {
-            ((IHostApplicationLifetime) state).StopApplication();
+            ((IHostApplicationLifetime)state!).StopApplication();
         }), (object)requiredService);
         TaskCompletionSource completionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        requiredService.ApplicationStopping.Register((Action<object>)(obj => ((TaskCompletionSource)obj).TrySetResult()), (object)completionSource);
+        requiredService.ApplicationStopping.Register((Action<object?>)(obj => ((TaskCompletionSource)obj!).TrySetResult()), (object)completionSource);
         await completionSource.Task;
         await host.StopAsync(CancellationToken.None);
     }
@@ -231,7 +234,8 @@ public class SiteServerService : ISiteService
         const string builtinsLiveReloadHtml = "_builtins/livereload.sbn-html";
         site.Html.Head.Includes.Add(builtinsLiveReloadHtml);
 
-        var liveReloadUrl = new Uri(new Uri(site.BaseUrl.Replace("http:", "ws:")), LiveReloadBasePath).ToString();
+        var baseUrl = site.BaseUrl ?? DefaultBaseUrl;
+        var liveReloadUrl = new Uri(new Uri(baseUrl.Replace("http:", "ws:", StringComparison.OrdinalIgnoreCase)), LiveReloadBasePath).ToString();
         site.SetValue("livereload_url", liveReloadUrl, true);
     }
 
@@ -333,3 +337,5 @@ public class SiteServerService : ISiteService
         }
     }
 }
+
+#pragma warning restore ASPDEPR004, ASPDEPR008

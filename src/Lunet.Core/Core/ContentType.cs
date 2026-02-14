@@ -42,7 +42,7 @@ public readonly struct ContentType : IEquatable<ContentType>
         return string.Equals(Name, other.Name, StringComparison.Ordinal);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (ReferenceEquals(null, obj)) return false;
         return obj is ContentType contentType && Equals(contentType);

@@ -25,8 +25,9 @@ public class SourcePosition : IComparable<SourcePosition>
 
     public int ZeroBasedColumnNumber;
 
-    public int CompareTo(SourcePosition other)
+    public int CompareTo(SourcePosition? other)
     {
+        if (other is null) return 1;
         if (this.ZeroBasedLineNumber == other.ZeroBasedLineNumber)
         {
             return this.ZeroBasedColumnNumber.CompareTo(other.ZeroBasedColumnNumber);

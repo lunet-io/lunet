@@ -11,6 +11,6 @@ public class CleanCommandRunner : ISiteCommandRunner
 {
     public async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
-        return runner.CurrentSite.Clean() != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
+        return runner.CurrentSite is { } site && site.Clean() != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
     }
 }

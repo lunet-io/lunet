@@ -71,7 +71,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                 urlDest = "/res/";
             }
 
-            Uri url;
+            Uri? url;
             if (!Uri.TryCreate(urlDest, UriKind.Relative, out url))
             {
                 Site.Error(
@@ -91,7 +91,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
 
     private void ProcessBundleLinks(BundleObject bundle, Dictionary<UPath, ContentObject> staticFiles)
     {
-        Dictionary<string, ConcatGroup> concatBuilders = null;
+        Dictionary<string, ConcatGroup>? concatBuilders = null;
         if (bundle.Concat)
         {
             concatBuilders = new Dictionary<string, ConcatGroup>();
@@ -111,7 +111,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             var path = link.Path;
             var url = link.Url;
             var urlWithoutBasePath = link.UrlWithoutBasePath;
-            if (!path.Contains("*")) continue;
+            if (string.IsNullOrEmpty(path) || !path.Contains("*")) continue;
 
             // Always remove the link
             bundle.Links.RemoveAt(i);
@@ -140,7 +140,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
         }
             
         // Collect minifier
-        IContentMinifier minifier = null;
+        IContentMinifier? minifier = null;
         if (bundle.Minify)
         {
             var minifierName = bundle.Minifier;
@@ -181,8 +181,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                 path = ((UPath)path).FullName;
                 link.Path = path;
 
-                ContentObject currentContent;
-                var  isExistingContent = staticFiles.TryGetValue(path, out currentContent);
+                var isExistingContent = staticFiles.TryGetValue(path, out var currentContent);
 
                 if (url == null)
                 {
@@ -245,7 +244,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                     {
                         try
                         {
-                            link.Content = currentContent.Content ?? entry.ReadAllText();
+                            link.Content = currentContent.Content ?? (entry.IsEmpty ? string.Empty : entry.ReadAllText());
 
                             // Minify content separately
                             if (bundle.Minify && minifier != null)
@@ -272,7 +271,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                         i--;
 
                         concatBuilders[link.Type].Pages.Add(currentContent);
-                        concatBuilders[link.Type].AppendContent(link.Mode, link.Content);
+                        concatBuilders[link.Type].AppendContent(link.Mode, link.Content ?? string.Empty);
                     }
                     else if (!isExistingContent)
                     {
@@ -295,7 +294,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                     if (builder.Length > 0)
                     {
                         var type = builderGroup.Key;
-                        var outputUrlDirectory = bundle.UrlDestination[type];
+                        var outputUrlDirectory = bundle.UrlDestination[type]?.ToString() ?? string.Empty;
 
                         // If the file is private or meta, we need to copy to the output
                         // bool isFilePrivateOrMeta = Site.IsFilePrivateOrMeta(entry.FullName);
@@ -345,21 +344,24 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
         content = RegexSourceMapSimple.Replace(content, string.Empty);
         content = RegexSourceMapMulti.Replace(content, string.Empty);
         link.Content = content;
-        link.ContentObject.Content = content;
+        if (link.ContentObject != null)
+        {
+            link.ContentObject.Content = content;
+        }
     }
 
-    private static void Minify(IContentMinifier minifier, BundleLink link, string minifyExtension)
+    private static void Minify(IContentMinifier minifier, BundleLink link, string? minifyExtension)
     {
         var contentObject = link.ContentObject;
         // Don't try to minify content that is already minified
-        if (contentObject != null && !link.Path.EndsWith($".min.{link.Type}"))
+        if (contentObject != null && link.Content != null && !string.IsNullOrEmpty(link.Path) && !link.Path.EndsWith($".min.{link.Type}"))
         {
             var minifiedResult = minifier.Minify(link.Type, link.Content, link.Path);
             contentObject.Content = minifiedResult;
             link.Content = minifiedResult;
 
             var minExtension = (minifyExtension ?? string.Empty) + "." + link.Type;
-            if (!contentObject.Url.EndsWith(minExtension))
+            if (!string.IsNullOrEmpty(contentObject.Url) && !contentObject.Url.EndsWith(minExtension))
             {
                 var url = Path.ChangeExtension(contentObject.Url, minExtension);
                 contentObject.Url = url;
@@ -390,7 +392,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
         // used to store if the css kind has already a @charset rules at the top
         private bool _hasCssCharset;
 
-        public void AppendContent(string mode, string content)
+        public void AppendContent(string? mode, string content)
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
             mode ??= string.Empty;
@@ -405,7 +407,7 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
             if (Kind == "css" && content.StartsWith("@charset "))
             {
                 var endOfCharset = content.IndexOf(';');
-                string charset = null;
+                string? charset = null;
                 if (endOfCharset > 0)
                 {
                     charset = content.Substring(0, endOfCharset + 1);

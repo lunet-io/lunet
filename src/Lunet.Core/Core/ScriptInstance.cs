@@ -9,7 +9,7 @@ namespace Lunet.Scripts;
 
 public class ScriptInstance
 {
-    public ScriptInstance(bool hasErrors, string sourceFilePath, IFrontMatter frontMatter, ScriptPage template)
+    public ScriptInstance(bool hasErrors, string sourceFilePath, IFrontMatter? frontMatter, ScriptPage template)
     {
         HasErrors = hasErrors;
         SourceFilePath = sourceFilePath;
@@ -21,7 +21,7 @@ public class ScriptInstance
 
     public readonly string SourceFilePath;
 
-    public readonly IFrontMatter FrontMatter;
+    public readonly IFrontMatter? FrontMatter;
 
     public readonly ScriptPage Template;
 }

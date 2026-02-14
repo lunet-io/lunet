@@ -13,6 +13,6 @@ public class InitCommandRunner : ISiteCommandRunner
         
     public async Task<RunnerResult> RunAsync(SiteRunner runner, CancellationToken cancellationToken)
     {
-        return runner.CurrentSite.Create(Force) != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
+        return runner.CurrentSite is { } site && site.Create(Force) != 0 ? RunnerResult.ExitWithError : RunnerResult.Exit;
     }
 }

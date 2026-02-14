@@ -11,13 +11,10 @@ namespace Lunet.Helpers;
 
 public static class ZipUtil
 {
-    public static void ExtractToDirectory(this ZipArchive source, DirectoryEntry outputDirectory, string filterPath = null)
+    public static void ExtractToDirectory(this ZipArchive source, DirectoryEntry outputDirectory, string? filterPath = null)
     {
         if (source == null)
             throw new ArgumentNullException(nameof(source));
-
-        if (outputDirectory == null)
-            throw new ArgumentNullException(nameof(outputDirectory));
 
         // Rely on Directory.CreateDirectory for validation of destinationDirectoryName.
 
@@ -139,9 +136,6 @@ public static class ZipUtil
     {
         if (source == null)
             throw new ArgumentNullException(nameof(source));
-
-        if (destinationFile == null)
-            throw new ArgumentNullException(nameof(destinationFile));
 
         // Rely on FileStream's ctor for further checking destinationFileName parameter
         FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;

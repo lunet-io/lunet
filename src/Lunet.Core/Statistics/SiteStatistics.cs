@@ -39,33 +39,30 @@ public class SiteStatistics
     {
         if (page == null) throw new ArgumentNullException(nameof(page));
 
-        ContentStat stat;
         lock (Content)
         {
-            if (!Content.TryGetValue(page, out stat))
+            if (!Content.TryGetValue(page, out var stat))
             {
                 stat = new ContentStat(page);
                 Content.Add(page, stat);
             }
+            return stat;
         }
-        return stat;
     }
 
     public PluginStat GetPluginStat(ISitePluginCore plugin)
     {
         if (plugin == null) throw new ArgumentNullException(nameof(plugin));
 
-        PluginStat stat;
         lock (Plugins)
         {
-            if (!Plugins.TryGetValue(plugin, out stat))
+            if (!Plugins.TryGetValue(plugin, out var stat))
             {
                 stat = new PluginStat(plugin);
                 Plugins.Add(plugin, stat);
             }
+            return stat;
         }
-            
-        return stat;
     }
 
     public void Dump(Action<string> log)

@@ -16,9 +16,9 @@ namespace Lunet.Search;
 /// </summary>
 public class SqliteSearchEngine : SearchEngine
 {
-    private SqliteConnection _connection;
-    private string _dbPathOnDisk;
-    private SqliteTransaction _currentTransaction;
+    private SqliteConnection? _connection;
+    private string? _dbPathOnDisk;
+    private SqliteTransaction? _currentTransaction;
     private readonly object _connectionLock = new();
 
     public const string EngineName = "sqlite";
@@ -66,6 +66,11 @@ public class SqliteSearchEngine : SearchEngine
 
     public override void ProcessSearchContent(ContentObject file, string plainText)
     {
+        if (_connection is null)
+        {
+            return;
+        }
+
         lock (_connectionLock)
         {
             // Create the insert command that will be used by the content processing stage
@@ -95,7 +100,7 @@ public class SqliteSearchEngine : SearchEngine
 
     public override void Terminate()
     {
-        if (_connection == null) return;
+        if (_connection == null || _dbPathOnDisk == null) return;
 
         // Last pass by optimizing the b-tree
         using (var command = _connection.CreateCommand())
@@ -105,7 +110,7 @@ public class SqliteSearchEngine : SearchEngine
         }
 
         // Commit all changes generated during loading
-        _currentTransaction.Commit();
+        _currentTransaction?.Commit();
 
         // Final compaction of the DB
         using (var command = _connection.CreateCommand())
@@ -114,12 +119,13 @@ public class SqliteSearchEngine : SearchEngine
             command.ExecuteNonQuery();
         }
 
-        _connection.Close();
-        _connection.Dispose();
+        var connection = _connection;
+        connection.Close();
+        connection.Dispose();
 
         // Now required https://learn.microsoft.com/en-us/ef/core/what-is-new/ef-core-6.0/breaking-changes#connection-pool
         // otherwise the local file will be locked and we won't be able to copy it
-        SqliteConnection.ClearPool(_connection);
+        SqliteConnection.ClearPool(connection);
 
         // Add our dynamic content to the output
         var fs = new PhysicalFileSystem();

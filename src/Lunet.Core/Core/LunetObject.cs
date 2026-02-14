@@ -18,5 +18,5 @@ public class LunetObject : DynamicObject<SiteObject>
         SetValue("version", Version, true);
     }
 
-    public string Version { get; }
+    public string? Version { get; }
 }

@@ -8,5 +8,5 @@ public interface IContentMinifier
 {
     string Name { get; }
 
-    string Minify(string type, string content, string contentPath = null);
+    string Minify(string type, string content, string? contentPath = null);
 }
