@@ -20,6 +20,8 @@ namespace Lunet.Api.DotNet;
 
 public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
 {
+    private const string IncludeReferenceAssembliesProperty = "LunetApiDotNetIncludeAssemblies";
+
     private readonly string _customMsBuildFileProps;
     private readonly Stack<ScriptObjectCollection> _pool;
     private readonly ScriptObject _helpers;
@@ -410,6 +412,8 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
 
     private void CollectProjectsFromConfiguration()
     {
+        var globalIncludedReferences = ParseReferenceAssemblies(Config.References, "api.dotnet.references");
+
         // Collect csproj
         var rootDirectory = Site.SiteFileSystem.ConvertPathToInternal(UPath.Root);
         foreach (var projectEntry in Config.Projects)
@@ -417,6 +421,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             string projectName = null;
             var projectPath = projectEntry as string;
             ScriptObject projectProperties = null;
+            List<string> projectIncludedReferences = null;
 
             // TODO: log error
             if (projectPath == null)
@@ -427,6 +432,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                     projectName = projectObject["name"] as string;
                     projectPath = projectObject["path"] as string;
                     projectProperties = projectObject["properties"] as ScriptObject;
+                    projectIncludedReferences = ParseReferenceAssemblies(projectObject["references"], $"api.dotnet.projects[{projectName ?? projectPath}].references");
                 }
             }
 
@@ -436,6 +442,8 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 continue;
             }
 
+            var includedReferences = MergeIncludedReferenceAssemblies(globalIncludedReferences, projectIncludedReferences);
+
             var entryPath = Path.GetFullPath(Path.Combine(rootDirectory, projectPath));
             if (File.Exists(entryPath))
             {
@@ -443,7 +451,8 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 {
                     Name = projectName ?? Path.GetFileNameWithoutExtension(entryPath),
                     Path = entryPath,
-                    Properties = projectProperties
+                    Properties = projectProperties,
+                    IncludedReferenceAssemblies = includedReferences,
                 });
             }
             else
@@ -473,7 +482,8 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                         {
                             Name = Path.GetFileNameWithoutExtension(entry),
                             Path = entry,
-                            Properties = projectProperties
+                            Properties = projectProperties,
+                            IncludedReferenceAssemblies = includedReferences,
                         });
                     }
                 }
@@ -538,6 +548,10 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             // Make sure we have the last word
             buildProject.Properties["CustomBeforeMicrosoftCommonProps"] = _customMsBuildFileProps;
             buildProject.Properties["Configuration"] = Config.SolutionConfiguration ?? "Release";
+            if (project.IncludedReferenceAssemblies.Count > 0)
+            {
+                buildProject.Properties[IncludeReferenceAssembliesProperty] = string.Join(";", project.IncludedReferenceAssemblies);
+            }
 
             try
             {
@@ -589,6 +603,78 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 Site.Error(ex, $"Error while building api dotnet for `{project.Name}`. Reason: {ex.Message}");
             }
         }
+    }
+
+    private List<string> ParseReferenceAssemblies(object referencesObject, string contextName)
+    {
+        if (referencesObject == null)
+        {
+            return new List<string>();
+        }
+
+        if (referencesObject is string singleReference)
+        {
+            singleReference = singleReference.Trim();
+            if (singleReference.Length == 0)
+            {
+                return new List<string>();
+            }
+
+            return new List<string> { singleReference };
+        }
+
+        if (referencesObject is not ScriptArray referencesArray)
+        {
+            Site.Error($"Invalid `{contextName}` value. Expecting a string or an array of strings.");
+            return new List<string>();
+        }
+
+        var references = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var referenceObject in referencesArray)
+        {
+            if (referenceObject is not string reference)
+            {
+                Site.Error($"Invalid `{contextName}` entry `{referenceObject}`. Expecting only strings.");
+                continue;
+            }
+
+            reference = reference.Trim();
+            if (reference.Length == 0)
+            {
+                continue;
+            }
+
+            references.Add(reference);
+        }
+
+        return references.ToList();
+    }
+
+    private static List<string> MergeIncludedReferenceAssemblies(List<string> globalReferences, List<string> projectReferences)
+    {
+        if ((globalReferences == null || globalReferences.Count == 0) && (projectReferences == null || projectReferences.Count == 0))
+        {
+            return new List<string>();
+        }
+
+        var mergedReferences = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (globalReferences != null)
+        {
+            foreach (var reference in globalReferences)
+            {
+                mergedReferences.Add(reference);
+            }
+        }
+
+        if (projectReferences != null)
+        {
+            foreach (var reference in projectReferences)
+            {
+                mergedReferences.Add(reference);
+            }
+        }
+
+        return mergedReferences.ToList();
     }
 
     private bool LoadGeneratedApis()

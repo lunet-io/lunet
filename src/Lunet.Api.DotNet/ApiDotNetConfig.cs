@@ -37,6 +37,12 @@ public class ApiDotNetConfig : ApiConfig
         set => this.SetValue("properties", value);
     }
 
+    public ScriptArray References
+    {
+        get => this.GetSafeValue<ScriptArray>("references");
+        set => this.SetValue("references", value);
+    }
+
     public string IncludeHelper
     {
         get => this.GetSafeValue<string>("include_helper");

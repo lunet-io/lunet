@@ -856,6 +856,10 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
             switch (Convert.GetTypeCode(arg.Value))
             {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
                 case TypeCode.UInt32:
                 case TypeCode.Int64:
                 case TypeCode.UInt64:

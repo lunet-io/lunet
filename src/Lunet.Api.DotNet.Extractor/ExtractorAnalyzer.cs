@@ -41,7 +41,17 @@ namespace Lunet.Api.DotNet.Extractor
             helpLinkUri: null,
             customTags: WellKnownDiagnosticTags.NotConfigurable);
 
-        private static readonly ImmutableArray<DiagnosticDescriptor> _supportedDiagnostics = ImmutableArray.Create(ResultDiagnostic, ErrorDiagnostic);
+        private static readonly DiagnosticDescriptor WarningDiagnostic = new DiagnosticDescriptor(id: "XDoc0003",
+            title: "Extractor Analyzer",
+            messageFormat: "{0}",
+            category: "Warning",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true,
+            description: "Warning from extractor analyzer",
+            helpLinkUri: null,
+            customTags: WellKnownDiagnosticTags.NotConfigurable);
+
+        private static readonly ImmutableArray<DiagnosticDescriptor> _supportedDiagnostics = ImmutableArray.Create(ResultDiagnostic, ErrorDiagnostic, WarningDiagnostic);
 
         public sealed override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => _supportedDiagnostics;
 
@@ -130,6 +140,7 @@ namespace Lunet.Api.DotNet.Extractor
                 });
                 
                 var items = new List<MetadataItem>() {metadata};
+                ExtractSelectedReferenceAssemblies(context, context.Compilation, items);
                 // Add extra docs AFTER to allow MergeYamlProjectMetadata to work correctly
                 metadata.Items.AddRange(extraDocs);
 
@@ -275,6 +286,82 @@ namespace Lunet.Api.DotNet.Extractor
                     break;
             }
             builder.Clear();
+        }
+
+        private void ExtractSelectedReferenceAssemblies(CompilationAnalysisContext context, Compilation compilation, List<MetadataItem> items)
+        {
+            if (context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property.lunetapidotnetincludeassemblies", out var rawAssemblyNames) is false || string.IsNullOrWhiteSpace(rawAssemblyNames))
+            {
+                return;
+            }
+
+            var requestedAssemblyNames = ParseRequestedAssemblyNames(rawAssemblyNames);
+            if (requestedAssemblyNames.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var reference in compilation.References)
+            {
+                var assemblySymbol = compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+                if (assemblySymbol == null)
+                {
+                    continue;
+                }
+
+                if (requestedAssemblyNames.Remove(assemblySymbol.Name) is false)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var referencedExtractor = new RoslynMetadataExtractor(compilation, assemblySymbol);
+                    var referenceMetadata = referencedExtractor.Extract(new ExtractMetadataOptions());
+                    items.Add(referenceMetadata);
+                }
+                catch (Exception ex)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(ErrorDiagnostic, null, $"Unexpected error while generating metadata for referenced assembly `{assemblySymbol.Name}`: {ex}"));
+                }
+            }
+
+            foreach (var assemblyName in requestedAssemblyNames)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(WarningDiagnostic, null, $"Unable to find referenced assembly `{assemblyName}` in current compilation references."));
+            }
+        }
+
+        private static HashSet<string> ParseRequestedAssemblyNames(string rawAssemblyNames)
+        {
+            var assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var splits = rawAssemblyNames.Split(new[] {';', ',', '\r', '\n'}, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var rawAssemblyName in splits)
+            {
+                var assemblyName = NormalizeAssemblyName(rawAssemblyName);
+                if (assemblyName != null)
+                {
+                    assemblyNames.Add(assemblyName);
+                }
+            }
+
+            return assemblyNames;
+        }
+
+        private static string NormalizeAssemblyName(string rawAssemblyName)
+        {
+            if (string.IsNullOrWhiteSpace(rawAssemblyName))
+            {
+                return null;
+            }
+
+            var assemblyName = rawAssemblyName.Trim();
+            if (assemblyName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) || assemblyName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                assemblyName = Path.GetFileNameWithoutExtension(assemblyName);
+            }
+
+            return string.IsNullOrWhiteSpace(assemblyName) ? null : assemblyName;
         }
 
         private static Dictionary<string, MetadataItem> MergeYamlProjectMetadata(CompilationAnalysisContext context, List<MetadataItem> projectMetadataList)

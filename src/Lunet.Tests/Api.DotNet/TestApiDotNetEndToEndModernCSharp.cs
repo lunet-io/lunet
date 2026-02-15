@@ -139,6 +139,27 @@ public class TestApiDotNetEndToEndModernCSharp
         StringAssert.Contains("CSharp14ExtensionMembers", namespacePage);
     }
 
+    [Test]
+    public void TestConfiguredReferencedAssemblyGeneratesExternalApiPages()
+    {
+        const string uid = "NuGet.Versioning.NuGetVersion";
+
+        Assert.IsTrue(_itemsByUid.TryGetValue(uid, out var nuGetVersionItem), $"Expected referenced assembly uid `{uid}` in API model.");
+        Assert.AreEqual("Class", nuGetVersionItem.GetProperty("type").GetString());
+
+        var syntax = GetSyntaxContent(nuGetVersionItem);
+        StringAssert.Contains("class NuGetVersion", syntax);
+
+        if (nuGetVersionItem.TryGetProperty("summary", out var summaryProperty))
+        {
+            var summary = summaryProperty.GetString();
+            Assert.That(summary, Is.Not.Null.And.Not.Empty, "Expected XML documentation summary for referenced package type.");
+        }
+
+        var page = ReadRenderedHtmlByUid(uid);
+        StringAssert.Contains("NuGetVersion Class", page);
+    }
+
     private static void WriteTestSiteAndProject(PhysicalLunetAppTestContext context)
     {
         context.WriteAllText(
@@ -151,7 +172,11 @@ public class TestApiDotNetEndToEndModernCSharp
             $api.title = "API End-to-End"
             $api.properties = { TargetFramework: "net10.0" }
             $api.projects = [
-              { name: "ApiE2ESample", path: "../src/ApiE2ESample/ApiE2ESample.csproj" }
+              {
+                name: "ApiE2ESample",
+                path: "../src/ApiE2ESample/ApiE2ESample.csproj",
+                references: ["NuGet.Versioning"]
+              }
             ]
             """);
 
@@ -166,6 +191,9 @@ public class TestApiDotNetEndToEndModernCSharp
                 <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
                 <GenerateDocumentationFile>true</GenerateDocumentationFile>
               </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="NuGet.Versioning" Version="7.3.0" />
+              </ItemGroup>
             </Project>
             """);
 
