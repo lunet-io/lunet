@@ -12,6 +12,10 @@ Lunet is a fast, scriptable static site generator for .NET.
 - Content and layouts are **Scriban templates**, with optional YAML or Scriban front matter.
 - Themes are **extensions** layered on top of your site via `extend "owner/repo@tag"`.
 
+> [!WARNING]
+> 
+> This documentation is a work in progress and not yet stable. Expect breaking changes until the 1.0 release.
+
 ## Quick start
 
 {.table}
