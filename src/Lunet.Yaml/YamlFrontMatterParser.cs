@@ -29,7 +29,7 @@ public class YamlFrontMatterParser : IFrontMatterParser
         {
             return new YamlFrontMatter(obj);
         }
-        return null;
+        return null!;
     }
 
     private class YamlFrontMatter : IFrontMatter

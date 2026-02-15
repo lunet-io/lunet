@@ -12,7 +12,7 @@ public class ApiDotNetModule : SiteModule<ApiDotNetPlugin>
     
 public class ApiDotNetPlugin : SitePlugin
 {
-    private ApiDotNetConfig _apiDotNetConfig;
+    private ApiDotNetConfig? _apiDotNetConfig;
 
     public ApiDotNetPlugin(SiteObject site, ApiPlugin api) : base(site)
     {

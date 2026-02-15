@@ -27,7 +27,7 @@ public class Taxonomy : DynamicObject<TaxonomyProcessor>
     private readonly TaxonomyTermCollection byName;
     private readonly TaxonomyTermCollection byCount;
 
-    public Taxonomy(TaxonomyProcessor parent, string name, string single, string url, ScriptObject map) : base(parent)
+    public Taxonomy(TaxonomyProcessor parent, string name, string single, string? url, ScriptObject? map) : base(parent)
     {
         if (name == null) throw new ArgumentNullException(nameof(name));
         if (single == null) throw new ArgumentNullException(nameof(single));

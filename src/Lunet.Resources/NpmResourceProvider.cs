@@ -27,7 +27,7 @@ public class NpmResourceProvider : ResourceProvider
 
     public string RegistryUrl { get; set; }
 
-    protected override ResourceObject LoadFromDisk(string resourceName, string resourceVersion, DirectoryEntry directory)
+    protected override ResourceObject? LoadFromDisk(string resourceName, string resourceVersion, DirectoryEntry directory)
     {
         // Imports the json properties into the runtime object
         var packageJson = new FileEntry(directory.FileSystem, directory.Path / "package.json");
@@ -39,7 +39,7 @@ public class NpmResourceProvider : ResourceProvider
 
         var resource = new ResourceObject(this, resourceName, resourceVersion, directory);
 
-        object result;
+        object? result;
         Plugin.Site.Scripts.TryImportScriptFromFile(packageJson, resource, ScriptFlags.Expect, out result);
         if (result is ScriptObject)
         {
@@ -56,11 +56,11 @@ public class NpmResourceProvider : ResourceProvider
         return resource;
     }
 
-    protected override ResourceObject InstallToDisk(string resourceName, string resourceVersion, DirectoryEntry directory, ResourceInstallFlags flags)
+    protected override ResourceObject? InstallToDisk(string resourceName, string resourceVersion, DirectoryEntry directory, ResourceInstallFlags flags)
     {
         Plugin.Site.Info($"NPM installing {resourceName}");
 
-        JObject resourceJson = null;
+        JObject? resourceJson = null;
         var npmPackageUrl = RegistryUrl + resourceName;
         try
         {
@@ -76,6 +76,10 @@ public class NpmResourceProvider : ResourceProvider
             return null;
         }
 
+        if (resourceJson is null)
+        {
+            return null;
+        }
 
         var versions = resourceJson["versions"] as JObject;
         if (versions == null)
@@ -85,8 +89,8 @@ public class NpmResourceProvider : ResourceProvider
         }
 
         var downloads = new Dictionary<string, string>();
-        string selectedVersion = null;
-        SemanticVersion lastVersion = null;
+        string? selectedVersion = null;
+        SemanticVersion? lastVersion = null;
         bool isLatestVersion = false;
 
         foreach (var prop in versions.Properties())
@@ -107,8 +111,8 @@ public class NpmResourceProvider : ResourceProvider
                     }
                     else if (resourceVersion == "latest")
                     {
-                        SemanticVersion version;
-                        if (SemanticVersion.TryParse(versionName, out version))
+                        SemanticVersion? version;
+                        if (SemanticVersion.TryParse(versionName, out version) && version is not null)
                         {
                             if (!version.IsPrerelease || (flags & ResourceInstallFlags.PreRelease) != 0)
                             {

@@ -29,7 +29,11 @@ class Program
                 var jsonAttr = prop.GetCustomAttribute<JsonPropertyAttribute>();
                 var ignore = prop.GetCustomAttribute<JsonIgnoreAttribute>();
                 if (jsonAttr == null || ignore != null) continue;
-                var fullName = type.FullName.Replace('+', '.');
+                var fullName = type.FullName?.Replace('+', '.');
+                if (fullName is null)
+                {
+                    continue;
+                }
 
                 if (!serializers.TryGetValue(fullName, out var props))
                 {

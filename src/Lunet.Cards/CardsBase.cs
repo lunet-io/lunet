@@ -19,25 +19,25 @@ public abstract class CardsBase : DynamicObject<CardsPlugin>
         set => SetValue("enable", value);
     }
 
-    public string Title
+    public string? Title
     {
         get => GetSafeValue<string>("title");
         set => SetValue("title", value);
     }
 
-    public string Description
+    public string? Description
     {
         get => GetSafeValue<string>("description");
         set => SetValue("description", value);
     }
 
-    public string Image
+    public string? Image
     {
         get => GetSafeValue<string>("image");
         set => SetValue("image", value);
     }
 
-    public string ImageAlt
+    public string? ImageAlt
     {
         get => GetSafeValue<string>("image_alt");
         set => SetValue("image_alt", value);

@@ -25,15 +25,15 @@ public class AttributesGlobber : DynamicObject<AttributesObject>
         set => this["match"] = value;
     }
 
-    public string Pattern
+    public string? Pattern
     {
         get => GetSafeValue<string>("pattern");
         set => this["pattern"] = value;
     }
 
-    public Glob Glob { get; set; }
+    public Glob? Glob { get; set; }
 
-    public ScriptObject Setters
+    public ScriptObject? Setters
     {
         get => GetSafeValue<ScriptObject>("setters");
         set => this["setters"] = value;
@@ -90,11 +90,11 @@ public class AttributesObject : DynamicCollection<AttributesGlobber, AttributesO
         return globber;
     }
         
-    internal void ProcessAttributesForPath(UPath path, ref ScriptObject obj)
+    internal void ProcessAttributesForPath(UPath path, ref ScriptObject? obj)
     {
         foreach (var globber in this)
         {
-            if (globber.Match == globber.Glob.IsMatch(path.FullName))
+            if (globber.Glob is not null && globber.Match == globber.Glob.IsMatch(path.FullName))
             {
                 obj ??= new ScriptObject();
                 globber.Setters?.CopyTo(obj);

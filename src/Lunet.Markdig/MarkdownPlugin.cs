@@ -43,7 +43,7 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         // Add a global markdown object 
         // with the markdown.to_html function
         Site.Builtins.SetValue("markdown", _markdownHelper, true);
-        _markdownHelper.Import("to_html", new Func<string, string>(ToHtmlFunction));
+        _markdownHelper.Import("to_html", new Func<string?, string>(ToHtmlFunction));
 
         // Register the markdown processor
         layoutPlugin.Processor.RegisterConverter(ContentType.Markdown, this);
@@ -95,10 +95,10 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         return pipeline;
     }
 
-    private string ToHtmlFunction(string markdown)
+    private string ToHtmlFunction(string? markdown)
     {
         var pipeline = GetPipeline();
-        return Markdig.Markdown.ToHtml(markdown, pipeline);
+        return Markdig.Markdown.ToHtml(markdown ?? string.Empty, pipeline);
     }
 
     private static readonly Regex ExtractXRef = new Regex(@"<xref\s*.*href=['""]([^'""]+)");
@@ -108,17 +108,17 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         if (page == null) throw new ArgumentNullException(nameof(page));
         if (pipeline == null) throw new ArgumentNullException(nameof(pipeline));
 
-        var markdown = page.Content;
+        var markdown = page.Content ?? string.Empty;
         var markdownDocument = Markdig.Markdown.Parse(markdown, pipeline);
 
         // Get css_img_attr
-        string cssImgAttr = _markdigOptions.CssImageAttribute;
+        string? cssImgAttr = _markdigOptions.CssImageAttribute;
         var cssImgAttrParts = cssImgAttr is null ? Array.Empty<string>() : cssImgAttr.Split(',');
         
         foreach (var inline in markdownDocument.Descendants<Inline>())
         {
-            string url = null;
-            string label = null;
+            string? url = null;
+            string? label = null;
 
             bool isHandled = false;
             if (inline is LinkInline inputLink)
@@ -134,15 +134,16 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
             }
             else if (inline is HtmlInline htmlInline)
             {
-                if (htmlInline.Tag.StartsWith("<xref "))
+                var htmlTag = htmlInline.Tag;
+                if (htmlTag is not null && htmlTag.StartsWith("<xref "))
                 {
-                    var urlMatch = ExtractXRef.Match(htmlInline.Tag);
+                    var urlMatch = ExtractXRef.Match(htmlTag);
                     label = urlMatch.Success ? urlMatch.Groups[1].Value : "INVALID";
                     var xref = Uri.UnescapeDataString(label);
                     url = $"xref:{xref}";
                     isHandled = true;
                 }
-                else if (htmlInline.Tag.StartsWith("</xref>"))
+                else if (htmlTag is not null && htmlTag.StartsWith("</xref>"))
                 {
                     htmlInline.Remove();
                 }
@@ -167,7 +168,7 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
             var link = inline as LinkInline;
             if (link == null)
             {
-                link = new LinkInline(resolvedUrl, label);
+                link = new LinkInline(resolvedUrl, label ?? string.Empty);
                 inline.ReplaceBy(link);
             }
 
@@ -193,7 +194,7 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         renderer.Render(markdownDocument);
         renderer.Writer.Flush();
         var str = renderer.Writer.ToString();
-        return str;
+        return str ?? string.Empty;
     }
 
     /// <summary>

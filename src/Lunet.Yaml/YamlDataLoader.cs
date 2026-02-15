@@ -16,7 +16,7 @@ public class YamlDataLoader : IDataLoader
         return fileExt == ".yml" || fileExt == ".yaml";
     }
 
-    public object Load(FileEntry file)
+    public object? Load(FileEntry file)
     {
         var text = file.ReadAllText();
         return YamlUtil.FromText(text);

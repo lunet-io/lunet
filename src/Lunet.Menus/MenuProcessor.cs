@@ -34,7 +34,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
         {
             if (menu.Path != null)
             {
-                if (!Site.Content.Finder.TryFindByPath(menu.Path, out ContentObject page))
+                if (!Site.Content.Finder.TryFindByPath(menu.Path, out ContentObject? page) || page is null)
                 {
                     Site.Error($"Cannot find menu path {menu.Path}.");
                     continue;
@@ -104,7 +104,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
         return ContentResult.Break;
     }
 
-    private void DecodeMenu(object o, ContentObject menuFile, MenuObject parent = null, bool expectingMenuEntry = false)
+    private void DecodeMenu(object? o, ContentObject menuFile, MenuObject? parent = null, bool expectingMenuEntry = false)
     {
         if (o is ScriptObject obj)
         {
@@ -140,7 +140,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
                                 throw new LunetException($"The path value `{valueAsStr}` is not a valid path for key `{key}`.");
                             }
 
-                            value = (string) (menuFile.Path.GetDirectory() / (UPath) value?.ToString());
+                            value = (string) (menuFile.Path.GetDirectory() / (UPath) valueAsStr);
                         }
 
                         menuObject[key] = value;
@@ -212,7 +212,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
         {
             page.SetValue("menu_item", menu);
 
-            Func<MenuObject> resolveMenu = () =>
+            Func<MenuObject?> resolveMenu = () =>
             {
                 var parentMenu = menu;
                 while (parentMenu is not null && parentMenu.Children.Count == 0)

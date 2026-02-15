@@ -14,11 +14,11 @@ public class MarkdownOptions : DynamicObject<MarkdownPlugin>
     
     public string Extensions
     {
-        get => GetSafeValue<string>("extensions", "advanced");
+        get => GetSafeValue<string>("extensions", "advanced") ?? "advanced";
         set => SetValue("extensions", value);
     }
 
-    public string CssImageAttribute
+    public string? CssImageAttribute
     {
         get => GetSafeValue<string>("css_img_attr");
         set => SetValue("css_img_attr", value);

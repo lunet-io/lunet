@@ -27,7 +27,7 @@ public static class YamlUtil
     /// <param name="yamlText">The input YAML expected to be a frontmatter, starting with a `---`</param>
     /// <param name="position">the index of a string after the `---` end of the YAML frontmatter</param>
     /// <returns>The parsed YAML frontmatter to a Scriban <see cref="ScriptObject"/></returns>
-    public static object FromYamlFrontMatter(string yamlText, out TextPosition position, string yamlFile = null)
+    public static object? FromYamlFrontMatter(string yamlText, out TextPosition position, string? yamlFile = null)
     {
         return FromYaml(yamlText, yamlFile, true, out position);
     }
@@ -37,13 +37,13 @@ public static class YamlUtil
     /// </summary>
     /// <param name="yamlText">An input yaml text</param>
     /// <returns>The parsed YAML object to a Scriban <see cref="ScriptObject"/> or <see cref="ScriptArray"/></returns>
-    public static object FromText(string yamlText, string yamlFile = null)
+    public static object? FromText(string yamlText, string? yamlFile = null)
     {
         TextPosition position;
         return FromYaml(yamlText, yamlFile, false, out position);
     }
 
-    private static object FromYaml(string yamlText, string yamlFile, bool expectOnlyFrontMatter, out TextPosition position)
+    private static object? FromYaml(string yamlText, string? yamlFile, bool expectOnlyFrontMatter, out TextPosition position)
     {
         try
         {
@@ -65,8 +65,8 @@ public static class YamlUtil
             var docStart = reader.Expect<DocumentStart>();
             var hasDocumentStart = true;
 
-            object result = null;
-            ScriptArray objects = null;
+            object? result = null;
+            ScriptArray? objects = null;
 
             // If we expect to read multiple documents, we will return an array of result
             if (expectOnlyFrontMatter && docStart.IsImplicit)
@@ -98,7 +98,7 @@ public static class YamlUtil
                         // the following characters and could hit non YAML syntax (in Markdown)
                         // and would throw a parser exception
                         var nextDocStart = reader.Peek<DocumentStart>();
-                        endPosition = nextDocStart.End;
+                        endPosition = nextDocStart?.End ?? docStart.End;
                         break;
                     }
 
@@ -138,7 +138,7 @@ public static class YamlUtil
         }
     }
 
-    private static object ReadEvent(EventReader reader)
+    private static object? ReadEvent(EventReader reader)
     {
         // Read a plain scalar and decode it to a C# value
         if (reader.Accept<Scalar>())
@@ -147,8 +147,8 @@ public static class YamlUtil
                 
             // We try to parse scalar with an extended YamlSchema
             // If we find a int,double... -> convert it to the proper C# type
-            string defaultTag;
-            object value;
+            string? defaultTag = null;
+            object? value = null;
             return DefaultSchema.TryParse(scalar, true, out defaultTag, out value) ? value : scalar.Value;
         }
 
@@ -172,21 +172,40 @@ public static class YamlUtil
             reader.Expect<MappingStart>();
             while (!reader.Accept<MappingEnd>())
             {
-                var key = ReadEvent(reader).ToString();
+                var key = ReadEvent(reader)?.ToString();
                 var value = ReadEvent(reader);
+                if (string.IsNullOrEmpty(key))
+                {
+                    var current = reader.Parser.Current;
+                    if (current is null)
+                    {
+                        throw new YamlException(default, default, "Invalid or empty mapping key");
+                    }
+                    throw new YamlException(current.Start, current.End, "Invalid or empty mapping key");
+                }
                 try
                 {
                     obj.Add(key, value);
                 }
                 catch (ArgumentException err)
                 {
-                    throw new YamlException(reader.Parser.Current.Start, reader.Parser.Current.End, "Duplicate key", err);
+                    var current = reader.Parser.Current;
+                    if (current is null)
+                    {
+                        throw new YamlException(default, default, "Duplicate key", err);
+                    }
+                    throw new YamlException(current.Start, current.End, "Duplicate key", err);
                 }
             }
             reader.Expect<MappingEnd>();
             return obj;
         }
 
-        throw new YamlException(reader.Parser.Current.Start, reader.Parser.Current.End, $"Unsupported Yaml Event {reader.Parser.Current}");
+        var unsupportedCurrent = reader.Parser.Current;
+        if (unsupportedCurrent is null)
+        {
+            throw new YamlException(default, default, "Unsupported Yaml Event");
+        }
+        throw new YamlException(unsupportedCurrent.Start, unsupportedCurrent.End, $"Unsupported Yaml Event {unsupportedCurrent}");
     }
 }

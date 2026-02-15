@@ -34,8 +34,9 @@ public class SitemapsProcessor : ContentProcessor<SitemapsPlugin>
         {
             // Generate sitemap.xml
             ContentObject sitemapContent;
-            if (Site.Content.Finder.TryFindByPath(DefaultUrl, out sitemapContent))
+            if (Site.Content.Finder.TryFindByPath(DefaultUrl, out var existingSitemapContent) && existingSitemapContent is not null)
             {
+                sitemapContent = existingSitemapContent;
                 sitemapContent.ScriptObjectLocal ??= new ScriptObject();
             }
             else
@@ -58,7 +59,7 @@ public class SitemapsProcessor : ContentProcessor<SitemapsPlugin>
                 {
                     ContentType = ContentType.Txt,
                     LayoutType = ContentLayoutTypes.List,
-                    Content = $"Sitemap: {Site.Content.Finder.UrlRef((ContentObject) null, sitemapContent.Url)}"
+                    Content = $"Sitemap: {Site.Content.Finder.UrlRef(null, sitemapContent.Url ?? DefaultUrl)}"
                 };
                 Site.DynamicPages.Add(robotsContent);
             }
@@ -77,7 +78,7 @@ public class SitemapsProcessor : ContentProcessor<SitemapsPlugin>
         var allowSiteMap = file[SitemapPageVariables.Sitemap] is bool v ? v : true;
         if (!allowSiteMap) return ContentResult.Continue;
             
-        var url = Site.Content.Finder.UrlRef((ContentObject)null, file.Url);
+        var url = Site.Content.Finder.UrlRef(null, file.Url ?? "/");
 
         var sitemapUrl = new SitemapUrl(url)
         {

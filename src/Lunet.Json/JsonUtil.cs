@@ -31,7 +31,7 @@ public static class JsonUtil
     /// <param name="text">An input JSON text</param>
     /// <param name="jsonFile">The name of the JSON file.</param>
     /// <returns>The parsed JSON object to a Scriban <see cref="ScriptObject"/> or <see cref="ScriptArray"/></returns>
-    public static object FromText(string text, string jsonFile = null)
+    public static object? FromText(string text, string? jsonFile = null)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;
         try
@@ -45,7 +45,7 @@ public static class JsonUtil
         }
     }
 
-    public static object FromStream(Stream stream, string jsonFile = null)
+    public static object? FromStream(Stream stream, string? jsonFile = null)
     {
         if (stream == null) throw new ArgumentNullException(nameof(stream));
         try
@@ -59,7 +59,7 @@ public static class JsonUtil
         }
     }
 
-    private static object ConvertFromJson(JsonElement element, StringCache cache)
+    private static object? ConvertFromJson(JsonElement element, StringCache cache)
     {
         switch (element.ValueKind)
         {
@@ -123,7 +123,7 @@ public static class JsonUtil
     /// </summary>
     private class StringCache : Dictionary<string, string>
     {
-        public string Get(string name)
+        public string? Get(string? name)
         {
             if (name == null) return null;
             // Arbitrary limit, we don't need to cache everything but

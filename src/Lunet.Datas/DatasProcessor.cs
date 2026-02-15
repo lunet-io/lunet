@@ -32,14 +32,19 @@ public class DatasProcessor : ProcessorBase<DatasPlugin>
             foreach (var fileInfo in dataFolder.EnumerateFiles("*", SearchOption.AllDirectories))
             {
                 var dataObject = GetDataObject(fileInfo.Directory, dataFolder);
+                var extension = fileInfo.ExtensionWithDot;
+                if (string.IsNullOrEmpty(extension))
+                {
+                    continue;
+                }
 
                 foreach (var loader in Plugin.DataLoaders)
                 {
-                    if (loader.CanHandle(fileInfo.ExtensionWithDot))
+                    if (loader.CanHandle(extension))
                     {
                         try
                         {
-                            object result = loader.Load(fileInfo);
+                            object? result = loader.Load(fileInfo);
                             var nameWithoutExtension = Path.GetFileNameWithoutExtension(fileInfo.Name);
 
                             // If a datafile has been already loaded, we have probably something wrong 
@@ -70,7 +75,12 @@ public class DatasProcessor : ProcessorBase<DatasPlugin>
             return Plugin.RootDataObject;
         }
 
-        var parentObject = GetDataObject(folder.Parent, data);
+        var parentFolder = folder.Parent;
+        if (parentFolder is null)
+        {
+            return Plugin.RootDataObject;
+        }
+        var parentObject = GetDataObject(parentFolder, data);
 
         var scriptObject = parentObject[folder.Name] as DataFolderObject;
         if (scriptObject != null)

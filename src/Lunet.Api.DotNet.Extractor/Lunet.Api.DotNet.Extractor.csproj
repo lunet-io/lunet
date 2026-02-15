@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>8.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);RS1024;RS1025;RS1026;RS1033;RS1034;RS1036;RS1037;RS1038;RS2008</NoWarn>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 

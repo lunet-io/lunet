@@ -19,19 +19,19 @@ public class OgCards : CardsBase
     }
     
     // <meta property="og:type" content="website">
-    public string Type
+    public string? Type
     {
         get => GetSafeValue<string>("type");
         set => SetValue("type", value);
     }
     // <meta property="og:url" content="https://lunet.io/">
-    public string Url
+    public string? Url
     {
         get => GetSafeValue<string>("url");
         set => SetValue("url", value);
     }
     // <meta property="og:locale" content="en_US">
-    public string Locale
+    public string? Locale
     {
         get => GetSafeValue<string>("locale");
         set => SetValue("locale", value);

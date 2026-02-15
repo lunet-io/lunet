@@ -10,17 +10,17 @@ namespace Lunet.Api.DotNet;
 
 public class ApiDotNetProject
 {
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
-    public string Path { get; set; }
+    public string Path { get; set; } = string.Empty;
 
-    public ScriptObject Properties { get; set; }
+    public ScriptObject Properties { get; set; } = new ScriptObject();
         
     public UPath CachePath { get; set; }
 
     public ApitDotNetCacheState CacheState { get; set; }
         
-    public ScriptObject Api { get; set; }
+    public ScriptObject? Api { get; set; }
 
     public List<string> IncludedReferenceAssemblies { get; set; } = new List<string>();
 }

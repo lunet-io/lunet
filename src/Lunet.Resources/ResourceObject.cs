@@ -16,10 +16,9 @@ public class ResourceObject : DynamicObject
 {
     public ResourceObject(ResourceProvider provider, string name, string version, DirectoryEntry absoluteDirectory)
     {
-        if (provider == null) throw new ArgumentNullException(nameof(provider));
-        if (name == null) throw new ArgumentNullException(nameof(name));
-        if (version == null) throw new ArgumentNullException(nameof(version));
-        if (absoluteDirectory == null) throw new ArgumentNullException(nameof(absoluteDirectory));
+        ArgumentNullException.ThrowIfNull(provider);
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(version);
 
         Name = name;
         Version = version;

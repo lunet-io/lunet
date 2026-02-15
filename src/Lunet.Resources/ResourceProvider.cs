@@ -42,7 +42,7 @@ public abstract class ResourceProvider
         }
     }
 
-    public ResourceObject Find(string resourceName, string resourceVersion)
+    public ResourceObject? Find(string resourceName, string resourceVersion)
     {
         if (resourceName == null) throw new ArgumentNullException(nameof(resourceName));
         if (resourceVersion == null) throw new ArgumentNullException(nameof(resourceVersion));
@@ -77,7 +77,7 @@ public abstract class ResourceProvider
         }
     }
 
-    public ResourceObject GetOrInstall(string resourceName, string resourceVersion, ResourceInstallFlags flags)
+    public ResourceObject? GetOrInstall(string resourceName, string resourceVersion, ResourceInstallFlags flags)
     {
         if (resourceName == null) throw new ArgumentNullException(nameof(resourceName));
         if (resourceVersion == null) throw new ArgumentNullException(nameof(resourceVersion));
@@ -92,7 +92,7 @@ public abstract class ResourceProvider
         // Otherwise we are going to check if it is already on the disk
         var resourcePrivatePath = new DirectoryEntry(Plugin.Site.CacheMetaFileSystem, ResourcePlugin.ResourceFolder / Name / resourceName / resourceVersion);
         var resourcePublicPath = new DirectoryEntry(Plugin.Site.MetaFileSystem, ResourcePlugin.ResourceFolder / Name / resourceName / resourceVersion);
-        DirectoryEntry resourcePath = null;
+        DirectoryEntry? resourcePath = null;
         if (resourcePublicPath.Exists)
         {
             resourcePath = resourcePublicPath;
@@ -102,7 +102,7 @@ public abstract class ResourceProvider
             resourcePath = resourcePrivatePath;
         }
 
-        if (resourcePath != null)
+        if (resourcePath is not null)
         {
             resource = LoadFromDisk(resourceName, resourceVersion, resourcePath);
         }
@@ -120,7 +120,7 @@ public abstract class ResourceProvider
     }
 
 
-    protected abstract ResourceObject LoadFromDisk(string resourceName, string resourceVersion, DirectoryEntry directory);
+    protected abstract ResourceObject? LoadFromDisk(string resourceName, string resourceVersion, DirectoryEntry directory);
 
-    protected abstract ResourceObject InstallToDisk(string resourceName, string resourceVersion, DirectoryEntry directory, ResourceInstallFlags flags);
+    protected abstract ResourceObject? InstallToDisk(string resourceName, string resourceVersion, DirectoryEntry directory, ResourceInstallFlags flags);
 }

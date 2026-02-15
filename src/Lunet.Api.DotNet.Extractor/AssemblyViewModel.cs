@@ -13,10 +13,10 @@ namespace Lunet.Api.DotNet.Extractor
     public class AssemblyViewModel
     {
         [JsonProperty("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
 
         [JsonProperty("items")]
-        public List<PageViewModel> Items { get; set; }
+        public List<PageViewModel> Items { get; set; } = new List<PageViewModel>();
     }
 }

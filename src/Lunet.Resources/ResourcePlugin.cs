@@ -35,12 +35,12 @@ public sealed class ResourcePlugin : SitePlugin
             new NpmResourceProvider(this)
         };
         Site.SetValue(SiteVariables.Resources, this, true);
-        Site.Builtins.Import(SiteVariables.ResourceFunction, (Func<object, string, object>)ResourceFunction);
+        Site.Builtins.Import(SiteVariables.ResourceFunction, (Func<object, string?, object?>)ResourceFunction);
     }
 
     public OrderedList<ResourceProvider> Providers { get; }
 
-    public ResourceObject TryLoadResource(string providerName, string packageName, string packageVersion = null, ResourceInstallFlags flags = 0)
+    public ResourceObject? TryLoadResource(string providerName, string packageName, string? packageVersion = null, ResourceInstallFlags flags = 0)
     {
         if (providerName == null) throw new ArgumentNullException(nameof(providerName));
         if (packageName == null) throw new ArgumentNullException(nameof(packageName));
@@ -66,12 +66,12 @@ public sealed class ResourcePlugin : SitePlugin
     /// <param name="version">The version to load.</param>
     /// <returns>A ScriptObject </returns>
     /// <exception cref="LunetException">Unsupported resource parameter found. Supports either a plain string or an object with at least the properties { name: \providerName/packageName[/packageVersion]\ }</exception>
-    private object ResourceFunction(object query, string version = null)
+    private object? ResourceFunction(object query, string? version = null)
     {
         var packageFullName = query as string;
 
-        string providerName = null;
-        string packageName = null;
+        string? providerName = null;
+        string? packageName = null;
 
         var resourceObj = query as ScriptObject;
         var flags = ResourceInstallFlags.Private;

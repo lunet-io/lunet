@@ -23,7 +23,7 @@ public class MenuPlugin : SitePlugin
     
     public string HomeTitle
     {
-        get => GetSafeValue<string>("home_title");
+        get => GetSafeValue<string>("home_title") ?? "Home";
         set => SetValue("home_title", value);
     }
 

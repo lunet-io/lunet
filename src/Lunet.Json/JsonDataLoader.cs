@@ -15,7 +15,7 @@ public class JsonDataLoader : IDataLoader
         return fileExt == ".json";
     }
 
-    public object Load(FileEntry file)
+    public object? Load(FileEntry file)
     {
         var text = file.ReadAllText();
         return JsonUtil.FromText(text);

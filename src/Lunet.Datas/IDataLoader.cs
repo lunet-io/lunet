@@ -11,5 +11,5 @@ public interface IDataLoader
 {
     bool CanHandle(string fileExtension);
 
-    object Load(FileEntry file);
+    object? Load(FileEntry file);
 }

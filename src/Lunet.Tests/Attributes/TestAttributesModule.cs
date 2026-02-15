@@ -22,7 +22,8 @@ public class TestAttributesModule
         var defaultRule = attributes[0];
         Assert.IsTrue(defaultRule.Match);
         Assert.AreEqual("/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.*", defaultRule.Pattern);
-        Assert.AreEqual("/:section/:year/:month/:day/:slug:output_ext", defaultRule.Setters["url"]);
+        Assert.NotNull(defaultRule.Setters);
+        Assert.AreEqual("/:section/:year/:month/:day/:slug:output_ext", defaultRule.Setters!["url"]);
     }
 
     [Test]

@@ -29,43 +29,43 @@ public class MenuObject : DynamicObject
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string DebuggerDisplay => $"{(Url != null ? $"Url: {Url}" : $"Path: {Path}")} Name: {Name}, Parent: {Parent?.Name}, Children = {Children.Count}";
 
-    public string Name
+    public string? Name
     {
         get => GetSafeValue<string>("name");
         set => SetValue("name", value, true);
     }
         
-    public string Path
+    public string? Path
     {
         get => GetSafeValue<string>("path");
         set => SetValue("path", value, true);
     }
        
-    public string Title
+    public string? Title
     {
         get => GetSafeValue<string>("title");
         set => SetValue("title", value);
     }
         
-    public string Pre
+    public string? Pre
     {
         get => GetSafeValue<string>("pre");
         set => SetValue("pre", value);
     }
         
-    public string Post
+    public string? Post
     {
         get => GetSafeValue<string>("post");
         set => SetValue("post", value);
     }
 
-    public string Url
+    public string? Url
     {
         get => GetSafeValue<string>("url");
         set => SetValue("url", value);
     }
 
-    public string Target
+    public string? Target
     {
         get => GetSafeValue<string>("target");
         set => SetValue("target", value);
@@ -85,7 +85,7 @@ public class MenuObject : DynamicObject
 
     public MenuCollection Children { get; }
 
-    public MenuObject Parent
+    public MenuObject? Parent
     {
         get => GetSafeValue<MenuObject>("parent");
         set => SetValue("parent", value, true);
@@ -97,7 +97,7 @@ public class MenuObject : DynamicObject
         return $"Menu: {DebuggerDisplay}";
     }
 
-    public ContentObject Page
+    public ContentObject? Page
     {
         get => GetSafeValue<ContentObject>("page");
         set => SetValue("page", value);
@@ -109,11 +109,11 @@ public class MenuObject : DynamicObject
     {
         this.SetValue("has_children", DelegateCustomFunction.CreateFunc(HasChildren), true);
         this.SetValue("children", Children, true);
-        this.Import("render", (Func<TemplateContext, SourceSpan, ScriptObject, string>)(Render));
-        this.Import("breadcrumb", (Func<TemplateContext, SourceSpan, ScriptObject, string>)(RenderBreadcrumb));
+        this.Import("render", (Func<TemplateContext, SourceSpan, ScriptObject?, string>)(Render));
+        this.Import("breadcrumb", (Func<TemplateContext, SourceSpan, ScriptObject?, string>)(RenderBreadcrumb));
     }
 
-    public string Render(TemplateContext context, SourceSpan span, ScriptObject options = null)
+    public string Render(TemplateContext context, SourceSpan span, ScriptObject? options = null)
     {
         var builder = new StringBuilder();
 
@@ -127,7 +127,7 @@ public class MenuObject : DynamicObject
         return builder.ToString();
     }
         
-    public string RenderBreadcrumb(TemplateContext context, SourceSpan span, ScriptObject options = null)
+    public string RenderBreadcrumb(TemplateContext context, SourceSpan span, ScriptObject? options = null)
     {
         var builder = new StringBuilder();
         if (!context.CurrentGlobal.TryGetValue(context, span, "page", out var pageObject) || !(pageObject is ContentObject))
@@ -142,7 +142,7 @@ public class MenuObject : DynamicObject
     private const int IndentSize = 2;
         
        
-    private void Render(ContentObject page, StringBuilder builder, int level, ScriptObject options, MenuObject parent, MenuObject root, ref int index)
+    private void Render(ContentObject page, StringBuilder builder, int level, ScriptObject options, MenuObject? parent, MenuObject root, ref int index)
     {
         // Don't process further if we are only looking at a certain level
         int maxDepth = int.MaxValue;
@@ -155,7 +155,7 @@ public class MenuObject : DynamicObject
         var showCollapse = options["collapsible"] is bool v && v;
             
         bool hasChildren = Children.Count > 0 && this != parent; // Don't render recursively
-        string menuId = $"{kind}-id-{root.Name}-{index}";
+        string menuId = $"{kind}-id-{root.Name ?? "menu"}-{index}";
 
         bool isCurrentPageInMenuPath = false;
         var rootMenu = page["menu"] as MenuObject;
@@ -204,7 +204,7 @@ public class MenuObject : DynamicObject
         }
     }
 
-    private bool RenderItem(ContentObject page, StringBuilder builder, int level, string kind, ScriptObject options, bool isCappingDepth, bool hasChildren, string subMenuId, bool isInCurrentPath, bool showCollapse)
+    private bool RenderItem(ContentObject page, StringBuilder builder, int level, string kind, ScriptObject options, bool isCappingDepth, bool hasChildren, string? subMenuId, bool isInCurrentPath, bool showCollapse)
     {
         builder.Append(' ', level * IndentSize);
 
@@ -313,7 +313,10 @@ public class MenuObject : DynamicObject
 
         if (page == Page)
         {
-            builder.Append(options["post_active"]);
+            if (options.TryGetValue("post_active", out var postActive) && postActive is not null)
+            {
+                builder.Append(postActive);
+            }
         }
 
         return isActive;
@@ -324,7 +327,7 @@ public class MenuObject : DynamicObject
         var menus = new Stack<MenuObject>();
         var menu = page.GetSafeValue<MenuObject>("menu_item");
 
-        ContentObject previousPage = null;
+        ContentObject? previousPage = null;
         while (menu != null)
         {
             // Because the same page can be declared

@@ -27,10 +27,10 @@ internal class LibSassTransform
         var extensions = new string[] { ".scss", ".sass", ".css" };
 
         var includedFiles = new List<FileEntry>();
-        options.TryImport = (ref string file, string parentpath, out string scss, out string map) =>
+        options.TryImport = (ref string file, string parentpath, out string scss, out string? map) =>
         {
-            scss = null;
-            map = null;
+            scss = string.Empty;
+            map = string.Empty;
 
             // From: https://sass-lang.com/documentation/at-rules/import#load-paths
             // Imports will always be resolved relative to the current file first, though.
@@ -41,7 +41,7 @@ internal class LibSassTransform
             var directoryName = ((UPath)parentpath).GetDirectory();
             if (!directoryName.IsNull && directoryName.IsAbsolute)
             {
-                DirectoryEntry localDirEntry = null;
+                DirectoryEntry? localDirEntry = null;
                 if (site.FileSystem.DirectoryExists(directoryName))
                 {
                     localDirEntry = new DirectoryEntry(site.FileSystem, directoryName);
@@ -74,14 +74,14 @@ internal class LibSassTransform
             var relativeFolder = ufile.GetDirectory();
             var filename = ufile.GetName();
 
-            bool Resolve(FileEntry entry, out string scss, out string file)
+            bool Resolve(FileEntry entry, out string scss, out string resolvedFile)
             {
-                scss = null;
-                file = null;
+                scss = string.Empty;
+                resolvedFile = string.Empty;
                 if (entry.Exists)
                 {
                     scss = entry.ReadAllText();
-                    file = (string)entry.Path;
+                    resolvedFile = (string)entry.Path;
                     includedFiles.Add(entry);
                     return true;
                 }

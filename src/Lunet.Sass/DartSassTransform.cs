@@ -54,7 +54,7 @@ public class DartSassTransform
         file.ChangeContentType(ContentType.Css);
     }
 
-    private static string CleanContent(string content)
+    private static string CleanContent(string? content)
     {
         // Check if content is starting with a UTF marker and remove it
         // Remove Unicode BOM U+FEFF if present
@@ -63,6 +63,6 @@ public class DartSassTransform
             content = content.TrimStart('\uFEFF');
         }
 
-        return content;
+        return content ?? string.Empty;
     }
 }

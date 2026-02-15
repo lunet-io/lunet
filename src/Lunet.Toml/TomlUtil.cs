@@ -24,7 +24,7 @@ public static class TomlUtil
     /// <param name="text">An input TOML text</param>
     /// <param name="tomlFile">The name of the TOML file.</param>
     /// <returns>The parsed TOML object to a Scriban <see cref="ScriptObject"/> or <see cref="ScriptArray"/></returns>
-    public static object FromText(string text, string tomlFile = null)
+    public static object? FromText(string text, string? tomlFile = null)
     {
         try
         {
@@ -38,7 +38,7 @@ public static class TomlUtil
         }
     }
 
-    private static object ConvertFromToml(object element)
+    private static object? ConvertFromToml(object? element)
     {
         switch (element)
         {

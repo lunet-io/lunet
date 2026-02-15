@@ -35,7 +35,7 @@ public class TaxonomyProcessor : ProcessorBase<TaxonomyPlugin>
 
     public TaxonomyCollection List { get; }
 
-    public Taxonomy Find(string name)
+    public Taxonomy? Find(string name)
     {
         foreach (var tax in List)
         {
@@ -56,9 +56,9 @@ public class TaxonomyProcessor : ProcessorBase<TaxonomyPlugin>
             var name = taxonomy.Key;
             var value = taxonomy.Value;
 
-            string singular = null;
-            string url = null;
-            ScriptObject map = null;
+            string? singular = null;
+            string? url = null;
+            ScriptObject? map = null;
             switch (value)
             {
                 case string valueAsStr:

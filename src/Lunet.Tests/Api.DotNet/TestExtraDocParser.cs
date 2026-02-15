@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using Lunet.Api.DotNet.Extractor;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.DocAsCode.Metadata.ManagedReference;
@@ -116,10 +117,13 @@ yes example{x} 2
         var analyzer = new ExtractorAnalyzer();
 
         var diagnostics = new List<Diagnostic>();
-        var context = new CompilationAnalysisContext(null, new AnalyzerOptions(ImmutableArray<AdditionalText>.Empty), diagnostic =>
+        var compilation = CSharpCompilation.Create("TestExtraDocParser");
+#pragma warning disable CS0618
+        var context = new CompilationAnalysisContext(compilation, new AnalyzerOptions(ImmutableArray<AdditionalText>.Empty), diagnostic =>
         {
             diagnostics.Add(diagnostic);
         }, diagnostic => true, new CancellationToken());
+#pragma warning restore CS0618
 
 
         var items = analyzer.TryParseExtraDoc(context, new InMemoryAdditionalText(path, text));

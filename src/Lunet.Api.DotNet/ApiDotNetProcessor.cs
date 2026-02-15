@@ -38,7 +38,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         Projects = new List<ApiDotNetProject>();
         _helpers = new ScriptObject();
 
-        Site.Builtins.SetValue("apiref", DelegateCustomFunction.CreateFunc((Func<string, ScriptObject>)ApiRef), true);
+        Site.Builtins.SetValue("apiref", DelegateCustomFunction.CreateFunc((Func<string, ScriptObject?>)ApiRef), true);
     }
 
     public ApiDotNetConfig Config { get; }
@@ -47,7 +47,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         
     public ApiDotNetObject ApiDotNetObject { get; }
 
-    private ScriptObject ApiRef(string arg)
+    private ScriptObject? ApiRef(string arg)
     {
         if (ApiDotNetObject.Objects.TryGetValue(arg, out var value))
         {
@@ -118,7 +118,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             var uid = obj.GetSafeValue<string>("uid");
             var url = $"/api/{UidHelper.Handleize(uid)}/readme.md";
 
-            DynamicContentObject content = null;
+            DynamicContentObject? content = null;
             switch (GetTypeFromModel(obj))
             {
                 case "Namespace":
@@ -347,7 +347,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         // TODO: order extension methods by name
     }
 
-    private static string GetTypeFromModel(ScriptObject obj)
+    private static string? GetTypeFromModel(ScriptObject obj)
     {
         var type = obj["type"] as string;
         if (type == "Method" && obj.GetSafeValue<bool>("isEii"))
@@ -413,15 +413,20 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
     private void CollectProjectsFromConfiguration()
     {
         var globalIncludedReferences = ParseReferenceAssemblies(Config.References, "api.dotnet.references");
+        var projects = Config.Projects;
+        if (projects is null)
+        {
+            return;
+        }
 
         // Collect csproj
         var rootDirectory = Site.SiteFileSystem.ConvertPathToInternal(UPath.Root);
-        foreach (var projectEntry in Config.Projects)
+        foreach (var projectEntry in projects)
         {
-            string projectName = null;
+            string? projectName = null;
             var projectPath = projectEntry as string;
-            ScriptObject projectProperties = null;
-            List<string> projectIncludedReferences = null;
+            ScriptObject? projectProperties = null;
+            List<string>? projectIncludedReferences = null;
 
             // TODO: log error
             if (projectPath == null)
@@ -451,7 +456,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 {
                     Name = projectName ?? Path.GetFileNameWithoutExtension(entryPath),
                     Path = entryPath,
-                    Properties = projectProperties,
+                    Properties = projectProperties ?? new ScriptObject(),
                     IncludedReferenceAssemblies = includedReferences,
                 });
             }
@@ -482,7 +487,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                         {
                             Name = Path.GetFileNameWithoutExtension(entry),
                             Path = entry,
-                            Properties = projectProperties,
+                            Properties = projectProperties ?? new ScriptObject(),
                             IncludedReferenceAssemblies = includedReferences,
                         });
                     }
@@ -524,7 +529,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                     $"-c", Config.SolutionConfiguration ?? "Release",
                     project.Path
                 },
-                WorkingDirectory = Path.GetDirectoryName(project.Path)
+                WorkingDirectory = Path.GetDirectoryName(project.Path) ?? Environment.CurrentDirectory
             };
             buildProject.Arguments.AddRange(rerunArguments);
 
@@ -605,7 +610,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         }
     }
 
-    private List<string> ParseReferenceAssemblies(object referencesObject, string contextName)
+    private List<string> ParseReferenceAssemblies(object? referencesObject, string contextName)
     {
         if (referencesObject == null)
         {
@@ -650,7 +655,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         return references.ToList();
     }
 
-    private static List<string> MergeIncludedReferenceAssemblies(List<string> globalReferences, List<string> projectReferences)
+    private static List<string> MergeIncludedReferenceAssemblies(List<string>? globalReferences, List<string>? projectReferences)
     {
         if ((globalReferences == null || globalReferences.Count == 0) && (projectReferences == null || projectReferences.Count == 0))
         {
@@ -715,7 +720,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 {
                     var clock = Stopwatch.StartNew();
                     using var stream = cacheFs.OpenFile(project.CachePath, FileMode.Open, FileAccess.Read);
-                    project.Api = (ScriptObject) JsonUtil.FromStream(stream, (string) project.CachePath);
+                    project.Api = JsonUtil.FromStream(stream, (string) project.CachePath) as ScriptObject ?? new ScriptObject();
                     Site.Info($"Api loaded for {project.Name} in {clock.Elapsed.TotalMilliseconds}ms {project.Api.Count} members");
                     apiGlobalCache[project.Name] = project.Api;
                     validAssemblyNames.Add(project.Name);

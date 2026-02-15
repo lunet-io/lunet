@@ -34,7 +34,7 @@ Yo
         Assert.AreEqual(new TextPosition(87, 8, 3), position);
 
         Assert.IsInstanceOf<ScriptObject>(result);
-        var scriptObject = (ScriptObject)result;
+        var scriptObject = result as ScriptObject ?? throw new InvalidOperationException("Expected a ScriptObject");
         Assert.AreEqual(4, scriptObject.Keys.Count);
         var keys = scriptObject.Keys.ToList();
         keys.Sort();

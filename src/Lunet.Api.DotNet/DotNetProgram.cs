@@ -29,7 +29,7 @@ public class DotNetProgram
     {
         Command = command ?? throw new ArgumentNullException(nameof(command));
         Arguments = new List<string>();
-        Properties = new Dictionary<string, object>();
+        Properties = new Dictionary<string, object?>();
         WorkingDirectory = Environment.CurrentDirectory;
     }
 
@@ -37,7 +37,7 @@ public class DotNetProgram
 
     public List<string> Arguments { get; }
 
-    public Dictionary<string, object> Properties { get; }
+    public Dictionary<string, object?> Properties { get; }
 
     public string WorkingDirectory { get; set; }
 
@@ -51,7 +51,7 @@ public class DotNetProgram
         return $"dotnet {GetFullArguments(Command, Arguments, Properties)}";
     }
 
-    private static string GetFullArguments(string command, IEnumerable<string> arguments, Dictionary<string, object> properties)
+    private static string GetFullArguments(string command, IEnumerable<string> arguments, Dictionary<string, object?>? properties)
     {
         var argsBuilder = new StringBuilder($"{command}");
         // Add all arguments
@@ -73,24 +73,25 @@ public class DotNetProgram
     }
 
 
-    private static string GetPropertyValueAsString(object value)
+    private static string GetPropertyValueAsString(object? value)
     {
+        if (value is null) return string.Empty;
         if (value is bool b) return b ? "true" : "false";
         if (value is IFormattable formattable) return formattable.ToString(null, CultureInfo.InvariantCulture);
-        return value.ToString();
+        return value.ToString() ?? string.Empty;
     }
 
-    private static string Run(string command, IEnumerable<string> args, Dictionary<string, object> properties = null, string workingDirectory = null)
+    private static string Run(string command, IEnumerable<string> args, Dictionary<string, object?>? properties = null, string? workingDirectory = null)
     {
         if (command == null) throw new ArgumentNullException(nameof(command));
         if (args == null) throw new ArgumentNullException(nameof(args));
         bool success = false;
-        string errorMessage = null;
+        string? errorMessage = null;
 
         workingDirectory ??= Environment.CurrentDirectory;
 
-        Exception innerException = null;
-        string fullArgs = null;
+        Exception? innerException = null;
+        string? fullArgs = null;
         var output = new StringBuilder();
         try
         {
@@ -146,8 +147,8 @@ public class DotNetProgram
         if (!success)
         {
             if (innerException != null)
-                throw new DotNetProgramException(errorMessage, innerException);
-            throw new DotNetProgramException(errorMessage);
+                throw new DotNetProgramException(errorMessage ?? "Unknown dotnet execution error.", innerException);
+            throw new DotNetProgramException(errorMessage ?? "Unknown dotnet execution error.");
         }
 
         return output.ToString();

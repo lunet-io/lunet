@@ -18,7 +18,7 @@ public class SitemapUrl : DynamicObject
         Url = url;
     }
 
-    public string Url
+    public string? Url
     {
         get => GetSafeValue<string>("loc"); 
         set => SetValue("loc", value);
@@ -34,7 +34,7 @@ public class SitemapUrl : DynamicObject
         set => SetValue("lastmod", value?.ToString("yyyy-MM-dd"));
     }
         
-    public string ChangeFrequency
+    public string? ChangeFrequency
     {
         get => GetSafeValue<string>("changefreq");
         set => SetValue("changefreq", value);

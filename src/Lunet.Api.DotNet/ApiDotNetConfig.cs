@@ -13,7 +13,7 @@ public class ApiDotNetConfig : ApiConfig
         SolutionConfiguration = "Release";
     }
 
-    public string Title
+    public string? Title
     {
         get => this.GetSafeValue<string>("title");
         set => this.SetValue("title", value);
@@ -21,35 +21,35 @@ public class ApiDotNetConfig : ApiConfig
 
     public string SolutionConfiguration
     {
-        get => this.GetSafeValue<string>("config");
+        get => this.GetSafeValue<string>("config") ?? "Release";
         set => this.SetValue("config", value);
     }
         
-    public ScriptArray Projects
+    public ScriptArray? Projects
     {
         get => this.GetSafeValue<ScriptArray>("projects");
         set => this.SetValue("projects", value);
     }
 
-    public ScriptObject Properties
+    public ScriptObject? Properties
     {
         get => this.GetSafeValue<ScriptObject>("properties");
         set => this.SetValue("properties", value);
     }
 
-    public ScriptArray References
+    public ScriptArray? References
     {
         get => this.GetSafeValue<ScriptArray>("references");
         set => this.SetValue("references", value);
     }
 
-    public string IncludeHelper
+    public string? IncludeHelper
     {
         get => this.GetSafeValue<string>("include_helper");
         set => this.SetValue("include_helper", value);
     }
 
-    public string Layout
+    public string? Layout
     {
         get => this.GetSafeValue<string>("layout");
         set => this.SetValue("layout", value);

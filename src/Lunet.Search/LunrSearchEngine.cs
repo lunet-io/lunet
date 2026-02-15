@@ -93,6 +93,11 @@ public class LunrSearchEngine : SearchEngine
         var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
 
         var lunr = Plugin.ResourcePlugin.TryLoadResource("npm", "lunr", "2.3.8", ResourceInstallFlags.Private);
+        if (lunr is null)
+        {
+            Site.Error("Unable to load npm resource `lunr@2.3.8` for lunr search engine.");
+            return;
+        }
 
         defaultBundle.AddJs(lunr, "lunr.js", mode: "");
         if (Plugin.Worker)

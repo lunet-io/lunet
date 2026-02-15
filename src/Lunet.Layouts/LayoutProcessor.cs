@@ -20,7 +20,7 @@ namespace Lunet.Layouts;
 
 public class LayoutProcessor : ContentProcessor<LayoutPlugin>
 {
-    private readonly Dictionary<LayoutKey, LayoutContentObject> _layouts;
+    private readonly Dictionary<LayoutKey, LayoutContentObject?> _layouts;
 
     private readonly List<KeyValuePair<string, GetLayoutPathsDelegate>> _layoutPathProviders;
 
@@ -36,7 +36,7 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
 
     public LayoutProcessor(LayoutPlugin plugin) : base(plugin)
     {
-        _layouts = new Dictionary<LayoutKey, LayoutContentObject>();
+        _layouts = new Dictionary<LayoutKey, LayoutContentObject?>();
         _layoutPathProviders = new List<KeyValuePair<string, GetLayoutPathsDelegate>>();
         _converters = new Dictionary<ContentType, ILayoutConverter>();
 
@@ -68,9 +68,9 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
         }
 
         var layoutName = page.Layout ?? page.Section;
-        var layoutType = page.LayoutType;
+        var layoutType = page.LayoutType ?? ContentLayoutTypes.Single;
         var layoutContentType = page.ContentType;
-        layoutName = NormalizeLayoutName(page, layoutName, true);
+        layoutName = NormalizeLayoutName(page, layoutName, true)!;
         var layoutKey = GetLayoutKey(layoutName, layoutType, layoutContentType);
         var layoutKeys = new HashSet<string>()
         {
@@ -126,7 +126,7 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
             page.ScriptObjectLocal.SetValue(PageVariables.Content, page.Content, false);
 
             // We manage global locally here as we need to push the local variable ScriptVariable.BlockDelegate
-            if (Site.Scripts.TryEvaluatePage(page, layoutObject.Script, layoutObject.SourceFile.Path, page.ScriptObjectLocal))
+            if (layoutObject.Script is not null && Site.Scripts.TryEvaluatePage(page, layoutObject.Script, layoutObject.SourceFile.Path, page.ScriptObjectLocal))
             {
                 var nextLayoutName = layoutObject.GetSafeValue<string>(PageVariables.Layout) ?? layoutName;
                 var nextLayoutType = layoutObject.GetSafeValue<string>(PageVariables.LayoutType) ?? layoutType;
@@ -195,11 +195,11 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
         return $"{layoutName}|{layoutType}|{contentType}";
     }
 
-    private LayoutContentObject GetLayout(string layoutName, string layoutType, ContentType contentType)
+    private LayoutContentObject? GetLayout(string layoutName, string layoutType, ContentType contentType)
     {
         lock (_layouts)
         {
-            LayoutContentObject layoutObject;
+            LayoutContentObject? layoutObject;
 
             layoutType ??= ContentLayoutTypes.Single;
             var layoutKey = new LayoutKey(layoutName, layoutType, contentType);
@@ -294,7 +294,7 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
 
     private static readonly char[] InvalidLayoutChars = new[] {'\\', '/', '.'};
 
-    private string NormalizeLayoutName(TemplateObject context, string layoutName, bool defaultIfNull)
+    private string? NormalizeLayoutName(TemplateObject context, string? layoutName, bool defaultIfNull)
     {
         if (string.IsNullOrEmpty(layoutName))
         {
@@ -346,7 +346,7 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
             return string.Equals(Name, other.Name, StringComparison.Ordinal) && string.Equals(Type, other.Type, StringComparison.Ordinal) && ContentType.Equals(other.ContentType);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             return obj is LayoutKey && Equals((LayoutKey)obj);

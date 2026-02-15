@@ -15,7 +15,7 @@ public class TomlDataLoader : IDataLoader
         return fileExt == ".toml";
     }
 
-    public object Load(FileEntry file)
+    public object? Load(FileEntry file)
     {
         var text = file.ReadAllText();
         return TomlUtil.FromText(text);
