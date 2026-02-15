@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 
 // Only visible to SerializerGen to generate the JsonSerializer.generated.cs
 [assembly: InternalsVisibleTo("Lunet.Api.DotNet.Extractor.CodeGen")]
+[assembly: InternalsVisibleTo("Lunet.Tests")]
 
 namespace Newtonsoft.Json
 {

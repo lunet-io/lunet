@@ -60,7 +60,22 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 return typeof(object).FullName;
             }
 
-            return GetDocumentationCommentId(symbol)?.Substring(2);
+            var documentationCommentId = GetDocumentationCommentId(symbol);
+            if (!string.IsNullOrEmpty(documentationCommentId))
+            {
+                return documentationCommentId.Substring(2);
+            }
+
+            if (symbol is IFieldSymbol fieldSymbol && !string.IsNullOrEmpty(fieldSymbol.MetadataName))
+            {
+                var containingTypeId = GetId(fieldSymbol.ContainingType);
+                if (!string.IsNullOrEmpty(containingTypeId))
+                {
+                    return $"{containingTypeId}.{fieldSymbol.MetadataName}";
+                }
+            }
+
+            return null;
         }
 
         private static string GetDocumentationCommentId(ISymbol symbol)

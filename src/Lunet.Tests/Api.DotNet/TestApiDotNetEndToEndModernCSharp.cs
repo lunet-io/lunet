@@ -1,0 +1,380 @@
+// Copyright (c) Alexandre Mutel. All rights reserved.
+// This file is licensed under the BSD-Clause 2 license.
+// See the license.txt file in the project root for more information.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Lunet.Core;
+using Lunet.Tests.Infrastructure;
+
+namespace Lunet.Tests.Api.DotNet;
+
+[NonParallelizable]
+public class TestApiDotNetEndToEndModernCSharp
+{
+    private static readonly (string Type, string UidContains, string SyntaxFragment)[] ExpectedFeatureSyntax =
+    [
+        ("Class", "ApiE2E.RecordClass", "record RecordClass(int Value)"),
+        ("Struct", "ReadonlyRecordStruct", "readonly record struct ReadonlyRecordStruct(int Value)"),
+        ("Property", "RequiredAndInit.Name", "required string Name { get; init; }"),
+        ("Method", "RefFeatures.RefReadonlyReturn", "ref readonly int RefReadonlyReturn(ref readonly int value)"),
+        ("Method", "RefFeatures.ScopedIn", "ScopedIn(scoped in int value)"),
+        ("Method", "NullableApi`1.Echo", "TRef? Echo(TRef? value)"),
+        ("Class", "PrimaryCtorClass", "class PrimaryCtorClass(string name)"),
+        ("Struct", "PrimaryCtorStruct", "readonly struct PrimaryCtorStruct(int value)"),
+        ("Field", "NativeAndFunctionPointers.NativeIntField", "nint NativeIntField"),
+        ("Field", "NativeAndFunctionPointers.Callback", "delegate* unmanaged[Cdecl]<int, void> Callback"),
+        ("Method", "IStaticMath`1.Create", "static abstract TSelf Create()"),
+        ("Method", "IDefaultInterfaceMember.Implemented", "void Implemented()"),
+        ("Operator", "op_CheckedAddition", "operator checked +"),
+        ("Operator", "op_UnsignedRightShift", "operator >>>"),
+        ("Interface", "IAllowsRefStruct", "allows ref struct"),
+        ("Method", "ParamsCollectionFeature.Accept", "params ReadOnlySpan<int> values"),
+    ];
+
+    private PhysicalLunetAppTestContext _context = null!;
+    private JsonDocument _intermediateModel = null!;
+    private Dictionary<string, JsonElement> _itemsByUid = null!;
+    private string _outputRoot = null!;
+
+    [OneTimeSetUp]
+    public async Task SetupAsync()
+    {
+        _context = new PhysicalLunetAppTestContext();
+        WriteTestSiteAndProject(_context);
+
+        var siteDirectory = _context.GetAbsolutePath("site");
+        var exitCode = await _context.RunAsync($"--input-dir={siteDirectory}", "build", "--dev");
+        Assert.AreEqual(0, exitCode, "lunet build should succeed for API integration site.");
+
+        var cachePath = _context.GetAbsolutePath("site/.lunet/build/cache/api/dotnet/ApiE2ESample.api.json");
+        Assert.IsTrue(File.Exists(cachePath), $"Expected API cache file not found at `{cachePath}`.");
+        _intermediateModel = JsonDocument.Parse(File.ReadAllText(cachePath));
+        _itemsByUid = BuildItemIndex(_intermediateModel);
+        _outputRoot = _context.GetAbsolutePath("site/.lunet/build/www");
+    }
+
+    [OneTimeTearDown]
+    public void TearDown()
+    {
+        _intermediateModel?.Dispose();
+        _context?.Dispose();
+    }
+
+    [Test]
+    public void TestBuildGeneratesApiRootNamespaceAndMemberPages()
+    {
+        Assert.IsTrue(File.Exists(Path.Combine(_outputRoot, "api", "index.html")));
+        Assert.IsTrue(File.Exists(Path.Combine(_outputRoot, "api", UidHelper.Handleize("ApiE2E"), "index.html")));
+        Assert.IsTrue(File.Exists(Path.Combine(_outputRoot, "api", UidHelper.Handleize("ApiE2E.RecordClass"), "index.html")));
+    }
+
+    [Test]
+    public void TestIntermediateModelContainsModernLanguageFeatureSyntax()
+    {
+        foreach (var (type, uidContains, syntaxFragment) in ExpectedFeatureSyntax)
+        {
+            var item = FindSingleItem(type, uidContains);
+            var syntax = GetSyntaxContent(item);
+            StringAssert.Contains(syntaxFragment, syntax, $"Expected `{syntaxFragment}` in intermediate syntax for `{uidContains}`.");
+        }
+    }
+
+    [Test]
+    public void TestRenderedPagesContainModernLanguageFeatureSyntax()
+    {
+        foreach (var (type, uidContains, syntaxFragment) in ExpectedFeatureSyntax)
+        {
+            var item = FindSingleItem(type, uidContains);
+            var uid = item.GetProperty("uid").GetString();
+            Assert.That(uid, Is.Not.Null.And.Not.Empty);
+            var html = ReadRenderedHtmlByUid(uid!);
+            StringAssert.Contains(syntaxFragment, html, $"Expected `{syntaxFragment}` in rendered page for `{uidContains}`.");
+        }
+    }
+
+    [Test]
+    public void TestRenderedPagesContainExtensionAndExplicitInterfaceSections()
+    {
+        var recordClassPage = ReadRenderedHtmlByUid("ApiE2E.RecordClass");
+        StringAssert.Contains("Extensions", recordClassPage);
+        StringAssert.Contains("DoubleValue(RecordClass)", recordClassPage);
+
+        var explicitImplementerPage = ReadRenderedHtmlByUid("ApiE2E.ExplicitImplementer");
+        StringAssert.Contains("Explicit Interface Implementation Methods", explicitImplementerPage);
+        StringAssert.Contains("Execute()", explicitImplementerPage);
+    }
+
+    [Test]
+    public void TestCSharp14ExtensionMembersDoNotBreakModelOrPages()
+    {
+        Assert.IsFalse(_itemsByUid.Values.Any(item => item.GetProperty("type").GetString() == "Default"));
+
+        var extensionMembersType = FindSingleItem("Class", "ApiE2E.CSharp14ExtensionMembers");
+        var syntax = GetSyntaxContent(extensionMembersType);
+        StringAssert.Contains("static class CSharp14ExtensionMembers", syntax);
+
+        var extensionMembersPage = ReadRenderedHtmlByUid("ApiE2E.CSharp14ExtensionMembers");
+        StringAssert.Contains("CSharp14ExtensionMembers Class", extensionMembersPage);
+    }
+
+    [Test]
+    public void TestApiIndexAndNamespacePagesContainExpectedStructure()
+    {
+        var apiIndexPath = Path.Combine(_outputRoot, "api", "index.html");
+        var apiIndex = WebUtility.HtmlDecode(File.ReadAllText(apiIndexPath));
+        StringAssert.Contains("Namespaces", apiIndex);
+        StringAssert.Contains("ApiE2E", apiIndex);
+
+        var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
+        StringAssert.Contains("ApiE2E Namespace", namespacePage);
+        StringAssert.Contains("Classes", namespacePage);
+        StringAssert.Contains("Structs", namespacePage);
+        StringAssert.Contains("Interfaces", namespacePage);
+        StringAssert.Contains("CSharp14ExtensionMembers", namespacePage);
+    }
+
+    private static void WriteTestSiteAndProject(PhysicalLunetAppTestContext context)
+    {
+        context.WriteAllText(
+            "site/config.scriban",
+            """
+            baseurl = "https://example.test"
+            title = "API End-to-End"
+
+            $api = api.dotnet
+            $api.title = "API End-to-End"
+            $api.properties = { TargetFramework: "net10.0" }
+            $api.projects = [
+              { name: "ApiE2ESample", path: "../src/ApiE2ESample/ApiE2ESample.csproj" }
+            ]
+            """);
+
+        context.WriteAllText(
+            "src/ApiE2ESample/ApiE2ESample.csproj",
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+                <LangVersion>preview</LangVersion>
+                <Nullable>enable</Nullable>
+                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+                <GenerateDocumentationFile>true</GenerateDocumentationFile>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        context.WriteAllText(
+            "src/ApiE2ESample/ModernFeatures.cs",
+            """
+            #nullable enable
+            using System;
+
+            namespace ApiE2E;
+
+            /// <summary>A record class.</summary>
+            public record class RecordClass(int Value);
+
+            /// <summary>A readonly record struct.</summary>
+            public readonly record struct ReadonlyRecordStruct(int Value);
+
+            public ref struct RefReader
+            {
+                public readonly int ReadonlyMethod() => 42;
+            }
+
+            public class NullableApi<TRef>
+                where TRef : class?
+            {
+                public string? MaybeText { get; set; }
+
+                public TRef? Echo(TRef? value) => value;
+            }
+
+            public class RequiredAndInit
+            {
+                public required string Name { get; init; } = string.Empty;
+                public required int Code;
+            }
+
+            public class RefFeatures
+            {
+                public ref readonly int RefReadonlyReturn(ref readonly int value) => ref value;
+
+                public void ScopedIn(scoped in int value)
+                {
+                }
+            }
+
+            public class PrimaryCtorClass(string name)
+            {
+                public string Name => name;
+            }
+
+            public readonly struct PrimaryCtorStruct(int value)
+            {
+                public int Value => value;
+            }
+
+            public unsafe class NativeAndFunctionPointers
+            {
+                public nint NativeIntField;
+                public nuint NativeUIntProperty { get; set; }
+                public delegate* unmanaged[Cdecl]<int, void> Callback;
+            }
+
+            public interface IStaticMath<TSelf>
+                where TSelf : IStaticMath<TSelf>
+            {
+                static abstract TSelf operator +(TSelf left, TSelf right);
+                static abstract TSelf Create();
+                static abstract TSelf Zero { get; }
+            }
+
+            public interface IConstraint<TUnmanaged, TNotNull>
+                where TUnmanaged : unmanaged
+                where TNotNull : notnull
+            {
+            }
+
+            public interface IDefaultInterfaceMember
+            {
+                void Implemented() { }
+            }
+
+            public interface IRefStructContract
+            {
+                void Use();
+            }
+
+            public ref struct RefStructImplementer : IRefStructContract
+            {
+                public void Use()
+                {
+                }
+            }
+
+            public class ParamsCollectionFeature
+            {
+                public void Accept(params ReadOnlySpan<int> values)
+                {
+                }
+            }
+
+            public readonly struct CheckedOperators
+            {
+                public static CheckedOperators operator +(CheckedOperators left, CheckedOperators right) => left;
+                public static CheckedOperators operator checked +(CheckedOperators left, CheckedOperators right) => left;
+                public static CheckedOperators operator >>>(CheckedOperators value, int count) => value;
+            }
+
+            public interface IAllowsRefStruct<TValue>
+                where TValue : allows ref struct
+            {
+            }
+
+            public interface IExplicitContract
+            {
+                void Execute();
+            }
+
+            public class ExplicitImplementer : IExplicitContract
+            {
+                void IExplicitContract.Execute()
+                {
+                }
+            }
+
+            public static class RecordClassExtensions
+            {
+                public static int DoubleValue(this RecordClass value) => value.Value * 2;
+            }
+
+            public static class CSharp14ExtensionMembers
+            {
+                extension(RecordClass value)
+                {
+                    public int TripleValue() => value.Value * 3;
+                }
+            }
+            """);
+    }
+
+    private static Dictionary<string, JsonElement> BuildItemIndex(JsonDocument apiModel)
+    {
+        var map = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+
+        foreach (var module in apiModel.RootElement.GetProperty("items").EnumerateArray())
+        {
+            if (!module.TryGetProperty("items", out var items))
+            {
+                continue;
+            }
+
+            foreach (var item in items.EnumerateArray())
+            {
+                if (!item.TryGetProperty("uid", out var uidProperty))
+                {
+                    continue;
+                }
+
+                var uid = uidProperty.GetString();
+                if (string.IsNullOrEmpty(uid))
+                {
+                    continue;
+                }
+
+                map[uid] = item;
+            }
+        }
+
+        return map;
+    }
+
+    private JsonElement FindSingleItem(string type, string uidContains)
+    {
+        var matches = _itemsByUid
+            .Values
+            .Where(item => item.GetProperty("type").GetString() == type
+                           && item.GetProperty("uid").GetString()?.Contains(uidContains, StringComparison.Ordinal) == true)
+            .ToList();
+
+        var exactMatches = matches
+            .Where(item => string.Equals(item.GetProperty("uid").GetString(), uidContains, StringComparison.Ordinal))
+            .ToList();
+        if (exactMatches.Count > 0)
+        {
+            matches = exactMatches;
+        }
+
+        Assert.AreEqual(1, matches.Count, $"Expected a single item of type `{type}` containing `{uidContains}`, but found {matches.Count}.");
+        return matches[0];
+    }
+
+    private static string GetSyntaxContent(JsonElement item)
+    {
+        if (!item.TryGetProperty("syntax", out var syntax))
+        {
+            Assert.Fail($"Missing syntax.content for uid `{item.GetProperty("uid").GetString()}`.");
+        }
+
+        if (!syntax.TryGetProperty("content", out var content))
+        {
+            Assert.Fail($"Missing syntax.content for uid `{item.GetProperty("uid").GetString()}`.");
+        }
+
+        return content.GetString() ?? string.Empty;
+    }
+
+    private string ReadRenderedHtmlByUid(string uid)
+    {
+        var path = Path.Combine(_outputRoot, "api", UidHelper.Handleize(uid), "index.html");
+        Assert.IsTrue(File.Exists(path), $"Expected rendered API page not found at `{path}`.");
+        return WebUtility.HtmlDecode(File.ReadAllText(path));
+    }
+}

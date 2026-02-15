@@ -309,7 +309,11 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
 
             foreach (var childId in ids)
             {
-                var childObj = (ScriptObject)objects[childId];
+                if (!objects.TryGetValue(childId, out var childObjObject) || childObjObject is not ScriptObject childObj)
+                {
+                    continue;
+                }
+
                 if (childObj.GetSafeValue<bool>("isExtensionMethod"))
                 {
                     extensionMethods.Add(childObj);

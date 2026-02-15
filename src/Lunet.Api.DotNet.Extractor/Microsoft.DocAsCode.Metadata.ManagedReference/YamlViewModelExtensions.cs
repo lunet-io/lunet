@@ -170,9 +170,12 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             {
                 AddChildren(model, result);
             }
-            foreach (var item in model.References)
+            if (model.References != null)
             {
-                result.References.Add(ToReferenceViewModel(item));
+                foreach (var item in model.References)
+                {
+                    result.References.Add(ToReferenceViewModel(item));
+                }
             }
             return result;
         }

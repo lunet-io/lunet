@@ -116,6 +116,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             if ((Options & NameOptions.UseAlias) == NameOptions.UseAlias &&
                 TrySpecialType(symbol))
             {
+                AppendNullableAnnotationIfNeeded(symbol);
                 return;
             }
             if (symbol.ContainingType != null)
@@ -181,6 +182,8 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     WriteGeneric(symbol.TypeParameters);
                 }
             }
+
+            AppendNullableAnnotationIfNeeded(symbol);
         }
 
         public override void VisitNamespace(INamespaceSymbol symbol)
@@ -201,7 +204,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
         public override void VisitArrayType(IArrayTypeSymbol symbol)
         {
-            symbol.ElementType.Accept(this);
+            symbol.ElementType.WithNullableAnnotation(symbol.ElementNullableAnnotation).Accept(this);
             if (symbol.Rank == 1)
             {
                 Append("[]");
@@ -215,6 +218,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 }
                 Append("]");
             }
+            AppendNullableAnnotationIfNeeded(symbol);
         }
 
         public override void VisitPointerType(IPointerTypeSymbol symbol)
@@ -226,6 +230,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
         public override void VisitTypeParameter(ITypeParameterSymbol symbol)
         {
             Append(symbol.Name);
+            AppendNullableAnnotationIfNeeded(symbol);
         }
 
         public override void VisitMethod(IMethodSymbol symbol)
@@ -402,15 +407,39 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
         public override void VisitParameter(IParameterSymbol symbol)
         {
-            if (symbol.RefKind == RefKind.Ref)
+            switch (symbol.RefKind)
             {
-                Append("ref ");
-            }
-            else if (symbol.RefKind == RefKind.Out)
-            {
-                Append("out ");
+                case RefKind.Ref:
+                    Append("ref ");
+                    break;
+                case RefKind.Out:
+                    Append("out ");
+                    break;
+                case RefKind.In:
+                    Append("in ");
+                    break;
+                case RefKind.RefReadOnlyParameter:
+                    Append("ref readonly ");
+                    break;
             }
             symbol.Type.Accept(this);
+        }
+
+        public override void VisitFunctionPointerType(IFunctionPointerTypeSymbol symbol)
+        {
+            var typeQualificationStyle = (Options & NameOptions.WithNamespace) == NameOptions.WithNamespace
+                ? SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces
+                : SymbolDisplayTypeQualificationStyle.NameAndContainingTypes;
+
+            var displayFormat = new SymbolDisplayFormat(
+                globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.OmittedAsContaining,
+                typeQualificationStyle: typeQualificationStyle,
+                genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+                miscellaneousOptions:
+                    SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+                    SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+                    SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+            Append(symbol.ToDisplayString(displayFormat));
         }
 
         public override void VisitDynamicType(IDynamicTypeSymbol symbol)
@@ -469,6 +498,12 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 case SpecialType.System_UInt64:
                     Append("ulong");
                     return true;
+                case SpecialType.System_IntPtr:
+                    Append("nint");
+                    return true;
+                case SpecialType.System_UIntPtr:
+                    Append("nuint");
+                    return true;
                 case SpecialType.System_Decimal:
                     Append("decimal");
                     return true;
@@ -490,6 +525,22 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     }
                     return false;
             }
+        }
+
+        private void AppendNullableAnnotationIfNeeded(ITypeSymbol symbol)
+        {
+            if (symbol.NullableAnnotation != NullableAnnotation.Annotated)
+            {
+                return;
+            }
+
+            if (symbol is INamedTypeSymbol namedType &&
+                namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                return;
+            }
+
+            Append("?");
         }
 
         private void WriteGeneric(int typeParameterCount)

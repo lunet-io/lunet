@@ -49,14 +49,14 @@ Assembly: {{ member.assemblies[0] }}.dll
 {{~ if member.examples && member.examples.size > 0 ~}}
 
 ## Examples
-    {{~ for example in member.examples ~}}
-        {{~ example }}
-    {{~ end ~}}
+{{~ for example in member.examples ~}}
+{{~ example }}
+{{~ end ~}}
 {{~ end ~}}
 {{~ if member.remarks ~}}
 
 ## Remarks
-    {{~ member.remarks ~}}
+{{~ member.remarks ~}}
 {{~ end ~}}
 
 {{~ api_dotnet_members_render member "constructors" "Constructors" $table_class ~}}
@@ -66,4 +66,4 @@ Assembly: {{ member.assemblies[0] }}.dll
 {{~ api_dotnet_members_render member "events" "Events" $table_class ~}}
 {{~ api_dotnet_members_render member "operators" "Operators" $table_class ~}}
 {{~ api_dotnet_members_render member "extensions" "Extensions" $table_class ~}}
-{{~ api_dotnet_members_render member "explicit_interface_implementation_methods" "Explciit Interface Implementation Methods" $table_class ~}}
+{{~ api_dotnet_members_render member "explicit_interface_implementation_methods" "Explicit Interface Implementation Methods" $table_class ~}}

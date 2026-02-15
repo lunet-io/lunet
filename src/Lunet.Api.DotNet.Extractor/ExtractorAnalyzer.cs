@@ -141,7 +141,10 @@ namespace Lunet.Api.DotNet.Extractor
                 var assemblyViewModel = new AssemblyViewModel()
                 {
                     Name = context.Compilation.AssemblyName,
-                    Items = model.Members.Select(x => x.ToPageViewModel()).ToList()
+                    Items = model.Members
+                        .Where(x => x.Type != MemberType.Default)
+                        .Select(x => x.ToPageViewModel())
+                        .ToList()
                 };
 
                 var serializer = new JsonSerializer(writer) {PrettyOutput = true};

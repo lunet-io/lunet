@@ -420,12 +420,6 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
         public string AddReference(ISymbol symbol)
         {
-            var memberType = GetMemberTypeFromSymbol(symbol);
-            if (memberType == MemberType.Default)
-            {
-                Debug.Fail("Unexpected membertype.");
-                throw new InvalidOperationException("Unexpected membertype.");
-            }
             return _generator.AddReference(symbol, _references, this);
         }
 
@@ -445,8 +439,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 case MemberType.Operator:
                     return _generator.AddOverloadReference(symbol, _references, this);
                 default:
-                    Debug.Fail("Unexpected membertype.");
-                    throw new InvalidOperationException("Unexpected membertype.");
+                    return null;
             }
         }
 
@@ -461,6 +454,11 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             }
             catch (Exception ex)
             {
+                if (symbol is ITypeSymbol typeSymbol && string.IsNullOrEmpty(VisitorHelper.GetCommentId(symbol)))
+                {
+                    return NameVisitorCreator.GetCSharp(NameOptions.UseAlias | NameOptions.WithGenericParameter).GetName(typeSymbol);
+                }
+
                 throw new DocfxException($"Unable to generate spec reference for {VisitorHelper.GetCommentId(symbol)}", ex);
             }
         }

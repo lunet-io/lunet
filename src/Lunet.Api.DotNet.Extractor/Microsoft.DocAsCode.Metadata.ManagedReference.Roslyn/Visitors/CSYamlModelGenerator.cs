@@ -19,6 +19,14 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
     {
         #region Fields
         private static readonly Regex BracesRegex = new Regex(@"\s*\{(;|\s)*\}\s*$", RegexOptions.Compiled);
+        private static readonly SymbolDisplayFormat CSharpTypeDisplayFormat = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.OmittedAsContaining,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions:
+                SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+                SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+                SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
         #endregion
 
         public CSYamlModelGenerator() : base(SyntaxLanguage.CSharp)
@@ -59,11 +67,29 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     modifiers.Add("sealed");
                 }
             }
+            else if (symbol.TypeKind == TypeKind.Struct)
+            {
+                if (symbol.IsRefLikeType)
+                {
+                    modifiers.Add("ref");
+                }
+                if (symbol.IsReadOnly)
+                {
+                    modifiers.Add("readonly");
+                }
+            }
             switch (symbol.TypeKind)
             {
                 case TypeKind.Module:
                 case TypeKind.Class:
-                    modifiers.Add("class");
+                    if (symbol.IsRecord)
+                    {
+                        modifiers.Add("record");
+                    }
+                    else
+                    {
+                        modifiers.Add("class");
+                    }
                     break;
                 case TypeKind.Delegate:
                     modifiers.Add("delegate");
@@ -75,6 +101,10 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     modifiers.Add("interface");
                     break;
                 case TypeKind.Struct:
+                    if (symbol.IsRecord)
+                    {
+                        modifiers.Add("record");
+                    }
                     modifiers.Add("struct");
                     break;
                 default:
@@ -95,29 +125,33 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 {
                     modifiers.Add(visiblity);
                 }
-                if (symbol.IsStatic)
-                {
-                    modifiers.Add("static");
-                }
-                if (symbol.IsAbstract)
-                {
-                    modifiers.Add("abstract");
-                }
-                if (symbol.IsOverride)
-                {
-                    modifiers.Add("override");
-                }
-                if (symbol.IsVirtual && symbol.IsSealed)
-                {
-                }
-                else if (symbol.IsVirtual)
-                {
-                    modifiers.Add("virtual");
-                }
-                else if (symbol.IsSealed)
-                {
-                    modifiers.Add("sealed");
-                }
+            }
+            if (symbol.IsStatic)
+            {
+                modifiers.Add("static");
+            }
+            if (symbol.IsReadOnly)
+            {
+                modifiers.Add("readonly");
+            }
+            if (symbol.IsAbstract && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
+            {
+                modifiers.Add("abstract");
+            }
+            if (symbol.IsOverride)
+            {
+                modifiers.Add("override");
+            }
+            if (symbol.IsVirtual && symbol.IsSealed)
+            {
+            }
+            else if (symbol.IsVirtual && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
+            {
+                modifiers.Add("virtual");
+            }
+            else if (symbol.IsSealed)
+            {
+                modifiers.Add("sealed");
             }
             item.Modifiers[SyntaxLanguage.CSharp] = modifiers;
         }
@@ -143,6 +177,10 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             if (symbol.IsReadOnly)
             {
                 modifiers.Add("readonly");
+            }
+            if (symbol.IsRequired)
+            {
+                modifiers.Add("required");
             }
             if (symbol.IsVolatile)
             {
@@ -187,6 +225,25 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     modifiers.Add("sealed");
                 }
             }
+            else
+            {
+                if (symbol.IsStatic)
+                {
+                    modifiers.Add("static");
+                }
+                if (symbol.IsAbstract && symbol.IsStatic)
+                {
+                    modifiers.Add("abstract");
+                }
+                if (symbol.IsVirtual && symbol.IsStatic)
+                {
+                    modifiers.Add("virtual");
+                }
+            }
+            if (symbol.IsRequired)
+            {
+                modifiers.Add("required");
+            }
             if (symbol.GetMethod != null)
             {
                 var getMethodVisiblity = GetVisiblity(symbol.GetMethod.DeclaredAccessibility);
@@ -205,16 +262,17 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             if (symbol.SetMethod != null)
             {
                 var setMethodVisiblity = GetVisiblity(symbol.SetMethod.DeclaredAccessibility);
+                var setKeyword = symbol.SetMethod.IsInitOnly ? "init" : "set";
                 if (propertyVisiblity != null && setMethodVisiblity == null)
                 {
                 }
                 else if (setMethodVisiblity != propertyVisiblity)
                 {
-                    modifiers.Add($"{setMethodVisiblity} set");
+                    modifiers.Add($"{setMethodVisiblity} {setKeyword}");
                 }
                 else
                 {
-                    modifiers.Add("set");
+                    modifiers.Add(setKeyword);
                 }
             }
             item.Modifiers[SyntaxLanguage.CSharp] = modifiers;
@@ -254,6 +312,21 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 else if (symbol.IsSealed)
                 {
                     modifiers.Add("sealed");
+                }
+            }
+            else
+            {
+                if (symbol.IsStatic)
+                {
+                    modifiers.Add("static");
+                }
+                if (symbol.IsAbstract && symbol.IsStatic)
+                {
+                    modifiers.Add("abstract");
+                }
+                if (symbol.IsVirtual && symbol.IsStatic)
+                {
+                    modifiers.Add("virtual");
                 }
             }
             item.Modifiers[SyntaxLanguage.CSharp] = modifiers;
@@ -302,17 +375,22 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
         #region Syntax
 
         private string GetClassSyntax(INamedTypeSymbol symbol, IFilterVisitor filterVisitor) =>
-            RemoveBraces(
-                SyntaxFactory.ClassDeclaration(
-                    GetAttributes(symbol, filterVisitor),
-                    SyntaxFactory.TokenList(GetTypeModifiers(symbol)),
-                    SyntaxFactory.Identifier(symbol.Name),
-                    GetTypeParameters(symbol),
-                    GetBaseTypeList(symbol),
-                    SyntaxFactory.List(GetTypeParameterConstraints(symbol)),
-                    new SyntaxList<MemberDeclarationSyntax>()
-                ).NormalizeWhitespace().ToString()
-            );
+            ReplaceRecordKeywordIfNeeded(
+                symbol,
+                AppendAllowsRefStructConstraints(
+                    RemoveBraces(
+                        SyntaxFactory.ClassDeclaration(
+                        GetAttributes(symbol, filterVisitor),
+                        SyntaxFactory.TokenList(GetTypeModifiers(symbol)),
+                        SyntaxFactory.Identifier(symbol.Name),
+                        GetTypeParameters(symbol),
+                        GetPrimaryConstructorParameters(symbol, filterVisitor),
+                        GetBaseTypeList(symbol),
+                        SyntaxFactory.List(GetTypeParameterConstraints(symbol)),
+                        new SyntaxList<MemberDeclarationSyntax>()
+                        ).NormalizeWhitespace().ToString()
+                    ),
+                    symbol.TypeParameters));
 
         private string GetEnumSyntax(INamedTypeSymbol symbol, IFilterVisitor filterVisitor) =>
             RemoveBraces(
@@ -328,8 +406,9 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             );
 
         private string GetInterfaceSyntax(INamedTypeSymbol symbol, IFilterVisitor filterVisitor) =>
-            RemoveBraces(
-                SyntaxFactory.InterfaceDeclaration(
+            AppendAllowsRefStructConstraints(
+                RemoveBraces(
+                    SyntaxFactory.InterfaceDeclaration(
                     GetAttributes(symbol, filterVisitor),
                     SyntaxFactory.TokenList(
                         GetTypeModifiers(symbol)
@@ -341,33 +420,40 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                         GetTypeParameterConstraints(symbol)
                     ),
                     new SyntaxList<MemberDeclarationSyntax>()
-                ).NormalizeWhitespace().ToString()
-            );
+                    ).NormalizeWhitespace().ToString()
+                ),
+                symbol.TypeParameters);
 
         private string GetStructSyntax(INamedTypeSymbol symbol, IFilterVisitor filterVisitor) =>
-            RemoveBraces(
-                SyntaxFactory.StructDeclaration(
-                    GetAttributes(symbol, filterVisitor),
-                    SyntaxFactory.TokenList(
-                        GetTypeModifiers(symbol)
+            ReplaceRecordKeywordIfNeeded(
+                symbol,
+                AppendAllowsRefStructConstraints(
+                    RemoveBraces(
+                        SyntaxFactory.StructDeclaration(
+                        GetAttributes(symbol, filterVisitor),
+                        SyntaxFactory.TokenList(
+                            GetTypeModifiers(symbol)
+                        ),
+                        SyntaxFactory.Identifier(symbol.Name),
+                        GetTypeParameters(symbol),
+                        GetPrimaryConstructorParameters(symbol, filterVisitor),
+                        GetBaseTypeList(symbol),
+                        SyntaxFactory.List(
+                            GetTypeParameterConstraints(symbol)
+                        ),
+                        new SyntaxList<MemberDeclarationSyntax>()
+                        ).NormalizeWhitespace().ToString()
                     ),
-                    SyntaxFactory.Identifier(symbol.Name),
-                    GetTypeParameters(symbol),
-                    GetBaseTypeList(symbol),
-                    SyntaxFactory.List(
-                        GetTypeParameterConstraints(symbol)
-                    ),
-                    new SyntaxList<MemberDeclarationSyntax>()
-                ).NormalizeWhitespace().ToString()
-            );
+                    symbol.TypeParameters));
 
         private string GetDelegateSyntax(INamedTypeSymbol symbol, IFilterVisitor filterVisitor) =>
-            SyntaxFactory.DelegateDeclaration(
+            AppendAllowsRefStructConstraints(
+                SyntaxFactory.DelegateDeclaration(
                 GetAttributes(symbol, filterVisitor),
                 SyntaxFactory.TokenList(
                     GetTypeModifiers(symbol)
                 ),
-                GetTypeSyntax(symbol.DelegateInvokeMethod.ReturnType),
+                GetTypeSyntax(symbol.DelegateInvokeMethod.ReturnType, symbol.DelegateInvokeMethod.ReturnNullableAnnotation),
                 SyntaxFactory.Identifier(symbol.Name),
                 GetTypeParameters(symbol),
                 SyntaxFactory.ParameterList(
@@ -379,7 +465,8 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 SyntaxFactory.List(
                     GetTypeParameterConstraints(symbol)
                 )
-            ).NormalizeWhitespace().ToString();
+                ).NormalizeWhitespace().ToString(),
+                symbol.TypeParameters);
 
         private string GetMethodSyntax(IMethodSymbol symbol, IFilterVisitor filterVisitor)
         {
@@ -388,12 +475,13 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             {
                 eii = SyntaxFactory.ExplicitInterfaceSpecifier(SyntaxFactory.ParseName(GetEiiContainerTypeName(symbol, filterVisitor)));
             }
-            return SyntaxFactory.MethodDeclaration(
+            return AppendAllowsRefStructConstraints(
+                SyntaxFactory.MethodDeclaration(
                 GetAttributes(symbol, filterVisitor),
                 SyntaxFactory.TokenList(
                     GetMemberModifiers(symbol)
                 ),
-                GetTypeSyntax(symbol.ReturnType),
+                GetMethodReturnTypeSyntax(symbol),
                 eii,
                 SyntaxFactory.Identifier(
                     GetMemberName(symbol, filterVisitor)
@@ -409,25 +497,27 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 ),
                 null,
                 null
-            ).NormalizeWhitespace().ToString();
+                ).NormalizeWhitespace().ToString(),
+                symbol.TypeParameters);
         }
 
         private string GetOperatorSyntax(IMethodSymbol symbol, IFilterVisitor filterVisitor)
         {
-            var operatorToken = GetOperatorToken(symbol);
+            var operatorToken = GetOperatorToken(symbol.Name);
+            var isCheckedOperator = IsCheckedOperator(symbol.Name);
             if (operatorToken == null)
             {
                 return "Not supported in c#";
             }
             else if (operatorToken.Value.Kind() == SyntaxKind.ImplicitKeyword || operatorToken.Value.Kind() == SyntaxKind.ExplicitKeyword)
             {
-                return SyntaxFactory.ConversionOperatorDeclaration(
+                var syntax = SyntaxFactory.ConversionOperatorDeclaration(
                     GetAttributes(symbol, filterVisitor),
                     SyntaxFactory.TokenList(
                         GetMemberModifiers(symbol)
                     ),
                     operatorToken.Value,
-                    GetTypeSyntax(symbol.ReturnType),
+                    GetMethodReturnTypeSyntax(symbol),
                     SyntaxFactory.ParameterList(
                         SyntaxFactory.SeparatedList(
                             from p in symbol.Parameters
@@ -437,15 +527,17 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     null,
                     null
                 ).NormalizeWhitespace().ToString();
+
+                return isCheckedOperator ? InsertCheckedKeywordInOperatorSyntax(syntax) : syntax;
             }
             else
             {
-                return SyntaxFactory.OperatorDeclaration(
+                var syntax = SyntaxFactory.OperatorDeclaration(
                     GetAttributes(symbol, filterVisitor),
                     SyntaxFactory.TokenList(
                         GetMemberModifiers(symbol)
                     ),
-                    GetTypeSyntax(symbol.ReturnType),
+                    GetMethodReturnTypeSyntax(symbol),
                     operatorToken.Value,
                     SyntaxFactory.ParameterList(
                         SyntaxFactory.SeparatedList(
@@ -456,6 +548,8 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     null,
                     null
                 ).NormalizeWhitespace().ToString();
+
+                return isCheckedOperator ? InsertCheckedKeywordInOperatorSyntax(syntax) : syntax;
             }
         }
 
@@ -494,7 +588,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                         GetMemberModifiers(symbol)
                     ),
                     SyntaxFactory.VariableDeclaration(
-                        GetTypeSyntax(symbol.Type),
+                        GetFieldTypeSyntax(symbol),
                         SyntaxFactory.SingletonSeparatedList(
                             SyntaxFactory.VariableDeclarator(
                                 SyntaxFactory.Identifier(symbol.Name),
@@ -519,7 +613,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     GetAttributes(symbol, filterVisitor),
                     SyntaxFactory.TokenList(GetMemberModifiers(symbol)),
                     SyntaxFactory.Token(SyntaxKind.EventKeyword),
-                    GetTypeSyntax(symbol.Type),
+                    GetTypeSyntax(symbol.Type, symbol.NullableAnnotation),
                     eii,
                     SyntaxFactory.Identifier(GetMemberName(symbol, filterVisitor)),
                     SyntaxFactory.AccessorList()
@@ -540,7 +634,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 result = SyntaxFactory.IndexerDeclaration(
                     GetAttributes(symbol, filterVisitor),
                     SyntaxFactory.TokenList(GetMemberModifiers(symbol)),
-                    GetTypeSyntax(symbol.Type),
+                    GetTypeSyntax(symbol.Type, symbol.NullableAnnotation),
                     eii,
                     SyntaxFactory.BracketedParameterList(
                         SyntaxFactory.SeparatedList(
@@ -555,7 +649,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 result = SyntaxFactory.PropertyDeclaration(
                     GetAttributes(symbol, filterVisitor),
                     SyntaxFactory.TokenList(GetMemberModifiers(symbol)),
-                    GetTypeSyntax(symbol.Type),
+                    GetTypeSyntax(symbol.Type, symbol.NullableAnnotation),
                     eii,
                     SyntaxFactory.Identifier(GetMemberName(symbol, filterVisitor)),
                     SyntaxFactory.AccessorList(SyntaxFactory.List(GetPropertyAccessors(symbol, filterVisitor))))
@@ -745,7 +839,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             return SyntaxFactory.Parameter(
                 GetAttributes(p, filterVisitor, true),
                 SyntaxFactory.TokenList(GetParameterModifiers(p, isThisParameter)),
-                GetTypeSyntax(p.Type),
+                GetTypeSyntax(p.Type, p.NullableAnnotation),
                 SyntaxFactory.Identifier(p.Name),
                 GetDefaultValueClause(p));
         }
@@ -755,6 +849,10 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             if (isThisParameter)
             {
                 yield return SyntaxFactory.Token(SyntaxKind.ThisKeyword);
+            }
+            if (parameter.ScopedKind != ScopedKind.None)
+            {
+                yield return SyntaxFactory.Token(SyntaxKind.ScopedKeyword);
             }
             switch (parameter.RefKind)
             {
@@ -768,6 +866,10 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     break;
                 case RefKind.In:
                     yield return SyntaxFactory.Token(SyntaxKind.InKeyword);
+                    break;
+                case RefKind.RefReadOnlyParameter:
+                    yield return SyntaxFactory.Token(SyntaxKind.RefKeyword);
+                    yield return SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword);
                     break;
                 default:
                     break;
@@ -1106,7 +1208,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             }
             foreach (ITypeParameterSymbol ta in symbol.TypeArguments)
             {
-                if (ta.HasConstructorConstraint || ta.HasReferenceTypeConstraint || ta.HasValueTypeConstraint || ta.ConstraintTypes.Length > 0)
+                if (ta.HasConstructorConstraint || ta.HasReferenceTypeConstraint || ta.HasValueTypeConstraint || ta.HasUnmanagedTypeConstraint || ta.HasNotNullConstraint || ta.ConstraintTypes.Length > 0)
                 {
                     yield return SyntaxFactory.TypeParameterConstraintClause(SyntaxFactory.IdentifierName(ta.Name), SyntaxFactory.SeparatedList(GetTypeParameterConstraint(ta)));
                 }
@@ -1121,7 +1223,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             }
             foreach (ITypeParameterSymbol ta in symbol.TypeArguments)
             {
-                if (ta.HasConstructorConstraint || ta.HasReferenceTypeConstraint || ta.HasValueTypeConstraint || ta.ConstraintTypes.Length > 0)
+                if (ta.HasConstructorConstraint || ta.HasReferenceTypeConstraint || ta.HasValueTypeConstraint || ta.HasUnmanagedTypeConstraint || ta.HasNotNullConstraint || ta.ConstraintTypes.Length > 0)
                 {
                     yield return SyntaxFactory.TypeParameterConstraintClause(SyntaxFactory.IdentifierName(ta.Name), SyntaxFactory.SeparatedList(GetTypeParameterConstraint(ta)));
                 }
@@ -1130,9 +1232,27 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
 
         private static IEnumerable<TypeParameterConstraintSyntax> GetTypeParameterConstraint(ITypeParameterSymbol symbol)
         {
+            if (symbol.HasUnmanagedTypeConstraint)
+            {
+                yield return SyntaxFactory.TypeConstraint(SyntaxFactory.ParseTypeName("unmanaged"));
+            }
+            if (symbol.HasNotNullConstraint)
+            {
+                yield return SyntaxFactory.TypeConstraint(SyntaxFactory.ParseTypeName("notnull"));
+            }
             if (symbol.HasReferenceTypeConstraint)
             {
-                yield return SyntaxFactory.ClassOrStructConstraint(SyntaxKind.ClassConstraint);
+                if (symbol.ReferenceTypeConstraintNullableAnnotation == NullableAnnotation.Annotated)
+                {
+                    yield return SyntaxFactory.ClassOrStructConstraint(
+                        SyntaxKind.ClassConstraint,
+                        SyntaxFactory.Token(SyntaxKind.ClassKeyword),
+                        SyntaxFactory.Token(SyntaxKind.QuestionToken));
+                }
+                else
+                {
+                    yield return SyntaxFactory.ClassOrStructConstraint(SyntaxKind.ClassConstraint);
+                }
             }
             if (symbol.HasValueTypeConstraint)
             {
@@ -1140,9 +1260,15 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             }
             if (symbol.ConstraintTypes.Length > 0)
             {
+                var nullableAnnotations = symbol.ConstraintNullableAnnotations;
                 for (int i = 0; i < symbol.ConstraintTypes.Length; i++)
                 {
-                    yield return SyntaxFactory.TypeConstraint(GetTypeSyntax(symbol.ConstraintTypes[i]));
+                    var constraintType = symbol.ConstraintTypes[i];
+                    if (i < nullableAnnotations.Length)
+                    {
+                        constraintType = constraintType.WithNullableAnnotation(nullableAnnotations[i]);
+                    }
+                    yield return SyntaxFactory.TypeConstraint(GetTypeSyntax(constraintType));
                 }
             }
             if (symbol.HasConstructorConstraint)
@@ -1256,6 +1382,17 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     }
                 }
             }
+            else if (symbol.TypeKind == TypeKind.Struct)
+            {
+                if (symbol.IsRefLikeType)
+                {
+                    yield return SyntaxFactory.Token(SyntaxKind.RefKeyword);
+                }
+                if (symbol.IsReadOnly)
+                {
+                    yield return SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword);
+                }
+            }
         }
 
         private static IEnumerable<SyntaxToken> GetMemberModifiers(IMethodSymbol symbol)
@@ -1279,11 +1416,15 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             {
                 yield return SyntaxFactory.Token(SyntaxKind.StaticKeyword);
             }
-            if (symbol.IsAbstract && symbol.ContainingType.TypeKind != TypeKind.Interface)
+            if (symbol.IsReadOnly)
+            {
+                yield return SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword);
+            }
+            if (symbol.IsAbstract && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
             {
                 yield return SyntaxFactory.Token(SyntaxKind.AbstractKeyword);
             }
-            if (symbol.IsVirtual)
+            if (symbol.IsVirtual && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
             {
                 yield return SyntaxFactory.Token(SyntaxKind.VirtualKeyword);
             }
@@ -1321,11 +1462,11 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             {
                 yield return SyntaxFactory.Token(SyntaxKind.StaticKeyword);
             }
-            if (symbol.IsAbstract && symbol.ContainingType.TypeKind != TypeKind.Interface)
+            if (symbol.IsAbstract && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
             {
                 yield return SyntaxFactory.Token(SyntaxKind.AbstractKeyword);
             }
-            if (symbol.IsVirtual)
+            if (symbol.IsVirtual && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
             {
                 yield return SyntaxFactory.Token(SyntaxKind.VirtualKeyword);
             }
@@ -1363,11 +1504,15 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             {
                 yield return SyntaxFactory.Token(SyntaxKind.StaticKeyword);
             }
-            if (symbol.IsAbstract && symbol.ContainingType.TypeKind != TypeKind.Interface)
+            if (symbol.IsRequired)
+            {
+                yield return SyntaxFactory.Token(SyntaxKind.RequiredKeyword);
+            }
+            if (symbol.IsAbstract && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
             {
                 yield return SyntaxFactory.Token(SyntaxKind.AbstractKeyword);
             }
-            if (symbol.IsVirtual)
+            if (symbol.IsVirtual && (symbol.ContainingType.TypeKind != TypeKind.Interface || symbol.IsStatic))
             {
                 yield return SyntaxFactory.Token(SyntaxKind.VirtualKeyword);
             }
@@ -1412,6 +1557,10 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 {
                     yield return SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword);
                 }
+                if (symbol.IsRequired)
+                {
+                    yield return SyntaxFactory.Token(SyntaxKind.RequiredKeyword);
+                }
                 if (symbol.IsVolatile)
                 {
                     yield return SyntaxFactory.Token(SyntaxKind.VolatileKeyword);
@@ -1419,9 +1568,9 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             }
         }
 
-        private static SyntaxToken? GetOperatorToken(IMethodSymbol symbol)
+        private static SyntaxToken? GetOperatorToken(string operatorName)
         {
-            switch (symbol.Name)
+            switch (GetUncheckedOperatorName(operatorName))
             {
                 // unary
                 case "op_UnaryPlus": return SyntaxFactory.Token(SyntaxKind.PlusToken);
@@ -1443,6 +1592,18 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 case "op_ExclusiveOr": return SyntaxFactory.Token(SyntaxKind.CaretToken);
                 case "op_RightShift": return SyntaxFactory.Token(SyntaxKind.GreaterThanGreaterThanToken);
                 case "op_LeftShift": return SyntaxFactory.Token(SyntaxKind.LessThanLessThanToken);
+                case "op_UnsignedRightShift": return SyntaxFactory.Token(SyntaxKind.GreaterThanGreaterThanGreaterThanToken);
+                case "op_AdditionAssignment": return SyntaxFactory.Token(SyntaxKind.PlusEqualsToken);
+                case "op_SubtractionAssignment": return SyntaxFactory.Token(SyntaxKind.MinusEqualsToken);
+                case "op_MultiplicationAssignment": return SyntaxFactory.Token(SyntaxKind.AsteriskEqualsToken);
+                case "op_DivisionAssignment": return SyntaxFactory.Token(SyntaxKind.SlashEqualsToken);
+                case "op_ModulusAssignment": return SyntaxFactory.Token(SyntaxKind.PercentEqualsToken);
+                case "op_BitwiseAndAssignment": return SyntaxFactory.Token(SyntaxKind.AmpersandEqualsToken);
+                case "op_BitwiseOrAssignment": return SyntaxFactory.Token(SyntaxKind.BarEqualsToken);
+                case "op_ExclusiveOrAssignment": return SyntaxFactory.Token(SyntaxKind.CaretEqualsToken);
+                case "op_LeftShiftAssignment": return SyntaxFactory.Token(SyntaxKind.LessThanLessThanEqualsToken);
+                case "op_RightShiftAssignment": return SyntaxFactory.Token(SyntaxKind.GreaterThanGreaterThanEqualsToken);
+                case "op_UnsignedRightShiftAssignment": return SyntaxFactory.Token(SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken);
                 // comparision
                 case "op_Equality": return SyntaxFactory.Token(SyntaxKind.EqualsEqualsToken);
                 case "op_Inequality": return SyntaxFactory.Token(SyntaxKind.ExclamationEqualsToken);
@@ -1457,6 +1618,21 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 //case "op_Assign":
                 default: return null;
             }
+        }
+
+        private static bool IsCheckedOperator(string operatorName)
+        {
+            return operatorName.StartsWith("op_Checked", StringComparison.Ordinal);
+        }
+
+        private static string GetUncheckedOperatorName(string operatorName)
+        {
+            if (!IsCheckedOperator(operatorName))
+            {
+                return operatorName;
+            }
+
+            return "op_" + operatorName.Substring("op_Checked".Length);
         }
 
         private static IEnumerable<AccessorDeclarationSyntax> GetPropertyAccessors(IPropertySymbol propertySymbol, IFilterVisitor filterVisitor)
@@ -1491,7 +1667,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                         return SyntaxFactory.AccessorDeclaration(kind,
                             GetAttributes(methodSymbol, filterVisitor),
                             new SyntaxTokenList(),
-                            SyntaxFactory.Token(keyword),
+                            SyntaxFactory.Token(GetAccessorKeyword(methodSymbol, keyword)),
                             (BlockSyntax)null,
                             SyntaxFactory.Token(SyntaxKind.SemicolonToken));
                     }
@@ -1501,7 +1677,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                             kind,
                             GetAttributes(methodSymbol, filterVisitor),
                             SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ProtectedKeyword)),
-                            SyntaxFactory.Token(keyword),
+                            SyntaxFactory.Token(GetAccessorKeyword(methodSymbol, keyword)),
                             (BlockSyntax)null,
                             SyntaxFactory.Token(SyntaxKind.SemicolonToken));
                     }
@@ -1509,7 +1685,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                     return SyntaxFactory.AccessorDeclaration(kind,
                         GetAttributes(methodSymbol, filterVisitor),
                         new SyntaxTokenList(),
-                        SyntaxFactory.Token(keyword),
+                        SyntaxFactory.Token(GetAccessorKeyword(methodSymbol, keyword)),
                         (BlockSyntax)null,
                         SyntaxFactory.Token(SyntaxKind.SemicolonToken));
                 default:
@@ -1518,7 +1694,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                         return SyntaxFactory.AccessorDeclaration(kind,
                             GetAttributes(methodSymbol, filterVisitor),
                             new SyntaxTokenList(),
-                            SyntaxFactory.Token(keyword),
+                            SyntaxFactory.Token(GetAccessorKeyword(methodSymbol, keyword)),
                             (BlockSyntax)null,
                             SyntaxFactory.Token(SyntaxKind.SemicolonToken));
                     }
@@ -1531,10 +1707,145 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
             return BracesRegex.Replace(text, string.Empty);
         }
 
+        private static string ReplaceRecordKeywordIfNeeded(INamedTypeSymbol symbol, string text)
+        {
+            if (!symbol.IsRecord)
+            {
+                return text;
+            }
+
+            return symbol.TypeKind switch
+            {
+                TypeKind.Class => new Regex(@"\bclass\b", RegexOptions.Compiled).Replace(text, "record", 1),
+                TypeKind.Struct => new Regex(@"\bstruct\b", RegexOptions.Compiled).Replace(text, "record struct", 1),
+                _ => text
+            };
+        }
+
+        private static ParameterListSyntax GetPrimaryConstructorParameters(INamedTypeSymbol symbol, IFilterVisitor filterVisitor)
+        {
+            var primaryConstructor = symbol.InstanceConstructors.FirstOrDefault(
+                constructor => !constructor.IsImplicitlyDeclared
+                               && constructor.DeclaringSyntaxReferences.Any(reference => reference.GetSyntax() is TypeDeclarationSyntax));
+            if (primaryConstructor == null || primaryConstructor.Parameters.Length == 0)
+            {
+                return null;
+            }
+
+            return SyntaxFactory.ParameterList(
+                SyntaxFactory.SeparatedList(
+                    primaryConstructor.Parameters.Select(parameter => GetParameter(parameter, filterVisitor))));
+        }
+
+        private static string AppendAllowsRefStructConstraints(string declaration, IEnumerable<ITypeParameterSymbol> typeParameters)
+        {
+            var result = declaration;
+            foreach (var typeParameter in typeParameters)
+            {
+                if (!typeParameter.AllowsRefLikeType)
+                {
+                    continue;
+                }
+
+                result = AppendAllowsRefStructConstraint(result, typeParameter.Name);
+            }
+
+            return result;
+        }
+
+        private static string AppendAllowsRefStructConstraint(string declaration, string typeParameterName)
+        {
+            var whereFragment = $"where {typeParameterName} :";
+            var whereIndex = declaration.IndexOf(whereFragment, StringComparison.Ordinal);
+            if (whereIndex >= 0)
+            {
+                var clauseStart = whereIndex + whereFragment.Length;
+                var nextWhereIndex = declaration.IndexOf(" where ", clauseStart, StringComparison.Ordinal);
+                var clauseEnd = nextWhereIndex >= 0
+                    ? nextWhereIndex
+                    : declaration.EndsWith(";", StringComparison.Ordinal) ? declaration.Length - 1 : declaration.Length;
+
+                return declaration.Insert(clauseEnd, ", allows ref struct");
+            }
+
+            var constraintClause = $" where {typeParameterName} : allows ref struct";
+            if (declaration.EndsWith(";", StringComparison.Ordinal))
+            {
+                return declaration.Insert(declaration.Length - 1, constraintClause);
+            }
+
+            return declaration + constraintClause;
+        }
+
+        private static string InsertCheckedKeywordInOperatorSyntax(string syntax)
+        {
+            var operatorKeyword = "operator ";
+            var operatorKeywordIndex = syntax.IndexOf(operatorKeyword, StringComparison.Ordinal);
+            if (operatorKeywordIndex < 0)
+            {
+                return syntax;
+            }
+
+            return syntax.Insert(operatorKeywordIndex + operatorKeyword.Length, "checked ");
+        }
+
+        private static TypeSyntax GetMethodReturnTypeSyntax(IMethodSymbol symbol)
+        {
+            var returnType = symbol.ReturnType.WithNullableAnnotation(symbol.ReturnNullableAnnotation);
+            var returnTypeName = GetTypeDisplayName(returnType);
+            if (symbol.ReturnsByRefReadonly)
+            {
+                return SyntaxFactory.ParseTypeName($"ref readonly {returnTypeName}");
+            }
+
+            if (symbol.ReturnsByRef)
+            {
+                return SyntaxFactory.ParseTypeName($"ref {returnTypeName}");
+            }
+
+            return SyntaxFactory.ParseTypeName(returnTypeName);
+        }
+
+        private static SyntaxKind GetAccessorKeyword(IMethodSymbol methodSymbol, SyntaxKind fallbackKeyword)
+        {
+            if (fallbackKeyword == SyntaxKind.SetKeyword && methodSymbol.IsInitOnly)
+            {
+                return SyntaxKind.InitKeyword;
+            }
+
+            return fallbackKeyword;
+        }
+
+        private static TypeSyntax GetFieldTypeSyntax(IFieldSymbol symbol)
+        {
+            var fieldTypeName = GetTypeDisplayName(symbol.Type.WithNullableAnnotation(symbol.NullableAnnotation));
+            if (symbol.RefKind == RefKind.Ref)
+            {
+                return SyntaxFactory.ParseTypeName($"ref {fieldTypeName}");
+            }
+
+            if (symbol.RefKind == RefKind.RefReadOnly)
+            {
+                return SyntaxFactory.ParseTypeName($"ref readonly {fieldTypeName}");
+            }
+
+            return SyntaxFactory.ParseTypeName(fieldTypeName);
+        }
+
+        private static TypeSyntax GetTypeSyntax(ITypeSymbol type, NullableAnnotation nullableAnnotation)
+        {
+            return GetTypeSyntax(type.WithNullableAnnotation(nullableAnnotation));
+        }
+
         private static TypeSyntax GetTypeSyntax(ITypeSymbol type)
         {
-            var name = NameVisitorCreator.GetCSharp(NameOptions.UseAlias | NameOptions.WithGenericParameter).GetName(type);
+            var name = GetTypeDisplayName(type);
             return SyntaxFactory.ParseTypeName(name);
+        }
+
+        private static string GetTypeDisplayName(ITypeSymbol type)
+        {
+            return type.ToDisplayString(CSharpTypeDisplayFormat);
         }
 
         private static string GetVisiblity(Accessibility accessibility)
