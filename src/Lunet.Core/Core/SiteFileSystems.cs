@@ -88,7 +88,7 @@ public class SiteFileSystems
     public IFileSystem MetaFileSystem { get; }
 
 
-    public void Initialize(string? inputDirectory = null, string? outputDirectory = null)
+    public virtual void Initialize(string? inputDirectory = null, string? outputDirectory = null)
     {
         var diskFs = new PhysicalFileSystem();
         var rootFolder = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, inputDirectory ?? "."));

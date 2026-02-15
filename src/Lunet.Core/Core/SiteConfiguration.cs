@@ -21,12 +21,12 @@ public class SiteConfiguration : ISiteLoggerProvider
 {
     private readonly List<Type> _pluginTypes;
 
-    public SiteConfiguration(SiteLoggerFactory? loggerFactory = null)
+    public SiteConfiguration(SiteLoggerFactory? loggerFactory = null, SiteFileSystems? fileSystems = null)
     {
         LogEventId = 1;
         _pluginTypes = new List<Type>();
         Defines = new List<string>();
-        FileSystems = new SiteFileSystems();
+        FileSystems = fileSystems ?? new SiteFileSystems();
         LoggerFactory = loggerFactory ?? new SiteLoggerFactory();
         CommandRunners = new List<ISiteCommandRunner>();
         Log = LoggerFactory.CreateLogger("lunet");

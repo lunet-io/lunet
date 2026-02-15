@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Lunet.Application\Lunet.Application.csproj" />
     <ProjectReference Include="..\Lunet.Api.DotNet.Extractor\Lunet.Api.DotNet.Extractor.csproj" />
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
     <ProjectReference Include="..\Lunet.Yaml\Lunet.Yaml.csproj" />
