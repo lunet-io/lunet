@@ -24,8 +24,8 @@ site.html.head.includes.add "_builtins/cards.sbn-html"
 Use templates for HTML generation:
 
 ```scriban
-{{ include "partials/nav.sbn-html" }}
-<main>{{ content }}</main>
+{{ '{{ include "partials/nav.sbn-html" }}' }}
+<main>{{ '{{ content }}' }}</main>
 ```
 
 ## Include files (`/.lunet/includes/**`)
@@ -33,7 +33,7 @@ Use templates for HTML generation:
 `include` always resolves from `/.lunet/includes`.
 
 ```scriban
-{{ include "_builtins/head.sbn-html" }}
+{{ '{{ include "_builtins/head.sbn-html" }}' }}
 ```
 
 Security rules:
