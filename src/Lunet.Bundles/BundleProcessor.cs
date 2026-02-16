@@ -193,6 +193,14 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                     link.Url = url;
                     link.UrlWithoutBasePath = urlWithoutPath;
                 }
+                else if (!string.IsNullOrEmpty(urlWithoutPath) && urlWithoutPath.EndsWith("/", StringComparison.Ordinal))
+                {
+                    var fileName = Path.GetFileName(path);
+                    urlWithoutPath = $"{urlWithoutPath}{fileName}";
+                    url = new UPath($"{Site.BasePath}/.{urlWithoutPath}").FullName;
+                    link.Url = url;
+                    link.UrlWithoutBasePath = urlWithoutPath;
+                }
 
                 FileSystemItem entry = default;
 

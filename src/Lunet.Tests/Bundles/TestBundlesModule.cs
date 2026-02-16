@@ -174,6 +174,24 @@ public class TestBundlesModule
         StringAssert.EndsWith(".min.js", bundle.Links[0].Url!);
     }
 
+    [Test]
+    public void TestBundleProcessorContentLinkToFolderAppendsFileName()
+    {
+        using var context = new SiteTestContext();
+        var plugin = new BundlePlugin(context.Site);
+        var bundle = plugin.GetOrCreateBundle(null);
+        bundle.AddContent("/scripts/app.js", "/assets/components/");
+
+        context.WriteInputFile("/scripts/app.js", "console.log('app');");
+        context.Site.Pages.Add(context.CreateDynamicContentObject("/index.html"));
+
+        plugin.BundleProcessor.Process(ProcessingStage.BeforeProcessingContent);
+
+        Assert.AreEqual(1, bundle.Links.Count);
+        Assert.AreEqual("/assets/components/app.js", bundle.Links[0].UrlWithoutBasePath);
+        StringAssert.EndsWith("/assets/components/app.js", bundle.Links[0].Url!);
+    }
+
     private static object? InvokeBundleFunction(BundlePlugin plugin, params object[] args)
     {
         var method = typeof(BundlePlugin).GetMethod("BundleFunction", BindingFlags.NonPublic | BindingFlags.Instance);
