@@ -4,81 +4,105 @@ title: "API module (.NET)"
 
 # API module (.NET)
 
-Lunet can generate API documentation for .NET projects and their referenced assemblies with `api.dotnet`.
-
-## Configuration vs template usage
-
-{.table}
-| Where | What you do |
-|---|---|
-| `config.scriban` | configure projects, build properties, referenced assemblies |
-| `site/.lunet/layouts/*.api-dotnet*.sbn-md` | customize API pages (root, namespace, member) |
-| Markdown/content pages | reference API UIDs with `xref:` links |
-| Scriban templates | query API objects with `apiref`/`xref` |
+Lunet generates .NET API pages from one or more `.csproj` files with `api.dotnet`.
 
 ## Quick start (`config.scriban`)
 
 ```scriban
 with api.dotnet
   title = "MyProject API Reference"
+  path = "/api"
+  menu_name = "api"
+  menu_title = "API Reference"
   config = "Release"
-  properties = {
-    TargetFramework: "net10.0",
-    GenerateDocumentationFile: true
-  }
+  properties = { TargetFramework: "net10.0" }
   projects = [
-    {
-      name: "MyProject",
-      path: "../src/MyProject/MyProject.csproj",
-      references: ["NuGet.Versioning"] # optional per-project referenced assemblies
-    }
+    { name: "MyProject", path: "../src/MyProject/MyProject.csproj" }
   ]
-  references = ["MyCompany.Shared"] # optional global referenced assemblies
 end
 ```
 
-This generates dynamic pages under `/api/**` and registers xref targets for linking from Markdown.
-Using `with api.dotnet` is the idiomatic style in Lunet configs because it keeps the config block concise.
+This generates API pages under `path` (default `/api`) and registers all API UIDs for `xref:` links.
 
 ## Configuration reference
 
 {.table}
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `api.dotnet.title` | string | `"<site title> .NET API Reference"` | Title for `/api/` root page |
+| `api.dotnet.title` | string | `"<site title> .NET API Reference"` | Title of the generated API root page |
+| `api.dotnet.path` | string | `"/api"` | Root URL/path for generated API pages |
+| `api.dotnet.menu_name` | string | `"api"` | Menu name exposed on `site.menu.<name>` |
+| `api.dotnet.menu_title` | string | `api.dotnet.title` | Root menu title |
+| `api.dotnet.menu_width` | int | `4` | Sidebar width hint for this menu (clamped to `2..4`) |
 | `api.dotnet.config` | string | `"Release"` | Build configuration passed to `dotnet build` |
 | `api.dotnet.properties` | object | empty | Extra MSBuild properties (`-p:`), e.g. `TargetFramework` |
 | `api.dotnet.projects` | array | required | Projects to extract (`string` or object entries) |
-| `api.dotnet.references` | array<string> | empty | Global referenced assemblies to include |
-| `api.dotnet.include_helper` | string | `"_builtins/api-dotnet-helpers.sbn-html"` | Helper include used by default API layouts |
+| `api.dotnet.references` | array<string> | empty | Referenced assemblies to include for all projects |
+| `api.dotnet.include_helper` | string | `"_builtins/api-dotnet-helpers.sbn-html"` | Helper include loaded for generated API pages |
 | `api.dotnet.layout` | string | `"_default"` | Base layout used by generated API pages |
+| `api.dotnet.table_class` | string | `"table table-striped table-hover table-sm api-dotnet-members-table"` | CSS classes used by default API member tables |
 
 Project entry object:
 
 {.table}
 | Key | Type | Required | Description |
 |---|---|---|---|
-| `name` | string | no | Logical project name (cache/output id). Defaults to project filename |
-| `path` | string | yes | Path to `.csproj` (or glob pattern) |
-| `properties` | object | no | Per-project MSBuild properties (overrides global `properties`) |
+| `name` | string | no | Logical project name (cache id). Defaults to project filename |
+| `path` | string | yes | Path to a `.csproj` (or glob pattern) |
+| `properties` | object | no | Per-project MSBuild properties (override `api.dotnet.properties`) |
 | `references` | array<string> / string | no | Per-project referenced assemblies to include |
 
-## Generated pages and layout types
+## Generated pages
 
-Lunet creates dynamic API pages:
+Lunet creates dynamic pages:
 
-- `/api/` with `layout_type = "api-dotnet"` (API root)
-- `/api/<namespace-uid>/` with `layout_type = "api-dotnet-namespace"`
-- `/api/<member-uid>/` with `layout_type = "api-dotnet-member"`
+- `<path>/` with `layout_type = "api-dotnet"` (API root)
+- `<path>/<namespace-uid>/` with `layout_type = "api-dotnet-namespace"`
+- `<path>/<member-uid>/` with `layout_type = "api-dotnet-member"`
 
-Default templates live in:
+Default templates:
 
 - `src/Lunet.Api.DotNet/shared/.lunet/layouts/_default.api-dotnet.sbn-md`
 - `src/Lunet.Api.DotNet/shared/.lunet/layouts/_default.api-dotnet-namespace.sbn-md`
 - `src/Lunet.Api.DotNet/shared/.lunet/layouts/_default.api-dotnet-member.sbn-md`
 - `src/Lunet.Api.DotNet/shared/.lunet/includes/_builtins/api-dotnet-helpers.sbn-html`
 
-Override them by creating files with the same names under `site/.lunet/layouts` or `site/.lunet/includes`.
+Override by adding files with the same names under `site/.lunet/layouts` or `site/.lunet/includes`.
+
+By default, generated API lists use Bootstrap table classes (`.table`, `.table-striped`, `.table-hover`, `.table-sm`).
+
+## Automatic menu integration
+
+`api.dotnet` now builds a menu tree automatically:
+
+- root (`menu_title`)
+- namespaces
+- namespace members (types)
+- type member groups (constructors, fields, properties, methods, events, operators, extensions, explicit interface implementations)
+- actual member pages inside each group
+
+The generated menu is available as `site.menu.<menu_name>` and every API page receives:
+
+- `page.menu_item` (current menu node)
+- `page.menu` (renderable menu root/subtree like normal menus)
+
+You can therefore render API menus with the same helpers as `menu.yml` menus.
+
+Generated API menus include Bootstrap icon markup (`bi-*`) for namespaces, types, member groups, and members.
+When using deep API trees, render with a higher menu depth (for example `depth: 6`) so namespace/type/member levels are visible.
+
+## Referencing API root from manual menus
+
+You can reference the API root in `menu.yml`:
+
+```yaml
+home:
+  - { path: readme.md, title: Home }
+  - { path: api/readme.md, title: API Reference, folder: true }
+```
+
+When `folder: true`, Lunet reuses the generated API hierarchy as children of this menu item.
+This makes API navigation work without creating a dedicated `api/menu.yml`.
 
 ## Data available in templates
 
@@ -90,42 +114,17 @@ Root API page (`api-dotnet`):
 
 Namespace page (`api-dotnet-namespace`) variable:
 
-- `namespace` (keys: `uid`, `name`, `summary`, `remarks`, `classes`, `structs`, `interfaces`, `enums`, `delegates`)
+- `namespace` (`uid`, `name`, `summary`, `remarks`, `classes`, `structs`, `interfaces`, `enums`, `delegates`)
 
 Member page (`api-dotnet-member`) variable:
 
-- `member` (keys: `uid`, `type`, `name`, `fullName`, `namespace`, `assemblies`, `summary`, `remarks`, `syntax`, `constructors`, `fields`, `properties`, `methods`, `events`, `operators`, `extensions`, `explicit_interface_implementation_methods`)
+- `member` (`uid`, `type`, `name`, `fullName`, `namespace`, `assemblies`, `summary`, `remarks`, `syntax`, `constructors`, `fields`, `properties`, `methods`, `events`, `operators`, `extensions`, `explicit_interface_implementation_methods`)
 
-Global helper available in templates:
+Global helper:
 
-- `apiref "My.Namespace.Type"` -> returns API object by UID (or `null` if not found)
+- `apiref "My.Namespace.Type"` -> API object by UID (or `null`)
 
-## Render namespace/type menus
-
-Example custom API root layout:
-
-```scriban
-## Namespaces
-{{ '{{ for ns in api.namespaces }}' }}
-{{ '{{ $xref = ns.uid | xref }}' }}
-{{ '{{ if $xref }}' }}
-- [{{ '{{ $xref.name }}' }}]({{ '{{ $xref.url }}' }})
-{{ '{{ end }}' }}
-{{ '{{ end }}' }}
-```
-
-Example namespace page section:
-
-```scriban
-## Classes
-{{ '{{ for type in namespace.classes }}' }}
-- {{ '{{ type.uid | xref_to_html_link }}' }}
-{{ '{{ end }}' }}
-```
-
-`xref_to_html_link` is defined by `_builtins/api-dotnet-helpers.sbn-html` (or your own include helper).
-
-## Link to types/members with xref
+## Linking with xref
 
 Markdown:
 
@@ -133,7 +132,7 @@ Markdown:
 See [NuGetVersion](xref:NuGet.Versioning.NuGetVersion).
 ```
 
-DocFX-style inline tag:
+DocFX-style inline:
 
 ```markdown
 <xref href="NuGet.Versioning.NuGetVersion"></xref>
@@ -146,16 +145,20 @@ Scriban:
 {{ '{{ if $link }}' }}<a href="{{ '{{ $link.url }}' }}">{{ '{{ $link.fullname }}' }}</a>{{ '{{ end }}' }}
 ```
 
-Use full member UIDs for methods/operators/properties (for example with parameter signatures).
+## Referenced assemblies
 
-## Referenced assemblies (`references`)
-
-When `references` are provided, Lunet includes matching compilation references (for example package references) in the generated API model.
-
-Use simple assembly names (`NuGet.Versioning`) or filenames (`NuGet.Versioning.dll`).
+Use `references` to include API from referenced assemblies (for example NuGet packages):
 
 - `api.dotnet.references` applies to all configured projects
-- `projects[i].references` applies only to that project
+- `projects[i].references` applies only to one project
 - both lists are merged (duplicates removed)
 
-If XML docs are available for referenced assemblies, summaries/remarks are surfaced in generated pages.
+If XML docs are available for referenced assemblies, summaries and remarks are surfaced.
+
+## Example in this repository
+
+The Lunet docs site uses:
+
+- `site/config.scriban` -> `api.dotnet` configuration
+- `src/Lunet.ApiExample/Lunet.ApiExample.csproj` -> local sample project rendered under `/api`
+- sample API includes multiple namespaces and broad modern C# surface (C# 9-14 style features: records, required/init members, primary constructors, checked operators, unsigned right shift, ref/scoped APIs, static abstract interface members, `allows ref struct`, extension members, native/function pointer signatures)

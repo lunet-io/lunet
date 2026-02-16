@@ -1,29 +1,61 @@
 {{ # This file is loaded just once  }}
-{{~ func xref_to_html_link(uid, use_fullname = false) 
-    $link = uid | xref
-    if $link
-~}}
-<a href="{{ $link.url }}">{{ (use_fullname ? $link.fullname : $link.name) | html.escape }}</a>
-{{~ else; "Unable to find xref for " + uid | log.warn;  end; end ~}}
+{{~ func xref_to_html_link(uid, use_fullname = false)
+    if uid == null || uid == ""
+        ""
+    else
+        $uid_text = uid + ""
+        $is_generic_type_parameter = $uid_text.size > 1 && $uid_text[0] == "{" && $uid_text[$uid_text.size - 1] == "}"
+        if $is_generic_type_parameter
+            $uid_text | html.escape
+        else
+            $link = $uid_text | xref
+            if $link
+                "<a href='" + $link.url + "'>" + ((use_fullname ? $link.fullname : $link.name) | html.escape) + "</a>"
+            else
+                "Unable to find xref for " + $uid_text | log.warn
+                $uid_text | html.escape
+            end
+        end
+    end
+end ~}}
+
+{{~ func api_dotnet_kind_icon(kind)
+    if kind == "Namespace"; "<i class='bi bi-diagram-3 api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Class"; "<i class='bi bi-box api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Struct"; "<i class='bi bi-boxes api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Interface"; "<i class='bi bi-diagram-3 api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Enum"; "<i class='bi bi-list-ul api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Delegate"; "<i class='bi bi-code-slash api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Constructor"; "<i class='bi bi-hammer api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Field"; "<i class='bi bi-hash api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Property"; "<i class='bi bi-sliders api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Method"; "<i class='bi bi-gear api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Event"; "<i class='bi bi-bell api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Operator"; "<i class='bi bi-calculator api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "Extension"; "<i class='bi bi-plugin api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else if kind == "EiiMethod"; "<i class='bi bi-link-45deg api-dotnet-kind-icon' aria-hidden='true'></i>"
+    else; "<i class='bi bi-file-earmark-code api-dotnet-kind-icon' aria-hidden='true'></i>"
+    end
+end ~}}
 
 {{~ func api_dotnet_members_render(api_object, name, text, table_class) ~}}
-  {{~ if api_object[name] ~}}
+{{~ if api_object[name] ~}}
 ## {{text}}
+{{~ $effective_table_class = table_class ?? "table table-striped table-hover table-sm api-dotnet-members-table" ~}}
 
-<table class='{{table_class}}'>
-
-    {{~ for member in api_object[name] ~}}
-<tr>
-
-  <td>{{member.uid | xref_to_html_link }}
-  <td>
-  
-      {{~ member.summary ~}}
-  
-</tr>  
-
-    {{~ end ~}}
+<div class='table-responsive'>
+<table class='{{ $effective_table_class }}'>
+<tbody>
+{{~ for member in api_object[name] ~}}
+{{~ $member_kind = member.type
+    if name == "extensions"; $member_kind = "Extension"; end
+    if name == "explicit_interface_implementation_methods"; $member_kind = "EiiMethod"; end
+~}}
+<tr><td>{{ $member_kind | api_dotnet_kind_icon }} {{ member.uid | xref_to_html_link }}</td><td>{{ member.summary ?? "" }}</td></tr>
+{{~ end ~}}
+</tbody>
 </table>
+</div>
 
-  {{~ end ~}}
+{{~ end ~}}
 {{~ end ~}}

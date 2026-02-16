@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System;
 using Lunet.Core;
 
 namespace Lunet.Menus;
@@ -28,4 +29,26 @@ public class MenuPlugin : SitePlugin
     }
 
     public MenuProcessor Processor { get; }
+
+    public void RegisterMenu(string name, MenuObject menu, bool overwrite = false)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(menu);
+
+        if (!overwrite && ContainsKey(name))
+        {
+            return;
+        }
+
+        menu.Name ??= name;
+        SetValue(name, menu);
+    }
+
+    public void SetPageMenu(ContentObject page, MenuObject menu, bool force = false)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(menu);
+
+        Processor.SetPageMenu(page, menu, force);
+    }
 }

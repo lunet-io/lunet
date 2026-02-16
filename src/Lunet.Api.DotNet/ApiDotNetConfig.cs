@@ -54,4 +54,32 @@ public class ApiDotNetConfig : ApiConfig
         get => this.GetSafeValue<string>("layout");
         set => this.SetValue("layout", value);
     }
+
+    public string BasePath
+    {
+        get => this.GetSafeValue<string>("path") ?? "/api";
+        set => this.SetValue("path", value);
+    }
+
+    public string MenuName
+    {
+        get => this.GetSafeValue<string>("menu_name") ?? "api";
+        set => this.SetValue("menu_name", value);
+    }
+
+    public string? MenuTitle
+    {
+        get => this.GetSafeValue<string>("menu_title");
+        set => this.SetValue("menu_title", value);
+    }
+
+    public int MenuWidth
+    {
+        get
+        {
+            var width = this.GetSafeValue<int>("menu_width");
+            return width == 0 ? 4 : width;
+        }
+        set => this.SetValue("menu_width", value);
+    }
 }

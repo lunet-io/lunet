@@ -17,6 +17,7 @@
     <ProjectReference Include="..\Lunet.Api\Lunet.Api.csproj" />
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
     <ProjectReference Include="..\Lunet.Json\Lunet.Json.csproj" />
+    <ProjectReference Include="..\Lunet.Menus\Lunet.Menus.csproj" />
   </ItemGroup>
 
   <ItemGroup>

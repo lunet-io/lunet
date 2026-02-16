@@ -29,4 +29,4 @@ Lunet is a fast, scriptable static site generator for .NET.
 ## Documentation
 
 - [User Guide](docs/readme.md)
-
+- [.NET API Reference sample](api/readme.md)

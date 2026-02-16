@@ -160,6 +160,37 @@ public class TestApiDotNetEndToEndModernCSharp
         StringAssert.Contains("NuGetVersion Class", page);
     }
 
+    [Test]
+    public void TestGeneratedApiPagesExposeMenuHierarchy()
+    {
+        var apiRootPage = ReadRenderedApiRootHtml();
+        StringAssert.Contains("API Reference", apiRootPage);
+        StringAssert.Contains("ApiE2E", apiRootPage);
+        StringAssert.Contains("RecordClass", apiRootPage);
+
+        var recordClassPage = ReadRenderedHtmlByUid("ApiE2E.RecordClass");
+        StringAssert.Contains("breadcrumb", recordClassPage);
+        StringAssert.Contains("API Reference", recordClassPage);
+        StringAssert.Contains("ApiE2E", recordClassPage);
+
+        var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
+        StringAssert.Contains("bi-diagram-3", namespacePage);
+
+        var refFeaturesPage = ReadRenderedHtmlByUid("ApiE2E.RefFeatures");
+        StringAssert.Contains("Methods", refFeaturesPage);
+        StringAssert.Contains("RefReadonlyReturn", refFeaturesPage);
+        StringAssert.Contains("bi-gear", refFeaturesPage);
+    }
+
+    [Test]
+    public void TestApiTablesRenderAsHtmlWithoutEscapedTableCells()
+    {
+        var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
+        StringAssert.DoesNotContain("&lt;td&gt;", namespacePage);
+        StringAssert.DoesNotContain("<pre><code>    &lt;td&gt;", namespacePage);
+        StringAssert.Contains("table table-striped table-hover table-sm api-dotnet-members-table", namespacePage);
+    }
+
     private static void WriteTestSiteAndProject(PhysicalLunetAppTestContext context)
     {
         context.WriteAllText(
@@ -168,16 +199,46 @@ public class TestApiDotNetEndToEndModernCSharp
             baseurl = "https://example.test"
             title = "API End-to-End"
 
-            $api = api.dotnet
-            $api.title = "API End-to-End"
-            $api.properties = { TargetFramework: "net10.0" }
-            $api.projects = [
-              {
-                name: "ApiE2ESample",
-                path: "../src/ApiE2ESample/ApiE2ESample.csproj",
-                references: ["NuGet.Versioning"]
-              }
-            ]
+            with api.dotnet
+              title = "API End-to-End"
+              path = "/api"
+              properties = { TargetFramework: "net10.0" }
+              projects = [
+                {
+                  name: "ApiE2ESample",
+                  path: "../src/ApiE2ESample/ApiE2ESample.csproj",
+                  references: ["NuGet.Versioning"]
+                }
+              ]
+            end
+            """);
+
+        context.WriteAllText(
+            "site/readme.md",
+            """
+            ---
+            title: Home
+            ---
+
+            # Home
+            """);
+
+        context.WriteAllText(
+            "site/menu.yml",
+            """
+            home:
+              - { path: readme.md, title: Home }
+              - { path: api/readme.md, title: API Reference, folder: true }
+            """);
+
+        context.WriteAllText(
+            "site/.lunet/layouts/_default.sbn-html",
+            """
+            <div class="test-layout">
+            {{ if page.menu_item != null; page.menu_item.breadcrumb; end }}
+            {{ if page.menu != null; page.menu.render { kind: "menu", depth: 6 }; end }}
+            {{ content }}
+            </div>
             """);
 
         context.WriteAllText(
@@ -403,6 +464,13 @@ public class TestApiDotNetEndToEndModernCSharp
     {
         var path = Path.Combine(_outputRoot, "api", UidHelper.Handleize(uid), "index.html");
         Assert.IsTrue(File.Exists(path), $"Expected rendered API page not found at `{path}`.");
+        return WebUtility.HtmlDecode(File.ReadAllText(path));
+    }
+
+    private string ReadRenderedApiRootHtml()
+    {
+        var path = Path.Combine(_outputRoot, "api", "index.html");
+        Assert.IsTrue(File.Exists(path), $"Expected rendered API root page not found at `{path}`.");
         return WebUtility.HtmlDecode(File.ReadAllText(path));
     }
 }

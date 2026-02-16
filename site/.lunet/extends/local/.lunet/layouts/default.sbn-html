@@ -4,17 +4,35 @@ layout: base
 <div class="container-xxl">
   {{~
     menu = page.menu
+    menu_width = 3
+    if menu != null
+      menu_width = menu.width ?? 3
+    end
+    if menu_width < 2
+      menu_width = 2
+    end
+    if menu_width > 4
+      menu_width = 4
+    end
+    sidebar_xxl_width = menu_width - 1
+    if sidebar_xxl_width < 1
+      sidebar_xxl_width = 1
+    end
+    content_xxl_width = 10 - sidebar_xxl_width
+    sidebar_col_classes = "col-md-3 col-lg-3 col-xl-3 col-xxl-" + sidebar_xxl_width
+    content_col_classes = "col-12 col-md-9 col-lg-9 col-xl-9 col-xxl-" + content_xxl_width
   ~}}
   <div class="row">
       <!-- Left sidebar - responsive offcanvas (offcanvas on mobile, visible sidebar on md+) -->
       {{~ if menu != null ~}}
-      <nav id="docs-sidebar-menu" class="col-md-3 col-xxl-2 offcanvas-md offcanvas-start sticky-md-top menu-sidebar align-self-start order-1 order-md-0" tabindex="-1" aria-labelledby="docs-sidebar-menu-label" aria-expanded="true">
+      <nav id="docs-sidebar-menu" class="{{ sidebar_col_classes }} offcanvas-md offcanvas-start sticky-md-top menu-sidebar align-self-start order-1 order-md-0" tabindex="-1" aria-labelledby="docs-sidebar-menu-label" aria-expanded="true">
         <div class="offcanvas-header">
           <h5 class="offcanvas-title" id="docs-sidebar-menu-label">{{ site.docs_menu_label }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#docs-sidebar-menu" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
-          {{ menu.render { kind: "menu",  collapsible: true, depth: 2  } }}
+          {{~ menu_depth = page.section == "api" ? 6 : 2 ~}}
+          {{ menu.render { kind: "menu",  collapsible: true, depth: menu_depth } }}
         </div>
       </nav>
       {{~ end ~}}
@@ -24,7 +42,7 @@ layout: base
         <nav class="js-toc"></nav>
       </aside>
       <!-- Main content column -->
-      <div class="col-12 col-md-9 col-xxl-8 order-2 order-md-1 js-toc-content">
+      <div class="{{ content_col_classes }} order-2 order-md-1 js-toc-content">
         {{ if menu != null; menu.breadcrumb; end }}
         <p id="lunet-results"></p>
         <!-- Toggle buttons visible only on small screens -->

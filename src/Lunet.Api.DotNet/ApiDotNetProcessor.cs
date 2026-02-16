@@ -6,6 +6,7 @@ using DotNet.Globbing;
 using Lunet.Api.DotNet.Extractor;
 using Lunet.Core;
 using Lunet.Json;
+using Lunet.Menus;
 using Scriban.Runtime;
 using System;
 using System.Collections.Generic;
@@ -95,6 +96,9 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
 
     private void GeneratePages()
     {
+        var apiBasePath = NormalizeApiBasePath(Config.BasePath);
+        var pagesByUid = new Dictionary<string, DynamicContentObject>(StringComparer.Ordinal);
+
         // Register all xref
         foreach (var refKeyPair in ApiDotNetObject.References)
         {
@@ -116,7 +120,12 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         {
             var obj = (ScriptObject)objPair.Value;
             var uid = obj.GetSafeValue<string>("uid");
-            var url = $"/api/{UidHelper.Handleize(uid)}/readme.md";
+            if (string.IsNullOrWhiteSpace(uid))
+            {
+                continue;
+            }
+
+            var url = $"{apiBasePath}/{UidHelper.Handleize(uid)}/readme.md";
 
             DynamicContentObject? content = null;
             switch (GetTypeFromModel(obj))
@@ -145,7 +154,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 case "Extension":
                 case "EiiMethod":
                 {
-                    content = new DynamicContentObject(Site, url, "api")
+                    content = new DynamicContentObject(Site, url, "api", url)
                     {
                         ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
                         LayoutType = "api-dotnet-member",
@@ -171,12 +180,14 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 _helpers.CopyTo(content.ScriptObjectLocal);
                 content.Initialize();
                 Site.DynamicPages.Add(content);
+                pagesByUid[uid] = content;
             }
         }
 
         // Create the root page
+        DynamicContentObject apiRootPage;
         {
-            var path = "/api/readme.md";
+            var path = $"{apiBasePath}/readme.md";
             var content = new DynamicContentObject(Site, path, "api", path)
             {
                 ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
@@ -189,14 +200,306 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             content.Title = Config.Title ?? $"{Site.GetSafeValue<string>("title")} .NET API Reference";
             content.ScriptObjectLocal.SetValue("api", ApiDotNetObject, true);
             content["notoc"] = true;
-            content["nomenu"] = true;
 
             // Copy helpers as if it was part of the file
             _helpers.CopyTo(content.ScriptObjectLocal);
             content.Initialize();
             Site.DynamicPages.Add(content);
+            apiRootPage = content;
+        }
+
+        ConfigureGeneratedMenu(apiRootPage, pagesByUid);
+    }
+
+    private static string NormalizeApiBasePath(string? configuredPath)
+    {
+        var normalizedPath = string.IsNullOrWhiteSpace(configuredPath)
+            ? "/api"
+            : configuredPath.Trim().Replace('\\', '/');
+
+        if (!normalizedPath.StartsWith("/", StringComparison.Ordinal))
+        {
+            normalizedPath = "/" + normalizedPath;
+        }
+
+        normalizedPath = normalizedPath.TrimEnd('/');
+        return string.IsNullOrWhiteSpace(normalizedPath) ? "/api" : normalizedPath;
+    }
+
+    private void ConfigureGeneratedMenu(DynamicContentObject apiRootPage, IReadOnlyDictionary<string, DynamicContentObject> pagesByUid)
+    {
+        var menuPlugin = Plugin.Menus;
+        if (menuPlugin is null)
+        {
+            return;
+        }
+
+        var menuName = string.IsNullOrWhiteSpace(Config.MenuName) ? "api" : Config.MenuName;
+        var menuTitle = string.IsNullOrWhiteSpace(Config.MenuTitle)
+            ? Config.Title ?? $"{Site.GetSafeValue<string>("title")} .NET API Reference"
+            : Config.MenuTitle;
+
+        var rootMenu = new MenuObject
+        {
+            Name = menuName,
+            Title = menuTitle,
+            Path = (string)apiRootPage.Path,
+            Page = apiRootPage,
+            Folder = ApiDotNetObject.Namespaces.Count > 0,
+            Generated = true,
+            Pre = GetMenuIconMarkup("Api"),
+            Width = Config.MenuWidth,
+        };
+
+        menuPlugin.RegisterMenu(menuName, rootMenu, overwrite: true);
+        menuPlugin.SetPageMenu(apiRootPage, rootMenu, force: true);
+
+        var recursionGuard = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var namespaceObject in ApiDotNetObject.Namespaces
+                     .OrderBy(x => x.GetSafeValue<string>("name"), StringComparer.OrdinalIgnoreCase))
+        {
+            var namespaceMenu = CreateGeneratedMenuItem(rootMenu, namespaceObject, pagesByUid, menuPlugin);
+            if (namespaceMenu is null)
+            {
+                continue;
+            }
+
+            BuildGeneratedMenuChildren(namespaceMenu, namespaceObject, pagesByUid, recursionGuard, menuPlugin);
         }
     }
+
+    private void BuildGeneratedMenuChildren(
+        MenuObject parentMenu,
+        ScriptObject parentObject,
+        IReadOnlyDictionary<string, DynamicContentObject> pagesByUid,
+        HashSet<string> recursionGuard,
+        MenuPlugin menuPlugin)
+    {
+        var parentUid = parentObject.GetSafeValue<string>("uid");
+        if (string.IsNullOrWhiteSpace(parentUid) || !recursionGuard.Add(parentUid))
+        {
+            return;
+        }
+
+        try
+        {
+            var childEntries = CollectChildEntries(parentObject, pagesByUid);
+            if (childEntries.Count == 0)
+            {
+                parentMenu.Folder = false;
+                return;
+            }
+
+            if (IsTypeDeclarationKind(GetTypeFromModel(parentObject)))
+            {
+                BuildGeneratedTypeMemberGroups(parentMenu, childEntries, pagesByUid, recursionGuard, menuPlugin);
+                return;
+            }
+
+            parentMenu.Folder = true;
+            foreach (var childObject in childEntries
+                         .OrderBy(x => GetMenuSortOrder(GetTypeFromModel(x)))
+                         .ThenBy(x => x.GetSafeValue<string>("name"), StringComparer.OrdinalIgnoreCase))
+            {
+                var childMenu = CreateGeneratedMenuItem(parentMenu, childObject, pagesByUid, menuPlugin);
+                if (childMenu is null)
+                {
+                    continue;
+                }
+
+                BuildGeneratedMenuChildren(childMenu, childObject, pagesByUid, recursionGuard, menuPlugin);
+            }
+        }
+        finally
+        {
+            recursionGuard.Remove(parentUid);
+        }
+    }
+
+    private List<ScriptObject> CollectChildEntries(ScriptObject parentObject, IReadOnlyDictionary<string, DynamicContentObject> pagesByUid)
+    {
+        var children = parentObject.GetSafeValue<ScriptArray>("children");
+        if (children is null || children.Count == 0)
+        {
+            return [];
+        }
+
+        var childEntries = new List<ScriptObject>();
+        foreach (var childUid in children.OfType<string>().Distinct(StringComparer.Ordinal))
+        {
+            if (string.IsNullOrWhiteSpace(childUid))
+            {
+                continue;
+            }
+
+            if (ApiDotNetObject.Objects.GetSafeValue<ScriptObject>(childUid) is not ScriptObject childObject)
+            {
+                continue;
+            }
+
+            if (!pagesByUid.ContainsKey(childUid))
+            {
+                continue;
+            }
+
+            childEntries.Add(childObject);
+        }
+
+        return childEntries;
+    }
+
+    private void BuildGeneratedTypeMemberGroups(
+        MenuObject parentMenu,
+        IReadOnlyList<ScriptObject> childEntries,
+        IReadOnlyDictionary<string, DynamicContentObject> pagesByUid,
+        HashSet<string> recursionGuard,
+        MenuPlugin menuPlugin)
+    {
+        var childrenByKind = childEntries
+            .Select(child => (Child: child, Kind: GetTypeFromModel(child)))
+            .Where(item => !string.IsNullOrWhiteSpace(item.Kind))
+            .GroupBy(item => item.Kind!, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.Select(item => item.Child).ToList(), StringComparer.Ordinal);
+
+        parentMenu.Folder = childrenByKind.Count > 0;
+
+        foreach (var (kind, title) in TypeMemberMenuGroups)
+        {
+            if (!childrenByKind.TryGetValue(kind, out var members) || members.Count == 0)
+            {
+                continue;
+            }
+
+            var groupMenu = new MenuObject
+            {
+                Parent = parentMenu,
+                Title = title,
+                Folder = true,
+                Generated = true,
+                Pre = GetMenuIconMarkup(kind),
+            };
+            parentMenu.Children.Add(groupMenu);
+
+            foreach (var child in members.OrderBy(x => x.GetSafeValue<string>("name"), StringComparer.OrdinalIgnoreCase))
+            {
+                var childMenu = CreateGeneratedMenuItem(groupMenu, child, pagesByUid, menuPlugin);
+                if (childMenu is null)
+                {
+                    continue;
+                }
+
+                BuildGeneratedMenuChildren(childMenu, child, pagesByUid, recursionGuard, menuPlugin);
+            }
+        }
+    }
+
+    private MenuObject? CreateGeneratedMenuItem(
+        MenuObject parentMenu,
+        ScriptObject objectModel,
+        IReadOnlyDictionary<string, DynamicContentObject> pagesByUid,
+        MenuPlugin menuPlugin)
+    {
+        var uid = objectModel.GetSafeValue<string>("uid");
+        if (string.IsNullOrWhiteSpace(uid) || !pagesByUid.TryGetValue(uid, out var page))
+        {
+            return null;
+        }
+
+        var title = page.GetSafeValue<string>(PageVariables.XRefName)
+                    ?? objectModel.GetSafeValue<string>("name")
+                    ?? page.Title
+                    ?? uid;
+
+        var pagePath = page.Path.IsNull ? (page.UrlWithoutBasePath ?? page.Url) : (string)page.Path;
+        if (string.IsNullOrWhiteSpace(pagePath))
+        {
+            return null;
+        }
+
+        var menuObject = new MenuObject
+        {
+            Parent = parentMenu,
+            Path = pagePath,
+            Page = page,
+            Title = title,
+            Generated = true,
+            Pre = GetMenuIconMarkup(GetTypeFromModel(objectModel)),
+        };
+
+        parentMenu.Children.Add(menuObject);
+        menuPlugin.SetPageMenu(page, menuObject, force: true);
+        return menuObject;
+    }
+
+    private static int GetMenuSortOrder(string? kind)
+    {
+        return kind switch
+        {
+            "Api" => -1,
+            "Namespace" => 0,
+            "Class" => 10,
+            "Struct" => 11,
+            "Interface" => 12,
+            "Enum" => 13,
+            "Delegate" => 14,
+            "Constructor" => 20,
+            "Field" => 21,
+            "Property" => 22,
+            "Method" => 23,
+            "Event" => 24,
+            "Operator" => 25,
+            "Extension" => 26,
+            "EiiMethod" => 27,
+            _ => 100,
+        };
+    }
+
+    private static bool IsTypeDeclarationKind(string? kind)
+    {
+        return kind is "Class" or "Struct" or "Interface" or "Enum" or "Delegate";
+    }
+
+    private static string? GetMenuIconMarkup(string? kind)
+    {
+        var icon = kind switch
+        {
+            "Api" => "bi-braces-asterisk",
+            "Namespace" => "bi-diagram-3",
+            "Class" => "bi-box",
+            "Struct" => "bi-boxes",
+            "Interface" => "bi-diagram-3",
+            "Enum" => "bi-list-ul",
+            "Delegate" => "bi-code-slash",
+            "Constructor" => "bi-hammer",
+            "Field" => "bi-hash",
+            "Property" => "bi-sliders",
+            "Method" => "bi-gear",
+            "Event" => "bi-bell",
+            "Operator" => "bi-calculator",
+            "Extension" => "bi-plugin",
+            "EiiMethod" => "bi-link-45deg",
+            _ => null,
+        };
+
+        return icon is null ? null : $"<i class='bi {icon}' aria-hidden='true'></i> ";
+    }
+
+    private static readonly (string Kind, string Title)[] TypeMemberMenuGroups =
+    [
+        ("Class", "Nested Classes"),
+        ("Struct", "Nested Structs"),
+        ("Interface", "Nested Interfaces"),
+        ("Enum", "Nested Enums"),
+        ("Delegate", "Nested Delegates"),
+        ("Constructor", "Constructors"),
+        ("Field", "Fields"),
+        ("Property", "Properties"),
+        ("Method", "Methods"),
+        ("Event", "Events"),
+        ("Operator", "Operators"),
+        ("Extension", "Extensions"),
+        ("EiiMethod", "Explicit Interface Implementation Methods"),
+    ];
 
     private void UpdateUid()
     {

@@ -83,6 +83,26 @@ public class MenuObject : DynamicObject
         set => SetValue("separator", value);
     }
 
+    public bool Generated
+    {
+        get => GetSafeValue<bool>("generated");
+        set => SetValue("generated", value);
+    }
+
+    public int Width
+    {
+        get
+        {
+            var width = GetSafeValue<int>("width");
+            if (width == 0)
+            {
+                width = 3;
+            }
+            return Math.Clamp(width, 2, 4);
+        }
+        set => SetValue("width", Math.Clamp(value, 2, 4), true);
+    }
+
     public MenuCollection Children { get; }
 
     public MenuObject? Parent
@@ -158,11 +178,10 @@ public class MenuObject : DynamicObject
         string menuId = $"{kind}-id-{root.Name ?? "menu"}-{index}";
 
         bool isCurrentPageInMenuPath = false;
-        var rootMenu = page["menu"] as MenuObject;
-        var currentMenu = rootMenu;
+        var currentMenu = page.GetSafeValue<MenuObject>("menu_item");
         while (currentMenu != null)
         {
-            if (currentMenu.Page == Page)
+            if (ReferenceEquals(currentMenu, this))
             {
                 isCurrentPageInMenuPath = true;
                 break;
@@ -179,7 +198,9 @@ public class MenuObject : DynamicObject
         {
             builder.Append(' ', level * IndentSize);
             var listKind = (kind == "nav" ? "navbar-nav" : kind);
-            var collapse = level > 0 && showCollapse ? "collapse" : "show";
+            var collapse = level > 0 && showCollapse
+                ? (isCurrentPageInMenuPath ? "collapse show" : "collapse")
+                : "show";
             builder.AppendLine($"<ol id='{menuId}' class='{listKind} {kind}-level{level} {collapse} {options["list_class"]}'>");
             foreach (var item in this.Children)
             {
@@ -208,31 +229,27 @@ public class MenuObject : DynamicObject
     {
         builder.Append(' ', level * IndentSize);
 
-        var currentPage = page;
         bool isActive = false;
-        while (currentPage != null)
+        var currentMenu = page.GetSafeValue<MenuObject>("menu_item");
+        while (currentMenu != null)
         {
-            if (currentPage == Page)
+            if (ReferenceEquals(currentMenu, this))
             {
                 isActive = true;
+                break;
             }
 
-            if (isCappingDepth && currentPage["menu"] is MenuObject menuObject)
-            {
-                var nextPage = menuObject?.Parent?.Page;
-                // TODO: remove recursive
-                if (nextPage == currentPage) break;
-                currentPage = nextPage;
-            }
-            else
+            if (!isCappingDepth)
             {
                 break;
             }
+
+            currentMenu = currentMenu.Parent;
         }
 
 
         // If the page is not in a menu, try to recover it from the same section
-        if (!string.IsNullOrEmpty(page.Section) && page["menu"] == null && page.Section == Page?.Section)
+        if (!string.IsNullOrEmpty(page.Section) && page.GetSafeValue<MenuObject>("menu_item") == null && page.Section == Page?.Section)
         {
             isActive = true;
         }

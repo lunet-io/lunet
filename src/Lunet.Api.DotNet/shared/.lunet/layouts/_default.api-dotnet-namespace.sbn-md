@@ -2,7 +2,7 @@
 layout = site.api.dotnet.layout ?? site.layout ?? "_default"
 layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 +++
-{{~ $table_class = site.api.dotnet.table_class ?? "api-dotnet-members-table" }}
+{{~ $table_class = site.api.dotnet.table_class ?? "table table-striped table-hover table-sm api-dotnet-members-table" }}
 # {{ namespace.name }} Namespace
 {{~ namespace.summary ~}}
 {{~ api_dotnet_members_render namespace "classes" "Classes" $table_class ~}}

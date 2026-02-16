@@ -2,7 +2,7 @@
 layout = site.api.dotnet.layout ?? site.layout ?? "_default"
 layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 +++
-{{~ $table_class = site.api.dotnet.table_class ?? "api-dotnet-members-table" }}
+{{~ $table_class = site.api.dotnet.table_class ?? "table table-striped table-hover table-sm api-dotnet-members-table" }}
 # {{ member.name }} {{ member.type }}
 
 <h2 id="definition" class="heading-anchor-hidden">Definition</h2>

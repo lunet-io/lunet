@@ -41,6 +41,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
                 }
 
                 menu.Page = page;
+                TryAdoptGeneratedChildren(menu, page.GetSafeValue<MenuObject>("menu_item"));
                 SetPageMenu(page, menu, false);
 
                 if (!menu.Folder) continue;
@@ -68,6 +69,10 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
                                 otherMenu.Pre = menu.Pre;
                                 otherMenu.Post = menu.Post;
                                 otherMenu.Separator = menu.Separator;
+                                if (!otherMenu.ContainsKey("width") && menu.ContainsKey("width"))
+                                {
+                                    otherMenu.Width = menu.Width;
+                                }
                                 SetPageMenu(page, otherMenu, true);
                             }
                         }
@@ -205,25 +210,73 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
         }
     }
 
-    private void SetPageMenu(ContentObject page, MenuObject menu, bool force)
+    public void SetPageMenu(ContentObject page, MenuObject menu, bool force)
     {
-        // If a menu is already set, we keep it as the first one is the most relevant one
-        if (!page.ContainsKey("menu_item") || force)
+        var shouldSet = force || !page.ContainsKey("menu_item");
+        if (!shouldSet && page.GetSafeValue<MenuObject>("menu_item") is MenuObject existingMenu)
         {
-            page.SetValue("menu_item", menu);
+            shouldSet = existingMenu.Generated && !menu.Generated && (menu.Folder || menu.Children.Count > 0);
+        }
 
-            Func<MenuObject?> resolveMenu = () =>
+        // If a menu is already set, we keep it as the first one is the most relevant one
+        if (!shouldSet)
+        {
+            return;
+        }
+
+        page.SetValue("menu_item", menu);
+
+        Func<MenuObject?> resolveMenu = () =>
+        {
+            var parentMenu = menu;
+            while (parentMenu is not null)
             {
-                var parentMenu = menu;
-                while (parentMenu is not null && parentMenu.Children.Count == 0)
+                var shouldClimb = parentMenu.Children.Count == 0;
+                if (!shouldClimb && parentMenu.Generated && parentMenu.Parent is { Generated: true })
                 {
-                    parentMenu = parentMenu.Parent;
+                    // Keep climbing in generated trees (e.g API menus) so we expose
+                    // a stable parent menu block instead of a leaf-local subtree.
+                    shouldClimb = true;
                 }
 
-                return parentMenu;
-            };
+                if (!shouldClimb && parentMenu.Generated && parentMenu.Parent is { Generated: false, Folder: true })
+                {
+                    // When generated trees are grafted under a manual folder menu,
+                    // keep climbing one more level so the sidebar starts from the
+                    // manual folder item (same visual behavior as menu.yml folders).
+                    shouldClimb = true;
+                }
 
-            page.SetValue("menu", DelegateCustomFunction.CreateFunc(resolveMenu));
+                if (!shouldClimb)
+                {
+                    break;
+                }
+
+                parentMenu = parentMenu.Parent;
+            }
+
+            return parentMenu;
+        };
+
+        page.SetValue("menu", DelegateCustomFunction.CreateFunc(resolveMenu));
+    }
+
+    private static void TryAdoptGeneratedChildren(MenuObject menu, MenuObject? existingMenu)
+    {
+        if (!menu.Folder || menu.Children.Count > 0 || existingMenu is null || !existingMenu.Generated || existingMenu.Children.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var child in existingMenu.Children)
+        {
+            child.Parent = menu;
+            menu.Children.Add(child);
+        }
+
+        if (!menu.ContainsKey("width"))
+        {
+            menu.Width = existingMenu.Width;
         }
     }
 }

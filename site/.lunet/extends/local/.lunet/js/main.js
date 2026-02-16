@@ -219,7 +219,41 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  document.querySelectorAll('.menu-sidebar').forEach(scrollSidebarToActiveItem);
+  function expandMenuAncestors(sidebar) {
+      if (!sidebar) return;
+
+      sidebar.querySelectorAll('li.menu-item.active').forEach((activeItem) => {
+          let collapseList = activeItem.closest('ol.collapse');
+          while (collapseList) {
+              collapseList.classList.add('show');
+              if (collapseList.id) {
+                  const toggles = sidebar.querySelectorAll(`a.menu-link-show[href='#${collapseList.id}']`);
+                  toggles.forEach((toggle) => {
+                      toggle.classList.remove('collapsed');
+                      toggle.setAttribute('aria-expanded', 'true');
+                  });
+              }
+
+              const parentItem = collapseList.closest('li.menu-item');
+              collapseList = parentItem ? parentItem.closest('ol.collapse') : null;
+          }
+      });
+
+      sidebar.querySelectorAll("a.menu-link-show[aria-expanded='true']").forEach((toggle) => {
+          const href = toggle.getAttribute('href');
+          if (!href || !href.startsWith('#')) return;
+          const collapseList = sidebar.querySelector(href);
+          if (collapseList && collapseList.classList.contains('collapse')) {
+              collapseList.classList.add('show');
+          }
+          toggle.classList.remove('collapsed');
+      });
+  }
+
+  document.querySelectorAll('.menu-sidebar').forEach((sidebar) => {
+      expandMenuAncestors(sidebar);
+      scrollSidebarToActiveItem(sidebar);
+  });
 });
 
 // Initialize bootstrap tooltips

@@ -717,25 +717,25 @@ footer {
 /**********************************************
  * menu in documentation
  **********************************************/
-.lunet-docs ol.menu {
+:is(.lunet-docs, .lunet-api) ol.menu {
     list-style: none;
     padding-inline-start: 0px;
 }
 
-.lunet-docs span.menu-item-row {
+:is(.lunet-docs, .lunet-api) span.menu-item-row {
     display: inline-block;
     width: 100%;
     padding-bottom: 0.8rem;
 }
 
-.lunet-docs a.menu-link {
+:is(.lunet-docs, .lunet-api) a.menu-link {
     display: inline-block;
     width: 100%;
     position: relative;
     color: var(--bs-body-color-darker-10);
 }
 
-.lunet-docs a.menu-link i.bi {
+:is(.lunet-docs, .lunet-api) a.menu-link i.bi {
     width: 1.25em;
     display: inline-block;
     text-align: center;
@@ -744,39 +744,50 @@ footer {
     color: currentColor;
 }
 
-.lunet-docs a.menu-link-show {
+:is(.lunet-docs, .lunet-api) a.menu-link-show {
     display: inline-block;
     position: absolute;
     right: 30px;
 }
 
-.lunet-docs menu-separator
+.lunet-api a.menu-link {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 1.8rem;
+}
+
+.lunet-api a.menu-link-show {
+    right: 10px;
+}
+
+:is(.lunet-docs, .lunet-api) menu-separator
 {
     font-weight: bold;
 }
 
-.lunet-docs li.menu-item > span > a.menu-link:hover {
+:is(.lunet-docs, .lunet-api) li.menu-item > span > a.menu-link:hover {
     color: var(--bs-body-color);
 }
 
-.lunet-docs li.menu-item.active > span > a.menu-link {
+:is(.lunet-docs, .lunet-api) li.menu-item.active > span > a.menu-link {
     display: inline-block;
     width: 100%;
     font-weight: 600;
     color: var(--bs-link-color);
 }
 
-.lunet-docs a.menu-link-show::before,
-.lunet-docs a.menu-link-show.collapsed::before {
+:is(.lunet-docs, .lunet-api) a.menu-link-show::before,
+:is(.lunet-docs, .lunet-api) a.menu-link-show.collapsed::before {
     @extend .bi;
     @extend .bi-chevron-right;
 }
 
-.lunet-docs ol.menu ol.menu  {
+:is(.lunet-docs, .lunet-api) ol.menu ol.menu  {
     margin-left: 0.8rem;
 }
 
-.lunet-docs li.menu-item {
+:is(.lunet-docs, .lunet-api) li.menu-item {
     list-style-type: none;
     padding-inline-start: 0px;
     border-width: thin;
@@ -787,11 +798,11 @@ footer {
     border-bottom-style: solid;
 }
 
-.lunet-docs li.menu-item li.menu-item:last-child {
+:is(.lunet-docs, .lunet-api) li.menu-item li.menu-item:last-child {
     border-bottom-style: none;
 }
 
-.lunet-docs li.menu-item a
+:is(.lunet-docs, .lunet-api) li.menu-item a
 {
     text-decoration-line: none;
 }
@@ -804,10 +815,24 @@ footer {
     font-size: 0.95em;
 }
 
+:is(.lunet-docs, .lunet-api) table.api-dotnet-members-table td:first-child {
+    white-space: nowrap;
+    width: 30%;
+}
+
+:is(.lunet-docs, .lunet-api) table.api-dotnet-members-table td {
+    vertical-align: top;
+}
+
+:is(.lunet-docs, .lunet-api) .api-dotnet-kind-icon {
+    margin-right: 0.35rem;
+    opacity: 0.85;
+}
+
 /**********************************************
  * toc in documentation
  **********************************************/
-.lunet-docs .toc-link::before {
+:is(.lunet-docs, .lunet-api) .toc-link::before {
     width: 0px;
 }
 
@@ -837,43 +862,43 @@ li.toc-list-item {
     list-style-type: none;
 }
 
-.lunet-docs a.toc-link {
+:is(.lunet-docs, .lunet-api) a.toc-link {
     text-decoration-line: none;
     //text-decoration-style: dotted;
     color: var(--bs-body-color-darker-20);
     //color: var(--bs-body-color);
 }
 
-.lunet-docs a.toc-link:hover {
+:is(.lunet-docs, .lunet-api) a.toc-link:hover {
     text-decoration-line: none;
     text-decoration-style: solid;
     color: var(--bs-body-color-darker-10);
 }
 
-.lunet-docs a.toc-link {
+:is(.lunet-docs, .lunet-api) a.toc-link {
     display: inline-block;
     width: 100%;
 }
 
-.lunet-docs .js-toc a.toc-link.is-active-link {
+:is(.lunet-docs, .lunet-api) .js-toc a.toc-link.is-active-link {
     border-left-color: var(--lunet-color-cyan);
     border-left-style: solid;
 }
 
-.lunet-docs .js-toc a.toc-link {
+:is(.lunet-docs, .lunet-api) .js-toc a.toc-link {
     display: block;
     padding: .125rem 0 .125rem .75rem;
     text-decoration: none;
     border-left: .125rem solid transparent;
 }
 
-.lunet-docs .toc-title {
+:is(.lunet-docs, .lunet-api) .toc-title {
     border-bottom-style: solid;
     border-bottom-width: thin;
     font-size: 1rem;
 }
 
-.lunet-docs .toc {
+:is(.lunet-docs, .lunet-api) .toc {
     padding-right: 3px;
 }
 
