@@ -1,0 +1,85 @@
+---
+layout: _default
+---
+{{~
+  prefix = site.css_prefix ?? "lunet"
+  path0 = (page.url_without_basepath | string.downcase | string.split '/')[0] ?? "home" ## first part of the url ##
+  pathclass = prefix + '-' + path0
+~}}
+    <div id="{{prefix}}" class="container">
+      <nav class="navbar navbar-expand-md {{ path0 == "home" ? "" : "sticky-top" }}">
+        <a class="navbar-brand" href="{{site.basepath}}/">
+          <img class="{{prefix}}-logo" src="{{site.basepath}}{{site.project_logo_path}}" alt="{{site.title}}" width="96" height="96">
+          <span class="visually-hidden">Home</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+          data-bs-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div id="navbarSupportedContent" class="collapse navbar-collapse justify-content-between">
+          {{~ site.menu.home.render {
+                depth: 1,
+                kind: "nav",
+              }
+          ~}}
+          <ol class="navbar-nav flex-grow-1" style="padding-right: 0.5rem;">
+            {{~ if site.search.enable ~}}
+            <li class="nav-item w-100">
+                <div class="{{prefix}}-search dropdown w-100">
+                  <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input id="search-input" type="search" class="form-control" placeholder="{{site.search_placeholder}}" aria-label="Search" aria-controls="search-results" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-search-empty-message="{{site.search_empty_message}}" data-search-no-results-message="{{site.search_no_results_message}}">
+                    <ul id="search-results" class="dropdown-menu w-100 p-0" style="max-height: 50vh;" role="listbox" aria-labelledby="search-input"></ul>
+                  </div>
+                </div>
+            </li>
+            {{~ end ~}}
+          </ol>
+          <div class="d-flex align-items-center gap-2 flex-shrink-0 navbar-right">
+            <div class="dropdown">
+              <button
+                id="theme-mode-toggle"
+                class="btn btn-outline-secondary btn-sm {{prefix}}-theme-toggle dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-label="{{site.theme_toggle_label}}">
+                <i class="bi bi-circle-half" data-lunet-theme-toggle-icon aria-hidden="true"></i>
+                <span
+                  data-lunet-theme-toggle-label
+                  data-theme-system-label="{{site.theme_mode_system_label}}"
+                  data-theme-light-label="{{site.theme_mode_light_label}}"
+                  data-theme-dark-label="{{site.theme_mode_dark_label}}">{{site.theme_toggle_label}}</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="theme-mode-toggle">
+                <li><button class="dropdown-item" type="button" data-lunet-theme-choice="system"><i class="bi bi-circle-half me-2"></i>{{site.theme_mode_system_label}}</button></li>
+                <li><button class="dropdown-item" type="button" data-lunet-theme-choice="light"><i class="bi bi-sun-fill me-2"></i>{{site.theme_mode_light_label}}</button></li>
+                <li><button class="dropdown-item" type="button" data-lunet-theme-choice="dark"><i class="bi bi-moon-stars-fill me-2"></i>{{site.theme_mode_dark_label}}</button></li>
+              </ul>
+            </div>
+            {{~ site.menu.home2.render {
+                  depth: 1,
+                  kind: "nav",
+                  list_class: "flex-shrink-0"
+                }
+            ~}}
+          </div>
+        </div>
+      </nav>
+      <div class="{{ prefix }} {{ pathclass }}">
+        <section data-prismjs-copy="" data-prismjs-copy-success="" data-prismjs-copy-timeout="1200" data-copy-tooltip="{{site.copy_tooltip}}" data-copy-tooltip-success="{{site.copy_success_tooltip}}" data-copy-tooltip-error="{{site.copy_error_tooltip}}">
+{{ content }}
+        </section>
+        <footer>
+          {{~ if site.template_footer_organization_name != null && site.template_footer_organization_name != "" && site.template_footer_organization_url != null && site.template_footer_organization_url != "" ~}}
+          <p>This project is part of the <a href="{{site.template_footer_organization_url}}">{{site.template_footer_organization_name}}</a>.</p>
+          {{~ end ~}}
+          <hr>
+          <p>{{site.footer_ownership_html}} {{site.footer_content_license_html}} {{site.footer_site_generator_html}}</p>
+        </footer>
+      </div>
+    </div>
+

@@ -4,15 +4,14 @@
 #   lunet serve
 #
 # This site uses a shared theme/template published as a Lunet extension.
-extend "XenoAtom/lunet_template@1.0.0"
+#extend "XenoAtom/lunet_template@1.0.0"
+extend "local"
 
 # -----------------------------------------------------------------------------
 # TEMPLATE OVERRIDES (only if different from the template defaults)
 # -----------------------------------------------------------------------------
-template_baseurl = "https://lunet-io.github.io"
+template_baseurl = "https://lunet.io"
 template_project_github_user = "lunet-io"
-template_footer_site_generator_name = "lunet"
-template_footer_site_generator_url = "https://github.com/lunet-io/lunet"
 
 # -----------------------------------------------------------------------------
 # SITE SECTION (project-specific values only)
@@ -24,7 +23,9 @@ site_project_social_banner_path = "/img/lunet-social-banner.svg"
 site_project_banner_background_path = "/img/lunet-social-banner.svg"
 site_project_package_id = "lunet"
 site_project_github_repo = "lunet"
-site_project_basepath = "/lunet"
+template_project_owner_name = "Alexandre Mutel"
+template_project_owner_alias = "xoofx"
+template_project_owner_url = "https://xoofx.github.io"
 
 site_project_init
 
@@ -36,21 +37,9 @@ site_project_init
 with bundle
     js "/js/prism-scriban.js"
 end
-# In development builds (`lunet build --dev`), keep the basepath empty so local links work.
-if environment == "dev"
-    basepath = ""
-end
-
-# Ensure the docs always compile SCSS via Dart Sass.
-with scss
-    use_dart_sass = true
-end
 
 # Configure search for this docs site.
 with search
-    enable = true
-    engine = "sqlite"
-    worker = true
     excludes.add ["/architecture.md", "/build_system.md", "/docs/todos/**"]
 end
 
@@ -59,4 +48,3 @@ with taxonomies
     tags = "tag"
     categories = "category"
 end
-
