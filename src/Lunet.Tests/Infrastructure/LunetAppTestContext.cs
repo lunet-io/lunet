@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Lunet.Core;
 using Zio;
@@ -43,6 +44,15 @@ internal sealed class LunetAppTestContext
     {
         var normalizedPath = InMemorySiteFileSystems.NormalizePath(path);
         return FileSystems.WorkspaceFileSystem.ReadAllText(normalizedPath);
+    }
+
+    public byte[] ReadAllBytes(string path)
+    {
+        var normalizedPath = InMemorySiteFileSystems.NormalizePath(path);
+        using var stream = FileSystems.WorkspaceFileSystem.OpenFile(normalizedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var memoryStream = new MemoryStream();
+        stream.CopyTo(memoryStream);
+        return memoryStream.ToArray();
     }
 
     public void WriteAllText(string path, string content)

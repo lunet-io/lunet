@@ -423,7 +423,7 @@ public class FileContentObject : ContentObject
 {
     private static readonly Regex ParsePostName = new Regex(@"^(\d{4})-(\d{2})-(\d{2})-(.+)\..+$");
 
-    public FileContentObject(SiteObject site, in FileSystemItem sourceFileInfo, ScriptInstance? scriptInstance = null, UPath? path = null, ScriptObject? preContent = null) : base(site, ContentObjectType.File, sourceFileInfo, scriptInstance, path)
+    public FileContentObject(SiteObject site, in FileSystemItem sourceFileInfo, ScriptInstance? scriptInstance = null, UPath? path = null, ScriptObject? preContent = null, ContentObjectType objectType = ContentObjectType.File) : base(site, objectType, sourceFileInfo, scriptInstance, path)
     {
         preContent?.CopyTo(this);
 

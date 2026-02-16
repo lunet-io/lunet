@@ -256,7 +256,8 @@ public class ContentPlugin : SitePlugin
                 }
             }
             // If the source file is not newer than the destination file, don't overwrite it
-            else if (!fromFile.SourceFile.IsEmpty && (!outputFile.Exists || (fromFile.ModifiedTime > outputFile.LastWriteTime)))
+            else if (!fromFile.SourceFile.IsEmpty &&
+                     (!outputFile.Exists || fromFile.ObjectType == ContentObjectType.Dynamic || (fromFile.ModifiedTime > outputFile.LastWriteTime)))
             {
                 if (Site.CanTrace())
                 {

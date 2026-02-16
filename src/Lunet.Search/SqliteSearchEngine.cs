@@ -130,7 +130,7 @@ public class SqliteSearchEngine : SearchEngine
         // Add our dynamic content to the output
         var fs = new PhysicalFileSystem();
         var srcPath = fs.ConvertPathFromInternal(_dbPathOnDisk);
-        var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("sqlite"));
+        var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("sqlite"), objectType: ContentObjectType.Dynamic);
         content.Initialize();
         Site.DynamicPages.Add(content);
 

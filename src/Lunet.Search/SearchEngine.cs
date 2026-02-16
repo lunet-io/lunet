@@ -6,8 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using DotNet.Globbing;
 using Lunet.Core;
-using Lunet.Helpers;
 using Markdig;
 using Zio;
 
@@ -15,13 +15,13 @@ namespace Lunet.Search;
 
 public abstract class SearchEngine : ContentProcessor<SearchPlugin>
 {
-    private readonly List<SearchPattern> _excludes;
+    private readonly List<Glob> _excludes;
     private UPath _outputUrl;
     private bool _isInitialized;
 
     protected SearchEngine(SearchPlugin plugin, string name) : base(plugin)
     {
-        _excludes = new List<SearchPattern>();
+        _excludes = new List<Glob>();
         Name = name;
     }
 
@@ -54,8 +54,14 @@ public abstract class SearchEngine : ContentProcessor<SearchPlugin>
             {
                 if (excludeItem is string str && UPath.TryParse(str, out var excludePath) && excludePath.IsAbsolute)
                 {
-                    var searchPattern = excludePath.SearchPattern();
-                    _excludes.Add(searchPattern);
+                    try
+                    {
+                        _excludes.Add(Glob.Parse(excludePath.FullName));
+                    }
+                    catch (Exception ex)
+                    {
+                        Site.Error(ex, $"Invalid search exclude pattern `{excludePath}`. Reason: {ex.Message}");
+                    }
                 }
             }
 
@@ -85,16 +91,13 @@ public abstract class SearchEngine : ContentProcessor<SearchPlugin>
 
         var contentType = file.ContentType;
 
-        // This plugin is only working on scss files
-        if (!contentType.IsHtmlLike())
-        {
-            return ContentResult.Continue;
-        }
+        // This plugin is only working on HTML-like files
+        if (!contentType.IsHtmlLike()) return ContentResult.Continue;
 
         // Exclude any files that are globally excluded
-        foreach (var searchPattern in _excludes)
+        foreach (var excludePattern in _excludes)
         {
-            if (searchPattern.Match(file.Path))
+            if (excludePattern.IsMatch(file.Path.FullName))
             {
                 return ContentResult.Continue;
             }

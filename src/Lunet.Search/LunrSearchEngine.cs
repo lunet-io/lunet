@@ -86,7 +86,7 @@ public class LunrSearchEngine : SearchEngine
         // Add our dynamic content to the output
         var fs = new PhysicalFileSystem();
         var srcPath = fs.ConvertPathFromInternal(dbPathOnDisk);
-        var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("json"));
+        var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("json"), objectType: ContentObjectType.Dynamic);
         Site.DynamicPages.Add(content);
 
         // TODO: make it configurable by selecting which bundle will receive the search/db
