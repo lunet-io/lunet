@@ -34,8 +34,8 @@ public class TestExtendsModule
     {
         using var context = new SiteTestContext();
         var plugin = new ExtendsPlugin(context.Site);
-        context.WriteInputFile("/extends/theme/config.scriban", "");
-        context.WriteInputFile("/extends/theme/assets/site.css", "body { color: red; }");
+        context.WriteInputFile("/.lunet/extends/theme/config.scriban", "");
+        context.WriteInputFile("/.lunet/extends/theme/assets/site.css", "body { color: red; }");
 
         var extension = plugin.TryInstall("theme", isPrivate: false);
 
@@ -51,8 +51,8 @@ public class TestExtendsModule
     {
         using var context = new SiteTestContext();
         var plugin = new ExtendsPlugin(context.Site);
-        context.WriteInputFile("/extends/theme/config.scriban", "");
-        context.WriteInputFile("/extends/theme/content/hello.txt", "hello");
+        context.WriteInputFile("/.lunet/extends/theme/config.scriban", "");
+        context.WriteInputFile("/.lunet/extends/theme/content/hello.txt", "hello");
 
         var first = plugin.LoadExtend("theme", isPrivate: false);
         var second = plugin.LoadExtend("theme", isPrivate: false);

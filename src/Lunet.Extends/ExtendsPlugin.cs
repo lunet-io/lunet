@@ -107,7 +107,8 @@ public sealed class ExtendsPlugin : SitePlugin
     private ExtendObject? TryInstall(ExtendRequest request)
     {
         var installPath = GetInstallPath(request);
-        var localMetaPath = SiteFileSystems.LunetFolder / installPath;
+        var installPathRelative = installPath.IsAbsolute ? installPath.ToRelative() : installPath;
+        var localMetaPath = SiteFileSystems.LunetFolder / installPathRelative;
         var localExtendDir = new DirectoryEntry(Site.SiteFileSystem, localMetaPath);
         var cacheExtendDir = new DirectoryEntry(Site.CacheMetaFileSystem, installPath);
         IFileSystem? extendFileSystem = null;
