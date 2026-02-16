@@ -23,6 +23,43 @@ class LunetSearch {
 	    return this._perf;
     }
 
+    _getResponseVersion(response) {
+        if (!response || !response.headers) {
+            return { etag: null, lastModified: null, contentLength: null };
+        }
+
+        const etag = response.headers.get("ETag");
+        const lastModifiedHeader = response.headers.get("Last-Modified");
+        const contentLengthHeader = response.headers.get("Content-Length");
+        const lastModified = lastModifiedHeader ? Date.parse(lastModifiedHeader) : NaN;
+        const contentLength = contentLengthHeader ? Number.parseInt(contentLengthHeader, 10) : NaN;
+
+        return {
+            etag: etag && etag.length > 0 ? etag : null,
+            lastModified: Number.isFinite(lastModified) ? lastModified : null,
+            contentLength: Number.isFinite(contentLength) ? contentLength : null
+        };
+    }
+
+    _isSameResponseVersion(left, right) {
+        if (left.etag && right.etag) {
+            return left.etag === right.etag;
+        }
+
+        if (left.lastModified !== null && right.lastModified !== null) {
+            if (left.contentLength !== null && right.contentLength !== null) {
+                return left.lastModified === right.lastModified && left.contentLength === right.contentLength;
+            }
+            return left.lastModified === right.lastModified;
+        }
+
+        return false;
+    }
+
+    _fetchLatestResponse(url, options) {
+        return fetch(url, options).then((response) => response && response.ok ? response : null);
+    }
+
     _initializeDbFromResponse(response, resolve) {
         const thisInstance = this;
         response.json().then((data) => {
@@ -53,39 +90,42 @@ class LunetSearch {
             return new Promise(function(resolve, reject) {
                 caches.open("lunet.cache").then((lunetCache) => {
                     thisInstance._reason = "Please wait, initializing search database...";
-                    // Always fecth the headers for the DB to check if we need to update it
-                    fetch(dbUrl, { method: "HEAD" }).then((latestResponse) => {
-                        lunetCache.match(dbUrl).then((cachedResponse) => {
-                            var requiresFetch = false;
-                            if (cachedResponse && cachedResponse.ok) {
-                                var latestResponseLastModified = Date.parse(latestResponse.headers.get("Last-Modified"));
-                                var cachedResponseLastModified = Date.parse(cachedResponse.headers.get("Last-Modified"));
-                                // Check if the latest DB is more recent than the cached version
-                                if (latestResponseLastModified > cachedResponseLastModified) {
-                                    // console.log("Clearing db cache. latest: " + latestResponse.headers.get("Last-Modified") + " / current: " + cachedResponse.headers.get("Last-Modified"));
-                                    requiresFetch = true;
-                                } else {
-                                    // We can use the cached version
-                                    thisInstance._initializeDbFromResponse(cachedResponse, resolve);
-                                }
-                            } else {
-                                requiresFetch = true;
+                    lunetCache.match(dbUrl).then((cachedResponse) => {
+                        thisInstance._fetchLatestResponse(dbUrl, { method: "HEAD", cache: "no-store" }).then((latestHeadResponse) => {
+                            var requiresFetch = !cachedResponse;
+
+                            if (cachedResponse && latestHeadResponse) {
+                                const latestVersion = thisInstance._getResponseVersion(latestHeadResponse);
+                                const cachedVersion = thisInstance._getResponseVersion(cachedResponse);
+                                requiresFetch = !thisInstance._isSameResponseVersion(latestVersion, cachedVersion);
                             }
 
-                            if (requiresFetch) {
-                                fetch(dbUrl).then((latestResponse2) => {
-                                    if (latestResponse2.ok) {
-                                        // update cache
-                                        lunetCache.put(dbUrl, latestResponse2);
-                                        // refetch from cache
-                                        lunetCache.match(dbUrl).then((cachedResponse2) => {
-                                            thisInstance._initializeDbFromResponse(cachedResponse2, resolve);
-                                        });
-                                    }
-                                });
+                            if (!requiresFetch && cachedResponse && cachedResponse.ok) {
+                                thisInstance._initializeDbFromResponse(cachedResponse, resolve);
+                                return;
                             }
+
+                            thisInstance._fetchLatestResponse(dbUrl, { cache: "no-store" }).then((latestResponse) => {
+                                if (latestResponse) {
+                                    lunetCache.put(dbUrl, latestResponse.clone()).finally(() => {
+                                        thisInstance._initializeDbFromResponse(latestResponse, resolve);
+                                    });
+                                    return;
+                                }
+
+                                if (cachedResponse && cachedResponse.ok) {
+                                    thisInstance._initializeDbFromResponse(cachedResponse, resolve);
+                                    return;
+                                }
+
+                                thisInstance._reason = "Unable to fetch search database.";
+                                resolve();
+                            });
                         });
                     });
+                }).catch(() => {
+                    thisInstance._reason = "Unable to open browser cache for search database.";
+                    resolve();
                 });
             });
         } else {
