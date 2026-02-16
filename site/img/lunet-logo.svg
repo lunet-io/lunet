@@ -10,30 +10,38 @@
         --lunet-accent-start: #ff2f8f;
         --lunet-accent-middle: #2f8dff;
         --lunet-accent-end: #22d3ee;
-        --lunet-card-bg: #14141d;
-        --lunet-cutout: #0b0b10;
+        --lunet-card-bg-start: #1f2740;
+        --lunet-card-bg-end: #151d32;
+        --lunet-cutout: #1a2542;
       }
 
       .accent-start { stop-color: var(--lunet-accent-start); }
       .accent-middle { stop-color: var(--lunet-accent-middle); }
       .accent-end { stop-color: var(--lunet-accent-end); }
+      .card-bg-start { stop-color: var(--lunet-card-bg-start); }
+      .card-bg-end { stop-color: var(--lunet-card-bg-end); }
 
       .logo-card {
-        fill: var(--lunet-card-bg);
+        fill: url(#logo-card-gradient);
         stroke: url(#logo-accent-gradient);
         stroke-width: 6;
       }
 
       .logo-face { fill: url(#logo-accent-gradient); opacity: 0.95; }
-      .logo-cutout { fill: var(--lunet-cutout); opacity: 0.85; }
+      .logo-cutout { fill: var(--lunet-cutout); opacity: 0.74; }
       .logo-smile {
         fill: none;
         stroke: var(--lunet-cutout);
         stroke-width: 16;
         stroke-linecap: round;
-        opacity: 0.85;
+        opacity: 0.74;
       }
     </style>
+
+    <linearGradient id="logo-card-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop class="card-bg-start" offset="0"/>
+      <stop class="card-bg-end" offset="1"/>
+    </linearGradient>
 
     <linearGradient id="logo-accent-gradient" x1="0" y1="0" x2="1" y2="1">
       <stop class="accent-start" offset="0"/>
