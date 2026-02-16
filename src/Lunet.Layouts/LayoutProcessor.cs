@@ -255,40 +255,123 @@ public class LayoutProcessor : ContentProcessor<LayoutPlugin>
 
     private static IEnumerable<UPath> SingleLayout(SiteObject site, string layoutName, string layoutType)
     {
-        // try: _meta/layouts/{layoutName}/single.{layoutExtension}
-        yield return (UPath)layoutName / layoutType;
+        var yielded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // try: _meta/layouts/{layoutName}.{layoutExtension}
-        yield return layoutName + "." + layoutType;
-            
-        // try: _meta/layouts/{layoutName}.{layoutExtension}
-        yield return layoutName;
+        // try: /layouts/{layoutName}/{layoutType}.{layoutExtension}
+        var layoutPath = (UPath)layoutName / layoutType;
+        if (yielded.Add(layoutPath.FullName))
+        {
+            yield return layoutPath;
+        }
+
+        // try: /layouts/{layoutName}.{layoutType}.{layoutExtension}
+        layoutPath = layoutName + "." + layoutType;
+        if (yielded.Add(layoutPath.FullName))
+        {
+            yield return layoutPath;
+        }
+             
+        // try: /layouts/{layoutName}.{layoutExtension}
+        layoutPath = layoutName;
+        if (yielded.Add(layoutPath.FullName))
+        {
+            yield return layoutPath;
+        }
+
+        var siteLayout = site.Layout;
+        if (!string.IsNullOrWhiteSpace(siteLayout) && !string.Equals(siteLayout, layoutName, StringComparison.OrdinalIgnoreCase))
+        {
+            // try: /layouts/{site.layout}/{layoutType}.{layoutExtension}
+            layoutPath = (UPath)siteLayout / layoutType;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
+
+            // try: /layouts/{site.layout}.{layoutType}.{layoutExtension}
+            layoutPath = siteLayout + "." + layoutType;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
+
+            // try: /layouts/{site.layout}.{layoutExtension}
+            layoutPath = siteLayout;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
+        }
 
         if (layoutName != DefaultLayoutName)
         {
-            // try: _meta/layouts/_default/single.{layoutExtension}
-            yield return (UPath)DefaultLayoutName / layoutType;
+            // try: /layouts/_default/{layoutType}.{layoutExtension}
+            layoutPath = (UPath)DefaultLayoutName / layoutType;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
 
-            // try: _meta/layouts/_default.{layoutExtension}
-            yield return (DefaultLayoutName);
+            // try: /layouts/_default.{layoutExtension}
+            layoutPath = DefaultLayoutName;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
         }
     }
 
     private static IEnumerable<UPath> DefaultLayout(SiteObject site, string layoutName, string layoutType)
     {
-        // try: _meta/layouts/{layoutName}/list.{layoutExtension}
-        yield return (UPath)layoutName / layoutType;
+        var yielded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // try: _meta/layouts/{layoutName}.list.{layoutExtension}
-        yield return layoutName + "." + layoutType;
+        // try: /layouts/{layoutName}/{layoutType}.{layoutExtension}
+        var layoutPath = (UPath)layoutName / layoutType;
+        if (yielded.Add(layoutPath.FullName))
+        {
+            yield return layoutPath;
+        }
+
+        // try: /layouts/{layoutName}.{layoutType}.{layoutExtension}
+        layoutPath = layoutName + "." + layoutType;
+        if (yielded.Add(layoutPath.FullName))
+        {
+            yield return layoutPath;
+        }
+
+        var siteLayout = site.Layout;
+        if (!string.IsNullOrWhiteSpace(siteLayout) && !string.Equals(siteLayout, layoutName, StringComparison.OrdinalIgnoreCase))
+        {
+            // try: /layouts/{site.layout}/{layoutType}.{layoutExtension}
+            layoutPath = (UPath)siteLayout / layoutType;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
+
+            // try: /layouts/{site.layout}.{layoutType}.{layoutExtension}
+            layoutPath = siteLayout + "." + layoutType;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
+        }
 
         if (layoutName != DefaultLayoutName)
         {
-            // try: _meta/layouts/_default/list.{layoutExtension}
-            yield return (UPath)DefaultLayoutName / (layoutType);
+            // try: /layouts/_default/{layoutType}.{layoutExtension}
+            layoutPath = (UPath)DefaultLayoutName / (layoutType);
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
 
-            // try: _meta/layouts/_default.list.{layoutExtension}
-            yield return (DefaultLayoutName + "." + layoutType);
+            // try: /layouts/_default.{layoutType}.{layoutExtension}
+            layoutPath = DefaultLayoutName + "." + layoutType;
+            if (yielded.Add(layoutPath.FullName))
+            {
+                yield return layoutPath;
+            }
         }
     }
 

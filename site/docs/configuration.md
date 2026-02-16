@@ -35,7 +35,7 @@ baseurlforce = true
 - `site.baseurl` — canonical URL (used to generate absolute links)
 - `site.basepath` — URL prefix when hosted under a sub-path (GitHub Pages)
 - `site.environment` — `"prod"` or `"dev"` (set by CLI)
-- `site.layout` — default layout name (fallback is `_default`)
+- `site.layout` — global fallback layout name for pages that don't resolve a section/page-specific layout (before `_default`)
 
 Other common switches:
 

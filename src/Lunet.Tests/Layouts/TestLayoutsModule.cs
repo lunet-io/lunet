@@ -54,6 +54,27 @@ public class TestLayoutsModule
     }
 
     [Test]
+    public void TestLayoutProcessorFallsBackToSiteLayoutBeforeDefaultLayout()
+    {
+        using var context = new SiteTestContext();
+        var plugin = new LayoutPlugin(context.Site);
+        context.Site.Layout = "default";
+        context.WriteInputFile("/.lunet/layouts/default.sbn-html", "<main>{{content}}</main>");
+        context.WriteInputFile("/.lunet/layouts/_default.sbn-html", "<fallback>{{content}}</fallback>");
+        var page = context.CreateFileContentObject("/docs/page.md", "ignored");
+        page.ScriptObjectLocal = new ScriptObject();
+        page.ContentType = ContentType.Html;
+        page.Content = "Section Fallback";
+
+        var result = plugin.Processor.TryProcessContent(page, ContentProcessingStage.Processing);
+
+        Assert.AreEqual(ContentResult.Continue, result);
+        Assert.AreEqual("docs", page.Section);
+        Assert.AreEqual("docs", page.Layout);
+        Assert.AreEqual("<main>Section Fallback</main>", page.Content);
+    }
+
+    [Test]
     public void TestLayoutProcessorConvertsWithoutLayoutWhenConverterAllowsIt()
     {
         using var context = new SiteTestContext();

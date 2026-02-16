@@ -49,9 +49,13 @@ The layout processor resolves each page using:
 - current page content type (for example `html`, `xml`, `rss`, `sitemap`)
 
 Resolution starts from:
-- `page.layout` (or section name)
+- `page.layout` (defaults to section name)
 - `page.layout_type` (default `single`)
 - `page.content_type`
+
+Important behavior:
+- by default, `page.layout` is initialized from `page.section`
+- if a section-specific layout does not exist, Lunet now tries `site.layout` before `_default`
 
 If no layout is found, Lunet may convert the content type (for example Markdown -> HTML), then resolve again with the new type.
 
@@ -62,8 +66,8 @@ For each candidate path, Lunet tries all registered extensions for the target co
 {.table}
 | `layout_type` | Paths tried (in order), under `/.lunet/layouts` |
 |---|---|
-| `single` | `<layout>/<type>`, `<layout>.<type>`, `<layout>`, `_default/<type>`, `_default` |
-| `list` and other list-like types | `<layout>/<type>`, `<layout>.<type>`, `_default/<type>`, `_default.<type>` |
+| `single` | `<layout>/<type>`, `<layout>.<type>`, `<layout>`, `<site.layout>/<type>`, `<site.layout>.<type>`, `<site.layout>`, `_default/<type>`, `_default` |
+| `list` and other list-like types | `<layout>/<type>`, `<layout>.<type>`, `<site.layout>/<type>`, `<site.layout>.<type>`, `_default/<type>`, `_default.<type>` |
 
 Examples:
 - `/.lunet/layouts/_default.sbn-html`
