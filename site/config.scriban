@@ -32,6 +32,10 @@ site_project_init
 # Docs site settings
 # -----------------------------------------------------------------------------
 
+# Add Scriban Prism language definition for ```scriban code fences.
+with bundle
+    js "/js/prism-scriban.js"
+end
 # In development builds (`lunet build --dev`), keep the basepath empty so local links work.
 if environment == "dev"
     basepath = ""
@@ -55,3 +59,4 @@ with taxonomies
     tags = "tag"
     categories = "category"
 end
+
