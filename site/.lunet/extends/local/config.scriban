@@ -19,6 +19,7 @@ template_theme_toggle_label = "Theme"
 template_theme_mode_system_label = "System"
 template_theme_mode_light_label = "Light"
 template_theme_mode_dark_label = "Dark"
+template_theme_override_styles = []
 
 # Footer segments (HTML). Override any segment in consumer config if needed.
 # Keep null to use the computed defaults below (owner/license/generator+hosting).
@@ -166,6 +167,9 @@ func site_project_init
     with bundle
         for path in template_prism_components
             content prismjs "components/" + path "/js/components/"
+        end
+        for style_path in template_theme_override_styles
+            css style_path
         end
     end
 
