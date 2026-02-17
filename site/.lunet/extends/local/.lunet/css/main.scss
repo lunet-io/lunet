@@ -818,6 +818,169 @@ table.api-dotnet-members-table td {
     opacity: 0.85;
 }
 
+.api-dotnet-count {
+    font-size: 0.85em;
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+.api-dotnet-definition {
+    margin: 0.75rem 0 1rem 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--lunet-color-border);
+    border-radius: 0.75rem;
+    background: var(--lunet-color-surface-1);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.api-dotnet-definition-meta {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.api-dotnet-label {
+    font-size: 0.85em;
+    font-weight: 600;
+    opacity: 0.85;
+    margin-right: 0.35rem;
+}
+
+.api-dotnet-definition-actions {
+    flex: 0 0 auto;
+}
+
+.api-dotnet-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--lunet-color-border);
+    border-radius: 0.5rem;
+    background: var(--lunet-color-surface-2);
+    color: var(--bs-link-color);
+}
+
+.api-dotnet-action:hover {
+    border-color: var(--lunet-color-border-strong);
+    color: var(--bs-link-hover-color);
+}
+
+.api-dotnet-parameter {
+    margin: 0.5rem 0 0.75rem 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--lunet-color-border);
+    border-radius: 0.5rem;
+    background: var(--lunet-color-surface-1);
+}
+
+.api-dotnet-parameter-list {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
+}
+
+.api-dotnet-parameter-list dt {
+    font-family: var(--bs-font-monospace);
+    font-weight: 600;
+}
+
+.api-dotnet-parameter-list dd {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.api-dotnet-related {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.api-dotnet-related li {
+    margin-top: 0.15rem;
+}
+
+.api-dotnet-inherited {
+    margin: 0.5rem 0 1rem 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--lunet-color-border);
+    border-radius: 0.5rem;
+    background: var(--lunet-color-surface-1);
+}
+
+.api-dotnet-inherited > summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.api-dotnet-member-filter {
+    margin: 1.25rem 0 0.75rem 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--lunet-color-border);
+    border-radius: 0.75rem;
+    background: var(--lunet-color-surface-1);
+}
+
+.api-dotnet-member-filter-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.api-dotnet-member-filter-help,
+.api-dotnet-member-filter-status {
+    margin-top: 0.35rem;
+    font-size: 0.9em;
+    opacity: 0.85;
+}
+
+.api-dotnet-members .api-dotnet-member-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.api-dotnet-members .api-dotnet-member-title {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    max-width: 55%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.api-dotnet-members .api-dotnet-member-name {
+    font-family: var(--bs-font-monospace);
+    font-weight: 600;
+}
+
+.api-dotnet-members .api-dotnet-member-summary {
+    flex: 1 1 auto;
+    opacity: 0.9;
+    text-align: right;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@include media-breakpoint-down(sm) {
+    .api-dotnet-members .api-dotnet-member-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .api-dotnet-members .api-dotnet-member-title,
+    .api-dotnet-members .api-dotnet-member-summary {
+        max-width: none;
+        text-align: left;
+        white-space: normal;
+    }
+}
+
 /**********************************************
  * toc in documentation
  **********************************************/

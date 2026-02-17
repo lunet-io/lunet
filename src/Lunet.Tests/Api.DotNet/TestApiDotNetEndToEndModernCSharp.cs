@@ -192,15 +192,49 @@ public class TestApiDotNetEndToEndModernCSharp
 
         StringAssert.Contains($"href='{typeUrl}#constructors'", typePage);
         StringAssert.Contains($"href='{typeUrl}#properties'", typePage);
+
+        // Ensure that the anchors exist in the rendered content.
+        StringAssert.Contains("id=\"constructors\"", typePage);
+        StringAssert.Contains("id=\"properties\"", typePage);
     }
 
     [Test]
-    public void TestApiTablesRenderAsHtmlWithoutEscapedTableCells()
+    public void TestTypeAndNamespacePagesIncludeMemberFilterUi()
+    {
+        var typeUid = FindTypeUidWithMemberKinds("Constructor", "Method");
+        var typePage = ReadRenderedHtmlByUid(typeUid);
+        StringAssert.Contains("data-api-dotnet-filter", typePage);
+        StringAssert.Contains("api-dotnet-member-filter-input", typePage);
+
+        var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
+        StringAssert.Contains("data-api-dotnet-filter", namespacePage);
+    }
+
+    [Test]
+    public void TestApiMemberListsRenderAsHtmlWithoutEscapedTableCells()
     {
         var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
         StringAssert.DoesNotContain("&lt;td&gt;", namespacePage);
         StringAssert.DoesNotContain("<pre><code>    &lt;td&gt;", namespacePage);
-        StringAssert.Contains("table table-striped table-hover table-sm api-dotnet-members-table", namespacePage);
+        StringAssert.Contains("api-dotnet-members", namespacePage);
+        StringAssert.Contains("api-dotnet-member-item", namespacePage);
+        StringAssert.Contains("list-group", namespacePage);
+    }
+
+    [Test]
+    public void TestApiDotNetUiModuleIsBundledOnce()
+    {
+        var typePage = ReadRenderedHtmlByUid("ApiE2E.RecordClass");
+        StringAssert.Contains("lunet-api-dotnet-ui.js", typePage);
+    }
+
+    [Test]
+    public void TestRenderedPagesDoNotContainRawXrefTags()
+    {
+        var page = ReadRenderedHtmlByUid("ApiE2E.XrefInSummarySample");
+        StringAssert.DoesNotContain("<xref ", page, "Rendered HTML should not contain raw <xref> tags.");
+        StringAssert.DoesNotContain("</xref>", page, "Rendered HTML should not contain raw </xref> tags.");
+        StringAssert.Contains("/api/ApiE2E.IExplicitContract/", page, "Expected <see cref> xref to be resolved to a local API link.");
     }
 
     [Test]
@@ -290,11 +324,22 @@ public class TestApiDotNetEndToEndModernCSharp
         context.WriteAllText(
             "site/.lunet/layouts/_default.sbn-html",
             """
+            <!doctype html>
+            <html>
+            <head>
+            {{~ Head ~}}
+            </head>
+            <body>
             <div class="test-layout">
             {{ if page.menu_item != null; page.menu_item.breadcrumb; end }}
             {{ if page.menu != null; page.menu.render { kind: "menu", depth: 6 }; end }}
             {{ content }}
             </div>
+            {{~ for $include in site.html.body.includes ~}}
+            {{~ include $include ~}}
+            {{~ end ~}}
+            </body>
+            </html>
             """);
 
         context.WriteAllText(
@@ -445,6 +490,14 @@ public class TestApiDotNetEndToEndModernCSharp
                 extension(RecordClass value)
                 {
                     public int TripleValue() => value.Value * 3;
+                }
+            }
+
+            public class XrefInSummarySample
+            {
+                /// <summary>Implements <see cref="IExplicitContract"/>.</summary>
+                public void UseContract()
+                {
                 }
             }
             """);

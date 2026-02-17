@@ -2,15 +2,31 @@
 layout = site.api.dotnet.layout ?? site.layout ?? "_default"
 layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 +++
-{{~ $table_class = site.api.dotnet.table_class ?? "table table-striped table-hover table-sm api-dotnet-members-table" }}
+{{~ $members_class = site.api.dotnet.members_class ?? site.api.dotnet.table_class ?? "api-dotnet-members list-group list-group-flush" }}
 # {{ namespace.name }} Namespace
-{{~ namespace.summary ~}}
-{{~ api_dotnet_members_render namespace "classes" "Classes" $table_class ~}}
-{{~ api_dotnet_members_render namespace "structs" "Structs" $table_class ~}}
-{{~ api_dotnet_members_render namespace "interfaces" "Interfaces" $table_class ~}}
-{{~ api_dotnet_members_render namespace "enums" "Enums" $table_class ~}}
-{{~ api_dotnet_members_render namespace "delegates" "Delegates" $table_class ~}}
+{{ api_dotnet_resolve_xrefs namespace.summary }}
+
+{{~ $has_any_types = (namespace.classes && namespace.classes.size > 0) || (namespace.structs && namespace.structs.size > 0) || (namespace.interfaces && namespace.interfaces.size > 0) || (namespace.enums && namespace.enums.size > 0) || (namespace.delegates && namespace.delegates.size > 0) ~}}
+{{~ if $has_any_types ~}}
+<div class="api-dotnet-member-filter" data-api-dotnet-filter>
+<label class="api-dotnet-member-filter-label">Filter types</label>
+<input class="form-control api-dotnet-member-filter-input" type="search" placeholder="Type to filter (name, kind, summary)" autocomplete="off" spellcheck="false" />
+</div>
+{{~ end ~}}
+
+{{ api_dotnet_members_render namespace "classes" "Classes" $members_class }}
+{{ api_dotnet_members_render namespace "structs" "Structs" $members_class }}
+{{ api_dotnet_members_render namespace "interfaces" "Interfaces" $members_class }}
+{{ api_dotnet_members_render namespace "enums" "Enums" $members_class }}
+{{ api_dotnet_members_render namespace "delegates" "Delegates" $members_class }}
 {{~ if namespace.remarks ~}}
 ## Remarks
-{{~ namespace.remarks ~}}
+{{ api_dotnet_resolve_xrefs namespace.remarks }}
+{{~ end ~}}
+{{~ if namespace.example && namespace.example.size > 0 ~}}
+
+## Examples
+{{~ for example in namespace.example ~}}
+{{~ example }}
+{{~ end ~}}
 {{~ end ~}}

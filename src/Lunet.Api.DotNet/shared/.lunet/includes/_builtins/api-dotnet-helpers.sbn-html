@@ -1,61 +1,333 @@
-{{ # This file is loaded just once  }}
-{{~ func xref_to_html_link(uid, use_fullname = false)
-    if uid == null || uid == ""
-        ""
-    else
-        $uid_text = uid + ""
-        $is_generic_type_parameter = $uid_text.size > 1 && $uid_text[0] == "{" && $uid_text[$uid_text.size - 1] == "}"
-        if $is_generic_type_parameter
-            $uid_text | html.escape
+{{~
+# Builtins/helpers for Lunet.Api.DotNet layouts.
+# This file must not output anything by itself.
+
+func xref_to_html_link(uid, use_fullname = false)
+    if uid == null
+        ret ""
+    end
+
+    $uid_text = (uid + "") | string.strip
+    if $uid_text == ""
+        ret ""
+    end
+
+    # Generic type parameters are represented as {T}, and are not linkable.
+    $is_generic_type_parameter = $uid_text.size > 2 && $uid_text[0] == "{" && $uid_text[$uid_text.size - 1] == "}"
+
+    # Non-uid type names (e.g. "delegate* ...", "scoped in ...") are not linkable.
+    $is_non_uid_type = ($uid_text | string.contains " ") || ($uid_text | string.contains "delegate*")
+
+    # Plain identifiers (e.g. "T") are not uids either.
+    $looks_like_uid = ($uid_text | string.contains ".") || ($uid_text | string.contains ":")
+
+    if $is_generic_type_parameter || $is_non_uid_type || !$looks_like_uid
+        ret $uid_text | html.escape
+    end
+
+    $link = $uid_text | xref
+    if $link
+        $name = $link.name
+        if use_fullname
+            $name = $link.fullname
+        end
+        $name = (($name ?? "") + "") | html.escape
+        $url = ($link.url + "") | html.escape
+        ret "<a href=\"" + $url + "\">" + $name + "</a>"
+    end
+
+    "Unable to find xref for " + $uid_text | log.warn
+    ret $uid_text | html.escape
+end
+
+func api_dotnet_resolve_xrefs(text, use_fullname = false)
+    if text == null
+        ret ""
+    end
+
+    $s = text + ""
+    if $s == "" || !($s | string.contains "<xref")
+        ret $s
+    end
+
+    $result = ""
+    $i = 0
+    $closeTag = "</xref>"
+
+    while $i < $s.size
+        $pos = $s | string.index_of "<xref" $i
+        if $pos < 0
+            $result = $result + ($s | string.slice $i)
+            break
+        end
+
+        if $pos > $i
+            $result = $result + ($s | string.slice $i ($pos - $i))
+        end
+
+        $gt = $s | string.index_of ">" $pos
+        if $gt < 0
+            $result = $result + ($s | string.slice $pos)
+            break
+        end
+
+        $tag = $s | string.slice $pos ($gt - $pos + 1)
+
+        $href = ""
+        $uid = ""
+        $name = ""
+
+        $href = api_dotnet_xref_attr $tag "href"
+        if $href != ""
+            $uid = $href
         else
-            $link = $uid_text | xref
-            if $link
-                "<a href='" + $link.url + "'>" + ((use_fullname ? $link.fullname : $link.name) | html.escape) + "</a>"
-            else
-                "Unable to find xref for " + $uid_text | log.warn
-                $uid_text | html.escape
+            $uid = api_dotnet_xref_attr $tag "uid"
+        end
+        $name = api_dotnet_xref_attr $tag "name"
+
+        if ($uid | string.starts_with "langword_") && $name != ""
+            $result = $result + ("<code>" + ($name | html.escape) + "</code>")
+        else if $uid != ""
+            $result = $result + (xref_to_html_link $uid use_fullname)
+        else if $name != ""
+            $result = $result + ($name | html.escape)
+        end
+
+        $after = $gt + 1
+        if $after + $closeTag.size <= $s.size && ($s | string.slice $after $closeTag.size) == $closeTag
+            $i = $after + $closeTag.size
+        else
+            $i = $after
+        end
+    end
+
+    ret $result
+end
+
+func api_dotnet_xref_attr(tag, attr_name)
+    if tag == null || attr_name == null
+        ret ""
+    end
+
+    $needle = (attr_name + "=")
+    $pos = tag | string.index_of $needle
+    if $pos < 0
+        ret ""
+    end
+
+    $valueStart = $pos + $needle.size
+    if $valueStart >= tag.size
+        ret ""
+    end
+
+    $quote = tag[$valueStart]
+    if $quote != "\"" && $quote != "'"
+        ret ""
+    end
+
+    $valueStart = $valueStart + 1
+    $valueEnd = tag | string.index_of $quote $valueStart
+    if $valueEnd < 0
+        ret ""
+    end
+
+    ret tag | string.slice $valueStart ($valueEnd - $valueStart)
+end
+
+
+func api_dotnet_handleize(text)
+    if text == null
+        ret ""
+    end
+
+    $s = (text + "") | string.strip | string.downcase
+    if $s == ""
+        ret ""
+    end
+
+    $result = ""
+    $prev_dash = false
+
+    for $i in 0..<$s.size
+        $c = $s[$i]
+        $is_letter = $c >= "a" && $c <= "z"
+        $is_digit = $c >= "0" && $c <= "9"
+        if $is_letter || $is_digit
+            $result = $result + $c
+            $prev_dash = false
+        else
+            if !$prev_dash && $result != ""
+                $result = $result + "-"
+                $prev_dash = true
             end
         end
     end
-end ~}}
 
-{{~ func api_dotnet_kind_icon(kind)
-    if kind == "Namespace"; "<i class='bi bi-diagram-3 api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Class"; "<i class='bi bi-box api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Struct"; "<i class='bi bi-boxes api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Interface"; "<i class='bi bi-diagram-3 api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Enum"; "<i class='bi bi-list-ul api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Delegate"; "<i class='bi bi-code-slash api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Constructor"; "<i class='bi bi-hammer api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Field"; "<i class='bi bi-hash api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Property"; "<i class='bi bi-sliders api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Method"; "<i class='bi bi-gear api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Event"; "<i class='bi bi-bell api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Operator"; "<i class='bi bi-calculator api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "Extension"; "<i class='bi bi-plugin api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else if kind == "EiiMethod"; "<i class='bi bi-link-45deg api-dotnet-kind-icon' aria-hidden='true'></i>"
-    else; "<i class='bi bi-file-earmark-code api-dotnet-kind-icon' aria-hidden='true'></i>"
+    if $result != "" && $result[$result.size - 1] == "-"
+        $result = $result | string.slice 0 ($result.size - 1)
     end
-end ~}}
 
-{{~ func api_dotnet_members_render(api_object, name, text, table_class) ~}}
-{{~ if api_object[name] ~}}
-## {{text}}
-{{~ $effective_table_class = table_class ?? "table table-striped table-hover table-sm api-dotnet-members-table" ~}}
+    ret $result
+end
 
-<div class='table-responsive'>
-<table class='{{ $effective_table_class }}'>
-<tbody>
-{{~ for member in api_object[name] ~}}
-{{~ $member_kind = member.type
-    if name == "extensions"; $member_kind = "Extension"; end
-    if name == "explicit_interface_implementation_methods"; $member_kind = "EiiMethod"; end
+
+func api_dotnet_repo_to_https_url(repo)
+    if repo == null
+        ret ""
+    end
+
+    $r = (repo + "") | string.strip
+    if $r == ""
+        ret ""
+    end
+
+    $git_ssh = $r | string.replace "git@github.com:" ""
+    if $git_ssh != $r
+        $r = "https://github.com/" + $git_ssh
+    end
+
+    $http = $r | string.replace "http://github.com/" "https://github.com/"
+    if $http != $r
+        $r = $http
+    end
+
+    $r = $r | string.replace ".git" ""
+    ret $r
+end
+
+
+func api_dotnet_source_url(source)
+    if source == null || source.remote == null
+        ret ""
+    end
+
+    $repo = api_dotnet_repo_to_https_url(source.remote.repo)
+    if $repo == ""
+        ret ""
+    end
+
+    $branch = source.remote.branch ?? "main"
+    $path = source.remote.path ?? ""
+    if $path == ""
+        ret ""
+    end
+
+    $url = $repo + "/blob/" + $branch + "/" + $path
+    if source.startLine && source.startLine > 0
+        $url = $url + "#L" + (source.startLine + "")
+    end
+
+    ret $url
+end
+
+
+func api_dotnet_kind_icon(kind)
+    if kind == "Namespace"
+        ret "<i class=\"bi bi-diagram-3 api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Class"
+        ret "<i class=\"bi bi-box api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Struct"
+        ret "<i class=\"bi bi-boxes api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Interface"
+        ret "<i class=\"bi bi-diagram-3 api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Enum"
+        ret "<i class=\"bi bi-list-ul api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Delegate"
+        ret "<i class=\"bi bi-code-slash api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Constructor"
+        ret "<i class=\"bi bi-hammer api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Field"
+        ret "<i class=\"bi bi-hash api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Property"
+        ret "<i class=\"bi bi-sliders api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Method"
+        ret "<i class=\"bi bi-gear api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Event"
+        ret "<i class=\"bi bi-bell api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Operator"
+        ret "<i class=\"bi bi-calculator api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "Extension"
+        ret "<i class=\"bi bi-plugin api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else if kind == "EiiMethod"
+        ret "<i class=\"bi bi-link-45deg api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    else
+        ret "<i class=\"bi bi-file-earmark-code api-dotnet-kind-icon\" aria-hidden=\"true\"></i>"
+    end
+end
+
+
+func api_dotnet_members_render(api_object, name, text, members_class)
+    if api_object == null
+        ret ""
+    end
+
+    $members = api_object[name]
+    if $members == null || $members.size == 0
+        ret ""
+    end
+
+    $anchor = api_dotnet_handleize(text)
+    $effective_members_class = members_class ?? "api-dotnet-members list-group list-group-flush"
+
+    $result = ""
+    $result = $result + "\n\n<h2 id=\"" + ($anchor | html.escape) + "\">" + (text | html.escape) + " <span class=\"api-dotnet-count\">(" + ($members.size + "") + ")</span></h2>\n"
+    $result = $result + "<div class=\"" + ($effective_members_class | html.escape) + "\" data-api-dotnet-members=\"" + ($anchor | html.escape) + "\">\n"
+
+    for $member in $members
+        $member_kind = $member.type
+        if name == "extensions"
+            $member_kind = "Extension"
+        end
+        if name == "explicit_interface_implementation_methods"
+            $member_kind = "EiiMethod"
+        end
+
+        $uid = ($member.uid ?? "") + ""
+        $link = null
+        if $uid != ""
+            $link = $uid | xref
+        end
+        $title = ($member.name ?? $uid) + ""
+        if $link
+            $title = ($link.name ?? $title) + ""
+        end
+
+        $summary = (($member.summary ?? "") + "") | string.strip
+        if $summary != ""
+            $summary = $summary | string.replace "\r\n" " "
+            $summary = $summary | string.replace "\n" " "
+            $summary = $summary | string.replace "\r" " "
+            $summary = api_dotnet_resolve_xrefs $summary
+
+            if ($summary | string.starts_with "<p>") && ($summary | string.ends_with "</p>") && $summary.size >= 7
+                $summary = $summary | string.slice 3 ($summary.size - 7)
+                $summary = $summary | string.strip
+            end
+        end
+
+        $kind_attr = ($member_kind + "") | html.escape
+        $icon_html = api_dotnet_kind_icon($member_kind)
+
+        if $link
+            $href = ($link.url + "") | html.escape
+            $result = $result + "<a class=\"api-dotnet-member-item list-group-item list-group-item-action\" href=\"" + $href + "\" data-api-kind=\"" + $kind_attr + "\">"
+        else
+            $result = $result + "<div class=\"api-dotnet-member-item list-group-item\" data-api-kind=\"" + $kind_attr + "\">"
+        end
+
+        $result = $result + "<span class=\"api-dotnet-member-title\">" + $icon_html + "<code class=\"api-dotnet-member-name\">" + ($title | html.escape) + "</code></span>"
+        if $summary != ""
+            $result = $result + "<span class=\"api-dotnet-member-summary\">" + $summary + "</span>"
+        end
+
+        if $link
+            $result = $result + "</a>\n"
+        else
+            $result = $result + "</div>\n"
+        end
+    end
+
+    $result = $result + "</div>\n"
+    ret $result
+end
 ~}}
-<tr><td>{{ $member_kind | api_dotnet_kind_icon }} {{ member.uid | xref_to_html_link }}</td><td>{{ member.summary ?? "" }}</td></tr>
-{{~ end ~}}
-</tbody>
-</table>
-</div>
-
-{{~ end ~}}
-{{~ end ~}}

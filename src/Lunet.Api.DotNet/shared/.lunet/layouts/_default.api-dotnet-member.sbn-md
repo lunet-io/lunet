@@ -2,68 +2,126 @@
 layout = site.api.dotnet.layout ?? site.layout ?? "_default"
 layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 +++
-{{~ $table_class = site.api.dotnet.table_class ?? "table table-striped table-hover table-sm api-dotnet-members-table" }}
+{{~ $members_class = site.api.dotnet.members_class ?? site.api.dotnet.table_class ?? "api-dotnet-members list-group list-group-flush" }}
 # {{ member.name }} {{ member.type }}
+
+{{~ $source_url = api_dotnet_source_url(member.source) ~}}
 
 <h2 id="definition" class="heading-anchor-hidden">Definition</h2>
 
-Namespace: {{ member.namespace| xref_to_html_link }} \
-Assembly: {{ member.assemblies[0] }}.dll
+<div class="api-dotnet-definition">
+<div class="api-dotnet-definition-meta">
+<div><span class="api-dotnet-label">Namespace</span> {{ member.namespace| xref_to_html_link }}</div>
+<div><span class="api-dotnet-label">Assembly</span> {{ member.assemblies[0] }}.dll</div>
+</div>
+{{~ if $source_url != "" ~}}
+<div class="api-dotnet-definition-actions">
+<a class="api-dotnet-action" href="{{ $source_url }}" target="_blank" rel="noopener">View source</a>
+</div>
+{{~ end ~}}
+</div>
 
-{{~ member.summary ~}}
+{{ api_dotnet_resolve_xrefs member.summary }}
 
 ```csharp
 // C#
 {{~ member.syntax.content }}
 ```
+
+{{~ if member.syntax.typeParameters && member.syntax.typeParameters.size > 0 ~}}
+
+<h3 id="type-parameters">Type parameters</h3>
+{{~ for $param in member.syntax.typeParameters ~}}
+<div class="api-dotnet-parameter">
+<dl class="api-dotnet-parameter-list"><dt>{{$param.id}}</dt><dd>{{ api_dotnet_resolve_xrefs $param.description }}</dd></dl>
+</div>
+{{~ end ~}}
+{{~ end ~}}
+
 {{~ if member.syntax.parameters && member.syntax.parameters.size > 0 ~}}
 
-### Parameters
-
+<h3 id="parameters">Parameters</h3>
 {{~ for $param in member.syntax.parameters ~}}
 <div class="api-dotnet-parameter">
 <dl class="api-dotnet-parameter-list"><dt>{{$param.id}}</dt><dd>{{$param.type | xref_to_html_link }}</dd></dl>
 
-{{ $param.description }}
+{{ api_dotnet_resolve_xrefs $param.description }}
 
 </div>
-{{~ end;end ~}}
+{{~ end ~}}
+{{~ end ~}}
+
+{{~ if member.syntax.return ~}}
+
+<h3 id="returns">Returns</h3>
+<div class="api-dotnet-parameter">
+<dl class="api-dotnet-parameter-list"><dt>{{ member.syntax.return.type | xref_to_html_link }}</dt><dd>{{ api_dotnet_resolve_xrefs member.syntax.return.description }}</dd></dl>
+</div>
+{{~ end ~}}
+
 {{~ if member.inheritance ~}}
 
-<table class="api-dotnet-inherit"><tr><td>Inheritance<td>
-{{ for $base in member.inheritance;}}<div><span>{{$base | xref_to_html_link }}</span></div>{{~ end }}
-</tr></table>
+<h3 id="inheritance">Inheritance</h3>
+<ul class="api-dotnet-related">
+{{ for $base in member.inheritance;}}<li>{{$base | xref_to_html_link }}</li>{{~ end }}
+</ul>
 {{~ end ~}}
 {{~ if member.derivedClasses ~}}
 
-<table class="api-dotnet-derived"><tr><td>Derived<td>
-{{ for $base in member.derivedClasses;}}<div><span>{{$base | xref_to_html_link true }}</span></div>{{~ end }}
-</tr></table>
+<h3 id="derived">Derived</h3>
+<ul class="api-dotnet-related">
+{{ for $base in member.derivedClasses;}}<li>{{$base | xref_to_html_link true }}</li>{{~ end }}
+</ul>
 {{~ end ~}}
 {{~ if member.implements ~}}
 
-<table class="api-dotnet-implements"><td>Implements<td>
-{{ for $base in member.implements;}}<div><span>{{$base | xref_to_html_link }}</span></div>{{~ end }}
-</tr></table>
+<h3 id="implements">Implements</h3>
+<ul class="api-dotnet-related">
+{{ for $base in member.implements;}}<li>{{$base | xref_to_html_link }}</li>{{~ end }}
+</ul>
 {{~ end ~}}
-{{~ if member.examples && member.examples.size > 0 ~}}
+{{~ if member.inheritedMembers && member.inheritedMembers.size > 0 ~}}
+
+<h3 id="inherited-members">Inherited members</h3>
+<details class="api-dotnet-inherited">
+<summary>Show inherited members ({{ member.inheritedMembers.size }})</summary>
+<ul>
+{{~ for $inherited in member.inheritedMembers ~}}
+<li>{{ $inherited | xref_to_html_link true }}</li>
+{{~ end ~}}
+</ul>
+</details>
+{{~ end ~}}
+
+{{~ if member.example && member.example.size > 0 ~}}
 
 ## Examples
-{{~ for example in member.examples ~}}
+{{~ for example in member.example ~}}
 {{~ example }}
 {{~ end ~}}
 {{~ end ~}}
 {{~ if member.remarks ~}}
 
 ## Remarks
-{{~ member.remarks ~}}
+{{ api_dotnet_resolve_xrefs member.remarks }}
 {{~ end ~}}
 
-{{~ api_dotnet_members_render member "constructors" "Constructors" $table_class ~}}
-{{~ api_dotnet_members_render member "fields" "Fields" $table_class ~}}
-{{~ api_dotnet_members_render member "properties" "Properties" $table_class ~}}
-{{~ api_dotnet_members_render member "methods" "Methods" $table_class ~}}
-{{~ api_dotnet_members_render member "events" "Events" $table_class ~}}
-{{~ api_dotnet_members_render member "operators" "Operators" $table_class ~}}
-{{~ api_dotnet_members_render member "extensions" "Extensions" $table_class ~}}
-{{~ api_dotnet_members_render member "explicit_interface_implementation_methods" "Explicit Interface Implementation Methods" $table_class ~}}
+{{~ $has_any_members = (member.constructors && member.constructors.size > 0) || (member.fields && member.fields.size > 0) || (member.properties && member.properties.size > 0) || (member.methods && member.methods.size > 0) || (member.events && member.events.size > 0) || (member.operators && member.operators.size > 0) || (member.extensions && member.extensions.size > 0) || (member.explicit_interface_implementation_methods && member.explicit_interface_implementation_methods.size > 0) ~}}
+{{~ if $has_any_members ~}}
+
+<div class="api-dotnet-member-filter" data-api-dotnet-filter>
+<label class="api-dotnet-member-filter-label">Filter members</label>
+<input class="form-control api-dotnet-member-filter-input" type="search" placeholder="Type to filter (name, kind, summary)" autocomplete="off" spellcheck="false" />
+<div class="api-dotnet-member-filter-help">Tip: use <code>kind:method</code>, <code>kind:property</code>, <code>kind:ctor</code>.</div>
+</div>
+
+{{~ end ~}}
+
+{{ api_dotnet_members_render member "constructors" "Constructors" $members_class }}
+{{ api_dotnet_members_render member "fields" "Fields" $members_class }}
+{{ api_dotnet_members_render member "properties" "Properties" $members_class }}
+{{ api_dotnet_members_render member "methods" "Methods" $members_class }}
+{{ api_dotnet_members_render member "events" "Events" $members_class }}
+{{ api_dotnet_members_render member "operators" "Operators" $members_class }}
+{{ api_dotnet_members_render member "extensions" "Extensions" $members_class }}
+{{ api_dotnet_members_render member "explicit_interface_implementation_methods" "Explicit Interface Implementation Methods" $members_class }}
