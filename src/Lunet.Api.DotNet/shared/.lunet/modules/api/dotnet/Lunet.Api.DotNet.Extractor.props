@@ -5,6 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Convention-based extra API documentation:
+         Add Markdown files under `apidocs/` with frontmatter `uid: <API UID>`
+         and sections `# Summary`, `# Remarks`, `# Example`. -->
+    <AdditionalFiles Include="$(ProjectDir)apidocs\**\*.md" LunetApiDotNet="true" />
+  </ItemGroup>
+
+  <ItemGroup>
     <CompilerVisibleProperty Include="IntermediateOutputPath" />
     <CompilerVisibleProperty Include="ProjectDir" />
     <CompilerVisibleProperty Include="GenerateDocumentationFile" />

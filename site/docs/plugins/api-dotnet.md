@@ -155,10 +155,37 @@ Use `references` to include API from referenced assemblies (for example NuGet pa
 
 If XML docs are available for referenced assemblies, summaries and remarks are surfaced.
 
+## Namespace and member docs from Markdown
+
+`api.dotnet` also merges extra Markdown docs into existing API UIDs.
+
+Convention (automatic):
+
+- Put Markdown files under your project `apidocs/` folder (`<project>/apidocs/**/*.md`)
+- Add YAML frontmatter with `uid: <exact API uid>`
+- Add sections using `# Summary`, `# Remarks`, and optionally repeated `# Example`
+
+Example (`src/MyProject/apidocs/MyCompany.MyProduct.md`):
+
+```markdown
+---
+uid: MyCompany.MyProduct
+---
+
+# Summary
+Namespace summary from Markdown.
+
+# Remarks
+Longer namespace remarks from Markdown.
+```
+
+The `uid` can target a namespace, type, or member. Content is merged into the generated model before rendering pages.
+
 ## Example in this repository
 
 The Lunet docs site uses:
 
 - `site/config.scriban` -> `api.dotnet` configuration
 - `src/Lunet.ApiExample/Lunet.ApiExample.csproj` -> local sample project rendered under `/api`
+- `src/Lunet.ApiExample/apidocs/*.md` -> namespace summary/remarks merged from Markdown (`Lunet.ApiExample`, `Lunet.ApiExample.Advanced`, `Lunet.ApiExample.Http`)
 - sample API includes multiple namespaces and broad modern C# surface (C# 9-14 style features: records, required/init members, primary constructors, checked operators, unsigned right shift, ref/scoped APIs, static abstract interface members, `allows ref struct`, extension members, native/function pointer signatures)

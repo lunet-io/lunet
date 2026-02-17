@@ -210,6 +210,21 @@ public class TestApiDotNetEndToEndModernCSharp
             $"Expected API member url `{recordClassUrl}` to be indexed in search database.");
     }
 
+    [Test]
+    public void TestNamespaceMarkdownDocumentationIsMerged()
+    {
+        Assert.IsTrue(_itemsByUid.TryGetValue("ApiE2E", out var namespaceItem), "Expected namespace uid `ApiE2E` in API model.");
+        var summary = namespaceItem.GetProperty("summary").GetString() ?? string.Empty;
+        var remarks = namespaceItem.GetProperty("remarks").GetString() ?? string.Empty;
+
+        StringAssert.Contains("Extra ApiE2E namespace summary from markdown.", summary);
+        StringAssert.Contains("Extra ApiE2E namespace remarks from markdown.", remarks);
+
+        var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
+        StringAssert.Contains("Extra ApiE2E namespace summary from markdown.", namespacePage);
+        StringAssert.Contains("Extra ApiE2E namespace remarks from markdown.", namespacePage);
+    }
+
     private static void WriteTestSiteAndProject(PhysicalLunetAppTestContext context)
     {
         context.WriteAllText(
@@ -415,6 +430,20 @@ public class TestApiDotNetEndToEndModernCSharp
                     public int TripleValue() => value.Value * 3;
                 }
             }
+            """);
+
+        context.WriteAllText(
+            "src/ApiE2ESample/apidocs/ApiE2E.md",
+            """
+            ---
+            uid: ApiE2E
+            ---
+
+            # Summary
+            Extra ApiE2E namespace summary from markdown.
+
+            # Remarks
+            Extra ApiE2E namespace remarks from markdown.
             """);
     }
 
