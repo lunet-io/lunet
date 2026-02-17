@@ -3,11 +3,13 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Text.RegularExpressions;
 using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Menus;
 using Lunet.Tests.Infrastructure;
 using Scriban;
+using Scriban.Parsing;
 using Scriban.Runtime;
 
 namespace Lunet.Tests.Menus;
@@ -27,7 +29,6 @@ public class TestMenusModule
         var plugin = CreateMenuPlugin(context.Site);
 
         Assert.NotNull(plugin.Processor);
-        Assert.AreEqual("Home", plugin.HomeTitle);
         Assert.AreSame(plugin, context.Site.GetSafeValue<MenuPlugin>("menu"));
         Assert.AreSame(plugin.Processor, context.Site.Content.AfterRunningProcessors.Find<MenuProcessor>());
         Assert.AreSame(plugin.Processor, context.Site.Content.BeforeProcessingProcessors.Find<MenuProcessor>());
@@ -64,7 +65,7 @@ public class TestMenusModule
         Assert.AreEqual("Intro", menuItem.Title);
         Assert.NotNull(menuItem.Parent);
         Assert.AreEqual("main", menuItem.Parent!.Name);
-        Assert.AreEqual("Home", menuItem.Parent.Title);
+        Assert.AreEqual("Main", menuItem.Parent.Title);
     }
 
     [Test]
@@ -305,5 +306,47 @@ public class TestMenusModule
         StringAssert.DoesNotContain("menu-link-show collapsed", html);
         StringAssert.Contains("menu menu-level1 collapse show", html);
         StringAssert.Contains("menu menu-level2 collapse show", html);
+    }
+
+    [Test]
+    public void TestMenuRootSelfEntryAliasesBreadcrumbRootAndAvoidsDuplicateOnSelfPage()
+    {
+        using var context = new SiteTestContext();
+        var plugin = CreateMenuPlugin(context.Site);
+
+        var homePage = context.CreateFileContentObject("/readme.md", "+++\ntitle = \"Home\"\n+++\nHome", withFrontMatterScript: true);
+        homePage.Initialize();
+        context.Site.Pages.Add(homePage);
+
+        var introPage = context.CreateFileContentObject("/docs/intro.md", "+++\ntitle = \"Intro\"\n+++\nIntro", withFrontMatterScript: true);
+        introPage.Initialize();
+        context.Site.Pages.Add(introPage);
+
+        var menuFile = context.CreateFileContentObject(
+            "/menu.yml",
+            """
+            home:
+              - {path: readme.md, title: "<i class='bi bi-house-door' aria-hidden='true'></i> Home", self: true}
+              - {path: docs/intro.md, title: "Intro"}
+            """);
+
+        plugin.Processor.TryProcessContent(menuFile, ContentProcessingStage.Running);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+        plugin.Processor.Process(ProcessingStage.BeforeProcessingContent);
+
+        var root = plugin.GetSafeValue<MenuObject>("home");
+        Assert.NotNull(root);
+        Assert.AreSame(homePage, root!.Page);
+        Assert.NotNull(root.Title);
+        StringAssert.Contains("bi-house-door", root.Title!);
+
+        // Ensure breadcrumb on the self page doesn't show the root twice.
+        var templateContext = new TemplateContext();
+        var globals = new ScriptObject();
+        globals.SetValue("page", homePage, true);
+        templateContext.PushGlobal(globals);
+
+        var breadcrumb = root.RenderBreadcrumb(templateContext, default(SourceSpan), null);
+        Assert.AreEqual(1, Regex.Matches(breadcrumb, "bi-house-door").Count);
     }
 }

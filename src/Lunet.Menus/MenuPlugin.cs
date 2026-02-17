@@ -31,16 +31,9 @@ public class MenuPlugin : SitePlugin
         Site.Content.AfterRunningProcessors.Insert(0, Processor);
         Site.Content.BeforeProcessingProcessors.Insert(0, Processor);
         Site.Content.AfterProcessingProcessors.Insert(0, new MenuAsyncPartialsWriter(this));
-        HomeTitle = "Home";
     }
 
     internal BundlePlugin BundlePlugin { get; }
-    
-    public string HomeTitle
-    {
-        get => GetSafeValue<string>("home_title") ?? "Home";
-        set => SetValue("home_title", value);
-    }
 
     public MenuProcessor Processor { get; }
 

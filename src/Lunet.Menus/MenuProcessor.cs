@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Transactions;
 using Lunet.Bundles;
 using Lunet.Core;
@@ -17,6 +18,7 @@ namespace Lunet.Menus;
 public class MenuProcessor : ContentProcessor<MenuPlugin>
 {
     public const string MenuFileName = "menu.yml";
+    private const string MenuItemSelfKey = "self";
 
     private readonly List<MenuObject> _menus;
     private bool _asyncLoaderInjected;
@@ -92,8 +94,47 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
             }
         }
 
+        ApplyRootSelfItems();
+
         // No need to keep the list after the processing
         _menus.Clear();
+    }
+
+    private void ApplyRootSelfItems()
+    {
+        foreach (var root in _menus)
+        {
+            if (root.Parent is not null || root.Children.Count == 0)
+            {
+                continue;
+            }
+
+            // Only patch roots that still point to a menu.yml page (i.e. not merged into a folder entry).
+            if (root.Page is not null && root.Page.Path.GetName() != MenuFileName)
+            {
+                continue;
+            }
+
+            var selfItem = root.Children.FirstOrDefault(x => x.GetSafeValue<bool>(MenuItemSelfKey));
+            if (selfItem is null)
+            {
+                continue;
+            }
+
+            if (selfItem.Page is null)
+            {
+                continue;
+            }
+
+            // Make the root behave as an alias of the self item for breadcrumb/title purposes,
+            // while keeping menu item activation on the actual page menu item.
+            root.Title = selfItem.Title;
+            root.Pre = selfItem.Pre;
+            root.Post = selfItem.Post;
+            root.Url = selfItem.Url;
+            root.Target = selfItem.Target;
+            root.Page = selfItem.Page;
+        }
     }
 
     public override ContentResult TryProcessContent(ContentObject page, ContentProcessingStage stage)
@@ -127,7 +168,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
                 foreach (var keyPair in obj)
                 {
                     var menuName = keyPair.Key;
-                    var menuObject = new MenuObject {Path = (string) menuFile.Path, Name = menuName, Title = Plugin.HomeTitle};
+                    var menuObject = new MenuObject {Path = (string) menuFile.Path, Name = menuName, Title = GetDefaultRootTitle(menuName)};
                     _menus.Add(menuObject);
                     Plugin.SetValue(menuName, menuObject);
                     DecodeMenu(keyPair.Value, menuFile, menuObject, false);
@@ -268,6 +309,23 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
         };
 
         page.SetValue("menu", DelegateCustomFunction.CreateFunc(resolveMenu));
+    }
+
+    private static string GetDefaultRootTitle(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "Home";
+        }
+
+        var trimmed = name.Trim();
+        if (trimmed.Length == 0)
+        {
+            return "Home";
+        }
+
+        // Basic title casing: keep numbers, capitalize first character.
+        return char.ToUpperInvariant(trimmed[0]) + trimmed.Substring(1);
     }
 
     private static void TryAdoptGeneratedChildren(MenuObject menu, MenuObject? existingMenu)

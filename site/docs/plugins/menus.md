@@ -21,7 +21,16 @@ Menu entries support:
 - `url` — external URL
 - `title` — display title (HTML allowed)
 - `folder: true` — treat a folder as a collapsible group
+- `self: true` — mark an entry as the “root” link/title for breadcrumbs (useful for adding a Home icon)
 - `width` — sidebar width hint (`2..4`, default `3`) used by the default theme layout
+
+Example (mark Home as the breadcrumb root):
+
+```yaml
+home:
+  - {path: readme.md, title: "<i class='bi bi-house-door' aria-hidden='true'></i> Home", self: true}
+  - {path: docs/readme.md, title: "<i class='bi bi-book' aria-hidden='true'></i> Docs", folder: true}
+```
 
 ## Access in templates
 
