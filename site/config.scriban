@@ -8,24 +8,24 @@
 extend "local"
 
 # -----------------------------------------------------------------------------
-# TEMPLATE OVERRIDES (only if different from the template defaults)
-# -----------------------------------------------------------------------------
-template_baseurl = "https://lunet.io"
-template_project_github_user = "lunet-io"
-
-# -----------------------------------------------------------------------------
 # SITE SECTION (project-specific values only)
 # -----------------------------------------------------------------------------
+
+# Canonical base URL used for `lunet build` (links, og:meta, sitemap...).
+# Do NOT set Lunet core `baseurl` here: `lunet serve` sets it to localhost.
+site_project_baseurl = "https://lunet.io"
+
 site_project_name = "Lunet"
 site_project_description = "A fast, scriptable static site generator for .NET, powered by Scriban."
 site_project_logo_path = "/img/lunet-logo.svg"
 site_project_social_banner_path = "/img/lunet-social-banner.svg"
 site_project_banner_background_path = "/img/lunet-social-banner.svg"
 site_project_package_id = "lunet"
+site_project_github_user = "lunet-io"
 site_project_github_repo = "lunet"
-template_project_owner_name = "Alexandre Mutel"
-template_project_owner_alias = "xoofx"
-template_project_owner_url = "https://xoofx.github.io"
+site_project_owner_name = "Alexandre Mutel"
+site_project_owner_alias = "xoofx"
+site_project_owner_url = "https://xoofx.github.io"
 
 site_project_init
 
