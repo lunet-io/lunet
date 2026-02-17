@@ -717,25 +717,26 @@ footer {
 /**********************************************
  * menu in documentation
  **********************************************/
-:is(.lunet-docs, .lunet-api) ol.menu {
+#docs-sidebar-menu ol.menu {
     list-style: none;
     padding-inline-start: 0px;
 }
 
-:is(.lunet-docs, .lunet-api) span.menu-item-row {
-    display: inline-block;
-    width: 100%;
+#docs-sidebar-menu span.menu-item-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
     padding-bottom: 0.8rem;
 }
 
-:is(.lunet-docs, .lunet-api) a.menu-link {
-    display: inline-block;
-    width: 100%;
-    position: relative;
+#docs-sidebar-menu a.menu-link {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
     color: var(--bs-body-color-darker-10);
 }
 
-:is(.lunet-docs, .lunet-api) a.menu-link i.bi {
+#docs-sidebar-menu a.menu-link i.bi {
     width: 1.25em;
     display: inline-block;
     text-align: center;
@@ -744,50 +745,42 @@ footer {
     color: currentColor;
 }
 
-:is(.lunet-docs, .lunet-api) a.menu-link-show {
-    display: inline-block;
-    position: absolute;
-    right: 30px;
+#docs-sidebar-menu a.menu-link-show {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    margin-left: auto;
+    padding-left: 0.35rem;
 }
 
-.lunet-api a.menu-link {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-right: 1.8rem;
-}
-
-.lunet-api a.menu-link-show {
-    right: 10px;
-}
-
-:is(.lunet-docs, .lunet-api) menu-separator
+.menu-separator
 {
     font-weight: bold;
 }
 
-:is(.lunet-docs, .lunet-api) li.menu-item > span > a.menu-link:hover {
+#docs-sidebar-menu li.menu-item > span > a.menu-link:hover {
     color: var(--bs-body-color);
 }
 
-:is(.lunet-docs, .lunet-api) li.menu-item.active > span > a.menu-link {
+#docs-sidebar-menu li.menu-item.active > span > a.menu-link {
     display: inline-block;
     width: 100%;
     font-weight: 600;
     color: var(--bs-link-color);
 }
 
-:is(.lunet-docs, .lunet-api) a.menu-link-show::before,
-:is(.lunet-docs, .lunet-api) a.menu-link-show.collapsed::before {
+#docs-sidebar-menu a.menu-link-show::before,
+#docs-sidebar-menu a.menu-link-show.collapsed::before {
     @extend .bi;
     @extend .bi-chevron-right;
 }
 
-:is(.lunet-docs, .lunet-api) ol.menu ol.menu  {
+#docs-sidebar-menu ol.menu ol.menu  {
     margin-left: 0.8rem;
 }
 
-:is(.lunet-docs, .lunet-api) li.menu-item {
+#docs-sidebar-menu li.menu-item {
     list-style-type: none;
     padding-inline-start: 0px;
     border-width: thin;
@@ -798,33 +791,29 @@ footer {
     border-bottom-style: solid;
 }
 
-:is(.lunet-docs, .lunet-api) li.menu-item li.menu-item:last-child {
+#docs-sidebar-menu li.menu-item li.menu-item:last-child {
     border-bottom-style: none;
 }
 
-:is(.lunet-docs, .lunet-api) li.menu-item a
+#docs-sidebar-menu li.menu-item a
 {
     text-decoration-line: none;
-}
-
-.lunet-docs footer {
-    padding-bottom: 75vh;
 }
 
 .menu-level1, .menu-level2, .menu-level3, .menu-level4 {
     font-size: 0.95em;
 }
 
-:is(.lunet-docs, .lunet-api) table.api-dotnet-members-table td:first-child {
+table.api-dotnet-members-table td:first-child {
     white-space: nowrap;
     width: 30%;
 }
 
-:is(.lunet-docs, .lunet-api) table.api-dotnet-members-table td {
+table.api-dotnet-members-table td {
     vertical-align: top;
 }
 
-:is(.lunet-docs, .lunet-api) .api-dotnet-kind-icon {
+.api-dotnet-kind-icon {
     margin-right: 0.35rem;
     opacity: 0.85;
 }
@@ -832,7 +821,7 @@ footer {
 /**********************************************
  * toc in documentation
  **********************************************/
-:is(.lunet-docs, .lunet-api) .toc-link::before {
+#docs-sidebar-toc .toc-link::before {
     width: 0px;
 }
 
@@ -862,71 +851,71 @@ li.toc-list-item {
     list-style-type: none;
 }
 
-:is(.lunet-docs, .lunet-api) a.toc-link {
+#docs-sidebar-toc a.toc-link {
     text-decoration-line: none;
     //text-decoration-style: dotted;
     color: var(--bs-body-color-darker-20);
     //color: var(--bs-body-color);
 }
 
-:is(.lunet-docs, .lunet-api) a.toc-link:hover {
+#docs-sidebar-toc a.toc-link:hover {
     text-decoration-line: none;
     text-decoration-style: solid;
     color: var(--bs-body-color-darker-10);
 }
 
-:is(.lunet-docs, .lunet-api) a.toc-link {
+#docs-sidebar-toc a.toc-link {
     display: inline-block;
     width: 100%;
 }
 
-:is(.lunet-docs, .lunet-api) .js-toc a.toc-link.is-active-link {
+#docs-sidebar-toc .js-toc a.toc-link.is-active-link {
     border-left-color: var(--lunet-color-cyan);
     border-left-style: solid;
 }
 
-:is(.lunet-docs, .lunet-api) .js-toc a.toc-link {
+#docs-sidebar-toc .js-toc a.toc-link {
     display: block;
     padding: .125rem 0 .125rem .75rem;
     text-decoration: none;
     border-left: .125rem solid transparent;
 }
 
-:is(.lunet-docs, .lunet-api) .toc-title {
+#docs-sidebar-toc .toc-title {
     border-bottom-style: solid;
     border-bottom-width: thin;
     font-size: 1rem;
 }
 
-:is(.lunet-docs, .lunet-api) .toc {
+#docs-sidebar-toc .toc {
     padding-right: 3px;
 }
 
 // Scrollbar styling (theme-friendly)
-.lunet-docs,
-.lunet-docs * {
+.menu-sidebar,
+.menu-sidebar * {
     scrollbar-width: thin; // Firefox
     scrollbar-color:
         rgba(var(--lunet-color-foreground-rgb), 0.28)
         rgba(var(--lunet-color-foreground-rgb), 0.06);
 }
 
-.lunet-docs ::-webkit-scrollbar {
+.menu-sidebar ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
 }
 
-.lunet-docs ::-webkit-scrollbar-track {
+.menu-sidebar ::-webkit-scrollbar-track {
     background-color: rgba(var(--lunet-color-foreground-rgb), 0.05);
 }
 
-.lunet-docs ::-webkit-scrollbar-thumb {
+.menu-sidebar ::-webkit-scrollbar-thumb {
     background-color: rgba(var(--lunet-color-foreground-rgb), 0.18);
     border-radius: 999px;
     border: 2px solid rgba(var(--lunet-color-foreground-rgb), 0.05);
 }
 
-.lunet-docs ::-webkit-scrollbar-thumb:hover {
+.menu-sidebar ::-webkit-scrollbar-thumb:hover {
     background-color: rgba(var(--lunet-color-foreground-rgb), 0.26);
 }
 
