@@ -244,6 +244,12 @@ public class TestApiDotNetEndToEndModernCSharp
             baseurl = "https://example.test"
             title = "API End-to-End"
 
+            # The end-to-end API tests assert on the rendered menu HTML.
+            # Disable async menu partials so the sidebar is inlined and testable.
+            with menu
+              async_load_threshold = 0
+            end
+
             with search
               enable = true
               engine = "sqlite"

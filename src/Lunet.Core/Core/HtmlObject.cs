@@ -55,4 +55,13 @@ public class HtmlHead : HtmlElement
     public ScriptCollection Includes { get; }
 }
 
-public class HtmlBody(ScriptObject parent) : HtmlElement(parent);
+public class HtmlBody : HtmlElement
+{
+    public HtmlBody(ScriptObject parent) : base(parent)
+    {
+        Includes = new ScriptCollection();
+        SetValue("includes", Includes, true);
+    }
+
+    public ScriptCollection Includes { get; }
+}

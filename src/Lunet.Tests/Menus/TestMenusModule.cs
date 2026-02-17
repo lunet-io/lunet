@@ -3,6 +3,7 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Menus;
 using Lunet.Tests.Infrastructure;
@@ -13,11 +14,17 @@ namespace Lunet.Tests.Menus;
 
 public class TestMenusModule
 {
+    private static MenuPlugin CreateMenuPlugin(SiteObject site)
+    {
+        var bundlePlugin = new BundlePlugin(site);
+        return new MenuPlugin(site, bundlePlugin);
+    }
+
     [Test]
     public void TestMenuPluginRegistersProcessorAndDefaults()
     {
         using var context = new SiteTestContext();
-        var plugin = new MenuPlugin(context.Site);
+        var plugin = CreateMenuPlugin(context.Site);
 
         Assert.NotNull(plugin.Processor);
         Assert.AreEqual("Home", plugin.HomeTitle);
@@ -30,7 +37,7 @@ public class TestMenusModule
     public void TestMenuProcessorBuildsMenuAndAssignsPageMenuItem()
     {
         using var context = new SiteTestContext();
-        var plugin = new MenuPlugin(context.Site);
+        var plugin = CreateMenuPlugin(context.Site);
         var contentPage = context.CreateFileContentObject("/docs/intro.md", "+++\ntitle = \"Intro\"\n+++\nHello", withFrontMatterScript: true);
         contentPage.Initialize();
         context.Site.Pages.Add(contentPage);
@@ -64,7 +71,7 @@ public class TestMenusModule
     public void TestMenuProcessorRejectsInvalidMenuPath()
     {
         using var context = new SiteTestContext();
-        var plugin = new MenuPlugin(context.Site);
+        var plugin = CreateMenuPlugin(context.Site);
         var menuFile = context.CreateFileContentObject(
             "/docs/menu.yml",
             """
@@ -123,7 +130,7 @@ public class TestMenusModule
     public void TestManualFolderMenuAdoptsGeneratedChildren()
     {
         using var context = new SiteTestContext();
-        var plugin = new MenuPlugin(context.Site);
+        var plugin = CreateMenuPlugin(context.Site);
 
         var apiRootPage = context.CreateFileContentObject("/api/readme.md", "+++\ntitle = \"API\"\n+++\nAPI", withFrontMatterScript: true);
         apiRootPage.Initialize();
@@ -185,7 +192,7 @@ public class TestMenusModule
     public void TestManualNonFolderMenuDoesNotOverrideGeneratedMenu()
     {
         using var context = new SiteTestContext();
-        var plugin = new MenuPlugin(context.Site);
+        var plugin = CreateMenuPlugin(context.Site);
 
         var apiRootPage = context.CreateFileContentObject("/api/readme.md", "+++\ntitle = \"API\"\n+++\nAPI", withFrontMatterScript: true);
         apiRootPage.Initialize();
@@ -224,7 +231,7 @@ public class TestMenusModule
     public void TestRenderKeepsGeneratedSubmenusExpandedForCurrentPath()
     {
         using var context = new SiteTestContext();
-        var plugin = new MenuPlugin(context.Site);
+        var plugin = CreateMenuPlugin(context.Site);
 
         var apiRootPage = context.CreateFileContentObject("/api/readme.md", "+++\ntitle = \"API\"\n+++\nAPI", withFrontMatterScript: true);
         apiRootPage.Initialize();

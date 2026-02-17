@@ -5,5 +5,8 @@
   </head>
   <body {{~ if site.html.body.attributes }} {{ site.html.body.attributes; end }}>
 {{~ content ~}}
+{{~ for $include in site.html.body.includes ~}}
+    {{~ include $include ~}}
+{{~ end ~}}
   </body>
 </html>

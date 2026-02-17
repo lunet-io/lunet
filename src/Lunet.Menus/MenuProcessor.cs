@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Transactions;
+using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Yaml;
 using Scriban.Runtime;
@@ -18,6 +19,7 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
     public const string MenuFileName = "menu.yml";
 
     private readonly List<MenuObject> _menus;
+    private bool _asyncLoaderInjected;
 
     public MenuProcessor(MenuPlugin plugin) : base(plugin)
     {
@@ -29,6 +31,13 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
     public override void Process(ProcessingStage stage)
     {
         Debug.Assert(stage == ProcessingStage.BeforeProcessingContent);
+
+        if (!_asyncLoaderInjected && Plugin.AsyncLoadThreshold > 0)
+        {
+            var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
+            defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/menus/lunet-menu-async.js");
+            _asyncLoaderInjected = true;
+        }
 
         foreach (var menu in _menus)
         {

@@ -8,7 +8,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Lunet.Core\Lunet.Core.csproj" />
+    <ProjectReference Include="..\Lunet.Bundles\Lunet.Bundles.csproj" />
     <ProjectReference Include="..\Lunet.Yaml\Lunet.Yaml.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="shared\.lunet\modules\menus\lunet-menu-async.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
