@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Tests.Infrastructure;
+using Microsoft.Data.Sqlite;
 
 namespace Lunet.Tests.Api.DotNet;
 
@@ -191,6 +192,24 @@ public class TestApiDotNetEndToEndModernCSharp
         StringAssert.Contains("table table-striped table-hover table-sm api-dotnet-members-table", namespacePage);
     }
 
+    [Test]
+    public void TestSearchIndexesGeneratedApiPages()
+    {
+        var searchDbPath = Path.Combine(_outputRoot, "js", "lunet-search.sqlite");
+        Assert.IsTrue(File.Exists(searchDbPath), $"Expected search database not found at `{searchDbPath}`.");
+
+        Assert.Greater(
+            ExecuteScalar(searchDbPath, "SELECT COUNT(*) FROM pages WHERE url LIKE '/api/%';"),
+            0,
+            "Expected generated API pages to be indexed in search database.");
+
+        var recordClassUrl = $"/api/{UidHelper.Handleize("ApiE2E.RecordClass")}/";
+        Assert.AreEqual(
+            1,
+            ExecuteScalar(searchDbPath, "SELECT COUNT(*) FROM pages WHERE url = $url;", ("$url", recordClassUrl)),
+            $"Expected API member url `{recordClassUrl}` to be indexed in search database.");
+    }
+
     private static void WriteTestSiteAndProject(PhysicalLunetAppTestContext context)
     {
         context.WriteAllText(
@@ -198,6 +217,11 @@ public class TestApiDotNetEndToEndModernCSharp
             """
             baseurl = "https://example.test"
             title = "API End-to-End"
+
+            with search
+              enable = true
+              engine = "sqlite"
+            end
 
             with api.dotnet
               title = "API End-to-End"
@@ -472,5 +496,21 @@ public class TestApiDotNetEndToEndModernCSharp
         var path = Path.Combine(_outputRoot, "api", "index.html");
         Assert.IsTrue(File.Exists(path), $"Expected rendered API root page not found at `{path}`.");
         return WebUtility.HtmlDecode(File.ReadAllText(path));
+    }
+
+    private static int ExecuteScalar(string sqlitePath, string sql, params (string Name, string Value)[] parameters)
+    {
+        using var connection = new SqliteConnection($"Data Source={sqlitePath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+
+        foreach (var parameter in parameters)
+        {
+            command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+        }
+
+        var result = command.ExecuteScalar();
+        return Convert.ToInt32(result);
     }
 }

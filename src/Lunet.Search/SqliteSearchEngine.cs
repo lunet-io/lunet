@@ -98,6 +98,27 @@ public class SqliteSearchEngine : SearchEngine
         }
     }
 
+    public override void PrepareBeforeProcessing()
+    {
+        // TODO: make it configurable by selecting which bundle will receive the search/db
+        var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
+
+        if (Plugin.Worker)
+        {
+            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
+            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-search-sqlite.js", "/js/lunet-search.js");
+            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.js", "/js/lunet-sql-wasm.js");
+            defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search-ws-client.js");
+        }
+        else
+        {
+            // Insert content before the others to make sure they are loaded async ASAP
+            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
+            defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search-sqlite.js");
+            defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-sql-wasm.js");
+        }
+    }
+
     public override void Terminate()
     {
         if (_connection == null || _dbPathOnDisk == null) return;
@@ -133,26 +154,9 @@ public class SqliteSearchEngine : SearchEngine
         var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("sqlite"), objectType: ContentObjectType.Dynamic);
         content.Initialize();
         Site.DynamicPages.Add(content);
+        Site.Content.TryCopyContentToOutput(content, content.GetDestinationPath());
 
         _currentTransaction = null;
         _connection = null;
-
-        // TODO: make it configurable by selecting which bundle will receive the search/db
-        var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
-
-        if (Plugin.Worker)
-        {
-            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
-            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-search-sqlite.js", "/js/lunet-search.js");
-            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.js", "/js/lunet-sql-wasm.js");
-            defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search-ws-client.js");
-        }
-        else
-        {
-            // Insert content before the others to make sure they are loaded async ASAP
-            defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
-            defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search-sqlite.js");
-            defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-sql-wasm.js");
-        }
     }
 }

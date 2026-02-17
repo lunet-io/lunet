@@ -50,6 +50,7 @@ public class TestSearchModule
         RunSearchRunning(context.Site, page);
 
         RunSearchBeforeProcessing(context.Site);
+        RunSearchAfterProcessing(context.Site);
 
         var dbPage = FindDynamicPageByUrl(context.Site.DynamicPages, "/js/lunet-search.sqlite");
         Assert.NotNull(dbPage);
@@ -82,10 +83,43 @@ public class TestSearchModule
         RunSearchRunning(context.Site, page);
 
         RunSearchBeforeProcessing(context.Site);
+        RunSearchAfterProcessing(context.Site);
 
         var dbPage = FindDynamicPageByUrl(context.Site.DynamicPages, "/js/lunet-search.sqlite");
         Assert.NotNull(dbPage);
         Assert.AreEqual(0, GetSqliteRowCount(dbPage!));
+    }
+
+    [Test]
+    public void TestSqliteEngineIndexesDynamicPagesDuringProcessing()
+    {
+        using var context = new SiteTestContext();
+        var bundlePlugin = new BundlePlugin(context.Site);
+        var resourcePlugin = new ResourcePlugin(context.Site);
+        _ = new SearchPlugin(context.Site, bundlePlugin, resourcePlugin)
+        {
+            Enable = true,
+            Engine = SqliteSearchEngine.EngineName
+        };
+
+        RunSearchBeforeLoading(context.Site);
+
+        var dynamicPage = new DynamicContentObject(context.Site, "/api/readme.md", "api", "/api/readme.md")
+        {
+            Title = "API Root",
+            ContentType = ContentType.Markdown,
+            Content = "# API\n\nsearchdynamicapitoken"
+        };
+        dynamicPage.Initialize();
+
+        RunSearchProcessing(context.Site, dynamicPage);
+        RunSearchBeforeProcessing(context.Site);
+        RunSearchAfterProcessing(context.Site);
+
+        var dbPage = FindDynamicPageByUrl(context.Site.DynamicPages, "/js/lunet-search.sqlite");
+        Assert.NotNull(dbPage);
+        Assert.AreEqual(1, GetSqliteRowCount(dbPage!));
+        Assert.AreEqual(1, GetRowsContainingContentToken(dbPage!, "searchdynamicapitoken"));
     }
 
     [Test]
@@ -102,6 +136,7 @@ public class TestSearchModule
 
         RunSearchBeforeLoading(context.Site);
         RunSearchBeforeProcessing(context.Site);
+        RunSearchAfterProcessing(context.Site);
 
         Assert.AreEqual(0, context.Site.DynamicPages.Count);
     }
@@ -122,11 +157,27 @@ public class TestSearchModule
         }
     }
 
+    private static void RunSearchProcessing(SiteObject site, ContentObject page)
+    {
+        foreach (var processor in site.Content.ContentProcessors)
+        {
+            processor.TryProcessContent(page, ContentProcessingStage.Processing);
+        }
+    }
+
     private static void RunSearchBeforeProcessing(SiteObject site)
     {
         foreach (var processor in site.Content.BeforeProcessingProcessors)
         {
             processor.Process(ProcessingStage.BeforeProcessingContent);
+        }
+    }
+
+    private static void RunSearchAfterProcessing(SiteObject site)
+    {
+        foreach (var processor in site.Content.AfterProcessingProcessors)
+        {
+            processor.Process(ProcessingStage.AfterProcessingContent);
         }
     }
 
@@ -152,6 +203,20 @@ public class TestSearchModule
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM pages;";
+        var result = command.ExecuteScalar();
+        return Convert.ToInt32(result);
+    }
+
+    private static int GetRowsContainingContentToken(FileContentObject dbPage, string token)
+    {
+        var resolvedSourcePath = dbPage.SourceFile.FileSystem!.ResolvePath(dbPage.SourceFile.AbsolutePath);
+        var filePath = resolvedSourcePath.FileSystem.ConvertPathToInternal(resolvedSourcePath.Path);
+
+        using var connection = new SqliteConnection($"Data Source={filePath}");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM pages WHERE content LIKE $token;";
+        command.Parameters.AddWithValue("$token", $"%{token}%");
         var result = command.ExecuteScalar();
         return Convert.ToInt32(result);
     }

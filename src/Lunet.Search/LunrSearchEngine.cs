@@ -33,11 +33,39 @@ public class LunrSearchEngine : SearchEngine
 
     public override void Initialize()
     {
+        _searchContentList.Clear();
     }
 
     public override void ProcessSearchContent(ContentObject file, string plainText)
     {
         _searchContentList.Add((file, plainText));
+    }
+
+    public override void PrepareBeforeProcessing()
+    {
+        // TODO: make it configurable by selecting which bundle will receive the search/db
+        var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
+
+        var lunr = Plugin.ResourcePlugin.TryLoadResource("npm", "lunr", "2.3.8", ResourceInstallFlags.Private);
+        if (lunr is null)
+        {
+            Site.Error("Unable to load npm resource `lunr@2.3.8` for lunr search engine.");
+            return;
+        }
+
+        defaultBundle.AddJs(lunr, "lunr.js", mode: "");
+        if (Plugin.Worker)
+        {
+            defaultBundle.AddJs("/modules/search/lunr/lunet-search-lunr.js", mode: "");
+        }
+        else
+        {
+            defaultBundle.AddJs("/modules/search/lunr/lunet-search-lunr.js", mode: "");
+            //// Insert content before the others to make sure they are loaded async ASAP
+            //defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
+            //defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search.js");
+            //defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-sql-wasm.js");
+        }
     }
 
     public override void Terminate()
@@ -87,31 +115,9 @@ public class LunrSearchEngine : SearchEngine
         var fs = new PhysicalFileSystem();
         var srcPath = fs.ConvertPathFromInternal(dbPathOnDisk);
         var content = new FileContentObject(Site, new FileSystemItem(fs, srcPath, false), path: OutputUrl.ChangeExtension("json"), objectType: ContentObjectType.Dynamic);
+        content.Initialize();
         Site.DynamicPages.Add(content);
-
-        // TODO: make it configurable by selecting which bundle will receive the search/db
-        var defaultBundle = Plugin.BundlePlugin.GetOrCreateBundle(null);
-
-        var lunr = Plugin.ResourcePlugin.TryLoadResource("npm", "lunr", "2.3.8", ResourceInstallFlags.Private);
-        if (lunr is null)
-        {
-            Site.Error("Unable to load npm resource `lunr@2.3.8` for lunr search engine.");
-            return;
-        }
-
-        defaultBundle.AddJs(lunr, "lunr.js", mode: "");
-        if (Plugin.Worker)
-        {
-            defaultBundle.AddJs("/modules/search/lunr/lunet-search-lunr.js", mode: "");
-        }
-        else
-        {
-            defaultBundle.AddJs("/modules/search/lunr/lunet-search-lunr.js", mode: "");
-            //// Insert content before the others to make sure they are loaded async ASAP
-            //defaultBundle.InsertLink(0, BundleObjectProperties.ContentType, "/modules/search/sqlite/lunet-sql-wasm.wasm", "/js/lunet-sql-wasm.wasm");
-            //defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-search.js");
-            //defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/search/sqlite/lunet-sql-wasm.js");
-        }
+        Site.Content.TryCopyContentToOutput(content, content.GetDestinationPath());
     }
         
     private static readonly Regex PunctuationRegex = new Regex(@"[^\w]+");

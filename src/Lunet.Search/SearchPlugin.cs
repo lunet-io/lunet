@@ -44,6 +44,10 @@ public class SearchPlugin : SitePlugin
         // It is important to insert the processor at the beginning 
         // because we output values used by the BundlePlugin
         site.Content.BeforeProcessingProcessors.Insert(0, processor);
+        site.Content.AfterProcessingProcessors.Add(processor);
+        // Dynamic pages are processed during the Processing stage,
+        // so we must observe that stage as well to index them.
+        site.Content.ContentProcessors.Insert(0, processor);
         site.Content.AfterRunningProcessors.Add(processor);
     }
 
@@ -116,11 +120,40 @@ public class SearchPlugin : SitePlugin
             {
                 _selectedEngine?.Process(stage);
             }
+            else if (stage == ProcessingStage.AfterProcessingContent)
+            {
+                _selectedEngine?.Process(stage);
+            }
         }
 
         public override ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage)
         {
-            return _selectedEngine?.TryProcessContent(file, stage) ?? ContentResult.Continue;
+            if (_selectedEngine == null)
+            {
+                return ContentResult.None;
+            }
+
+            // Static/filesystem-backed pages are handled during Running.
+            if (stage == ContentProcessingStage.Running)
+            {
+                if (file.ObjectType == ContentObjectType.Dynamic)
+                {
+                    return ContentResult.None;
+                }
+
+                return _selectedEngine.TryProcessContent(file, stage);
+            }
+
+            // Dynamic pages (API pages, generated indexes, etc.) only run during Processing.
+            // They may not have a source file, so only index when content is available.
+            if (stage == ContentProcessingStage.Processing &&
+                file.ObjectType == ContentObjectType.Dynamic &&
+                file.Content is not null)
+            {
+                return _selectedEngine.TryProcessContent(file, stage);
+            }
+
+            return ContentResult.None;
         }
     }
 }

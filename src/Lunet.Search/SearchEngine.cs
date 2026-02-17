@@ -31,6 +31,10 @@ public abstract class SearchEngine : ContentProcessor<SearchPlugin>
 
     public abstract void Initialize();
 
+    public virtual void PrepareBeforeProcessing()
+    {
+    }
+
     public abstract void ProcessSearchContent(ContentObject file, string plainText);
 
     public abstract void Terminate();
@@ -77,7 +81,33 @@ public abstract class SearchEngine : ContentProcessor<SearchPlugin>
         }
         else if (stage == ProcessingStage.BeforeProcessingContent)
         {
-            Terminate();
+            if (!_isInitialized) return;
+
+            try
+            {
+                PrepareBeforeProcessing();
+            }
+            catch (Exception ex)
+            {
+                Site.Error(ex, $"Unable to prepare search processor `{Name}` before processing. Reason: {ex.Message}");
+            }
+        }
+        else if (stage == ProcessingStage.AfterProcessingContent)
+        {
+            if (!_isInitialized) return;
+
+            try
+            {
+                Terminate();
+            }
+            catch (Exception ex)
+            {
+                Site.Error(ex, $"Unable to terminate search processor `{Name}`. Reason: {ex.Message}");
+            }
+            finally
+            {
+                _isInitialized = false;
+            }
         }
     }
 
@@ -85,9 +115,9 @@ public abstract class SearchEngine : ContentProcessor<SearchPlugin>
 
     public override ContentResult TryProcessContent(ContentObject file, ContentProcessingStage stage)
     {
-        Debug.Assert(stage == ContentProcessingStage.Running);
+        Debug.Assert(stage is ContentProcessingStage.Running or ContentProcessingStage.Processing);
 
-        if (!_isInitialized) return ContentResult.Continue;
+        if (!_isInitialized) return ContentResult.None;
 
         var contentType = file.ContentType;
 
