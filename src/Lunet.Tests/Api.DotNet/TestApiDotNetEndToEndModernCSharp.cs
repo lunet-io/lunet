@@ -184,6 +184,17 @@ public class TestApiDotNetEndToEndModernCSharp
     }
 
     [Test]
+    public void TestTypeMemberGroupMenuLinksTargetMemberSections()
+    {
+        var typeUid = FindTypeUidWithMemberKinds("Constructor", "Property");
+        var typePage = ReadRenderedHtmlByUid(typeUid);
+        var typeUrl = $"/api/{UidHelper.Handleize(typeUid)}/";
+
+        StringAssert.Contains($"href='{typeUrl}#constructors'", typePage);
+        StringAssert.Contains($"href='{typeUrl}#properties'", typePage);
+    }
+
+    [Test]
     public void TestApiTablesRenderAsHtmlWithoutEscapedTableCells()
     {
         var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
@@ -511,6 +522,65 @@ public class TestApiDotNetEndToEndModernCSharp
         }
 
         return content.GetString() ?? string.Empty;
+    }
+
+    private string FindTypeUidWithMemberKinds(params string[] expectedKinds)
+    {
+        foreach (var item in _itemsByUid.Values)
+        {
+            if (!IsTypeDeclaration(item))
+            {
+                continue;
+            }
+
+            var childKinds = GetChildKinds(item);
+            if (expectedKinds.All(kind => childKinds.Contains(kind)))
+            {
+                return item.GetProperty("uid").GetString()!;
+            }
+        }
+
+        Assert.Fail($"Unable to find a type uid containing member kinds: {string.Join(", ", expectedKinds)}.");
+        return string.Empty;
+    }
+
+    private HashSet<string> GetChildKinds(JsonElement item)
+    {
+        var childKinds = new HashSet<string>(StringComparer.Ordinal);
+        if (!item.TryGetProperty("children", out var children) || children.ValueKind != JsonValueKind.Array)
+        {
+            return childKinds;
+        }
+
+        foreach (var childUidEntry in children.EnumerateArray())
+        {
+            var childUid = childUidEntry.GetString();
+            if (string.IsNullOrWhiteSpace(childUid) || !_itemsByUid.TryGetValue(childUid, out var childItem))
+            {
+                continue;
+            }
+
+            if (childItem.TryGetProperty("type", out var childTypeProperty))
+            {
+                var childType = childTypeProperty.GetString();
+                if (!string.IsNullOrWhiteSpace(childType))
+                {
+                    childKinds.Add(childType);
+                }
+            }
+        }
+
+        return childKinds;
+    }
+
+    private static bool IsTypeDeclaration(JsonElement item)
+    {
+        if (!item.TryGetProperty("type", out var typeProperty))
+        {
+            return false;
+        }
+
+        return typeProperty.GetString() is "Class" or "Struct" or "Interface" or "Enum" or "Delegate";
     }
 
     private string ReadRenderedHtmlByUid(string uid)

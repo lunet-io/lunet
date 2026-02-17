@@ -377,6 +377,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 Folder = true,
                 Generated = true,
                 Pre = GetMenuIconMarkup(kind),
+                Url = GetGeneratedTypeMemberGroupUrl(parentMenu, title),
             };
             parentMenu.Children.Add(groupMenu);
 
@@ -457,6 +458,18 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
     private static bool IsTypeDeclarationKind(string? kind)
     {
         return kind is "Class" or "Struct" or "Interface" or "Enum" or "Delegate";
+    }
+
+    private static string? GetGeneratedTypeMemberGroupUrl(MenuObject parentMenu, string title)
+    {
+        var pageUrl = parentMenu.Page?.Url;
+        if (string.IsNullOrWhiteSpace(pageUrl))
+        {
+            return null;
+        }
+
+        var anchor = StringFunctions.Handleize(title);
+        return string.IsNullOrWhiteSpace(anchor) ? pageUrl : $"{pageUrl}#{anchor}";
     }
 
     private static string? GetMenuIconMarkup(string? kind)
