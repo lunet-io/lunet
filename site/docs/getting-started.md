@@ -6,9 +6,15 @@ title: "Getting started"
 
 Lunet is a static site generator that builds a website from a folder containing a `config.scriban` file. This guide walks you through installation, creating your first site, and running it locally.
 
+## Prerequisites
+
+Lunet requires the **.NET 10 SDK** (or later). If you don't have it yet, download it from:
+
+<https://dotnet.microsoft.com/en-us/download/dotnet/10.0>
+
 ## Install Lunet
 
-Lunet is distributed as a .NET global tool. You need the [.NET SDK](https://dotnet.microsoft.com/download) (10.0 or later) installed.
+Lunet is distributed as a .NET global tool:
 
 ```shell-session
 dotnet tool install -g lunet

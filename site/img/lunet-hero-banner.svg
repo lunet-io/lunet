@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-label="Lunet — static site generator">
+  <defs>
+    <style>
+      :root {
+        --lunet-accent-start: #ff2f8f;
+        --lunet-accent-middle: #2f8dff;
+        --lunet-accent-end: #22d3ee;
+        --lunet-bg-start: #222e46;
+        --lunet-bg-end: #2b3f62;
+        --lunet-card-bg-start: #1f2740;
+        --lunet-card-bg-end: #151d32;
+        --lunet-cutout: #1a2542;
+        --lunet-title: #e5e7eb;
+        --lunet-subtitle: #a5b4fc;
+        --lunet-powered: #7c8db5;
+        --lunet-font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      }
+
+      .bg-start { stop-color: var(--lunet-bg-start); }
+      .bg-end   { stop-color: var(--lunet-bg-end); }
+      .accent-start  { stop-color: var(--lunet-accent-start); }
+      .accent-middle { stop-color: var(--lunet-accent-middle); }
+      .accent-end    { stop-color: var(--lunet-accent-end); }
+      .card-bg-start { stop-color: var(--lunet-card-bg-start); }
+      .card-bg-end   { stop-color: var(--lunet-card-bg-end); }
+
+      .banner-bg { fill: url(#hero-bg-gradient); }
+      .ambient-primary   { fill: url(#hero-accent-gradient); opacity: 0.18; }
+      .ambient-secondary { fill: url(#hero-accent-gradient); opacity: 0.10; }
+
+      .logo-card {
+        fill: url(#hero-card-gradient);
+        stroke: url(#hero-accent-gradient);
+        stroke-width: 5;
+      }
+      .logo-face   { fill: url(#hero-accent-gradient); opacity: 0.95; }
+      .logo-cutout { fill: var(--lunet-cutout); opacity: 0.74; }
+      .logo-smile  {
+        fill: none;
+        stroke: var(--lunet-cutout);
+        stroke-width: 9;
+        stroke-linecap: round;
+        opacity: 0.74;
+      }
+
+      .title {
+        fill: var(--lunet-title);
+        font-family: var(--lunet-font-family);
+        font-size: 68px;
+        font-weight: 700;
+      }
+      .subtitle {
+        fill: var(--lunet-subtitle);
+        font-family: var(--lunet-font-family);
+        font-size: 24px;
+      }
+      .powered {
+        fill: var(--lunet-powered);
+        font-family: var(--lunet-font-family);
+        font-size: 18px;
+      }
+    </style>
+
+    <linearGradient id="hero-bg-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop class="bg-start" offset="0"/>
+      <stop class="bg-end" offset="1"/>
+    </linearGradient>
+    <linearGradient id="hero-card-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop class="card-bg-start" offset="0"/>
+      <stop class="card-bg-end" offset="1"/>
+    </linearGradient>
+    <linearGradient id="hero-accent-gradient" x1="0" y1="0" x2="1" y2="0">
+      <stop class="accent-start" offset="0"/>
+      <stop class="accent-middle" offset="0.5"/>
+      <stop class="accent-end" offset="1"/>
+    </linearGradient>
+  </defs>
+
+  <rect class="banner-bg" width="960" height="320" rx="16"/>
+  <circle class="ambient-primary" cx="720" cy="130" r="200"/>
+  <circle class="ambient-secondary" cx="820" cy="220" r="150"/>
+
+  <!-- Logo -->
+  <rect class="logo-card" x="60" y="68" width="150" height="150" rx="38"/>
+  <circle class="logo-face" cx="135" cy="143" r="52"/>
+  <circle class="logo-cutout" cx="155" cy="126" r="12"/>
+  <path class="logo-smile" d="M101 166c12 14 28 22 48 22"/>
+
+  <!-- Text -->
+  <text class="title" x="240" y="148">Lunet</text>
+  <text class="subtitle" x="240" y="196">Fast, modular static site generator</text>
+  <text class="powered" x="240" y="228">Powered by Scriban &amp; Markdig</text>
+</svg>

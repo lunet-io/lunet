@@ -87,5 +87,5 @@
   <circle class="logo-cutout" cx="185" cy="172" r="13"/>
   <path class="logo-smile" d="M128 214c13 15 30 24 52 24"/>
   <text class="title" x="280" y="188">Lunet</text>
-  <text class="subtitle" x="280" y="248">Static site generator for .NET • Powered by Scriban and Markdig</text>
+  <text class="subtitle" x="280" y="248">Fast, modular static site generator • Powered by Scriban and Markdig</text>
 </svg>
