@@ -33,14 +33,14 @@ This generates API pages under `path` (default `/api`) and registers all API UID
 | `api.dotnet.path` | string | `"/api"` | Root URL/path for generated API pages |
 | `api.dotnet.menu_name` | string | `"api"` | Menu name exposed on `site.menu.<name>` |
 | `api.dotnet.menu_title` | string | `api.dotnet.title` | Root menu title |
-| `api.dotnet.menu_width` | int | `4` | Sidebar width hint for this menu (clamped to `2..4`) |
+| `api.dotnet.menu_width` | int | `4` | Sidebar width hint for this menu |
 | `api.dotnet.config` | string | `"Release"` | Build configuration passed to `dotnet build` |
 | `api.dotnet.properties` | object | empty | Extra MSBuild properties (`-p:`), e.g. `TargetFramework` |
 | `api.dotnet.projects` | array | required | Projects to extract (`string` or object entries) |
 | `api.dotnet.references` | array<string> | empty | Referenced assemblies to include for all projects |
 | `api.dotnet.include_helper` | string | `"_builtins/api-dotnet-helpers.sbn-html"` | Helper include loaded for generated API pages |
 | `api.dotnet.layout` | string | `"_default"` | Base layout used by generated API pages |
-| `api.dotnet.table_class` | string | `"table table-striped table-hover table-sm api-dotnet-members-table"` | CSS classes used by default API member tables |
+| `api.dotnet.table_class` | string | `"api-dotnet-members list-group list-group-flush"` | CSS classes used by default API member lists. Can also be overridden via `members_class` |
 
 Project entry object:
 
@@ -189,3 +189,10 @@ The Lunet docs site uses:
 - `src/Lunet.ApiExample/Lunet.ApiExample.csproj` -> local sample project rendered under `/api`
 - `src/Lunet.ApiExample/apidocs/*.md` -> namespace summary/remarks merged from Markdown (`Lunet.ApiExample`, `Lunet.ApiExample.Advanced`, `Lunet.ApiExample.Http`)
 - sample API includes multiple namespaces and broad modern C# surface (C# 9-14 style features: records, required/init members, primary constructors, checked operators, unsigned right shift, ref/scoped APIs, static abstract interface members, `allows ref struct`, extension members, native/function pointer signatures)
+
+## See also
+
+- [API module](api.md) — the `site.api` registry
+- [Markdown module](markdown.md) — `xref:` link resolution in content pages
+- [Menus module](menus.md) — rendering the auto-generated API menu
+- [Search module](search.md) — API pages are included in site search index
