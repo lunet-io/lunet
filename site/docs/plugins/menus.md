@@ -41,18 +41,38 @@ doc:
 
 Pages inside `docs/` will automatically get `page.menu` set to this menu, which layouts can render as a sidebar.
 
+All `path` values are resolved relative to the directory containing the `menu.yml` file.
+
 ### Menu entry properties
 
 {.table}
-| Property | Type | Description |
-|---|---|---|
-| `path` | string | Path to a content file (resolved to its URL) |
-| `url` | string | External URL (use instead of `path` for external links) |
-| `title` | string | Display title (HTML is allowed, e.g. `<i class='bi bi-house'></i> Home`) |
-| `folder` | bool | When `true`, child pages from the folder are included automatically |
-| `self` | bool | Mark this entry as the breadcrumb root (useful for a "Home" link) |
-| `width` | int | Sidebar width hint (`2`–4`, default `3`) used by themes |
-| `link_class` | string | CSS classes added to the `<a>` element (e.g. `btn btn-info`) |
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `path` | string | — | Path to a content file (resolved relative to the `menu.yml` directory) |
+| `url` | string | — | External URL (use instead of `path` for external links) |
+| `title` | string | — | Display title (HTML is allowed, e.g. `<i class='bi bi-house'></i> Home`) |
+| `pre` | string | — | HTML prepended before the title text |
+| `post` | string | — | HTML appended after the title text |
+| `folder` | bool | `false` | Adopt generated child menus from the same directory |
+| `self` | bool | `false` | Mark this entry as the breadcrumb root (useful for a "Home" link) |
+| `separator` | bool | `false` | Render as a visual separator instead of a link |
+| `target` | string | — | HTML `target` attribute on the link (e.g. `"_blank"`) |
+| `width` | int | `3` | Sidebar width hint (clamped to `2`–`4`), used by themes |
+| `link_class` | string | — | CSS classes added to the `<a>` element |
+| `link_class_active` | string | — | CSS classes added when the item is active |
+| `list_item_class` | string | — | CSS classes added to the `<li>` element |
+
+### String shorthand
+
+A bare string in a menu array is treated as a path reference:
+
+```yaml
+doc:
+  - readme.md
+  - getting-started.md
+```
+
+This is equivalent to `{path: readme.md}`. The title is taken from the page's front matter.
 
 ## Using menus in templates
 
@@ -74,6 +94,10 @@ When a page belongs to a section menu, `page.menu` is set automatically. Use it 
 {{ '{{' }} end {{ '}}' }}
 ```
 
+### `page.menu_item`
+
+Points to the specific menu entry corresponding to the current page. This is used internally for active-state detection and breadcrumb rendering.
+
 ### `menu.render` options
 
 The `render` function accepts an options object:
@@ -81,10 +105,16 @@ The `render` function accepts an options object:
 {.table}
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `kind` | string | `"menu"` | Rendering style: `"nav"` for horizontal navbar, `"menu"` for vertical sidebar |
-| `depth` | int | `2` | Maximum nesting depth to render |
-| `collapsible` | bool | `false` | When `true`, submenus can be collapsed/expanded |
-| `list_class` | string | — | CSS class added to the `<ul>` element |
+| `kind` | string | `"menu"` | Rendering style: `"nav"` for horizontal navbar, `"menu"` for vertical sidebar, `"breadcrumb"` for breadcrumbs |
+| `depth` | int | max | Maximum nesting depth to render |
+| `collapsible` | bool | `false` | When `true`, submenus can be collapsed/expanded (Bootstrap collapse) |
+| `async` | bool | `true` | Allow async partial loading for large menus (only for `kind: "menu"`) |
+| `list_class` | string | — | CSS class added to the `<ol>` element |
+| `list_item_class` | string | — | CSS class added to the `<li>` element |
+| `link_class` | string | — | CSS class added to the `<a>` element |
+| `link_class_active` | string | — | CSS class added to the active `<a>` element |
+| `link_args` | string | — | Extra HTML attributes on `<a>` elements |
+| `link_args_active` | string | — | Extra HTML attributes on active `<a>` elements |
 
 ### `menu.breadcrumb`
 
@@ -98,13 +128,20 @@ Render a breadcrumb trail for the current page:
 
 The `self: true` entry in the menu definition becomes the breadcrumb root.
 
+### Active state detection
+
+A menu item is marked as active when:
+
+1. The current page's `menu_item` matches the menu item or one of its ancestors (so parent items are highlighted when a child is active).
+2. If the page has no explicit `menu_item`, a fallback checks whether the page shares the same section as the menu item's page.
+
 ## Async menu partials (large sidebars)
 
 Large menus can heavily bloat generated HTML because the sidebar markup is duplicated into every page (especially for generated API docs with hundreds of pages).
 
 To address this, Lunet can emit a **hashed partial HTML file** for large menus and load it at runtime via JavaScript. The filename includes a content hash, so browsers can cache it aggressively.
 
-Configuration (defaults shown):
+Configuration in `config.scriban` (defaults shown):
 
 ```scriban
 with menu
@@ -119,6 +156,10 @@ Behavior:
 - At/above the threshold: `menu.render` emits a small placeholder element. The actual menu markup is generated once into `async_partials_folder` as `menu-<name>.<hash>.html` and loaded client-side.
 - Active/open state is applied client-side after loading (the partial is page-agnostic and cacheable).
 - This is transparent to templates: keep using `menu.render` regardless of menu size.
+- Async loading is only used for `kind: "menu"` (sidebars). Navbars (`kind: "nav"`) always render inline.
+- You can disable async for a specific render call with `{ async: false }`.
+
+When async loading is enabled, the menu plugin automatically injects a JavaScript file (`lunet-menu-async.js`) into the default bundle.
 
 ## Using generated API menus
 
@@ -130,4 +171,9 @@ home:
   - {path: api/readme.md, title: "API Reference", folder: true}
 ```
 
-With `folder: true`, Lunet automatically reuses the generated API namespace/type/member hierarchy under this item. This avoids maintaining a separate `api/menu.yml`.
+With `folder: true`, Lunet automatically adopts the generated API namespace/type/member hierarchy under this item. This avoids maintaining a separate `api/menu.yml`.
+
+## See also
+
+- [API (.NET) module](api-dotnet.md) — generates menus for API documentation
+- [Layouts & includes](../layouts-and-includes.md) — using menus in layout templates
