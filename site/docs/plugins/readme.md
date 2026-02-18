@@ -26,6 +26,7 @@ Most sites only need to configure the ones they use, typically from `config.scri
 - [Tracking](tracking.md)
 - [Server](server.md)
 - [Watcher](watcher.md)
+- [Data modules overview](data.md)
 - [Datas](datas.md)
 - [YAML](yaml.md)
 - [JSON](json.md)
