@@ -46,11 +46,13 @@ This guide documents Lunet from a **user perspective**: how to create a site, co
 | [Tracking (Google Analytics)](plugins/tracking.md) | Analytics injection (prod only) |
 | [Server (`lunet serve`)](plugins/server.md) | Local web server + live reload |
 | [Watcher (`--watch`)](plugins/watcher.md) | File watcher + incremental rebuild |
-| [Data loaders](plugins/data.md) | Load data files from `/.lunet/data` |
+| [Data modules overview](plugins/data.md) | Supported data formats at a glance |
+| [Datas](plugins/datas.md) | Load data files from `/.lunet/data` into `site.data` |
 | [YAML](plugins/yaml.md) | YAML front matter + YAML data loading |
 | [JSON](plugins/json.md) | JSON data loading |
 | [TOML](plugins/toml.md) | TOML data loading |
 | [Attributes (URL patterns)](plugins/attributes.md) | Apply per-path metadata like `url` patterns |
+| [API](plugins/api.md) | API-documentation registry (`site.api`) |
 | [API (.NET)](plugins/api-dotnet.md) | Generate .NET API docs from projects/assemblies |
 
 ## Internal notes (not published)
