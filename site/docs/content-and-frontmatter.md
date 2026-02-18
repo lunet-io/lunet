@@ -78,12 +78,12 @@ custom_flag: true
 And this template body:
 
 ```scriban
-{{ '{{' }} page.title {{ '}}' }}           {{!-- "My Page" (from front matter) --}}
-{{ '{{' }} site.title {{ '}}' }}           {{!-- site title (from config.scriban) --}}
-{{ '{{' }} page.url {{ '}}' }}             {{!-- computed URL for this page --}}
-{{ '{{' }} page.section {{ '}}' }}         {{!-- first directory segment, e.g. "docs" --}}
-{{ '{{' }} page.custom_flag {{ '}}' }}     {{!-- true (custom front matter key) --}}
-{{ '{{' }} site.environment {{ '}}' }}     {{!-- "prod" or "dev" --}}
+{{ '{{' }} page.title {{ '}}' }}           # "My Page" (from front matter)
+{{ '{{' }} site.title {{ '}}' }}           # site title (from config.scriban)
+{{ '{{' }} page.url {{ '}}' }}             # computed URL for this page
+{{ '{{' }} page.section {{ '}}' }}         # first directory segment, e.g. "docs"
+{{ '{{' }} page.custom_flag {{ '}}' }}     # true (custom front matter key)
+{{ '{{' }} site.environment {{ '}}' }}     # "prod" or "dev"
 ```
 
 > [!TIP]
