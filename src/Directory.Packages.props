@@ -6,7 +6,6 @@
   <ItemGroup>
     <PackageVersion Include="Autofac" Version="9.0.0" />
     <PackageVersion Include="DotNet.Glob" Version="3.1.3" />
-    <PackageVersion Include="LunrCore" Version="2.3.10" />
     <PackageVersion Include="Markdig" Version="0.45.0" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.2.2" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
@@ -20,7 +19,6 @@
     <PackageVersion Include="NUnit" Version="4.4.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="6.1.0" />
     <PackageVersion Include="Scriban" Version="6.5.3" />
-    <PackageVersion Include="SharpScss" Version="3.0.0" />
     <PackageVersion Include="SharpYaml" Version="2.1.4" />
     <PackageVersion Include="SuperluminalPerf" Version="1.3.0" />
     <PackageVersion Include="System.Collections.Immutable" Version="1.5.0" />

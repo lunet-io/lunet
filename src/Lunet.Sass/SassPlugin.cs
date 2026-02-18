@@ -30,12 +30,6 @@ public class SassPlugin : SitePlugin, ILayoutConverter
 
     public PathCollection Includes { get; }
 
-    public bool UseDartSass
-    {
-        get => GetSafeValue<bool>("use_dart_sass");
-        set => SetValue("use_dart_sass", value, false);
-    }
-
     public bool ShouldConvertIfNoLayout => true;
 
     public void Convert(ContentObject file)
@@ -64,13 +58,6 @@ public class SassPlugin : SitePlugin, ILayoutConverter
         }
 
 
-        if (UseDartSass)
-        {
-            DartSassTransform.Convert(file, includePaths, Site);
-        }
-        else
-        {
-            LibSassTransform.Convert(file, includePaths, Site);
-        }
+        DartSassTransform.Convert(file, includePaths, Site);
     }
 }

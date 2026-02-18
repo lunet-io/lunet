@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Lunet.Core;
 using Lunet.Sass.DartSass;
 using Zio;
+using Zio.FileSystems;
 
 namespace Lunet.Sass;
 
@@ -41,14 +42,26 @@ public class DartSassTransform
             resolvedIncludePaths.Add(resolvedIncludePath.FileSystem.ConvertPathToInternal(resolvedIncludePath.Path));
         }
 
-        var resolvedFilePath = file.SourceFile.FileSystem!.ResolvePath(file.SourceFile.AbsolutePath);
-        var resolvedFileInternalPath = resolvedFilePath.FileSystem.ConvertPathToInternal(resolvedFilePath.Path);
-
         var dartSassCompiler = new DartSassCompiler(cacheDirectory: cacheDirectory);
-        var result = dartSassCompiler.CompileFile(resolvedFileInternalPath, configureOptions: options =>
+        var sourceFileSystem = file.SourceFile.FileSystem;
+        DartSassResult result;
+
+        if (sourceFileSystem is PhysicalFileSystem)
         {
-            options.LoadPaths = resolvedIncludePaths;
-        });
+            var resolvedFilePath = sourceFileSystem.ResolvePath(file.SourceFile.AbsolutePath);
+            var resolvedFileInternalPath = resolvedFilePath.FileSystem.ConvertPathToInternal(resolvedFilePath.Path);
+            result = dartSassCompiler.CompileFile(resolvedFileInternalPath, configureOptions: options =>
+            {
+                options.LoadPaths = resolvedIncludePaths;
+            });
+        }
+        else
+        {
+            result = dartSassCompiler.CompileString(content, configureOptions: options =>
+            {
+                options.LoadPaths = resolvedIncludePaths;
+            });
+        }
 
         file.Content = CleanContent(result.Css);
         file.ChangeContentType(ContentType.Css);

@@ -30,7 +30,6 @@ public class SearchPlugin : SitePlugin
 
         SearchEngines = new List<SearchEngine>()
         {
-            new LunrSearchEngine(this),
             new SqliteSearchEngine(this)
         };
 

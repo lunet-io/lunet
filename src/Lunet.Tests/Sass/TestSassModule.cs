@@ -22,7 +22,6 @@ public class TestSassModule
         Assert.AreSame(plugin, context.Site.GetSafeValue<SassPlugin>("sass"));
         Assert.NotNull(plugin.Includes);
         Assert.IsTrue(plugin.ShouldConvertIfNoLayout);
-        Assert.IsFalse(plugin.UseDartSass);
     }
 
     [Test]

@@ -27,7 +27,7 @@ public class TestSearchModule
         Assert.AreEqual(SqliteSearchEngine.EngineName, plugin.Engine);
         Assert.AreEqual((string)SearchPlugin.DefaultUrl, plugin.Url);
         Assert.NotNull(plugin.Excludes);
-        Assert.AreEqual(2, plugin.SearchEngines.Count);
+        Assert.AreEqual(1, plugin.SearchEngines.Count);
     }
 
     [Test]
