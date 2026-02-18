@@ -4,11 +4,7 @@ title: "Bundles module"
 
 # Bundles module
 
-Bundles are the main way to:
-- collect CSS/JS files,
-- optionally concatenate and minify,
-- copy referenced content to output,
-- inject `<link>` and `<script>` tags via a built-in include.
+Bundles are the main way to collect CSS and JavaScript files, concatenate and minify them, copy referenced assets to the output, and inject `<link>` and `<script>` tags into your pages.
 
 ## Define the default bundle
 
@@ -21,11 +17,66 @@ with bundle
 end
 ```
 
-By default, the bundle include injects links for `page.bundle` (or the default bundle).
+The default bundle applies to all pages unless a page specifies a different bundle.
+
+## Using resources (npm packages) with bundles
+
+A common pattern is to download npm packages with the `resource` function and use them in bundles. You can store resource handles as variables inside the `with bundle` block:
+
+```scriban
+with bundle
+  # Download resources (cached locally)
+  bootstrap = resource "npm:bootstrap" "5.3.8"
+  bootstrap_icons = resource "npm:bootstrap-icons" "1.13.1"
+  tocbot = resource "npm:tocbot" "4.36.4"
+
+  # Add SCSS include paths from resources
+  scss.includes.add bootstrap.path + "/scss"
+  scss.includes.add bootstrap_icons.path + "/font"
+
+  # Add CSS files from resources
+  css tocbot "/dist/tocbot.css"
+  css "/css/main.scss"
+
+  # Add JS files from resources
+  js bootstrap "/dist/js/bootstrap.bundle.min.js"
+  js tocbot "/dist/tocbot.min.js"
+  js "/js/main.js"
+
+  # Copy font files from a resource to the output
+  content bootstrap_icons "/font/fonts/bootstrap-icons.*" "/fonts/"
+
+  concat = true
+  minify = true
+end
+```
+
+### How `css` and `js` work with resources
+
+The `css` and `js` functions accept either:
+
+- **A string path** (a virtual path in your site): `css "/css/main.scss"`
+- **A resource handle + subpath**: `css bootstrap "/dist/css/bootstrap.min.css"`
+
+When you pass a resource handle, Lunet resolves the file from the downloaded package.
+
+### Copying files with `content`
+
+The `content` function copies files from a resource or your site to the output:
+
+```scriban
+# Copy from a resource using a wildcard
+content bootstrap_icons "/font/fonts/bootstrap-icons.*" "/fonts/"
+
+# Copy from your site
+content "/img/*" "/img/"
+```
+
+When the source path contains `*`, the destination must end with `/` (it’s a folder).
 
 ## Named bundles
 
-Create a named bundle:
+Create a named bundle for pages that need different assets:
 
 ```scriban
 with bundle "docs"
@@ -33,7 +84,7 @@ with bundle "docs"
 end
 ```
 
-Select a bundle per page:
+Select it in page front matter:
 
 ```yaml
 bundle: docs
@@ -41,72 +92,33 @@ bundle: docs
 
 ## Inject bundle links in layouts
 
-The bundle plugin registers a built-in include:
+The bundle plugin registers a built-in include that outputs `<link>` and `<script>` tags:
 
-- `/_builtins/bundle.sbn-html`
+```text
+_builtins/bundle.sbn-html
+```
 
-Most themes include it from their `<head>` template. If your theme does not, add it:
+Most themes include it in their base layout’s `<head>`. If your theme does not, add it from config:
 
 ```scriban
 site.html.head.includes.add "_builtins/bundle.sbn-html"
 ```
 
-## Adding assets from resources
+## Bundle options
 
-Bundle functions accept either:
-- a string path (absolute, virtual path), or
-- a resource object returned by `resource`
+{.table}
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `concat` | bool | `false` | Concatenate all CSS/JS files into a single file per type |
+| `minify` | bool | `false` | Minify the output (uses NUglify) |
+| `url_dest.js` | string | `"/js/"` | Output folder for JavaScript files |
+| `url_dest.css` | string | `"/css/"` | Output folder for CSS files |
 
-Examples:
-
-```scriban
-$bootstrap = resource "npm:bootstrap" "5.3.8"
-
-with bundle
-  css $bootstrap "/dist/css/bootstrap.min.css"
-  js $bootstrap "/dist/js/bootstrap.bundle.min.js" mode:""
-end
-```
-
-## Wildcards and content copies
-
-Use `content` to copy files to an output folder:
-
-```scriban
-with bundle
-  content "/img/*" "/img/"
-end
-```
-
-If the path contains `*`, the URL must end with `/`.
-
-## Output folders
-
-Bundles have a `url_dest` map to choose output folders for different kinds:
-
-- `js` defaults to `/js/`
-- `css` defaults to `/css/`
-
-You can override:
+Override output folders:
 
 ```scriban
 with bundle
   url_dest.js = "/assets/js/"
   url_dest.css = "/assets/css/"
-end
-```
-
-
-In page front matter:
-
-```yaml
-bundle: docs
-```
-
-Then in config, create the bundle:
-
-```scriban
-with bundle "docs"
-  css "/css/docs.scss"
 end
 ```
