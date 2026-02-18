@@ -26,7 +26,27 @@ end
 | JavaScript | NUglify | Removes whitespace, shortens variable names, optimizes expressions |
 | CSS | NUglify | Removes whitespace and comments, merges rules |
 
-Minification runs after concatenation (if `concat = true`) and after SCSS compilation, so the final output is a single minified file per asset type.
+Minification is applied **per file**, after SCSS compilation but **before** concatenation (if `concat = true`). Files whose name already ends with `.min.js` or `.min.css` are **skipped** — they are assumed to be pre-minified by their upstream authors.
+
+This means that when you use pre-minified resources (e.g. `bootstrap.bundle.min.js`), only your own source files are run through NUglify.
+
+## Prefer pre-minified files
+
+Whenever a library ships a `.min.js` or `.min.css` build, **use that version** in your bundle rather than relying on NUglify to minify the original source. Pre-minified builds are produced by each library's own toolchain and are guaranteed to work correctly.
+
+```scriban
+with bundle
+  # Recommended: use the pre-minified build
+  js bootstrap "/dist/js/bootstrap.bundle.min.js"
+end
+```
+
+> **Warning**
+> NUglify can occasionally produce incorrect output on complex or unusual JavaScript or CSS (e.g. advanced syntax, very large files, or edge-case constructs). If your site breaks after enabling `minify = true`, try the following:
+>
+> 1. Check whether you are minifying a file that already provides a `.min.js` / `.min.css` variant — switch to that variant instead.
+> 2. Disable minification (`minify = false`) to confirm the problem is minification-related.
+> 3. Isolate the problematic file by temporarily removing bundles entries until the build succeeds.
 
 ## When to enable
 
@@ -39,4 +59,9 @@ with bundle
   minify = environment != "dev"
 end
 ```
+
+## See also
+
+- [Bundles module](bundles.md) — defining bundles, concatenation, and resource integration
+- [SCSS module](scss.md) — Sass/SCSS compilation (runs before minification)
 

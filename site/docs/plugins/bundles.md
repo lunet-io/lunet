@@ -122,3 +122,9 @@ with bundle
   url_dest.css = "/assets/css/"
 end
 ```
+
+## See also
+
+- [Minifier module](minifier.md) — CSS/JS minification with NUglify
+- [SCSS module](scss.md) — Sass/SCSS compilation
+- [Resources module](resources.md) — downloading npm packages for use in bundles
