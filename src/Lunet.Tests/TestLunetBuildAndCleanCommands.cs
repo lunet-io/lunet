@@ -38,9 +38,10 @@ public class TestLunetBuildAndCleanCommands
     }
 
     [Test]
-    public async Task TestCleanDeletesBuildFolderWhenConfigIsMissing()
+    public async Task TestCleanDeletesBuildFolderWhenConfigExists()
     {
         var context = new LunetAppTestContext();
+        context.WriteAllText("/site/config.scriban", "");
         context.WriteAllText("/site/.lunet/build/www/old.txt", "stale");
 
         var exitCode = await context.RunAsync("--input-dir=site", "clean");
@@ -50,10 +51,10 @@ public class TestLunetBuildAndCleanCommands
     }
 
     [Test]
-    public async Task TestCleanFailsWhenConfigExists()
+    public async Task TestCleanFailsWhenConfigIsMissing()
     {
         var context = new LunetAppTestContext();
-        context.WriteAllText("/site/config.scriban", "");
+        context.WriteAllText("/site/.lunet/build/www/old.txt", "stale");
 
         var exitCode = await context.RunAsync("--input-dir=site", "clean");
 

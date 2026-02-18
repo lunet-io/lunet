@@ -20,6 +20,23 @@ These options apply to all commands:
 | `-h, --help` | Show help |
 | `-v, --version` | Show Lunet version |
 
+### How `--define` works
+
+Each `--define` value is executed as a **Scriban statement** against the `SiteObject`. Because the scripting context is the site itself, `--define "baseurl=https://staging.example.com"` sets `site.baseurl`, exactly as if you had written `baseurl = "https://staging.example.com"` in `config.scriban`.
+
+You can use any valid Scriban expression:
+
+```shell-session
+lunet build --define "baseurl=https://staging.example.com"
+lunet build -d "minify=false" -d "environment='staging'"
+```
+
+Defines are evaluated **before** `config.scriban` runs. This lets you use `??` (null-coalescing) in config to provide overridable defaults:
+
+```scriban
+baseurl = baseurl ?? "https://example.com"
+```
+
 ## Commands
 
 ### `lunet init [folder]`
@@ -30,9 +47,14 @@ Creates a new site folder by copying the built-in skeleton template.
 lunet init mysite
 ```
 
+The skeleton includes a minimal `config.scriban`, default layouts, and a sample home page. If `[folder]` is omitted, the current directory is used.
+
 Options:
 
-- `-f, --force` — create even if the target folder is not empty
+{.table}
+| Option | Description |
+|---|---|
+| `-f, --force` | Create even if the target folder is not empty |
 
 ### `lunet clean`
 
@@ -41,6 +63,8 @@ Deletes the `.lunet/build` folder in the current site, removing all generated ou
 ```shell-session
 lunet clean
 ```
+
+Requires `config.scriban` to exist in the current (or `--input-dir`) directory, otherwise prints an error.
 
 ### `lunet build`
 
@@ -58,9 +82,11 @@ Options:
 {.table}
 | Option | Description |
 |---|---|
-| `--watch` | Watch for file changes and rebuild automatically |
+| `--watch` | Watch for file changes and rebuild automatically (see [Watcher module](plugins/watcher.md)) |
 | `--dev` | Set `site.environment = "dev"` (default is `"prod"`) |
 | `--no-threads` | Disable multi-threaded processing (useful for debugging) |
+
+When `--dev` is set, modules like [Tracking](plugins/tracking.md) disable production-only behavior (e.g. analytics injection).
 
 ### `lunet serve`
 
@@ -78,16 +104,17 @@ Options:
 | `--no-watch` | Disable file watching (serve only, no rebuild on changes) |
 | `--no-threads` | Disable multi-threaded processing |
 
+`serve` always operates in development mode (`site.environment = "dev"`); there is no `--dev` flag because it is enabled by default.
+
 Notes:
 
-- Base URL is overridden to `http://localhost:4000` unless `baseurlforce = true` is set in config.
-- `site.environment` is set to `"dev"`.
-- Live reload is enabled by default (injects a small script into `<head>`).
+- Base URL is overridden to `http://localhost:4000` unless `baseurlforce = true` is set in `config.scriban`. There is no CLI option to change the port; set `baseurl` in config if you need a different port.
+- Live reload is enabled by default — a small script is injected into `<head>` that connects via WebSocket and triggers a browser refresh on rebuild. See [Server module](plugins/server.md).
+- Error responses redirect to `/404.html` if the file exists.
 
-### `lunet config`
+## See also
 
-Displays the current site configuration variables. Useful for debugging config issues.
-
-```shell-session
-lunet config
-```
+- [Configuration (`config.scriban`)](configuration.md) — site variables, `--define` override patterns
+- [Server module](plugins/server.md) — live reload, base URL override, error handling
+- [Watcher module](plugins/watcher.md) — file watching, debounce, rebuild behavior
+- [Getting started](getting-started.md) — first steps with `lunet init`, `build`, and `serve`

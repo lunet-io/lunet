@@ -267,7 +267,7 @@ public class SiteObject : DynamicObject, ISiteLoggerProvider
 
     public int Clean()
     {
-        if (!ConfigFile.Exists)
+        if (ConfigFile.Exists)
         {
             SiteFileSystem.DeleteDirectory(SiteFileSystems.BuildFolder, true);
             this.Info($"Directory {SiteFileSystems.BuildFolder} deleted");
