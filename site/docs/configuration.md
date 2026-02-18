@@ -38,7 +38,7 @@ Because `config.scriban` runs “inside” the site, you can refer to any site p
 |---|---|---|---|---|
 | `config.scriban` | SiteObject (the site) | `site.title` | `title` or `site.title` | No |
 | Page front matter | ContentObject (the page) | `page.title` | `site.title` | No |
-| Page/layout body | — (both `site` and `page` in scope) | — (use `{{` `…` `}}`) | `site.title` | Yes (from `/.lunet/includes/`) |
+| Page/layout body | — (both `site` and `page` in scope) | — (use `{{ '{{' }}` `…` `{{ '}}' }}`) | `site.title` | Yes (from `/.lunet/includes/`) |
 
 ### What runs when
 
