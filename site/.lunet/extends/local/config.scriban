@@ -222,8 +222,6 @@ layout = "default"
 # Enable search indexing
 with search
     enable = true
-    # engine = "lunr"
-    # worker = true
     excludes.add ["/404.md", "/banner.md", "/AGENTS.md"]
 end
 
@@ -259,7 +257,6 @@ with bundle
     content bootstrap_icons "/font/fonts/bootstrap-icons.*" "/fonts/"
 
     # concatenate css/js files
-    scss.use_dart_sass = true # Use Dart Sass for SCSS compilation
     concat = true
     minify = true
 end
@@ -268,11 +265,6 @@ with attributes
     # match "/blog/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*.md" {
     #    url: "/:section/:year/:month/:day/:title:output_ext"
     #}
-end
-
-# Ensure the docs always compile SCSS via Dart Sass.
-with scss
-    use_dart_sass = true
 end
 
 with builtins
