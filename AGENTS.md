@@ -2,8 +2,6 @@
 
 Lunet is a powerful static website generator built with .NET, powered by Scriban.
 
-Pre-release project. Remove this line at stable release.
-
 Paths/commands below are relative to this directory.
 
 ## Orientation

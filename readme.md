@@ -4,8 +4,6 @@
 
 Lunet is a fast, modular static website generator for .NET, powered by [Scriban](https://github.com/scriban/scriban) templates.
 
-> **Status:** Pre-release — the CLI and plugin APIs may change before 1.0.
-
 ## ✨ Features
 
 - **Scriban templating** — full scripting language in your pages, layouts, and config (`config.scriban`)
