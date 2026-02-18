@@ -2,7 +2,7 @@
   "use strict";
 
   function normalizeKind(text) {
-    const kind = (text || "").trim().toLowerCase();
+    var kind = (text || "").trim().toLowerCase();
     switch (kind) {
       case "ctor":
       case "constructor":
@@ -37,20 +37,20 @@
   }
 
   function parseQuery(query) {
-    const tokens = (query || "")
+    var tokens = (query || "")
       .trim()
       .split(/\s+/)
       .filter(Boolean);
 
-    const kinds = [];
-    const textTokens = [];
+    var kinds = [];
+    var textTokens = [];
 
-    for (let index = 0; index < tokens.length; index++) {
-      const token = tokens[index];
-      const idx = token.indexOf(":");
+    for (var index = 0; index < tokens.length; index++) {
+      var token = tokens[index];
+      var idx = token.indexOf(":");
       if (idx > 0) {
-        const key = token.slice(0, idx).toLowerCase();
-        const value = token.slice(idx + 1);
+        var key = token.slice(0, idx).toLowerCase();
+        var value = token.slice(idx + 1);
         if (key === "kind" && value) {
           kinds.push(normalizeKind(value));
           continue;
@@ -66,16 +66,16 @@
   }
 
   function setupFilter(filterRoot) {
-    const input = filterRoot.querySelector(".api-dotnet-member-filter-input");
+    var input = filterRoot.querySelector(".api-dotnet-member-filter-input");
     if (!input) return;
 
-    const scope = filterRoot.closest(".api-dotnet") || document;
-    const items = scope.querySelectorAll(".api-dotnet-member-item");
-    const itemCount = items.length;
+    var scope = filterRoot.closest(".api-dotnet") || document;
+    var items = scope.querySelectorAll(".api-dotnet-member-item");
+    var itemCount = items.length;
     if (itemCount === 0) return;
 
-    for (let index = 0; index < itemCount; index++) {
-      const item = items[index];
+    for (var index = 0; index < itemCount; index++) {
+      var item = items[index];
       if (!item.dataset.apiSearchText) {
         item.dataset.apiSearchText = (item.textContent || "").toLowerCase();
       }
@@ -86,23 +86,26 @@
       }
     }
 
-    const status = document.createElement("div");
-    status.className = "api-dotnet-member-filter-status";
-    status.setAttribute("aria-live", "polite");
-    filterRoot.appendChild(status);
+    var status = filterRoot.querySelector(".api-dotnet-member-filter-status");
+    if (!status) {
+      status = document.createElement("div");
+      status.className = "api-dotnet-member-filter-status";
+      status.setAttribute("aria-live", "polite");
+      filterRoot.appendChild(status);
+    }
 
     function apply() {
-      const q = parseQuery(input.value);
-      let visible = 0;
+      var q = parseQuery(input.value);
+      var visible = 0;
 
-      for (let index = 0; index < itemCount; index++) {
-        const item = items[index];
-        const kindOk =
+      for (var index = 0; index < itemCount; index++) {
+        var item = items[index];
+        var kindOk =
           q.kinds.length === 0 ||
           q.kinds.includes(item.dataset.apiKind || "");
-        const textOk =
+        var textOk =
           q.text === "" || (item.dataset.apiSearchText || "").includes(q.text);
-        const show = kindOk && textOk;
+        var show = kindOk && textOk;
         item.hidden = !show;
         if (show) visible++;
       }
@@ -110,11 +113,11 @@
       status.textContent =
         q.kinds.length === 0 && q.text === ""
           ? ""
-          : `${visible} / ${itemCount} shown`;
+          : visible + " / " + itemCount + " shown";
     }
 
     input.addEventListener("input", apply, { passive: true });
-    input.addEventListener("keydown", (ev) => {
+    input.addEventListener("keydown", function (ev) {
       if (ev.key === "Escape") {
         input.value = "";
         apply();
@@ -125,8 +128,8 @@
   }
 
   function init() {
-    const filters = document.querySelectorAll("[data-api-dotnet-filter]");
-    for (let index = 0; index < filters.length; index++) {
+    var filters = document.querySelectorAll("[data-api-dotnet-filter]");
+    for (var index = 0; index < filters.length; index++) {
       setupFilter(filters[index]);
     }
   }

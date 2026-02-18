@@ -110,9 +110,13 @@ layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 {{~ if $has_any_members ~}}
 
 <div class="api-dotnet-member-filter" data-api-dotnet-filter>
-<label class="api-dotnet-member-filter-label">Filter members</label>
-<input class="form-control api-dotnet-member-filter-input" type="search" placeholder="Type to filter (name, kind, summary)" autocomplete="off" spellcheck="false" />
-<div class="api-dotnet-member-filter-help">Tip: use <code>kind:method</code>, <code>kind:property</code>, <code>kind:ctor</code>.</div>
+{{~ $filter_id = "api-dotnet-member-filter-" + (api_dotnet_handleize member.uid) ~}}
+<div class="api-dotnet-member-filter-row">
+<label class="api-dotnet-member-filter-label" for="{{ $filter_id }}">Filter members:</label>
+<input id="{{ $filter_id }}" class="form-control form-control-sm api-dotnet-member-filter-input" type="search" placeholder="name, kind, summary (e.g. kind:method)" autocomplete="off" spellcheck="false" />
+<div class="api-dotnet-member-filter-status" aria-live="polite"></div>
+</div>
+<div class="form-text api-dotnet-member-filter-help">Tip: use <code>kind:method</code>, <code>kind:property</code>, <code>kind:ctor</code>. Press <kbd>Esc</kbd> to clear.</div>
 </div>
 
 {{~ end ~}}

@@ -825,8 +825,8 @@ table.api-dotnet-members-table td {
 }
 
 .api-dotnet-definition {
-    margin: 0.75rem 0 1rem 0;
-    padding: 0.75rem 1rem;
+    margin: 0.65rem 0 0.9rem 0;
+    padding: 0.65rem 0.9rem;
     border: 1px solid var(--lunet-color-border);
     border-radius: 0.75rem;
     background: var(--lunet-color-surface-1);
@@ -870,8 +870,8 @@ table.api-dotnet-members-table td {
 }
 
 .api-dotnet-parameter {
-    margin: 0.5rem 0 0.75rem 0;
-    padding: 0.5rem 0.75rem;
+    margin: 0.4rem 0 0.6rem 0;
+    padding: 0.45rem 0.7rem;
     border: 1px solid var(--lunet-color-border);
     border-radius: 0.5rem;
     background: var(--lunet-color-surface-1);
@@ -905,8 +905,8 @@ table.api-dotnet-members-table td {
 }
 
 .api-dotnet-inherited {
-    margin: 0.5rem 0 1rem 0;
-    padding: 0.5rem 0.75rem;
+    margin: 0.45rem 0 0.85rem 0;
+    padding: 0.45rem 0.7rem;
     border: 1px solid var(--lunet-color-border);
     border-radius: 0.5rem;
     background: var(--lunet-color-surface-1);
@@ -918,24 +918,70 @@ table.api-dotnet-members-table td {
 }
 
 .api-dotnet-member-filter {
-    margin: 1.25rem 0 0.75rem 0;
-    padding: 0.75rem 1rem;
+    margin: 0.75rem 0 0.45rem 0;
+    padding: 0.45rem 0.65rem;
     border: 1px solid var(--lunet-color-border);
     border-radius: 0.75rem;
     background: var(--lunet-color-surface-1);
 }
 
+.api-dotnet-member-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
 .api-dotnet-member-filter-label {
-    display: block;
     font-weight: 600;
-    margin-bottom: 0.35rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.api-dotnet-member-filter-input {
+    flex: 1 1 24rem;
+    min-width: 14rem;
 }
 
 .api-dotnet-member-filter-help,
 .api-dotnet-member-filter-status {
-    margin-top: 0.35rem;
-    font-size: 0.9em;
+    margin-top: 0.25rem;
+    font-size: 0.85em;
     opacity: 0.85;
+}
+
+.api-dotnet-member-filter-status {
+    margin-top: 0;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.api-dotnet-member-filter-help {
+    display: none;
+}
+
+.api-dotnet-member-filter:focus-within .api-dotnet-member-filter-help {
+    display: block;
+}
+
+@include media-breakpoint-up(md) {
+    .api-dotnet-member-filter-row {
+        flex-wrap: nowrap;
+    }
+}
+
+.api-dotnet h1 {
+    line-height: 1.05;
+    margin-bottom: 0.35rem;
+}
+
+.api-dotnet h2 {
+    margin-top: 1.25rem;
+}
+
+.api-dotnet h3 {
+    margin-top: 1rem;
+    font-size: 1.35rem;
 }
 
 .api-dotnet-members .api-dotnet-member-item {
@@ -951,6 +997,17 @@ table.api-dotnet-members-table td {
     max-width: 55%;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.api-dotnet-members .api-dotnet-member-title-link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    text-decoration: none;
+}
+
+.api-dotnet-members .api-dotnet-member-title-link:hover .api-dotnet-member-name {
+    text-decoration: underline;
 }
 
 .api-dotnet-members .api-dotnet-member-name {

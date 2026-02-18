@@ -9,8 +9,12 @@ layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 {{~ $has_any_types = (namespace.classes && namespace.classes.size > 0) || (namespace.structs && namespace.structs.size > 0) || (namespace.interfaces && namespace.interfaces.size > 0) || (namespace.enums && namespace.enums.size > 0) || (namespace.delegates && namespace.delegates.size > 0) ~}}
 {{~ if $has_any_types ~}}
 <div class="api-dotnet-member-filter" data-api-dotnet-filter>
-<label class="api-dotnet-member-filter-label">Filter types</label>
-<input class="form-control api-dotnet-member-filter-input" type="search" placeholder="Type to filter (name, kind, summary)" autocomplete="off" spellcheck="false" />
+{{~ $filter_id = "api-dotnet-member-filter-" + (api_dotnet_handleize namespace.name) ~}}
+<div class="api-dotnet-member-filter-row">
+<label class="api-dotnet-member-filter-label" for="{{ $filter_id }}">Filter types:</label>
+<input id="{{ $filter_id }}" class="form-control form-control-sm api-dotnet-member-filter-input" type="search" placeholder="name, kind, summary" autocomplete="off" spellcheck="false" />
+<div class="api-dotnet-member-filter-status" aria-live="polite"></div>
+</div>
 </div>
 {{~ end ~}}
 

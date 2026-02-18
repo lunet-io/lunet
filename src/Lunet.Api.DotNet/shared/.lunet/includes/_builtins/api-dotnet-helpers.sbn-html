@@ -303,28 +303,36 @@ func api_dotnet_members_render(api_object, name, text, members_class)
                 $summary = $summary | string.slice 3 ($summary.size - 7)
                 $summary = $summary | string.strip
             end
+
+            # Ensure summaries are inline-safe (member lists render summaries inside a <span>).
+            # Some inputs can contain multiple paragraphs (<p>...</p><p>...</p>), which would break the DOM.
+            $summary = $summary | string.replace "<p>" ""
+            $summary = $summary | string.replace "</p>" " "
+            $summary = $summary | string.strip
         end
 
         $kind_attr = ($member_kind + "") | html.escape
         $icon_html = api_dotnet_kind_icon($member_kind)
 
+        $item_class = "api-dotnet-member-item list-group-item"
         if $link
-            $href = ($link.url + "") | html.escape
-            $result = $result + "<a class=\"api-dotnet-member-item list-group-item list-group-item-action\" href=\"" + $href + "\" data-api-kind=\"" + $kind_attr + "\">"
-        else
-            $result = $result + "<div class=\"api-dotnet-member-item list-group-item\" data-api-kind=\"" + $kind_attr + "\">"
+            $item_class = $item_class + " api-dotnet-member-item-has-link"
         end
 
-        $result = $result + "<span class=\"api-dotnet-member-title\">" + $icon_html + "<code class=\"api-dotnet-member-name\">" + ($title | html.escape) + "</code></span>"
+        $result = $result + "<div class=\"" + ($item_class | html.escape) + "\" data-api-kind=\"" + $kind_attr + "\">"
+
+        if $link
+            $href = ($link.url + "") | html.escape
+            $result = $result + "<a class=\"api-dotnet-member-title api-dotnet-member-title-link\" href=\"" + $href + "\">" + $icon_html + "<code class=\"api-dotnet-member-name\">" + ($title | html.escape) + "</code></a>"
+        else
+            $result = $result + "<span class=\"api-dotnet-member-title\">" + $icon_html + "<code class=\"api-dotnet-member-name\">" + ($title | html.escape) + "</code></span>"
+        end
+
         if $summary != ""
             $result = $result + "<span class=\"api-dotnet-member-summary\">" + $summary + "</span>"
         end
 
-        if $link
-            $result = $result + "</a>\n"
-        else
-            $result = $result + "</div>\n"
-        end
+        $result = $result + "</div>\n"
     end
 
     $result = $result + "</div>\n"
