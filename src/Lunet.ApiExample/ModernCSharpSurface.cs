@@ -241,3 +241,36 @@ public static class ApiUserExtensions
         public bool HasVisibleName() => !string.IsNullOrWhiteSpace(user.FirstName) || !string.IsNullOrWhiteSpace(user.LastName);
     }
 }
+
+/// <summary>
+/// Demonstrates ValueTuple members in public APIs.
+/// </summary>
+public static class TupleHelpers
+{
+    /// <summary>
+    /// Creates a named tuple from a name and a value.
+    /// </summary>
+    /// <typeparam name="T">The value type.</typeparam>
+    /// <param name="name">The name component.</param>
+    /// <param name="value">The value component.</param>
+    /// <returns>A named tuple <c>(Name, Value)</c>.</returns>
+    public static (string Name, T Value) CreatePair<T>(string name, T value) => (name, value);
+
+    /// <summary>
+    /// Splits an RGB color value into its components.
+    /// </summary>
+    /// <param name="rgb">The packed RGB value (0xRRGGBB).</param>
+    /// <returns>A tuple of <c>(R, G, B)</c> byte components.</returns>
+    public static (byte R, byte G, byte B) SplitRgb(int rgb) =>
+        ((byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF));
+
+    /// <summary>
+    /// Deconstructs a key/value pair into a plain tuple.
+    /// </summary>
+    /// <typeparam name="TKey">The key type.</typeparam>
+    /// <typeparam name="TValue">The value type.</typeparam>
+    /// <param name="pair">The key/value pair to convert.</param>
+    /// <returns>A tuple of <c>(Key, Value)</c>.</returns>
+    public static (TKey Key, TValue Value) AsTuple<TKey, TValue>(KeyValuePair<TKey, TValue> pair) =>
+        (pair.Key, pair.Value);
+}

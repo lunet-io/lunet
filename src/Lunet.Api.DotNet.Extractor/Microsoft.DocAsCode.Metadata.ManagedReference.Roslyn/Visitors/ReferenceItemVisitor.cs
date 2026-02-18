@@ -29,7 +29,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
         {
             if (symbol.IsTupleType)
             {
-                symbol = symbol.TupleUnderlyingType;
+                symbol = symbol.TupleUnderlyingType ?? symbol;
             }
             if (symbol.IsGenericType)
             {

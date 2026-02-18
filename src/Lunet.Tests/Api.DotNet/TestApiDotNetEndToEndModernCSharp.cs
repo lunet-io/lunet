@@ -36,6 +36,8 @@ public class TestApiDotNetEndToEndModernCSharp
         ("Operator", "op_UnsignedRightShift", "operator >>>"),
         ("Interface", "IAllowsRefStruct", "allows ref struct"),
         ("Method", "ParamsCollectionFeature.Accept", "params ReadOnlySpan<int> values"),
+        ("Method", "TupleHelpers.CreatePair", "(string Name, T Value) CreatePair"),
+        ("Method", "TupleHelpers.SplitRgb", "(byte R, byte G, byte B) SplitRgb"),
     ];
 
     private PhysicalLunetAppTestContext _context = null!;
@@ -122,6 +124,27 @@ public class TestApiDotNetEndToEndModernCSharp
 
         var extensionMembersPage = ReadRenderedHtmlByUid("ApiE2E.CSharp14ExtensionMembers");
         StringAssert.Contains("CSharp14ExtensionMembers Class", extensionMembersPage);
+    }
+
+    [Test]
+    public void TestValueTupleMembersGenerateValidApiPages()
+    {
+        var tupleHelpersType = FindSingleItem("Class", "ApiE2E.TupleHelpers");
+        var syntax = GetSyntaxContent(tupleHelpersType);
+        StringAssert.Contains("static class TupleHelpers", syntax);
+
+        var createPairMethod = FindSingleItem("Method", "TupleHelpers.CreatePair");
+        var createPairSyntax = GetSyntaxContent(createPairMethod);
+        StringAssert.Contains("(string Name, T Value)", createPairSyntax);
+
+        var splitRgbMethod = FindSingleItem("Method", "TupleHelpers.SplitRgb");
+        var splitRgbSyntax = GetSyntaxContent(splitRgbMethod);
+        StringAssert.Contains("(byte R, byte G, byte B)", splitRgbSyntax);
+
+        var tupleHelpersPage = ReadRenderedHtmlByUid("ApiE2E.TupleHelpers");
+        StringAssert.Contains("TupleHelpers Class", tupleHelpersPage);
+        StringAssert.Contains("CreatePair", tupleHelpersPage);
+        StringAssert.Contains("SplitRgb", tupleHelpersPage);
     }
 
     [Test]
@@ -499,6 +522,17 @@ public class TestApiDotNetEndToEndModernCSharp
                 public void UseContract()
                 {
                 }
+            }
+
+            /// <summary>Helpers returning ValueTuple types.</summary>
+            public static class TupleHelpers
+            {
+                /// <summary>Creates a named pair.</summary>
+                public static (string Name, T Value) CreatePair<T>(string name, T value) => (name, value);
+
+                /// <summary>Splits an RGB value.</summary>
+                public static (byte R, byte G, byte B) SplitRgb(int rgb) =>
+                    ((byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF));
             }
             """);
 

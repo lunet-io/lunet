@@ -137,7 +137,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 if ((Options & NameOptions.Qualified) == NameOptions.Qualified)
                 {
                     Append("ValueTuple");
-                    symbol = symbol.TupleUnderlyingType;
+                    symbol = symbol.TupleUnderlyingType ?? symbol;
                 }
                 else
                 {
@@ -617,7 +617,7 @@ namespace Microsoft.DocAsCode.Metadata.ManagedReference
                 if ((Options & NameOptions.Qualified) == NameOptions.Qualified)
                 {
                     Append("ValueTuple");
-                    symbol = symbol.TupleUnderlyingType;
+                    symbol = symbol.TupleUnderlyingType ?? symbol;
                 }
                 else
                 {
