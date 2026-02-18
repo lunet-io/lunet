@@ -273,3 +273,59 @@ search.excludes.add ["/draft/**", "/internal/**"]
 # Add SCSS include paths
 scss.includes.add "/sass/vendor"
 ```
+
+## Configuring the HTML document (`site.html`)
+
+The `site.html` object controls what gets injected into the HTML document shell by the base layout. This is configured in `config.scriban` and consumed at render time by includes like `_builtins/head.sbn-html`.
+
+### Custom `<title>`
+
+Use a `do`/`ret` block to compute the title at render time (when `page` is available):
+
+```scriban
+html.head.title = do
+  ret (page.title == "Home" ? site.title : page.title + " | " + site.title)
+end
+```
+
+### HTML element attributes
+
+Add attributes to the `<html>` element:
+
+```scriban
+html.attributes = 'lang="en" itemscope itemtype="http://schema.org/WebPage"'
+```
+
+You can include `data-` attributes for JavaScript initialization:
+
+```scriban
+html.attributes = 'data-theme-mode="system" data-theme-key="my-theme" lang="en"'
+```
+
+### Inline scripts and meta tags
+
+Add inline `<script>` or `<meta>` tags to `<head>`:
+
+```scriban
+html.head.metas.add '<link rel="icon" href="/favicon.ico" sizes="32x32">'
+html.head.metas.add '<script>/* early inline JS, e.g. theme flicker prevention */</script>'
+```
+
+### Head includes (template fragments)
+
+Register Scriban include templates to be rendered inside `<head>`:
+
+```scriban
+html.head.includes.add "_builtins/cards.sbn-html"
+html.head.includes.add "_builtins/bundle.sbn-html"
+```
+
+These includes have access to `site`, `page`, and all template variables at render time.
+
+### Body attributes
+
+Add attributes to the `<body>` element:
+
+```scriban
+html.body.attributes = 'class="docs-page"'
+```
