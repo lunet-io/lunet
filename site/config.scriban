@@ -4,8 +4,7 @@
 #   lunet serve
 #
 # This site uses a shared theme/template published as a Lunet extension.
-#extend "XenoAtom/lunet_template@1.0.0"
-extend "local"
+extend "lunet-io/templates"
 
 # -----------------------------------------------------------------------------
 # SITE SECTION (project-specific values only)
