@@ -41,7 +41,7 @@ This guide documents Lunet from a **user perspective**: how to create a site, co
 | [Taxonomies](plugins/taxonomies.md) | Tags/categories + generated term pages |
 | [RSS](plugins/rss.md) | Generate RSS feeds via layouts |
 | [Sitemaps](plugins/sitemaps.md) | Generate `sitemap.xml` + `robots.txt` |
-| [Search](plugins/search.md) | Generate a search index (sqlite or lunr) |
+| [Search](plugins/search.md) | Generate a client-side search index |
 | [Cards (OpenGraph/Twitter)](plugins/cards.md) | SEO/social meta tags |
 | [Tracking (Google Analytics)](plugins/tracking.md) | Analytics injection (prod only) |
 | [Server (`lunet serve`)](plugins/server.md) | Local web server + live reload |

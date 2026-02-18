@@ -4,9 +4,9 @@ title: "Extends module (themes)"
 
 # Extends module (themes)
 
-The extends module implements the global `extend` function used from `config.scriban`.
+The extends module implements the global `extend` function used from `config.scriban` to load themes and extensions.
 
-From a user perspective, an “extension” is usually a **theme repository** that Lunet downloads and layers on top of your site.
+For a detailed guide on how themes work, how the layered filesystem operates, and how to override theme files, see [Themes & extensions](../themes-and-extends.md).
 
 ## Supported forms
 
@@ -33,23 +33,26 @@ extend {
 }
 ```
 
-Notes:
 - `directory` defaults to `dist`.
-- If the extension contains `dist/config.scriban`, it is imported automatically.
+- If the extension contains `dist/config.scriban`, it is imported automatically into the current site context.
 
 ## Local extensions
 
-To use a local theme, place it under your site:
+To use a local theme during development, place it under:
 
-`/.lunet/extends/<name>/`
-
-Then:
-
-```scriban
-extend "<name>"
+```text
+<your-site>/.lunet/extends/<name>/
 ```
 
-## Convention: `dist/` + `.lunet/`
+Then load it by name:
+
+```scriban
+extend "mytheme"
+```
+
+When the name does not contain a `/`, Lunet looks for it locally instead of on GitHub.
+
+## Convention: `dist/` folder structure
 
 Lunet expects theme content to live under `dist/`:
 
@@ -57,12 +60,12 @@ Lunet expects theme content to live under `dist/`:
 repo/
   readme.md
   dist/
-    config.scriban          (optional)
-    readme.md               (optional home page)
+    config.scriban          (optional — runs during site config)
+    readme.md               (optional — default home page)
     .lunet/
-      layouts/
-      includes/
-      data/
+      layouts/              (layout templates)
+      includes/             (include templates)
+      data/                 (data files)
 ```
 
-Everything under `dist/` becomes available as if it were part of your site.
+Everything under `dist/` becomes available as if it were part of your site, but at a lower priority than your own files. See [Site structure](../site-structure.md) for how the layered filesystem works.

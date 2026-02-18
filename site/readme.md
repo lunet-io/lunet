@@ -6,11 +6,12 @@ og_type: website
 
 # Lunet
 
-Lunet is a fast, scriptable static site generator for .NET.
+Lunet is a fast, scriptable static site generator for .NET, powered by [Scriban](https://github.com/scriban/scriban).
 
-- Configuration is **Scriban code** (`config.scriban`), not YAML-only config.
-- Content and layouts are **Scriban templates**, with optional YAML or Scriban front matter.
+- Configuration is **executable Scriban code** (`config.scriban`), not YAML-only config.
+- Content files use **Scriban templates** with optional YAML or Scriban front matter.
 - Themes are **extensions** layered on top of your site via `extend "owner/repo@tag"`.
+- A **virtual layered filesystem** lets you override any theme file by placing your own version at the same path.
 
 > [!WARNING]
 > 

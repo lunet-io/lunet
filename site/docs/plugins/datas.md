@@ -4,12 +4,13 @@ title: "Datas module"
 
 # Datas module
 
-The datas module owns the `site.data` root object.
+The datas module owns the `site.data` root object. It is the container that format-specific modules register their loaders into:
 
-Format-specific modules register loaders into it:
-- [YAML](yaml.md)
-- [JSON](json.md)
-- [TOML](toml.md)
+- [YAML](yaml.md) — loads `.yml` and `.yaml` files
+- [JSON](json.md) — loads `.json` files
+- [TOML](toml.md) — loads `.toml` files
 
-All data is loaded from `/.lunet/data/**` before content processing so it is available in layouts and includes.
+All data files from `/.lunet/data/**` are loaded **before** content processing begins, so data is available in `config.scriban`, layouts, includes, and page templates via `site.data.<filename>`.
+
+For usage examples, see the [Data modules](data.md) page.
 
