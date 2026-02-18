@@ -121,3 +121,19 @@ og_type: website
 </div>
   </div>
 </section>
+
+<section class="container my-5">
+  <div class="card">
+    <div class="card-header display-6">
+      <i class="bi bi-github lunet-feature-icon lunet-icon--chrome"></i> One-click deploy with GitHub Actions
+    </div>
+    <div class="card-body">
+      <p class="card-text">
+        Add a single workflow file to your repository and Lunet builds &amp; deploys your site to <strong>GitHub Pages</strong> automatically — no build scripts needed.
+      </p>
+
+[Publishing with GitHub Actions](docs/github-actions.md)
+
+</div>
+  </div>
+</section>

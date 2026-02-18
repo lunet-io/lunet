@@ -7,5 +7,6 @@ doc:
   - {path: content-and-frontmatter.md, title: "<i class='bi bi-file-text' aria-hidden='true'></i> Content & front matter"}
   - {path: layouts-and-includes.md, title: "<i class='bi bi-layout-text-window-reverse' aria-hidden='true'></i> Layouts & includes"}
   - {path: themes-and-extends.md, title: "<i class='bi bi-palette' aria-hidden='true'></i> Themes & extends"}
+  - {path: github-actions.md, title: "<i class='bi bi-github' aria-hidden='true'></i> GitHub Actions"}
   - {path: plugins/readme.md, title: "<i class='bi bi-plug' aria-hidden='true'></i> Modules", folder: true}
 

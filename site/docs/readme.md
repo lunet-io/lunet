@@ -25,6 +25,13 @@ This guide documents Lunet from a **user perspective**: how to create a site, co
 | [Layouts & includes](layouts-and-includes.md) | Layout resolution in `/.lunet/layouts`, includes in `/.lunet/includes` |
 | [Themes & extensions](themes-and-extends.md) | `extend "owner/repo@tag"`, layering rules, conventions (`dist/`, `.lunet/`) |
 
+## Deployment
+
+{.table}
+| Guide | What you'll learn |
+|---|---|
+| [GitHub Actions](github-actions.md) | Build and publish your site to GitHub Pages with a single workflow file |
+
 ## Modules (plugins)
 
 {.table}
