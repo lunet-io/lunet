@@ -143,3 +143,133 @@ lunet build --define "baseurl=https://staging.example.com"
 ```
 
 Each `--define` value is executed as a Scriban statement against the site object, so `--define "myvar=42"` sets `site.myvar` to `42`.
+
+
+## Scriban language patterns in config
+
+Since `config.scriban` is executable Scriban code, you can use the full Scriban language. Here are the most useful patterns.
+
+### Null coalescing (`??`)
+
+The `??` operator returns the left side if it’s not null, otherwise the right side:
+
+```scriban
+baseurl = baseurl ?? "https://example.com"
+```
+
+This is commonly used to provide defaults that can be overridden by `--define` or by an extension.
+
+### String interpolation (`$"..."`)
+
+Use `$"..."` for string interpolation inside config:
+
+```scriban
+github_user = "my-org"
+github_repo = "my-project"
+github_repo_url = $"https://github.com/{github_user}/{github_repo}/"
+```
+
+### Conditional expressions (`? :`)
+
+The ternary operator works inside config:
+
+```scriban
+minify_output = environment != "dev"
+```
+
+### `with` blocks
+
+The `with ... end` block sets a context for setting multiple properties on an object:
+
+```scriban
+with bundle
+  css "/css/main.scss"
+  js "/js/main.js"
+  concat = true
+  minify = true
+end
+```
+
+`with` blocks can be nested:
+
+```scriban
+with cards
+  with twitter
+    enable = true
+    card = "summary_large_image"
+  end
+  with og
+    enable = true
+  end
+end
+```
+
+### `for` loops
+
+You can loop in config to add multiple items:
+
+```scriban
+prism_components = ["prism-csharp.min.js", "prism-python.min.js", "prism-json.min.js"]
+
+with bundle
+  for path in prism_components
+    content prismjs "components/" + path "/js/components/"
+  end
+end
+```
+
+### Defining functions (`func`)
+
+You can define reusable functions in config. This is commonly used by themes to provide an initialization function:
+
+```scriban
+func site_project_init
+  title = site_project_name ?? "My Project"
+  description = site_project_description ?? "Project description."
+  baseurl = baseurl ?? site_project_baseurl ?? "https://example.com"
+  author = site_project_owner_name
+end
+```
+
+The consumer site calls this function after setting the input variables:
+
+```scriban
+extend "owner/theme-repo@1.0.0"
+
+site_project_name = "My App"
+site_project_description = "A great app."
+site_project_baseurl = "https://myapp.io"
+site_project_owner_name = "Jane Doe"
+
+site_project_init   # calls the function defined by the theme
+```
+
+### Computed properties with `do`/`ret`
+
+Some site properties accept a **deferred expression** using `do; ret ...; end`. This creates a function that is evaluated later (at render time) instead of immediately:
+
+```scriban
+html.head.title = do
+  ret (page.title == "Home" ? site.title : page.title + " | " + site.title)
+end
+```
+
+This is particularly useful for `html.head.title` because `page` is only available at render time, not during config.
+
+### Adding to collections
+
+Many configuration objects expose collections you can add to:
+
+```scriban
+# Add meta tags to <head>
+html.head.metas.add '<meta name="author" content="Jane Doe">'
+
+# Add includes to <head>
+html.head.includes.add "_builtins/cards.sbn-html"
+
+# Add search excludes
+search.excludes.add ["/draft/**", "/internal/**"]
+
+# Add SCSS include paths
+scss.includes.add "/sass/vendor"
+```
