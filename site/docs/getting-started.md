@@ -29,11 +29,12 @@ lunet init mysite
 cd mysite
 ```
 
-The skeleton includes:
+The skeleton creates two files:
 
-- A `config.scriban` file (your site configuration)
-- Minimal layouts and includes under `.lunet/`
-- A sample home page
+- **`config.scriban`** — your [site configuration](configuration.md) with title, baseurl, and basic bundle/SCSS setup
+- **`readme.md`** — a sample home page with front matter
+
+Default layouts and includes are provided automatically by Lunet's built-in shared files — you don't need to create a `.lunet/` folder to get started. See [Site structure](site-structure.md) for details on how the layered filesystem works.
 
 ## Build your site
 
@@ -45,6 +46,12 @@ lunet build
 
 The output is written to `.lunet/build/www/` by default. Open `index.html` in a browser to see the result.
 
+For a production build, Lunet sets `site.environment = "prod"`. To build in development mode:
+
+```shell-session
+lunet build --dev
+```
+
 ## Serve with live reload
 
 For development, use the built-in server:
@@ -55,9 +62,27 @@ lunet serve
 
 This starts a local web server at `http://localhost:4000` with:
 
-- **Live reload** — changes to files are detected and the browser refreshes automatically.
-- **Development mode** — `site.environment` is set to `"dev"`, so analytics and other production-only features are disabled.
+- **Live reload** — changes to files are detected and the browser refreshes automatically via WebSocket.
+- **Development mode** — `site.environment` is set to `"dev"`, so production-only features (like [analytics](plugins/tracking.md)) are disabled.
 - **Local base URL** — `baseurl` and `basepath` are overridden to point to `localhost`.
+
+## Adding content
+
+Create Markdown files with YAML front matter to add pages:
+
+```markdown
+---
+title: "About"
+---
+
+# About this site
+
+This is a Markdown page that will be converted to HTML.
+```
+
+Files with front matter are treated as **pages** and processed through the layout pipeline. Files without front matter (images, CSS, JS) are copied to the output as-is.
+
+See [Content & front matter](content-and-frontmatter.md) for details on front matter formats and page variables.
 
 ## Key concepts to learn next
 
@@ -66,3 +91,8 @@ This starts a local web server at `http://localhost:4000` with:
 3. **[Site structure](site-structure.md)** — understand the folder layout and the layered virtual filesystem.
 4. **[Layouts & includes](layouts-and-includes.md)** — learn how Lunet wraps your content in reusable templates.
 5. **[Themes & extensions](themes-and-extends.md)** — use pre-built themes or create your own.
+6. **[CLI reference](cli.md)** — full command and option reference.
+
+## See also
+
+- [Modules reference](plugins/readme.md) — all built-in modules ([Bundles](plugins/bundles.md), [SCSS](plugins/scss.md), [Markdown](plugins/markdown.md), [Menus](plugins/menus.md), and more)
