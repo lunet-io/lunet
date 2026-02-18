@@ -32,21 +32,19 @@ site_project_init
 # -----------------------------------------------------------------------------
 # API reference sample (generated from a local .NET project)
 # -----------------------------------------------------------------------------
-with api.dotnet
-    title = "Lunet.ApiExample .NET API Reference"
-    path = "/api"
-    menu_name = "api"
-    menu_title = "API Reference"
-    properties = {
-        TargetFramework: "net10.0"
+api.dotnet.title = "Lunet.ApiExample .NET API Reference"
+api.dotnet.path = "/api"
+api.dotnet.menu_name = "api"
+api.dotnet.menu_title = "API Reference"
+api.dotnet.properties = {
+    TargetFramework: "net10.0"
+}
+api.dotnet.projects = [
+    {
+        name: "Lunet.ApiExample",
+        path: "../src/Lunet.ApiExample/Lunet.ApiExample.csproj"
     }
-    projects = [
-        {
-            name: "Lunet.ApiExample",
-            path: "../src/Lunet.ApiExample/Lunet.ApiExample.csproj"
-        }
-    ]
-end
+]
 
 # -----------------------------------------------------------------------------
 # Docs site settings
