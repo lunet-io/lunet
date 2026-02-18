@@ -10,9 +10,19 @@ layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 <h2 id="definition" class="heading-anchor-hidden">Definition</h2>
 
 <div class="api-dotnet-definition">
+<div class="api-dotnet-definition-header">
 <div class="api-dotnet-definition-meta">
 <div><span class="api-dotnet-label">Namespace</span> {{ member.namespace| xref_to_html_link }}</div>
 <div><span class="api-dotnet-label">Assembly</span> {{ member.assemblies[0] }}.dll</div>
+{{~ if member.inheritance ~}}
+<div><span class="api-dotnet-label">Inherits</span> <span class="api-dotnet-inline-list">{{ for $base in member.inheritance;}}{{if !for.first}} &#x2192; {{end}}{{$base | xref_to_html_link }}{{~ end }}</span></div>
+{{~ end ~}}
+{{~ if member.derivedClasses ~}}
+<div><span class="api-dotnet-label">Derived</span> <span class="api-dotnet-inline-list">{{ for $base in member.derivedClasses;}}{{if !for.first}}, {{end}}{{$base | xref_to_html_link true }}{{~ end }}</span></div>
+{{~ end ~}}
+{{~ if member.implements ~}}
+<div><span class="api-dotnet-label">Implements</span> <span class="api-dotnet-inline-list">{{ for $base in member.implements;}}{{if !for.first}}, {{end}}{{$base | xref_to_html_link }}{{~ end }}</span></div>
+{{~ end ~}}
 </div>
 {{~ if $source_url != "" ~}}
 <div class="api-dotnet-definition-actions">
@@ -20,11 +30,21 @@ layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 </div>
 {{~ end ~}}
 </div>
+{{~ if member.inheritedMembers && member.inheritedMembers.size > 0 ~}}
+<details class="api-dotnet-inherited">
+<summary>Show inherited members ({{ member.inheritedMembers.size }})</summary>
+<ul>
+{{~ for $inherited in member.inheritedMembers ~}}
+<li>{{ $inherited | xref_to_html_link true }}</li>
+{{~ end ~}}
+</ul>
+</details>
+{{~ end ~}}
+</div>
 
 {{ api_dotnet_resolve_xrefs member.summary }}
 
 ```csharp
-// C#
 {{~ member.syntax.content }}
 ```
 
@@ -57,40 +77,6 @@ layout_type = site.api.dotnet.layout_type ?? "api-dotnet-base"
 <div class="api-dotnet-parameter">
 <dl class="api-dotnet-parameter-list"><dt>{{ member.syntax.return.type | xref_to_html_link }}</dt><dd>{{ api_dotnet_resolve_xrefs member.syntax.return.description }}</dd></dl>
 </div>
-{{~ end ~}}
-
-{{~ if member.inheritance ~}}
-
-<h3 id="inheritance">Inheritance</h3>
-<ul class="api-dotnet-related">
-{{ for $base in member.inheritance;}}<li>{{$base | xref_to_html_link }}</li>{{~ end }}
-</ul>
-{{~ end ~}}
-{{~ if member.derivedClasses ~}}
-
-<h3 id="derived">Derived</h3>
-<ul class="api-dotnet-related">
-{{ for $base in member.derivedClasses;}}<li>{{$base | xref_to_html_link true }}</li>{{~ end }}
-</ul>
-{{~ end ~}}
-{{~ if member.implements ~}}
-
-<h3 id="implements">Implements</h3>
-<ul class="api-dotnet-related">
-{{ for $base in member.implements;}}<li>{{$base | xref_to_html_link }}</li>{{~ end }}
-</ul>
-{{~ end ~}}
-{{~ if member.inheritedMembers && member.inheritedMembers.size > 0 ~}}
-
-<h3 id="inherited-members">Inherited members</h3>
-<details class="api-dotnet-inherited">
-<summary>Show inherited members ({{ member.inheritedMembers.size }})</summary>
-<ul>
-{{~ for $inherited in member.inheritedMembers ~}}
-<li>{{ $inherited | xref_to_html_link true }}</li>
-{{~ end ~}}
-</ul>
-</details>
 {{~ end ~}}
 
 {{~ if member.example && member.example.size > 0 ~}}

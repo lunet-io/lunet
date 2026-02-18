@@ -250,6 +250,7 @@ with bundle
     js prismjs "/plugins/autoloader/prism-autoloader.min.js"
     js prismjs "/plugins/toolbar/prism-toolbar.min.js"
     js prismjs "/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"
+    js prismjs "/plugins/show-language/prism-show-language.min.js"
     # js mermaid "/dist/mermaid.min.js"
     js "/js/main.js"
 

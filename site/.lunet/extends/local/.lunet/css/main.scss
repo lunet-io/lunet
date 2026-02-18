@@ -831,6 +831,12 @@ table.api-dotnet-members-table td {
     border-radius: 0.75rem;
     background: var(--lunet-color-surface-1);
     display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.api-dotnet-definition-header {
+    display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
@@ -838,7 +844,12 @@ table.api-dotnet-members-table td {
 
 .api-dotnet-definition-meta {
     display: grid;
-    gap: 0.25rem;
+    gap: 0.2rem;
+    flex: 1 1 auto;
+}
+
+.api-dotnet-inline-list {
+    display: inline;
 }
 
 .api-dotnet-label {
@@ -846,10 +857,20 @@ table.api-dotnet-members-table td {
     font-weight: 600;
     opacity: 0.85;
     margin-right: 0.35rem;
+    display: inline-block;
+    min-width: 6rem;
 }
 
 .api-dotnet-definition-actions {
     flex: 0 0 auto;
+}
+
+.api-dotnet-definition .api-dotnet-inherited {
+    margin: 0.45rem 0 0;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--lunet-color-border);
+    border-radius: 0.5rem;
+    background: var(--lunet-color-surface-2);
 }
 
 .api-dotnet-action {
@@ -895,26 +916,10 @@ table.api-dotnet-members-table td {
     opacity: 0.9;
 }
 
-.api-dotnet-related {
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.api-dotnet-related li {
-    margin-top: 0.15rem;
-}
-
-.api-dotnet-inherited {
-    margin: 0.45rem 0 0.85rem 0;
-    padding: 0.45rem 0.7rem;
-    border: 1px solid var(--lunet-color-border);
-    border-radius: 0.5rem;
-    background: var(--lunet-color-surface-1);
-}
-
 .api-dotnet-inherited > summary {
     cursor: pointer;
     font-weight: 600;
+    font-size: 0.85em;
 }
 
 .api-dotnet-member-filter {
