@@ -65,7 +65,10 @@ public class DotNetProgram
         {
             foreach (var property in properties)
             {
-                argsBuilder.Append($" -p:{property.Key}={EscapePath(GetPropertyValueAsString(property.Value))}");
+                // MSBuild treats `;` as a list separator even inside quotes,
+                // so we must escape it as `%3B` for property values.
+                var value = GetPropertyValueAsString(property.Value).Replace(";", "%3B");
+                argsBuilder.Append($" -p:{property.Key}={EscapePath(value)}");
             }
         }
 
@@ -154,7 +157,7 @@ public class DotNetProgram
         return output.ToString();
     }
 
-    private static readonly Regex MatchWhitespace = new Regex(@"[\s\:]");
+    private static readonly Regex MatchWhitespace = new Regex(@"[\s\:;]");
 
     public static string EscapePath(string path)
     {
