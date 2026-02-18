@@ -116,17 +116,86 @@ Inside a layout template, the `content` variable holds the rendered body of the 
 
 ### Layout chaining
 
-A layout can specify its own `layout`, `layout_type`, or `layout_content_type` in its front matter. Lunet will then wrap the result in another layout:
+A layout can specify its own `layout`, `layout_type`, or `layout_content_type` in its front matter. Lunet will then wrap the result in another layout.
+
+#### Real-world example: three-layer layout chain
+
+A typical theme uses layout chaining to separate concerns. Here's a pattern based on a real Lunet theme:
 
 ```text
-+++
-layout = "base"
-layout_type = "single"
-+++
-<article>{{ '{{' }} content {{ '}}' }}</article>
+Page body
+  ↓ wrapped by
+"default" layout (adds sidebar menu + TOC + content area)
+  ↓ wrapped by
+"base" layout (adds navbar + footer + Prism setup)
+  ↓ wrapped by
+"_default" layout (adds <!DOCTYPE>, <html>, <head>, <body>)
 ```
 
-This creates a chain: page body → first layout → second layout (`base`). Lunet detects infinite loops (same layout tuple visited twice) and stops with an error.
+**`/.lunet/layouts/_default.sbn-html`** — the outermost shell:
+
+```scriban
+<!DOCTYPE html>
+<html {{ '{{' }} site.html.attributes {{ '}}' }}>
+<head>
+  {{ '{{' }} include "_builtins/head.sbn-html" {{ '}}' }}
+</head>
+<body {{ '{{' }} site.html.body.attributes {{ '}}' }}>
+{{ '{{' }} content {{ '}}' }}
+  {{ '{{' }} include "_builtins/bundle.sbn-html" {{ '}}' }}
+</body>
+</html>
+```
+
+**`/.lunet/layouts/base.sbn-html`** — adds navbar, footer, sets `layout: _default`:
+
+```text
+---
+layout: _default
+---
+<div class="container">
+  <nav>...</nav>
+  <section>{{ '{{' }} content {{ '}}' }}</section>
+  <footer>...</footer>
+</div>
+```
+
+**`/.lunet/layouts/default.sbn-html`** — adds sidebar menu and TOC, sets `layout: base`:
+
+```text
+---
+layout: base
+---
+<div class="row">
+  <nav>{{ '{{' }} page.menu.render { kind: "menu", collapsible: true } {{ '}}' }}</nav>
+  <div>{{ '{{' }} content {{ '}}' }}</div>
+  <aside class="js-toc"></aside>
+</div>
+```
+
+When a page uses `layout: default` (or defaults to it via `site.layout = "default"` in config), the chain runs:
+
+1. Page Markdown → converted to HTML.
+2. `default` layout wraps it with sidebar/TOC structure.
+3. `base` layout wraps that with navbar/footer.
+4. `_default` layout wraps everything with the HTML document shell.
+
+Each step passes its output as the `content` variable to the next layout.
+
+#### Simple variant
+
+A page can bypass the sidebar layout by using `layout: simple`:
+
+```yaml
+---
+title: Home
+layout: simple
+---
+```
+
+If `simple.sbn-html` sets `layout: base` in its front matter, it skips the sidebar step but still gets navbar/footer and the HTML shell.
+
+Lunet detects infinite loops (same layout tuple visited twice) and stops with an error.
 
 ### Markdown → HTML conversion
 
