@@ -35,10 +35,10 @@ In **templates**, you generate output:
 
 ### Where layouts live
 
-Layout files are stored under `/.lunet/layouts/` in the site’s meta filesystem. This folder can come from:
+Layout files are stored under `/.lunet/layouts/` in the site's meta filesystem. This folder can come from:
 
 1. **Your site** — `<site>/.lunet/layouts/`
-2. **A theme/extension** — the extension’s `.lunet/layouts/`
+2. **A theme/extension** — the extension's `.lunet/layouts/`
 3. **Lunet built-in shared** — shipped with the Lunet binary
 
 Your local files always take priority (see [Site structure](site-structure.md) for the layered filesystem).
@@ -50,6 +50,12 @@ When Lunet renders a page, it looks for a matching layout using three pieces of 
 1. **`page.layout`** — the layout name (defaults to `page.section`, i.e. the first directory segment of the file path)
 2. **`page.layout_type`** — the type of rendering (`single` by default)
 3. **`page.content_type`** — the output format (`html`, `xml`, `rss`, etc.)
+
+#### Layout name normalization
+
+Layout names cannot contain `\`, `/`, or `.` characters. If present, they are replaced with `-` and a warning is logged. For example, `layout: "my.custom"` in front matter becomes `my-custom`.
+
+If the layout name is empty or null, Lunet falls back to `site.layout` (if set) or `_default`.
 
 #### Step-by-step example
 
@@ -73,17 +79,43 @@ _default.sbn-html          ← fallback default (any type)
 
 If `site.layout` is set (e.g. `site.layout = "mybase"`), it is tried between the section-specific and `_default` layouts.
 
-The first matching file wins. All registered extensions for the content type are tried (e.g. `.sbn-html`, `.scriban-html`, `.html`).
+The first matching file wins. All registered extensions for the content type are tried (e.g. `.sbn-html`, `.scriban-html`, `.html`, `.htm`).
 
 ### Layout search patterns (full reference)
 
-{.table}
-| `layout_type` | Paths tried (in order) under `/.lunet/layouts/` |
-|---|---|
-| `single` | `<layout>/<type>`, `<layout>.<type>`, `<layout>`, `<site.layout>/<type>`, `<site.layout>.<type>`, `<site.layout>`, `_default/<type>`, `_default` |
-| `list` and other types | `<layout>/<type>`, `<layout>.<type>`, `<site.layout>/<type>`, `<site.layout>.<type>`, `_default/<type>`, `_default.<type>` |
+The search order differs between `single` and all other layout types:
 
-Where `<layout>` = `page.layout`, `<type>` = `page.layout_type`.
+#### Single layout search (8 candidates)
+
+{.table}
+| # | Path pattern | Note |
+|---|---|---|
+| 1 | `{layout}/{type}` | e.g. `docs/single` |
+| 2 | `{layout}.{type}` | e.g. `docs.single` |
+| 3 | `{layout}` | e.g. `docs` — **single only** (bare name without type) |
+| 4 | `{site.layout}/{type}` | only if `site.layout` is set and differs from `layout` |
+| 5 | `{site.layout}.{type}` | same condition |
+| 6 | `{site.layout}` | **single only** — bare name |
+| 7 | `_default/{type}` | only if `layout ≠ _default` |
+| 8 | `_default` | **single only** — bare `_default` |
+
+#### List and other types search (6 candidates)
+
+{.table}
+| # | Path pattern | Note |
+|---|---|---|
+| 1 | `{layout}/{type}` | e.g. `docs/list`, `tags/term` |
+| 2 | `{layout}.{type}` | e.g. `docs.list`, `tags.term` |
+| 3 | `{site.layout}/{type}` | only if `site.layout` is set and differs from `layout` |
+| 4 | `{site.layout}.{type}` | same condition |
+| 5 | `_default/{type}` | only if `layout ≠ _default` |
+| 6 | `_default.{type}` | only if `layout ≠ _default` |
+
+> [!NOTE]
+>
+> The key difference: `single` tries the bare layout name without the type suffix (paths 3, 6, 8), so `docs.sbn-html` matches single pages in the `docs` section. Non-single types always require the type in the path.
+
+For each candidate path, all registered file extensions for the content type are tried. For `html`, this includes: `.htm`, `.html`, `.scriban-htm`, `.scriban-html`, `.sbn-htm`, `.sbn-html`.
 
 ### Common layout file examples
 
@@ -118,9 +150,11 @@ Inside a layout template, the `content` variable holds the rendered body of the 
 
 A layout can specify its own `layout`, `layout_type`, or `layout_content_type` in its front matter. Lunet will then wrap the result in another layout.
 
+At each step, the layout's output becomes the new `content` variable passed to the next layout.
+
 #### Real-world example: three-layer layout chain
 
-A typical theme uses layout chaining to separate concerns. Here's a pattern based on a real Lunet theme:
+A typical theme uses layout chaining to separate concerns:
 
 ```text
 Page body
@@ -195,31 +229,57 @@ layout: simple
 
 If `simple.sbn-html` sets `layout: base` in its front matter, it skips the sidebar step but still gets navbar/footer and the HTML shell.
 
-Lunet detects infinite loops (same layout tuple visited twice) and stops with an error.
+> [!WARNING]
+>
+> Lunet detects infinite loops (same layout/type/content-type tuple visited twice) and stops with an error.
 
 ### Markdown → HTML conversion
 
 For Markdown pages, Lunet first **converts** the content from Markdown to HTML, then searches for an HTML layout:
 
 1. Page has `content_type = markdown`.
-2. Markdown converter runs → content becomes HTML.
-3. Layout processor searches for an HTML layout.
+2. No matching Markdown layout found → Markdown converter runs → content becomes HTML.
+3. Layout processor retries with `content_type = html` → finds an HTML layout.
 
 This means your layout files should be `.sbn-html` (not `.sbn-md`) even when wrapping Markdown pages.
 
 ### Single vs list rendering
 
-- **`single`** is the default rendering mode for every page.
-- **`list`** (and other list-like types) are used for index/collection pages. In list mode, Lunet injects `pages = site.pages` into the template scope.
-- List types are rendered after all single pages (ordered by weight in `site.layout_types`).
+- **`single`** is the default rendering mode for every page (weight 0 — processed first).
+- **`list`** is used for index/collection pages (weight 10 — processed after single). In list mode, Lunet injects `pages = site.pages` into the template scope.
+- Other list-like types (`rss`, `sitemap`, `term`, `terms`) also have weight 10 and are processed after single pages, but they do **not** inject a `pages` variable — each module injects its own data.
 
-Modules can register custom layout types (e.g. `rss`, `sitemap`, `api-dotnet`, `term`, `terms`).
+Modules can register custom layout types. Currently registered types:
+
+{.table}
+| Type | Weight | Module | Description |
+|---|---|---|---|
+| `single` | 0 | Built-in | Default for all pages |
+| `list` | 10 | Built-in | Index/collection pages |
+| `rss` | 10 | [RSS](plugins/rss.md) | RSS feed generation |
+| `sitemap` | 10 | [Sitemaps](plugins/sitemaps.md) | Sitemap generation |
+| `term` | 10 | [Taxonomies](plugins/taxonomies.md) | Individual term pages (e.g. a specific tag) |
+| `terms` | 10 | [Taxonomies](plugins/taxonomies.md) | Term list pages (e.g. all tags) |
+
+### Built-in layouts
+
+Lunet and its modules ship default layouts:
+
+{.table}
+| Layout file | Module | Description |
+|---|---|---|
+| `_default.sbn-html` | Layouts | HTML document shell (`<!DOCTYPE>`, `<html>`, `<head>`, `<body>`) |
+| `_default.rss.xml` | [RSS](plugins/rss.md) | Default RSS 2.0 feed |
+| `_default.sitemap.xml` | [Sitemaps](plugins/sitemaps.md) | Default sitemap XML |
+| `_default.api-dotnet*.sbn-md` | [API .NET](plugins/api-dotnet.md) | API documentation pages |
+
+You can override any built-in layout by creating the same path under your site's `/.lunet/layouts/`.
 
 ## Include files
 
 ### Where includes live
 
-Include templates live under `/.lunet/includes/` in the meta filesystem. Like layouts, they can come from your site, a theme, or Lunet’s built-in shared files.
+Include templates live under `/.lunet/includes/` in the meta filesystem. Like layouts, they can come from your site, a theme, or Lunet's built-in shared files.
 
 ### Using includes
 
@@ -232,15 +292,26 @@ Includes resolve paths relative to `/.lunet/includes/`. You cannot use:
 - absolute paths starting with `/` or `\`
 - parent traversal (`..`)
 
+Include files are cached during a build — each file is read once and reused across all pages.
+
+> [!TIP]
+>
+> Includes work in page/layout templates **and** in front matter (both `---` and `+++` blocks). They do **not** work in `config.scriban`.
+
 ### Built-in includes
 
 Lunet and its modules ship several built-in includes under `_builtins/`:
 
-- `_builtins/head.sbn-html` — standard `<head>` content
-- `_builtins/bundle.sbn-html` — CSS/JS bundle injection
-- `_builtins/cards.sbn-html` — OpenGraph/Twitter meta tags
+{.table}
+| Include | Module | Description |
+|---|---|---|
+| `_builtins/head.sbn-html` | Core | Standard `<head>` content (title, metas, head includes) |
+| `_builtins/bundle.sbn-html` | [Bundles](plugins/bundles.md) | CSS/JS bundle injection |
+| `_builtins/cards.sbn-html` | [Cards](plugins/cards.md) | OpenGraph/Twitter meta tags |
+| `_builtins/google-analytics.sbn-html` | [Tracking](plugins/tracking.md) | Google Analytics snippet |
+| `_builtins/livereload.sbn-html` | [Server](plugins/server.md) | Live reload WebSocket script |
 
-Themes typically include these in their base layout. You can override any built-in by creating the same path under your site’s `/.lunet/includes/`.
+Themes typically include these in their base layout. You can override any built-in by creating the same path under your site's `/.lunet/includes/`.
 
 ## Template variables reference
 
@@ -252,7 +323,7 @@ Themes typically include these in their base layout. You can override any built-
 | `site` | SiteObject | All templates and front matter | Global site state and module configuration |
 | `page` | ContentObject | Page and layout rendering | Current page metadata and content |
 | `content` | string | Layout rendering only | The inner content being wrapped |
-| `pages` | PageCollection | List layouts only | Shortcut to `site.pages` |
+| `pages` | PageCollection | `list` layouts only | Shortcut to `site.pages` (only for `layout_type = "list"`) |
 
 ### `page.*` fields
 
@@ -268,8 +339,8 @@ See [Content & front matter](content-and-frontmatter.md) for the full page varia
 | `site.environment` | string | Build environment (`dev` or `prod`) |
 | `site.layout` | string | Default layout fallback |
 | `site.pages` | PageCollection | All loaded pages |
-| `site.data` | object | Data loaded from `/.lunet/data/` |
-| `site.html` | object | HTML head/body configuration |
+| `site.data` | object | Data loaded from `/.lunet/data/` ([Data modules](plugins/data.md)) |
+| `site.html` | object | HTML head/body configuration (see [Configuration](configuration.md)) |
 | `site.builtins` | object | Built-in helper functions |
 
 ### `site.pages` helpers
@@ -292,7 +363,7 @@ See [Content & front matter](content-and-frontmatter.md) for the full page varia
 | `site.builtins.defer(expr)` | Defer expression evaluation to end of processing |
 | `site.builtins.ref(url)` | Resolve an absolute URL using site routing |
 | `site.builtins.relref(url)` | Resolve a relative URL from the current page |
-| `site.builtins.xref(uid)` | Resolve a UID to `{ url, name, fullname, page? }` |
+| `site.builtins.xref(uid)` | Resolve a UID to an object with `url`, `name`, `fullname`, `page` |
 
 ### `site.html.*`
 
@@ -300,7 +371,16 @@ See [Content & front matter](content-and-frontmatter.md) for the full page varia
 | Field | Type | Description |
 |---|---|---|
 | `site.html.attributes` | string | Attributes injected on `<html>` |
-| `site.html.head.title` | string/template | Custom `<title>` override |
+| `site.html.head.title` | string/template | Custom `<title>` override (supports deferred `do/ret`) |
 | `site.html.head.metas` | collection | `<meta>` entries rendered in `<head>` |
 | `site.html.head.includes` | collection | Include templates rendered in `<head>` |
 | `site.html.body.attributes` | string | Attributes injected on `<body>` |
+| `site.html.body.includes` | collection | Include templates rendered at end of `<body>` |
+
+## See also
+
+- [Configuration (`config.scriban`)](configuration.md) — `site.html` configuration, `site.layout` fallback
+- [Content & front matter](content-and-frontmatter.md) — `page.layout`, `page.layout_type`, `page.content_type`
+- [Site structure](site-structure.md) — the layered virtual filesystem for layouts and includes
+- [Themes & extensions](themes-and-extends.md) — how extensions provide layouts and includes
+- [Modules reference](plugins/readme.md) — per-module layout type documentation
