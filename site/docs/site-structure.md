@@ -176,10 +176,13 @@ The section is available as `page.section` in templates, and `page.path_in_secti
 
 When you run `lunet init mysite`, Lunet copies a minimal skeleton from its built-in shared files:
 
-- `config.scriban` — a template config with title, baseurl, and basic bundle/scss setup
-- `readme.md` — a sample home page with front matter
+- `config.scriban` — site configuration that extends the [default Lunet template](https://github.com/lunet-io/templates) with project metadata
+- `readme.md` — a quickstart home page with configuration reference and customization guide
+- `menu.yml` — top-level navigation (Home + Docs)
+- `docs/readme.md` — a starter documentation page
+- `docs/menu.yml` — sidebar navigation for the docs section
 
-The skeleton provides just enough to build and serve a working site. See [Getting started](getting-started.md) for a walkthrough.
+The template provides layouts, includes, CSS/JS assets, a theme switcher, and search — your site is fully functional out of the box. See [Getting started](getting-started.md) for a walkthrough.
 
 ## See also
 

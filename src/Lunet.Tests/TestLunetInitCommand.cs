@@ -19,6 +19,9 @@ public class TestLunetInitCommand
         Assert.AreEqual(0, exitCode);
         Assert.IsTrue(context.FileExists("/config.scriban"));
         Assert.IsTrue(context.FileExists("/readme.md"));
+        Assert.IsTrue(context.FileExists("/menu.yml"));
+        Assert.IsTrue(context.FileExists("/docs/menu.yml"));
+        Assert.IsTrue(context.FileExists("/docs/readme.md"));
         Assert.IsNotEmpty(context.ReadAllText("/config.scriban"));
     }
 
@@ -46,5 +49,8 @@ public class TestLunetInitCommand
         Assert.IsTrue(context.FileExists("/existing.txt"));
         Assert.IsTrue(context.FileExists("/config.scriban"));
         Assert.IsTrue(context.FileExists("/readme.md"));
+        Assert.IsTrue(context.FileExists("/menu.yml"));
+        Assert.IsTrue(context.FileExists("/docs/menu.yml"));
+        Assert.IsTrue(context.FileExists("/docs/readme.md"));
     }
 }

@@ -14,6 +14,7 @@ Paths/commands below are relative to this directory.
 - **Plugin libraries**: `src/Lunet.{PluginName}/` — each is a small self-contained library implementing one feature.
 - **Tests**: `src/Lunet.Tests/` (NUnit 4.4, classic assert aliases). References Core, Yaml, Api.DotNet.Extractor.
 - **Docs**: `readme.md` and `site/**/*.md` — keep in sync with behavior.
+- **Default template**: `../templates/` (sibling checkout of <https://github.com/lunet-io/templates>). The `lunet init` skeleton in `src/Lunet.Core/shared/.lunet/new/site/` extends this template. Changes to the init skeleton may require coordinating with the templates repo.
 - **Solution**: `src/lunet.slnx`. Central package management via `src/Directory.Packages.props`. All projects target `net10.0` (except `Lunet.Api.DotNet.Extractor` -> `netstandard2.0`).
 
 ## Architecture

@@ -35,12 +35,15 @@ lunet init mysite
 cd mysite
 ```
 
-The skeleton creates two files:
+The skeleton uses the [default Lunet template](https://github.com/lunet-io/templates) and creates:
 
-- **`config.scriban`** — your [site configuration](configuration.md) with title, baseurl, and basic bundle/SCSS setup
-- **`readme.md`** — a sample home page with front matter
+- **`config.scriban`** — site configuration that extends `lunet-io/templates` with project metadata
+- **`readme.md`** — a sample home page
+- **`menu.yml`** — top-level navigation (Home + Docs)
+- **`docs/readme.md`** — a starter documentation page
+- **`docs/menu.yml`** — sidebar navigation for the docs section
 
-Default layouts and includes are provided automatically by Lunet's built-in shared files — you don't need to create a `.lunet/` folder to get started. See [Site structure](site-structure.md) for details on how the layered filesystem works.
+The template provides layouts, includes, CSS/JS assets, a theme switcher, and search — your site is fully functional out of the box. See the [template readme](https://github.com/lunet-io/templates) for all configuration options.
 
 ## Build your site
 
