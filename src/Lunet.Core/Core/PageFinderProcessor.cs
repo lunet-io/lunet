@@ -89,13 +89,6 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             title = uidContent[PageVariables.XRefName] as string ?? uidContent.Title;
             return true;
         }
-        else if (_uidExtraContent.TryGetValue(uid, out var extraContent))
-        {
-            title = string.IsNullOrWhiteSpace(extraContent.FullName)
-                ? (string.IsNullOrWhiteSpace(extraContent.Name) ? uid : extraContent.Name)
-                : extraContent.FullName;
-            return true;
-        }
         else if (TryGetExternalUid(uid, out var name, out var fullName, out _))
         {
             // For external content, we use fullname.

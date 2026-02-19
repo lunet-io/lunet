@@ -77,9 +77,10 @@ internal sealed class ApiDotNetTemplateHelpers
             return $"<a href=\"{HtmlEscape(externalUrl)}\">{HtmlEscape(externalName)}</a>";
         }
 
+        var displayText = uidText;
         if (_site.Content.Finder.TryGetTitleByUid(uidText, out var knownTitle) && !string.IsNullOrWhiteSpace(knownTitle))
         {
-            return HtmlEscape(knownTitle);
+            displayText = knownTitle;
         }
 
         if (warnIfNotResolved)
@@ -87,7 +88,7 @@ internal sealed class ApiDotNetTemplateHelpers
             _site.Warning($"Unable to find xref for {uidText}");
         }
 
-        return HtmlEscape(uidText);
+        return HtmlEscape(displayText);
     }
 
     public string ApiDotNetResolveXrefs(string? text, bool useFullName = false)
