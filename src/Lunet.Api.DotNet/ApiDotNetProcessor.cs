@@ -879,6 +879,9 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 var resultAsText = buildProject.Run();
                 //Site.Info($"Result: {resultAsText}");
                 var results = ExtractorHelper.FindResults(resultAsText);
+                buildProject.Properties.TryGetValue("TargetFramework", out var targetFrameworkObject);
+                var targetFramework = targetFrameworkObject as string ?? targetFrameworkObject?.ToString();
+                var selectedResult = ApiDotNetResultSelector.SelectBestResult(results, project.Path, project.Name, targetFramework ?? string.Empty);
 
                 Site.Info($"End {(apiFileCached ? "verifying" : "building")} api dotnet for `{project.Name}` completed in {clock.Elapsed.TotalMilliseconds}ms. {(results.Count == 0 ? "No new api files generated." : $"Generated new api files {results.Count}.")} ");
 
@@ -905,12 +908,19 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 }
                 else
                 {
-                    if (results.Count > 1)
+                    if (string.IsNullOrEmpty(selectedResult))
                     {
-                        Site.Warning($"Multiple api dotnet output generated for `{project.Name}`. Consider setting TargetFramework in the config to use only one output. Using by default {results[0]}");
+                        project.CacheState = ApitDotNetCacheState.Invalid;
+                        Site.Error($"Unable to select the api dotnet output for `{project.Name}`. Reported outputs: {string.Join(", ", results)}");
+                        continue;
                     }
 
-                    var file = results[0];
+                    if (results.Count > 1)
+                    {
+                        Site.Warning($"Multiple api dotnet output generated for `{project.Name}`. Using selected output {selectedResult}");
+                    }
+
+                    var file = selectedResult;
                     var sourceFs = new PhysicalFileSystem();
                     var sourcePath = sourceFs.ConvertPathFromInternal(file);
 
