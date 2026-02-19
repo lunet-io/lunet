@@ -164,6 +164,23 @@ public class TestCoreRunnerAndFinder
     }
 
     [Test]
+    public void TestPageFinderResolvesTitleForRegisteredExternalReferenceWithoutUrl()
+    {
+        using var context = new SiteTestContext();
+
+        context.Site.Content.Finder.RegisterExtraContent(new ExtraContent
+        {
+            Uid = "XenoAtom.Terminal.TerminalInstance",
+            Name = "TerminalInstance",
+            FullName = "XenoAtom.Terminal.TerminalInstance",
+            IsExternal = true
+        });
+
+        Assert.IsTrue(context.Site.Content.Finder.TryGetTitleByUid("XenoAtom.Terminal.TerminalInstance", out var title));
+        Assert.AreEqual("XenoAtom.Terminal.TerminalInstance", title);
+    }
+
+    [Test]
     public void TestPageFinderLogsErrorsForDuplicateUid()
     {
         using var context = new SiteTestContext();

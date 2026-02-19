@@ -70,6 +70,11 @@ internal sealed class ApiDotNetTemplateHelpers
             return $"<a href=\"{HtmlEscape(resolvedUrl)}\">{HtmlEscape(resolvedName)}</a>";
         }
 
+        if (_site.Content.Finder.TryGetTitleByUid(uidText, out var knownTitle) && !string.IsNullOrWhiteSpace(knownTitle))
+        {
+            return HtmlEscape(knownTitle);
+        }
+
         if (warnIfNotResolved)
         {
             _site.Warning($"Unable to find xref for {uidText}");
