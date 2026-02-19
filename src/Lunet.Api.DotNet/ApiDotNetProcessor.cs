@@ -72,9 +72,11 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             return;
         }
 
-        // load include helpers
-        var includeHelperPath = Config.IncludeHelper ?? "_builtins/api-dotnet-helpers.sbn-html";
-        if (!Site.Scripts.TryImportInclude(includeHelperPath, _helpers))
+        var templateHelpers = new ApiDotNetTemplateHelpers(Site, Config);
+        templateHelpers.Register(_helpers);
+
+        var includeHelperPath = Config.IncludeHelper;
+        if (!string.IsNullOrWhiteSpace(includeHelperPath) && !Site.Scripts.TryImportInclude(includeHelperPath, _helpers))
         {
             Site.Error($"Unable to load include helper `{includeHelperPath}`");
             return;

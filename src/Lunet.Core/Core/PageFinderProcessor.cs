@@ -70,6 +70,8 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
     {
         content = null;
         if (uid == null) return false;
+        uid = NormalizeUidLookup(uid);
+
         if (_uidExtraContent.TryGetValue(uid, out var extraContent))
         {
             uid = extraContent.DefinitionUid ?? extraContent.Uid;
@@ -98,6 +100,8 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
 
     public bool TryGetExternalUid(string uid, out string? name, out string? fullname, out string? url)
     {
+        uid = NormalizeUidLookup(uid);
+
         if (_uidExtraContent.TryGetValue(uid, out var extraContent))
         {
             uid = extraContent.DefinitionUid ?? extraContent.Uid;
@@ -239,7 +243,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         {
             if (url.StartsWith("xref:"))
             {
-                var xref = url.Substring("xref:".Length);
+                var xref = NormalizeUidLookup(url.Substring("xref:".Length));
                 if (TryFindByUid(xref, out var pageUid))
                 {
                     url = pageUid.Url ?? string.Empty;
@@ -253,7 +257,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
 
                 Site.Warning($"Unable to find xref {xref} in page {page?.Url}");
             }
-                
+
             return url ?? string.Empty;
         }
 
@@ -316,5 +320,40 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         return rel
             ? $"{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}"
             : $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? string.Empty : $":{uri.Port.ToString(CultureInfo.InvariantCulture)}")}{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}";
+    }
+
+    private static string NormalizeUidLookup(string uid)
+    {
+        if (string.IsNullOrWhiteSpace(uid))
+        {
+            return uid;
+        }
+
+        uid = uid.Trim();
+        if (uid.IndexOf('%') < 0)
+        {
+            return uid;
+        }
+
+        var normalized = uid;
+        for (var i = 0; i < 2 && normalized.IndexOf('%') >= 0; i++)
+        {
+            try
+            {
+                var decoded = Uri.UnescapeDataString(normalized);
+                if (decoded == normalized)
+                {
+                    break;
+                }
+
+                normalized = decoded;
+            }
+            catch
+            {
+                break;
+            }
+        }
+
+        return normalized;
     }
 }

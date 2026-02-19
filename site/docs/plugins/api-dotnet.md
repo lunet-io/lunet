@@ -39,7 +39,8 @@ This generates API pages under `path` (default `/api`) and registers all API UID
 | `api.dotnet.properties` | object | empty | Extra MSBuild properties (`-p:`), e.g. `TargetFramework` |
 | `api.dotnet.projects` | array | required | Projects to extract (`string` or object entries) |
 | `api.dotnet.references` | array<string> | empty | Referenced assemblies to include for all projects |
-| `api.dotnet.include_helper` | string | `"_builtins/api-dotnet-helpers.sbn-html"` | Helper include loaded for generated API pages |
+| `api.dotnet.kind_icons` | object | built-in icon map | Optional icon overrides by API kind (`Class`, `Struct`, `Method`, `Extension`, `default`, …). Value can be a Bootstrap icon class (`"bi-lightning-charge"`) or raw `<i>` HTML |
+| `api.dotnet.include_helper` | string | empty | Optional additional helper include loaded for generated API pages (built-in helpers are implemented in C#) |
 | `api.dotnet.layout` | string | `"_default"` | Base layout used by generated API pages |
 | `api.dotnet.table_class` | string | `"api-dotnet-members list-group list-group-flush"` | CSS classes used by default API member lists. Can also be overridden via `members_class` |
 
@@ -68,7 +69,7 @@ Default templates:
 - `src/Lunet.Api.DotNet/shared/.lunet/layouts/_default.api-dotnet.sbn-md`
 - `src/Lunet.Api.DotNet/shared/.lunet/layouts/_default.api-dotnet-namespace.sbn-md`
 - `src/Lunet.Api.DotNet/shared/.lunet/layouts/_default.api-dotnet-member.sbn-md`
-- `src/Lunet.Api.DotNet/shared/.lunet/includes/_builtins/api-dotnet-helpers.sbn-html`
+- `src/Lunet.Api.DotNet/shared/.lunet/includes/_builtins/api-dotnet-helpers.sbn-html` (optional extension point)
 
 Override by adding files with the same names under `site/.lunet/layouts` or `site/.lunet/includes`.
 

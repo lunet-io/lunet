@@ -226,6 +226,13 @@ public class TestApiDotNetEndToEndModernCSharp
     }
 
     [Test]
+    public void TestApiKindIconsCanBeConfiguredFromApiDotNetConfig()
+    {
+        var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
+        StringAssert.Contains("bi-lightning-charge", namespacePage);
+    }
+
+    [Test]
     public void TestTypeMemberGroupMenuLinksTargetMemberSections()
     {
         var typeUid = FindTypeUidWithMemberKinds("Constructor", "Property");
@@ -334,6 +341,7 @@ public class TestApiDotNetEndToEndModernCSharp
             with api.dotnet
               title = "API End-to-End"
               path = "/api"
+              kind_icons = { Class: "bi-lightning-charge" }
               properties = { TargetFramework: "net10.0" }
               projects = [
                 {

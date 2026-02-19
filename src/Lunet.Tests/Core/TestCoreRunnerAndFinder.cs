@@ -125,6 +125,45 @@ public class TestCoreRunnerAndFinder
     }
 
     [Test]
+    public void TestPageFinderResolvesUrlEncodedXrefUid()
+    {
+        using var context = new SiteTestContext();
+        context.Site.BaseUrl = "https://example.com";
+
+        var genericPage = context.CreateDynamicContentObject("/api/binding/", path: "/api/binding.md");
+        genericPage.ContentType = ContentType.Html;
+        genericPage.Url = "/api/binding/";
+        genericPage.UrlWithoutBasePath = "/api/binding/";
+        genericPage.Uid = "XenoAtom.Terminal.UI.Binding`1";
+        genericPage.Title = "Binding<T>";
+
+        var sourcePage = context.CreateDynamicContentObject("/docs/readme/", path: "/docs/readme.md");
+        sourcePage.ContentType = ContentType.Html;
+        sourcePage.Url = "/docs/readme/";
+        sourcePage.UrlWithoutBasePath = "/docs/readme/";
+
+        context.Site.Pages.Add(genericPage);
+        context.Site.Pages.Add(sourcePage);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+
+        Assert.IsTrue(context.Site.Content.Finder.TryFindByUid("XenoAtom.Terminal.UI.Binding%601", out var foundByEncodedUid));
+        Assert.AreSame(genericPage, foundByEncodedUid);
+        Assert.AreEqual("/api/binding/", context.Site.Content.Finder.UrlRelRef(sourcePage, "xref:XenoAtom.Terminal.UI.Binding%601"));
+    }
+
+    [Test]
+    public void TestPageFinderNormalizesEncodedExternalGenericUid()
+    {
+        using var context = new SiteTestContext();
+
+        Assert.IsTrue(context.Site.Content.Finder.TryGetExternalUid("System.Collections.Generic.List%601", out var name, out var fullName, out var url));
+        Assert.AreEqual("System.Collections.Generic.List`1", name);
+        Assert.AreEqual("System.Collections.Generic.List`1", fullName);
+        Assert.IsNotNull(url);
+        StringAssert.Contains("system.collections.generic.list-1", url!.ToLowerInvariant());
+    }
+
+    [Test]
     public void TestPageFinderLogsErrorsForDuplicateUid()
     {
         using var context = new SiteTestContext();

@@ -49,6 +49,12 @@ public class ApiDotNetConfig : ApiConfig
         set => this.SetValue("include_helper", value);
     }
 
+    public ScriptObject? KindIcons
+    {
+        get => this.GetSafeValue<ScriptObject>("kind_icons");
+        set => this.SetValue("kind_icons", value);
+    }
+
     public string? Layout
     {
         get => this.GetSafeValue<string>("layout");
