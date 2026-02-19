@@ -6,6 +6,8 @@
 # This site uses a shared theme/template published as a Lunet extension.
 extend "lunet-io/templates"
 
+template_theme_default_mode = "dark" # Prefer dark for lunet site
+
 # -----------------------------------------------------------------------------
 # SITE SECTION (project-specific values only)
 # -----------------------------------------------------------------------------
