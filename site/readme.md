@@ -98,7 +98,7 @@ og_type: website
             Generate API reference pages directly from .NET projects or assemblies — a feature unique to Lunet.
           </p>
 
-[API (.NET)](docs/plugins/api-dotnet.md) · [Sample API reference](api/readme.md)
+[API (.NET)](docs/plugins/api-dotnet.md) · [Logging API](https://xenoatom.github.io/logging/api/) · [CommandLine API](https://xenoatom.github.io/commandline/api/) · [Terminal API](https://xenoatom.github.io/terminal/api/)
 
 </div>
       </div>

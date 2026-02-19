@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Transactions;
 using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Yaml;
@@ -40,6 +39,8 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
             defaultBundle.InsertLink(0, BundleObjectProperties.JsType, "/modules/menus/lunet-menu-async.js");
             _asyncLoaderInjected = true;
         }
+
+        FilterMenusForCurrentEnvironment();
 
         foreach (var menu in _menus)
         {
@@ -98,6 +99,39 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
 
         // No need to keep the list after the processing
         _menus.Clear();
+    }
+
+    private void FilterMenusForCurrentEnvironment()
+    {
+        var visibleMenus = new HashSet<MenuObject>();
+        foreach (var root in _menus.Where(x => x.Parent is null))
+        {
+            FilterMenusForCurrentEnvironment(root, visibleMenus);
+        }
+
+        _menus.RemoveAll(menu => !visibleMenus.Contains(menu));
+    }
+
+    private bool FilterMenusForCurrentEnvironment(MenuObject menu, HashSet<MenuObject> visibleMenus)
+    {
+        if (!IsVisibleForCurrentEnvironment(menu["env"]))
+        {
+            return false;
+        }
+
+        visibleMenus.Add(menu);
+        for (var index = menu.Children.Count - 1; index >= 0; index--)
+        {
+            var child = menu.Children[index];
+            if (FilterMenusForCurrentEnvironment(child, visibleMenus))
+            {
+                continue;
+            }
+
+            menu.Children.RemoveAt(index);
+        }
+
+        return true;
     }
 
     private void ApplyRootSelfItems()
@@ -178,6 +212,11 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
             {
                 if (expectingMenuEntry)
                 {
+                    if (obj.TryGetValue("env", out var envValue) && !IsVisibleForCurrentEnvironment(envValue))
+                    {
+                        return;
+                    }
+
                     var menuObject = new MenuObject {Parent = parent};
                     _menus.Add(menuObject);
                     parent.Children.Add(menuObject);
@@ -326,6 +365,95 @@ public class MenuProcessor : ContentProcessor<MenuPlugin>
 
         // Basic title casing: keep numbers, capitalize first character.
         return char.ToUpperInvariant(trimmed[0]) + trimmed.Substring(1);
+    }
+
+    private bool IsVisibleForCurrentEnvironment(object? envValue)
+    {
+        var tokens = EnumerateEnvironmentTokens(envValue).ToList();
+        if (tokens.Count == 0)
+        {
+            return true;
+        }
+
+        var currentEnvironment = Site.Environment;
+        if (string.IsNullOrWhiteSpace(currentEnvironment))
+        {
+            currentEnvironment = "prod";
+        }
+
+        bool hasIncludedEnvironments = false;
+        bool isIncludedEnvironment = false;
+
+        foreach (var token in tokens)
+        {
+            if (token.Length == 0)
+            {
+                continue;
+            }
+
+            if (token[0] == '!')
+            {
+                var excludedEnvironment = token[1..].Trim();
+                if (excludedEnvironment.Length > 0 &&
+                    currentEnvironment.Equals(excludedEnvironment, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                continue;
+            }
+
+            hasIncludedEnvironments = true;
+            if (currentEnvironment.Equals(token, StringComparison.OrdinalIgnoreCase))
+            {
+                isIncludedEnvironment = true;
+            }
+        }
+
+        return !hasIncludedEnvironments || isIncludedEnvironment;
+    }
+
+    private static IEnumerable<string> EnumerateEnvironmentTokens(object? envValue)
+    {
+        switch (envValue)
+        {
+            case null:
+                yield break;
+            case string environment:
+                foreach (var token in SplitEnvironmentTokens(environment))
+                {
+                    yield return token;
+                }
+
+                yield break;
+            case ScriptArray array:
+                foreach (var item in array)
+                {
+                    if (item is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var token in SplitEnvironmentTokens(item.ToString() ?? string.Empty))
+                    {
+                        yield return token;
+                    }
+                }
+
+                yield break;
+            default:
+                foreach (var token in SplitEnvironmentTokens(envValue.ToString() ?? string.Empty))
+                {
+                    yield return token;
+                }
+
+                yield break;
+        }
+    }
+
+    private static IEnumerable<string> SplitEnvironmentTokens(string value)
+    {
+        return value.Split([',', ';', '|'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 
     private static void TryAdoptGeneratedChildren(MenuObject menu, MenuObject? existingMenu)

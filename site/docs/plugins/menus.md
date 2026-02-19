@@ -57,10 +57,13 @@ All `path` values are resolved relative to the directory containing the `menu.ym
 | `self` | bool | `false` | Mark this entry as the breadcrumb root (useful for a "Home" link) |
 | `separator` | bool | `false` | Render as a visual separator instead of a link |
 | `target` | string | — | HTML `target` attribute on the link (e.g. `"_blank"`) |
+| `env` | string/array | — | Only include this item for specific environments (for example `env: dev` or `env: [dev, preview]`) |
 | `width` | int | `3` | Sidebar width hint (clamped to `2`–`4`), used by themes |
 | `link_class` | string | — | CSS classes added to the `<a>` element |
 | `link_class_active` | string | — | CSS classes added when the item is active |
 | `list_item_class` | string | — | CSS classes added to the `<li>` element |
+
+`env` matching is case-insensitive. You can also exclude an environment with `!` (for example `env: "!prod"`).
 
 ### String shorthand
 
@@ -168,7 +171,7 @@ The [API (.NET) module](api-dotnet.md) generates its own menu hierarchy (`site.m
 ```yaml
 home:
   - {path: readme.md, title: "Home"}
-  - {path: api/readme.md, title: "API Reference", folder: true}
+  - {path: api/readme.md, title: "API Reference", folder: true, env: dev}
 ```
 
 With `folder: true`, Lunet automatically adopts the generated API namespace/type/member hierarchy under this item. This avoids maintaining a separate `api/menu.yml`.

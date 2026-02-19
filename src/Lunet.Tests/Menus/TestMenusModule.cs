@@ -128,6 +128,115 @@ public class TestMenusModule
     }
 
     [Test]
+    public void TestMenuEntryEnvFiltersByCurrentEnvironment()
+    {
+        using var context = new SiteTestContext();
+        context.Site.Environment = "prod";
+        var plugin = CreateMenuPlugin(context.Site);
+
+        var homePage = context.CreateFileContentObject("/readme.md", "+++\ntitle = \"Home\"\n+++\nHome", withFrontMatterScript: true);
+        homePage.Initialize();
+        context.Site.Pages.Add(homePage);
+
+        var devPage = context.CreateFileContentObject("/docs/dev.md", "+++\ntitle = \"Dev\"\n+++\nDev", withFrontMatterScript: true);
+        devPage.Initialize();
+        context.Site.Pages.Add(devPage);
+
+        var prodPage = context.CreateFileContentObject("/docs/prod.md", "+++\ntitle = \"Prod\"\n+++\nProd", withFrontMatterScript: true);
+        prodPage.Initialize();
+        context.Site.Pages.Add(prodPage);
+
+        var menuFile = context.CreateFileContentObject(
+            "/menu.yml",
+            """
+            home:
+              items:
+                - { path: readme.md, title: Home }
+                - { path: docs/dev.md, title: DevOnly, env: dev }
+                - { path: docs/prod.md, title: ProdOnly, env: prod }
+            """);
+
+        plugin.Processor.TryProcessContent(menuFile, ContentProcessingStage.Running);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+        plugin.Processor.Process(ProcessingStage.BeforeProcessingContent);
+
+        var rootMenu = plugin.GetSafeValue<MenuObject>("home");
+        Assert.NotNull(rootMenu);
+        Assert.AreEqual(2, rootMenu!.Children.Count);
+        Assert.AreEqual("Home", rootMenu.Children[0].Title);
+        Assert.AreEqual("ProdOnly", rootMenu.Children[1].Title);
+        Assert.IsNull(devPage.GetSafeValue<MenuObject>("menu_item"));
+        Assert.NotNull(prodPage.GetSafeValue<MenuObject>("menu_item"));
+    }
+
+    [Test]
+    public void TestMenuEntryEnvSupportsArrayValues()
+    {
+        using var context = new SiteTestContext();
+        context.Site.Environment = "dev";
+        var plugin = CreateMenuPlugin(context.Site);
+
+        var homePage = context.CreateFileContentObject("/readme.md", "+++\ntitle = \"Home\"\n+++\nHome", withFrontMatterScript: true);
+        homePage.Initialize();
+        context.Site.Pages.Add(homePage);
+
+        var previewPage = context.CreateFileContentObject("/docs/preview.md", "+++\ntitle = \"Preview\"\n+++\nPreview", withFrontMatterScript: true);
+        previewPage.Initialize();
+        context.Site.Pages.Add(previewPage);
+
+        var menuFile = context.CreateFileContentObject(
+            "/menu.yml",
+            """
+            home:
+              items:
+                - { path: readme.md, title: Home }
+                - path: docs/preview.md
+                  title: Preview
+                  env: [dev, preview]
+            """);
+
+        plugin.Processor.TryProcessContent(menuFile, ContentProcessingStage.Running);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+        plugin.Processor.Process(ProcessingStage.BeforeProcessingContent);
+
+        var rootMenu = plugin.GetSafeValue<MenuObject>("home");
+        Assert.NotNull(rootMenu);
+        Assert.AreEqual(2, rootMenu!.Children.Count);
+        Assert.AreEqual("Preview", rootMenu.Children[1].Title);
+        Assert.NotNull(previewPage.GetSafeValue<MenuObject>("menu_item"));
+    }
+
+    [Test]
+    public void TestMenuEntryEnvWorksWithInlineArraySyntax()
+    {
+        using var context = new SiteTestContext();
+        context.Site.Environment = "prod";
+        var plugin = CreateMenuPlugin(context.Site);
+
+        var homePage = context.CreateFileContentObject("/readme.md", "+++\ntitle = \"Home\"\n+++\nHome", withFrontMatterScript: true);
+        homePage.Initialize();
+        context.Site.Pages.Add(homePage);
+
+        var menuFile = context.CreateFileContentObject(
+            "/menu.yml",
+            """
+            home:
+              - {path: readme.md, title: "<i class='bi bi-house-door' aria-hidden='true'></i> Home", self: true}
+              - {path: api/readme.md, title: "<i class='bi bi-braces' aria-hidden='true'></i> API", folder: true, env: dev}
+            """);
+
+        plugin.Processor.TryProcessContent(menuFile, ContentProcessingStage.Running);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+        plugin.Processor.Process(ProcessingStage.BeforeProcessingContent);
+
+        var rootMenu = plugin.GetSafeValue<MenuObject>("home");
+        Assert.NotNull(rootMenu);
+        Assert.AreEqual(1, rootMenu!.Children.Count);
+        Assert.NotNull(rootMenu.Children[0].Title);
+        StringAssert.Contains("Home", rootMenu.Children[0].Title!);
+    }
+
+    [Test]
     public void TestManualFolderMenuAdoptsGeneratedChildren()
     {
         using var context = new SiteTestContext();

@@ -24,6 +24,16 @@ end
 
 This generates API pages under `path` (default `/api`) and registers all API UIDs for `xref:` links.
 
+For a local sample API that you only want during `lunet serve`/`--dev`, wrap it with:
+
+```scriban
+if environment == "dev"
+  with api.dotnet
+    # sample/local API config
+  end
+end
+```
+
 ## Configuration reference
 
 {.table}
@@ -209,10 +219,16 @@ The `uid` can target a namespace, type, or member. Content is merged into the ge
 
 The Lunet docs site uses:
 
-- `site/config.scriban` -> `api.dotnet` configuration
+- `site/config.scriban` -> `api.dotnet` configuration (enabled only when `environment == "dev"`)
 - `src/Lunet.ApiExample/Lunet.ApiExample.csproj` -> local sample project rendered under `/api`
 - `src/Lunet.ApiExample/apidocs/*.md` -> namespace summary/remarks merged from Markdown (`Lunet.ApiExample`, `Lunet.ApiExample.Advanced`, `Lunet.ApiExample.Http`)
 - sample API includes multiple namespaces and broad modern C# surface (C# 9-14 style features: records, required/init members, primary constructors, checked operators, unsigned right shift, ref/scoped APIs, static abstract interface members, `allows ref struct`, extension members, native/function pointer signatures)
+
+Public cross-site examples generated with Lunet:
+
+- <https://xenoatom.github.io/logging/api/>
+- <https://xenoatom.github.io/commandline/api/>
+- <https://xenoatom.github.io/terminal/api/>
 
 ## See also
 
