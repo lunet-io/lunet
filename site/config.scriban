@@ -55,11 +55,6 @@ end
 # Docs site settings
 # -----------------------------------------------------------------------------
 
-# Add Scriban Prism language definition for ```scriban code fences.
-with bundle
-    js "/js/prism-scriban.js"
-end
-
 # Configure search for this docs site.
 with search
     excludes.add ["/architecture.md", "/build_system.md", "/docs/todos/**"]
