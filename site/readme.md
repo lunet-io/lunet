@@ -6,7 +6,7 @@ og_type: website
 
 <section class="text-center py-5 text-white hero-text">
   <div class="container">
-    <img src="{{site.basepath}}/img/lunet-hero-banner.svg" alt="Lunet — Fast, modular static site generator" class="img-fluid" style="max-width: 48rem;">
+    <img src="{{site.basepath}}/img/lunet-hero-banner.svg" alt="Lunet — Fast, modular static site generator" class="img-fluid" style="width: min(100%, 48rem); height: auto;">
     <p class="lead mt-4 mb-4">
       A fast, modular static site generator.<br>
       Configuration is <strong>executable Scriban code</strong> — not YAML-only config.
