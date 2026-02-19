@@ -65,9 +65,10 @@ public class DotNetProgram
         {
             foreach (var property in properties)
             {
-                // MSBuild treats `;` as a list separator even inside quotes,
-                // so we must escape it as `%3B` for property values.
-                var value = GetPropertyValueAsString(property.Value).Replace(";", "%3B");
+                // MSBuild and generated analyzer config handling can decode `%3B` once before
+                // analyzer global options are read, so we need a double-escaped semicolon `%253B`.
+                // The analyzer then decodes property values back to `;`.
+                var value = GetPropertyValueAsString(property.Value).Replace(";", "%253B");
                 argsBuilder.Append($" -p:{property.Key}={EscapePath(value)}");
             }
         }

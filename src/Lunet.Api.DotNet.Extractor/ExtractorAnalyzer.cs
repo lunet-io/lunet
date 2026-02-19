@@ -6,14 +6,17 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.DocAsCode.Common;
 using Microsoft.DocAsCode.DataContracts.ManagedReference;
 using Microsoft.DocAsCode.Metadata.ManagedReference;
+using System.Xml;
 
 namespace Lunet.Api.DotNet.Extractor
 {
@@ -116,6 +119,8 @@ namespace Lunet.Api.DotNet.Extractor
             bool success = false;
             try
             {
+                var compilation = WithXmlDocumentationForReferences(context.Compilation);
+
                 // Collect additional doc files
                 var extraDocs = new List<MetadataItem>();
                 foreach (var file in context.Options.AdditionalFiles)
@@ -134,18 +139,19 @@ namespace Lunet.Api.DotNet.Extractor
                     }
                 }
 
-                var extractor = new RoslynMetadataExtractor(context.Compilation);
+                var extractor = new RoslynMetadataExtractor(compilation);
                 var metadata = extractor.Extract(new ExtractMetadataOptions()
                 {
                     //CodeSourceBasePath = @"C:/code/Temp/SourceGenBugApp/SourceGenBugApp/"
                 });
                 
                 var items = new List<MetadataItem>() {metadata};
-                ExtractSelectedReferenceAssemblies(context, context.Compilation, items);
+                var includedReferenceAssemblies = GetIncludedReferenceAssemblies(context);
+                ExtractSelectedReferenceAssemblies(context, compilation, items, includedReferenceAssemblies);
                 // Add extra docs AFTER to allow MergeYamlProjectMetadata to work correctly
                 metadata.Items.AddRange(extraDocs);
 
-                var allMembers = MergeYamlProjectMetadata(context, items);
+                var allMembers = MergeYamlProjectMetadata(context, items, includedReferenceAssemblies);
                 var allReferences = MergeYamlProjectReferences(items);
                 
                 var model = YamlMetadataResolver.ResolveMetadata(allMembers, allReferences, true);
@@ -173,6 +179,132 @@ namespace Lunet.Api.DotNet.Extractor
             if (success)
             {
                 context.ReportDiagnostic(Diagnostic.Create(ResultDiagnostic, null, ExtractorHelper.FormatResult(outputPath)));
+            }
+        }
+
+        /// <summary>
+        /// When running under <c>dotnet build</c> (no Workspace layer), Roslyn does not automatically attach
+        /// XML documentation providers to metadata references. Attach providers when a sibling <c>.xml</c>
+        /// file exists next to a referenced <c>.dll</c>.
+        /// </summary>
+        private static Compilation WithXmlDocumentationForReferences(Compilation compilation)
+        {
+            Compilation updated = compilation;
+            Dictionary<string, DocumentationProvider> providersByXmlPath = null;
+
+            foreach (var reference in compilation.References.OfType<PortableExecutableReference>())
+            {
+                var dllPath = reference.FilePath;
+                if (string.IsNullOrWhiteSpace(dllPath))
+                {
+                    continue;
+                }
+
+                var xmlPath = Path.ChangeExtension(dllPath, ".xml");
+                if (!File.Exists(xmlPath))
+                {
+                    continue;
+                }
+
+                if (providersByXmlPath == null)
+                {
+                    providersByXmlPath = new Dictionary<string, DocumentationProvider>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                if (!providersByXmlPath.TryGetValue(xmlPath, out var provider))
+                {
+                    provider = new XmlFileDocumentationProvider(xmlPath);
+                    providersByXmlPath.Add(xmlPath, provider);
+                }
+
+                var updatedReference = MetadataReference.CreateFromFile(dllPath, reference.Properties, provider);
+                updated = updated.ReplaceReference(reference, updatedReference);
+            }
+
+            return updated;
+        }
+
+        private sealed class XmlFileDocumentationProvider : DocumentationProvider
+        {
+            private readonly string _path;
+            private Dictionary<string, string> _byId;
+
+            public XmlFileDocumentationProvider(string path)
+            {
+                _path = path ?? throw new ArgumentNullException(nameof(path));
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is XmlFileDocumentationProvider other && StringComparer.OrdinalIgnoreCase.Equals(_path, other._path);
+            }
+
+            public override int GetHashCode()
+            {
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(_path);
+            }
+
+            protected override string GetDocumentationForSymbol(string documentationMemberID, CultureInfo preferredCulture, CancellationToken cancellationToken = default)
+            {
+                if (string.IsNullOrEmpty(documentationMemberID))
+                {
+                    return string.Empty;
+                }
+
+                EnsureLoaded(cancellationToken);
+
+                return _byId.TryGetValue(documentationMemberID, out var xml) ? xml : string.Empty;
+            }
+
+            private void EnsureLoaded(CancellationToken cancellationToken)
+            {
+                if (_byId != null)
+                {
+                    return;
+                }
+
+                var map = new Dictionary<string, string>(StringComparer.Ordinal);
+
+                try
+                {
+                    using (var stream = File.OpenRead(_path))
+                    using (var reader = XmlReader.Create(stream, new XmlReaderSettings
+                    {
+                        DtdProcessing = DtdProcessing.Prohibit,
+                        IgnoreComments = true,
+                        IgnoreProcessingInstructions = true,
+                        IgnoreWhitespace = true,
+                    }))
+                    {
+                        while (reader.Read())
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            if (reader.NodeType != XmlNodeType.Element || reader.Name != "member")
+                            {
+                                continue;
+                            }
+
+                            var name = reader.GetAttribute("name");
+                            if (string.IsNullOrEmpty(name))
+                            {
+                                continue;
+                            }
+
+                            var content = reader.ReadOuterXml();
+                            if (!map.ContainsKey(name))
+                            {
+                                map.Add(name, content);
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore invalid or missing XML docs.
+                }
+
+                _byId = map;
             }
         }
 
@@ -289,14 +421,14 @@ namespace Lunet.Api.DotNet.Extractor
             builder.Clear();
         }
 
-        private void ExtractSelectedReferenceAssemblies(CompilationAnalysisContext context, Compilation compilation, List<MetadataItem> items)
+        private void ExtractSelectedReferenceAssemblies(CompilationAnalysisContext context, Compilation compilation, List<MetadataItem> items, IReadOnlyCollection<string> includedReferenceAssemblies)
         {
-            if (context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property.lunetapidotnetincludeassemblies", out var rawAssemblyNames) is false || string.IsNullOrWhiteSpace(rawAssemblyNames))
+            if (includedReferenceAssemblies == null || includedReferenceAssemblies.Count == 0)
             {
                 return;
             }
 
-            var requestedAssemblyNames = ParseRequestedAssemblyNames(rawAssemblyNames);
+            var requestedAssemblyNames = new HashSet<string>(includedReferenceAssemblies, StringComparer.OrdinalIgnoreCase);
             if (requestedAssemblyNames.Count == 0)
             {
                 return;
@@ -333,9 +465,20 @@ namespace Lunet.Api.DotNet.Extractor
             }
         }
 
+        private static HashSet<string> GetIncludedReferenceAssemblies(CompilationAnalysisContext context)
+        {
+            if (context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property.lunetapidotnetincludeassemblies", out var rawAssemblyNames) is false || string.IsNullOrWhiteSpace(rawAssemblyNames))
+            {
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            return ParseRequestedAssemblyNames(rawAssemblyNames);
+        }
+
         private static HashSet<string> ParseRequestedAssemblyNames(string rawAssemblyNames)
         {
             var assemblyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            rawAssemblyNames = DecodeMsBuildPropertyValue(rawAssemblyNames);
             var splits = rawAssemblyNames.Split(new[] {';', ',', '\r', '\n'}, StringSplitOptions.RemoveEmptyEntries);
             foreach (var rawAssemblyName in splits)
             {
@@ -347,6 +490,41 @@ namespace Lunet.Api.DotNet.Extractor
             }
 
             return assemblyNames;
+        }
+
+        private static string DecodeMsBuildPropertyValue(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            value = value.Trim();
+            if (value.IndexOf('%') < 0)
+            {
+                return value;
+            }
+
+            var decoded = value;
+            for (var i = 0; i < 2 && decoded.IndexOf('%') >= 0; i++)
+            {
+                try
+                {
+                    var candidate = Uri.UnescapeDataString(decoded);
+                    if (candidate == decoded)
+                    {
+                        break;
+                    }
+
+                    decoded = candidate;
+                }
+                catch
+                {
+                    break;
+                }
+            }
+
+            return decoded;
         }
 
         private static string NormalizeAssemblyName(string rawAssemblyName)
@@ -365,7 +543,7 @@ namespace Lunet.Api.DotNet.Extractor
             return string.IsNullOrWhiteSpace(assemblyName) ? null : assemblyName;
         }
 
-        private static Dictionary<string, MetadataItem> MergeYamlProjectMetadata(CompilationAnalysisContext context, List<MetadataItem> projectMetadataList)
+        private static Dictionary<string, MetadataItem> MergeYamlProjectMetadata(CompilationAnalysisContext context, List<MetadataItem> projectMetadataList, IReadOnlyCollection<string> includedReferenceAssemblies)
         {
             if (projectMetadataList == null || projectMetadataList.Count == 0)
             {
@@ -374,6 +552,7 @@ namespace Lunet.Api.DotNet.Extractor
 
             Dictionary<string, MetadataItem> namespaceMapping = new Dictionary<string, MetadataItem>();
             Dictionary<string, MetadataItem> allMembers = new Dictionary<string, MetadataItem>();
+            List<MetadataItem> pendingExtraDocs = new List<MetadataItem>();
 
             foreach (var project in projectMetadataList)
             {
@@ -381,6 +560,12 @@ namespace Lunet.Api.DotNet.Extractor
                 {
                     foreach (var ns in project.Items)
                     {
+                        if (ns.IsExtraDoc)
+                        {
+                            pendingExtraDocs.Add(ns);
+                            continue;
+                        }
+
                         if (ns.Type == MemberType.Namespace)
                         {
                             if (namespaceMapping.TryGetValue(ns.Name, out MetadataItem nsOther))
@@ -411,36 +596,9 @@ namespace Lunet.Api.DotNet.Extractor
                             }
                         }
 
-                        if (allMembers.TryGetValue(ns.Name, out var existingNs))
+                        if (!allMembers.ContainsKey(ns.Name))
                         {
-                            // Merge the extra documentation
-                            if (ns.IsExtraDoc)
-                            {
-                                existingNs.Summary = ConcatDoc(existingNs.Summary, ns.Summary);
-                                existingNs.Remarks = ConcatDoc(existingNs.Remarks, ns.Remarks);
-                                if (ns.Examples != null)
-                                {
-                                    if (existingNs.Examples == null)
-                                    {
-                                        existingNs.Examples = ns.Examples;
-                                    }
-                                    else
-                                    {
-                                        existingNs.Examples.AddRange(ns.Examples);
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (ns.IsExtraDoc)
-                            {
-                                context.ReportDiagnostic(Diagnostic.Create(ErrorDiagnostic, null, $"Unexpected uid {ns.Name} found in extra documentation file `{ns.ExtraDocFilePath}`. The uid does not match any existing documentation item."));
-                            }
-                            else
-                            {
-                                allMembers.Add(ns.Name, ns);
-                            }
+                            allMembers.Add(ns.Name, ns);
                         }
 
                         ns.Items?.ForEach(s =>
@@ -470,7 +628,67 @@ namespace Lunet.Api.DotNet.Extractor
                 }
             }
 
+            foreach (var extraDoc in pendingExtraDocs)
+            {
+                if (allMembers.TryGetValue(extraDoc.Name, out var existingItem))
+                {
+                    MergeExtraDocumentation(existingItem, extraDoc);
+                }
+                else
+                {
+                    var message = $"Unexpected uid {extraDoc.Name} found in extra documentation file `{extraDoc.ExtraDocFilePath}`. The uid does not match any existing documentation item.";
+                    if (IsLikelyExternalUid(extraDoc.Name, includedReferenceAssemblies))
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(WarningDiagnostic, null, message));
+                    }
+                    else
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(ErrorDiagnostic, null, message));
+                    }
+                }
+            }
+
             return allMembers;
+        }
+
+        private static void MergeExtraDocumentation(MetadataItem existingItem, MetadataItem extraDoc)
+        {
+            existingItem.Summary = ConcatDoc(existingItem.Summary, extraDoc.Summary);
+            existingItem.Remarks = ConcatDoc(existingItem.Remarks, extraDoc.Remarks);
+            if (extraDoc.Examples != null)
+            {
+                if (existingItem.Examples == null)
+                {
+                    existingItem.Examples = extraDoc.Examples;
+                }
+                else
+                {
+                    existingItem.Examples.AddRange(extraDoc.Examples);
+                }
+            }
+        }
+
+        private static bool IsLikelyExternalUid(string uid, IReadOnlyCollection<string> includedReferenceAssemblies)
+        {
+            if (string.IsNullOrWhiteSpace(uid) || includedReferenceAssemblies == null || includedReferenceAssemblies.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var assemblyName in includedReferenceAssemblies)
+            {
+                if (string.IsNullOrWhiteSpace(assemblyName))
+                {
+                    continue;
+                }
+
+                if (uid.Equals(assemblyName, StringComparison.OrdinalIgnoreCase) || uid.StartsWith(assemblyName + ".", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string ConcatDoc(string left, string right)
