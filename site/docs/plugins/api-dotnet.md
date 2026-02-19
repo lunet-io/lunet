@@ -40,6 +40,7 @@ This generates API pages under `path` (default `/api`) and registers all API UID
 | `api.dotnet.projects` | array | required | Projects to extract (`string` or object entries) |
 | `api.dotnet.references` | array<string> | empty | Referenced assemblies to include for all projects |
 | `api.dotnet.kind_icons` | object | built-in icon map | Optional icon overrides by API kind (`Class`, `Struct`, `Method`, `Extension`, `default`, …). Value can be a Bootstrap icon class (`"bi-lightning-charge"`) or raw `<i>` HTML |
+| `api.dotnet.external_apis` | object/array | empty | Maps external UIDs (usually assembly/namespace prefixes) to another Lunet API base URL for cross-site xref links |
 | `api.dotnet.include_helper` | string | empty | Optional additional helper include loaded for generated API pages (built-in helpers are implemented in C#) |
 | `api.dotnet.layout` | string | `"_default"` | Base layout used by generated API pages |
 | `api.dotnet.table_class` | string | `"api-dotnet-members list-group list-group-flush"` | CSS classes used by default API member lists. Can also be overridden via `members_class` |
@@ -53,6 +54,25 @@ Project entry object:
 | `path` | string | yes | Path to a `.csproj` (or glob pattern) |
 | `properties` | object | no | Per-project MSBuild properties (override `api.dotnet.properties`) |
 | `references` | array<string> / string | no | Per-project referenced assemblies to include |
+
+`api.dotnet.external_apis` accepts:
+
+- object map form
+- array form with `{ uid_prefix, url, max_slug_length? }` (or `assembly` instead of `uid_prefix`)
+
+Example:
+
+```scriban
+with api.dotnet
+  external_apis = [
+    { assembly: "XenoAtom.Terminal", url: "https://xenoatom.github.io/terminal/api" }
+    { assembly: "XenoAtom.Terminal.UI", url: "https://xenoatom.github.io/terminal/api" }
+    { assembly: "XenoAtom.Ansi", url: "https://xenoatom.github.io/terminal/api" }
+  ]
+end
+```
+
+When an unresolved xref UID matches a configured prefix, Lunet builds a remote URL using the same Lunet API slug algorithm (`max_slug_length` defaults to local `api.dotnet.max_slug_length`) and links to that remote page.
 
 ## Generated pages
 

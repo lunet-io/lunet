@@ -55,6 +55,12 @@ public class ApiDotNetConfig : ApiConfig
         set => this.SetValue("kind_icons", value);
     }
 
+    public object? ExternalApis
+    {
+        get => this["external_apis"];
+        set => this.SetValue("external_apis", value);
+    }
+
     public string? Layout
     {
         get => this.GetSafeValue<string>("layout");

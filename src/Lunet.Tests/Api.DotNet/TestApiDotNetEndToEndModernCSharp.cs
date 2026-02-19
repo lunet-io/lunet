@@ -287,6 +287,14 @@ public class TestApiDotNetEndToEndModernCSharp
     }
 
     [Test]
+    public void TestConfiguredExternalApiMappingsResolveXrefsToRemoteLunetUrls()
+    {
+        var namespacePage = ReadRenderedHtmlByUid("ApiE2E");
+        StringAssert.Contains("https://external.example/api/External.Library.Widget/", namespacePage);
+        StringAssert.Contains("External.Library.Widget[]", namespacePage);
+    }
+
+    [Test]
     public void TestSearchIndexesGeneratedApiPages()
     {
         var searchDbPath = Path.Combine(_outputRoot, "js", "lunet-search.sqlite");
@@ -342,6 +350,9 @@ public class TestApiDotNetEndToEndModernCSharp
               title = "API End-to-End"
               path = "/api"
               kind_icons = { Class: "bi-lightning-charge" }
+              external_apis = [
+                { assembly: "External.Library", url: "https://external.example/api" }
+              ]
               properties = { TargetFramework: "net10.0" }
               projects = [
                 {
@@ -587,6 +598,8 @@ public class TestApiDotNetEndToEndModernCSharp
 
             # Summary
             Extra ApiE2E namespace summary from markdown.
+            External docs: <xref href="External.Library.Widget"></xref>.
+            External array docs: <xref href="External.Library.Widget[]"></xref>.
 
             # Remarks
             Extra ApiE2E namespace remarks from markdown.

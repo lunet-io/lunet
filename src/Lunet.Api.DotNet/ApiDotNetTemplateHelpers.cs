@@ -21,12 +21,14 @@ internal sealed class ApiDotNetTemplateHelpers
     private const string XRefCloseTag = "</xref>";
     private readonly SiteObject _site;
     private readonly Dictionary<string, string> _kindIcons;
+    private readonly List<ExternalApiMapping> _externalApiMappings;
 
     public ApiDotNetTemplateHelpers(SiteObject site, ApiDotNetConfig config)
     {
         _site = site ?? throw new ArgumentNullException(nameof(site));
         ArgumentNullException.ThrowIfNull(config);
         _kindIcons = BuildKindIcons(config.KindIcons);
+        _externalApiMappings = BuildExternalApiMappings(config.ExternalApis, config.MaxSlugLength);
     }
 
     public void Register(ScriptObject target)
@@ -68,6 +70,11 @@ internal sealed class ApiDotNetTemplateHelpers
         if (TryResolveXRef(uidText, useFullName, out var resolvedName, out var resolvedUrl))
         {
             return $"<a href=\"{HtmlEscape(resolvedUrl)}\">{HtmlEscape(resolvedName)}</a>";
+        }
+
+        if (TryResolveConfiguredExternalXRef(uidText, useFullName, out var externalName, out var externalUrl))
+        {
+            return $"<a href=\"{HtmlEscape(externalUrl)}\">{HtmlEscape(externalName)}</a>";
         }
 
         if (_site.Content.Finder.TryGetTitleByUid(uidText, out var knownTitle) && !string.IsNullOrWhiteSpace(knownTitle))
@@ -413,6 +420,27 @@ internal sealed class ApiDotNetTemplateHelpers
 
     private bool TryResolveXRef(string uid, bool useFullName, out string name, out string url)
     {
+        if (TryResolveXRefCore(uid, useFullName, out name, out url))
+        {
+            return true;
+        }
+
+        var normalizedUid = NormalizeUidForLookup(uid, out var suffix);
+        if (!uid.Equals(normalizedUid, StringComparison.Ordinal)
+            && TryResolveXRefCore(normalizedUid, useFullName, out var normalizedName, out var normalizedUrl))
+        {
+            name = normalizedName + suffix;
+            url = normalizedUrl;
+            return true;
+        }
+
+        name = uid;
+        url = string.Empty;
+        return false;
+    }
+
+    private bool TryResolveXRefCore(string uid, bool useFullName, out string name, out string url)
+    {
         var finder = _site.Content.Finder;
         if (finder.TryFindByUid(uid, out var page))
         {
@@ -440,6 +468,50 @@ internal sealed class ApiDotNetTemplateHelpers
         name = uid;
         url = string.Empty;
         return false;
+    }
+
+    private bool TryResolveConfiguredExternalXRef(string uid, bool useFullName, out string name, out string url)
+    {
+        var normalizedUid = NormalizeUidForLookup(uid, out var suffix);
+        var mapping = FindExternalApiMapping(normalizedUid);
+        if (mapping is null)
+        {
+            name = uid;
+            url = string.Empty;
+            return false;
+        }
+
+        var slug = ApiDotNetSlugGenerator.BuildSlug(normalizedUid, mapping.MaxSlugLength);
+        url = $"{mapping.UrlPrefix}/{slug}/";
+
+        if (_site.Content.Finder.TryGetTitleByUid(uid, out var exactTitle) && !string.IsNullOrWhiteSpace(exactTitle))
+        {
+            name = exactTitle;
+            return true;
+        }
+
+        if (_site.Content.Finder.TryGetTitleByUid(normalizedUid, out var normalizedTitle) && !string.IsNullOrWhiteSpace(normalizedTitle))
+        {
+            name = normalizedTitle + suffix;
+            return true;
+        }
+
+        name = uid;
+        return true;
+    }
+
+    private ExternalApiMapping? FindExternalApiMapping(string uid)
+    {
+        for (var index = 0; index < _externalApiMappings.Count; index++)
+        {
+            var mapping = _externalApiMappings[index];
+            if (mapping.IsMatch(uid))
+            {
+                return mapping;
+            }
+        }
+
+        return null;
     }
 
     private static List<ScriptObject> GetMembers(ScriptObject apiObject, string name)
@@ -613,5 +685,168 @@ internal sealed class ApiDotNetTemplateHelpers
         }
 
         return $"<i class=\"{HtmlEscape(value)}\" aria-hidden=\"true\"></i>";
+    }
+
+    private List<ExternalApiMapping> BuildExternalApiMappings(object? configExternalApis, int defaultMaxSlugLength)
+    {
+        var mappings = new Dictionary<string, ExternalApiMapping>(StringComparer.Ordinal);
+        switch (configExternalApis)
+        {
+            case null:
+                return [];
+            case ScriptObject mappingObject:
+                foreach (var (uidPrefix, urlValue) in mappingObject)
+                {
+                    AddExternalApiMapping(mappings, uidPrefix, urlValue?.ToString(), defaultMaxSlugLength);
+                }
+                break;
+            case ScriptArray mappingArray:
+                foreach (var entry in mappingArray)
+                {
+                    if (entry is not ScriptObject mappingEntry)
+                    {
+                        _site.Error("Invalid `api.dotnet.external_apis` entry. Expecting an object { uid_prefix: \"...\", url: \"...\" }.");
+                        continue;
+                    }
+
+                    var uidPrefix = GetString(mappingEntry, "uid_prefix");
+                    if (uidPrefix.Length == 0)
+                    {
+                        uidPrefix = GetString(mappingEntry, "assembly");
+                    }
+
+                    if (uidPrefix.Length == 0)
+                    {
+                        uidPrefix = GetString(mappingEntry, "prefix");
+                    }
+
+                    var urlPrefix = GetString(mappingEntry, "url");
+                    if (urlPrefix.Length == 0)
+                    {
+                        urlPrefix = GetString(mappingEntry, "api_url");
+                    }
+
+                    var entryMaxSlugLength = GetInteger(mappingEntry, "max_slug_length");
+                    AddExternalApiMapping(mappings, uidPrefix, urlPrefix, entryMaxSlugLength > 0 ? entryMaxSlugLength : defaultMaxSlugLength);
+                }
+                break;
+            default:
+                _site.Error("Invalid `api.dotnet.external_apis`. Expecting either an object map or an array of mapping objects.");
+                break;
+        }
+
+        return mappings.Values
+            .OrderByDescending(mapping => mapping.UidPrefix.Length)
+            .ToList();
+    }
+
+    private void AddExternalApiMapping(
+        Dictionary<string, ExternalApiMapping> mappings,
+        string? uidPrefix,
+        string? urlPrefix,
+        int maxSlugLength)
+    {
+        if (string.IsNullOrWhiteSpace(uidPrefix))
+        {
+            _site.Error("Invalid `api.dotnet.external_apis` entry. Missing `uid_prefix` (or `assembly`) value.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(urlPrefix))
+        {
+            _site.Error($"Invalid `api.dotnet.external_apis` entry for `{uidPrefix}`. Missing `url` value.");
+            return;
+        }
+
+        var normalizedUidPrefix = uidPrefix.Trim();
+        var normalizedUrlPrefix = urlPrefix.Trim().TrimEnd('/');
+        if (normalizedUrlPrefix.Length == 0)
+        {
+            _site.Error($"Invalid `api.dotnet.external_apis` entry for `{normalizedUidPrefix}`. `url` cannot be empty.");
+            return;
+        }
+
+        mappings[normalizedUidPrefix] = new ExternalApiMapping(
+            normalizedUidPrefix,
+            normalizedUrlPrefix,
+            ApiDotNetSlugGenerator.NormalizeMaxLength(maxSlugLength));
+    }
+
+    private static string NormalizeUidForLookup(string uid, out string suffix)
+    {
+        var lookupUid = uid;
+        var suffixBuilder = new StringBuilder();
+        while (lookupUid.Length > 0)
+        {
+            if (lookupUid.EndsWith("?", StringComparison.Ordinal))
+            {
+                lookupUid = lookupUid[..^1];
+                suffixBuilder.Insert(0, '?');
+                continue;
+            }
+
+            if (lookupUid.EndsWith("[]", StringComparison.Ordinal))
+            {
+                lookupUid = lookupUid[..^2];
+                suffixBuilder.Insert(0, "[]");
+                continue;
+            }
+
+            if (lookupUid.EndsWith("*", StringComparison.Ordinal))
+            {
+                lookupUid = lookupUid[..^1];
+                suffixBuilder.Insert(0, '*');
+                continue;
+            }
+
+            if (lookupUid.EndsWith("&", StringComparison.Ordinal))
+            {
+                lookupUid = lookupUid[..^1];
+                suffixBuilder.Insert(0, '&');
+                continue;
+            }
+
+            break;
+        }
+
+        suffix = suffixBuilder.ToString();
+        return lookupUid.Length == 0 ? uid : lookupUid;
+    }
+
+    private sealed class ExternalApiMapping
+    {
+        public ExternalApiMapping(string uidPrefix, string urlPrefix, int maxSlugLength)
+        {
+            UidPrefix = uidPrefix;
+            UrlPrefix = urlPrefix;
+            MaxSlugLength = maxSlugLength;
+        }
+
+        public string UidPrefix { get; }
+
+        public string UrlPrefix { get; }
+
+        public int MaxSlugLength { get; }
+
+        public bool IsMatch(string uid)
+        {
+            if (uid.Equals(UidPrefix, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (!uid.StartsWith(UidPrefix, StringComparison.Ordinal) || uid.Length <= UidPrefix.Length)
+            {
+                return false;
+            }
+
+            if (UidPrefix.EndsWith(".", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            var nextChar = uid[UidPrefix.Length];
+            return nextChar is '.' or '`';
+        }
     }
 }
