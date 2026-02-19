@@ -4,7 +4,7 @@ layout: simple
 og_type: website
 ---
 
-<section class="text-center py-5 text-white hero-text">
+<section class="text-center py-5">
   <div class="container">
     <img src="{{site.basepath}}/img/lunet-hero-banner.svg" alt="Lunet — Fast, modular static site generator" class="img-fluid" style="width: min(100%, 48rem); height: auto;">
     <p class="lead mt-4 mb-4">
@@ -13,7 +13,7 @@ og_type: website
     </p>
     <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
       <a href="{{site.basepath}}/docs/getting-started/" class="btn btn-primary btn-lg"><i class="bi bi-rocket-takeoff"></i> Get started</a>
-      <a href="{{site.basepath}}/docs/" class="btn btn-outline-light btn-lg"><i class="bi bi-book"></i> Documentation</a>
+      <a href="{{site.basepath}}/docs/" class="btn btn-outline-secondary btn-lg"><i class="bi bi-book"></i> Documentation</a>
       <a href="https://github.com/lunet-io/lunet" class="btn btn-info btn-lg"><i class="bi bi-github"></i> GitHub</a>
     </div>
     <div class="mt-4 text-start mx-auto" style="max-width: 48rem;">
