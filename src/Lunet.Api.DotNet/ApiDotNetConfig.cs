@@ -82,4 +82,14 @@ public class ApiDotNetConfig : ApiConfig
         }
         set => this.SetValue("menu_width", value);
     }
+
+    public int MaxSlugLength
+    {
+        get
+        {
+            var length = this.GetSafeValue<int>("max_slug_length");
+            return ApiDotNetSlugGenerator.NormalizeMaxLength(length);
+        }
+        set => this.SetValue("max_slug_length", value);
+    }
 }

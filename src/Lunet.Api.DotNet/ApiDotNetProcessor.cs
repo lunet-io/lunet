@@ -98,6 +98,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
     {
         var apiBasePath = NormalizeApiBasePath(Config.BasePath);
         var pagesByUid = new Dictionary<string, DynamicContentObject>(StringComparer.Ordinal);
+        var slugResolver = new ApiDotNetSlugResolver(Config.MaxSlugLength);
 
         // Register all xref
         foreach (var refKeyPair in ApiDotNetObject.References)
@@ -125,18 +126,16 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 continue;
             }
 
-            var url = $"{apiBasePath}/{UidHelper.Handleize(uid)}/readme.md";
+            var url = $"{apiBasePath}/{slugResolver.GetSlug(uid)}/readme.md";
 
             DynamicContentObject? content = null;
             switch (GetTypeFromModel(obj))
             {
                 case "Namespace":
                 {
-                    content = new DynamicContentObject(Site, url, "api", url)
-                    {
-                        ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
-                        LayoutType = "api-dotnet-namespace",
-                    };
+                    content = CreateApiContentPage(url);
+                    content.ScriptObjectLocal = new ScriptObject(); // only used to let layout processor running
+                    content.LayoutType = "api-dotnet-namespace";
                     content.ScriptObjectLocal["namespace"] = obj;
                     break;
                 }
@@ -154,11 +153,9 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 case "Extension":
                 case "EiiMethod":
                 {
-                    content = new DynamicContentObject(Site, url, "api", url)
-                    {
-                        ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
-                        LayoutType = "api-dotnet-member",
-                    };
+                    content = CreateApiContentPage(url);
+                    content.ScriptObjectLocal = new ScriptObject(); // only used to let layout processor running
+                    content.LayoutType = "api-dotnet-member";
 
                     content.ScriptObjectLocal["member"] = obj;
                     break;
@@ -188,11 +185,9 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         DynamicContentObject apiRootPage;
         {
             var path = $"{apiBasePath}/readme.md";
-            var content = new DynamicContentObject(Site, path, "api", path)
-            {
-                ScriptObjectLocal = new ScriptObject(), // only used to let layout processor running
-                LayoutType = "api-dotnet",
-            };
+            var content = CreateApiContentPage(path);
+            content.ScriptObjectLocal = new ScriptObject(); // only used to let layout processor running
+            content.LayoutType = "api-dotnet";
 
             content.Uid = "api-dotnet";
             content.Layout = Config.Layout ?? "_default";
@@ -209,6 +204,19 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         }
 
         ConfigureGeneratedMenu(apiRootPage, pagesByUid);
+    }
+
+    private DynamicContentObject CreateApiContentPage(string url)
+    {
+        var content = new DynamicContentObject(Site, url, "api", url);
+
+        // DynamicContentObject initializes Url with Site.BasePath.
+        // API pages need UrlWithoutBasePath to remain a pure output path,
+        // while Url gets Site.BasePath applied later by ContentObject.Initialize.
+        content.Url = url;
+        content.UrlWithoutBasePath = url;
+
+        return content;
     }
 
     private static string NormalizeApiBasePath(string? configuredPath)

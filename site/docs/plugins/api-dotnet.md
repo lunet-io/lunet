@@ -34,6 +34,7 @@ This generates API pages under `path` (default `/api`) and registers all API UID
 | `api.dotnet.menu_name` | string | `"api"` | Menu name exposed on `site.menu.<name>` |
 | `api.dotnet.menu_title` | string | `api.dotnet.title` | Root menu title |
 | `api.dotnet.menu_width` | int | `4` | Sidebar width hint for this menu |
+| `api.dotnet.max_slug_length` | int | `96` | Maximum URL slug length for generated member/namespace pages; long UIDs are shortened with a stable hash suffix |
 | `api.dotnet.config` | string | `"Release"` | Build configuration passed to `dotnet build` |
 | `api.dotnet.properties` | object | empty | Extra MSBuild properties (`-p:`), e.g. `TargetFramework` |
 | `api.dotnet.projects` | array | required | Projects to extract (`string` or object entries) |
@@ -59,6 +60,8 @@ Lunet creates dynamic pages:
 - `<path>/` with `layout_type = "api-dotnet"` (API root)
 - `<path>/<namespace-uid>/` with `layout_type = "api-dotnet-namespace"`
 - `<path>/<member-uid>/` with `layout_type = "api-dotnet-member"`
+
+For very long UIDs (common with large generic signatures), Lunet automatically shortens the page slug to stay filesystem-safe on Windows while keeping URLs deterministic.
 
 Default templates:
 

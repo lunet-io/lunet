@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Lunet.Api.DotNet;
 using Lunet.Core;
 using Lunet.Tests.Infrastructure;
 using Microsoft.Data.Sqlite;
@@ -75,6 +76,24 @@ public class TestApiDotNetEndToEndModernCSharp
         Assert.IsTrue(File.Exists(Path.Combine(_outputRoot, "api", "index.html")));
         Assert.IsTrue(File.Exists(Path.Combine(_outputRoot, "api", UidHelper.Handleize("ApiE2E"), "index.html")));
         Assert.IsTrue(File.Exists(Path.Combine(_outputRoot, "api", UidHelper.Handleize("ApiE2E.RecordClass"), "index.html")));
+    }
+
+    [Test]
+    public void TestLongMemberUidUsesCappedAndStableSlug()
+    {
+        var longMethodItem = FindSingleItem("Method", "LongPathStress.Create");
+        var uid = longMethodItem.GetProperty("uid").GetString();
+        Assert.That(uid, Is.Not.Null.And.Not.Empty);
+
+        var legacySlug = UidHelper.Handleize(uid!);
+        Assert.Greater(legacySlug.Length, 255, "Expected test UID to exceed Windows path segment limits before slug capping.");
+
+        var slug = ApiDotNetSlugGenerator.BuildSlug(uid!, ApiDotNetSlugGenerator.DefaultMaxLength);
+        Assert.LessOrEqual(slug.Length, ApiDotNetSlugGenerator.DefaultMaxLength);
+        Assert.AreEqual(slug, ApiDotNetSlugGenerator.BuildSlug(uid!, ApiDotNetSlugGenerator.DefaultMaxLength));
+
+        var outputFile = Path.Combine(_outputRoot, "api", slug, "index.html");
+        Assert.IsTrue(File.Exists(outputFile), $"Expected rendered API page for long uid at `{outputFile}`.");
     }
 
     [Test]
@@ -533,6 +552,21 @@ public class TestApiDotNetEndToEndModernCSharp
                 /// <summary>Splits an RGB value.</summary>
                 public static (byte R, byte G, byte B) SplitRgb(int rgb) =>
                     ((byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF));
+            }
+
+            public readonly struct LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataOne;
+            public readonly struct LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataTwo;
+            public readonly struct LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataThree;
+            public readonly struct LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFour;
+            public readonly struct LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFive;
+
+            public static class LongPathStress
+            {
+                public static int Create(
+                    (LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataOne, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataTwo, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataThree, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFour, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFive) first,
+                    (LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataOne, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataTwo, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataThree, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFour, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFive) second,
+                    (LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataOne, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataTwo, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataThree, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFour, LongPathSegmentTypeNameUsedToStressApiDotNetPageSlugLengthWithComplexSignaturesAndValueTupleDataFive) third)
+                    => first.GetHashCode() + second.GetHashCode() + third.GetHashCode();
             }
             """);
 
