@@ -9,6 +9,7 @@
     <AssemblyName>lunet</AssemblyName>
     <PackageId>lunet</PackageId>
     <PackageIcon>lunet.png</PackageIcon>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageTags>website;jekyll;hugo;static</PackageTags>
     <PackageReleaseNotes>https://github.com/lunet-io/lunet/blob/master/changelog.md</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/lunet-io/lunet</PackageProjectUrl>
@@ -39,6 +40,7 @@
 
   <ItemGroup>
     <None Include="../../site/img/lunet.png" Pack="true" PackagePath="" />
+    <None Include="../../readme.md" Pack="true" PackagePath="/" />
     <ProjectReference Include="..\Lunet.Application\Lunet.Application.csproj" />
   </ItemGroup>
 
