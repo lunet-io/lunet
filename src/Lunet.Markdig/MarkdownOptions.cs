@@ -10,6 +10,7 @@ public class MarkdownOptions : DynamicObject<MarkdownPlugin>
 {
     public MarkdownOptions(MarkdownPlugin parent) : base(parent)
     {
+        AutoIdKind = "github";
     }
     
     public string Extensions
@@ -22,5 +23,11 @@ public class MarkdownOptions : DynamicObject<MarkdownPlugin>
     {
         get => GetSafeValue<string>("css_img_attr");
         set => SetValue("css_img_attr", value);
+    }
+
+    public string? AutoIdKind
+    {
+        get => GetSafeValue<string>("auto_id_kind");
+        set => SetValue("auto_id_kind", value);
     }
 }

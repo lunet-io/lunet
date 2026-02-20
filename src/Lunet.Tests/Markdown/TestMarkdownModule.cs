@@ -94,6 +94,35 @@ public class TestMarkdownModule
     }
 
     [Test]
+    public void TestMarkdownAutoIdentifierUsesGitHubModeByDefault()
+    {
+        using var context = new SiteTestContext();
+        var layoutPlugin = new LayoutPlugin(context.Site);
+        var plugin = new MarkdownPlugin(context.Site, layoutPlugin);
+        var page = context.CreateFileContentObject("/posts/heading.md", "ignored");
+        page.Content = "# Über Åß";
+
+        plugin.Convert(page);
+
+        StringAssert.Contains("id=\"über-åß\"", page.Content!);
+    }
+
+    [Test]
+    public void TestMarkdownAutoIdentifierAsciiModeTransliteratesHeadingIds()
+    {
+        using var context = new SiteTestContext();
+        var layoutPlugin = new LayoutPlugin(context.Site);
+        var plugin = new MarkdownPlugin(context.Site, layoutPlugin);
+        GetOptions(plugin).AutoIdKind = "ascii";
+        var page = context.CreateFileContentObject("/posts/heading-ascii.md", "ignored");
+        page.Content = "# Über Åß";
+
+        plugin.Convert(page);
+
+        StringAssert.Contains("id=\"uber-ass\"", page.Content!);
+    }
+
+    [Test]
     public void TestMarkdownKeepsFragmentOnlyLinksOnCurrentPage()
     {
         using var context = new SiteTestContext();

@@ -17,6 +17,7 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Markdig.Extensions.AutoIdentifiers;
 
 // Register this plugin
 
@@ -77,7 +78,6 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
             switch (_markdigOptions.Extensions)
             {
                 // TODO: Add support for other extensions.
-
                 case "advanced":
                 default:
                     builder.UseAdvancedExtensions();
@@ -87,7 +87,21 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
                     builder.Extensions.ReplaceOrAdd<LunetAlertExtension>(new LunetAlertExtension());
                     break;
             }
-            
+
+            var autoIdentifier = builder.Extensions.Find<AutoIdentifierExtension>();
+            if (autoIdentifier is not null)
+            {
+                var options = AutoIdentifierOptions.AutoLink | AutoIdentifierOptions.GitHub;
+                switch (_markdigOptions.AutoIdKind)
+                {
+                    case "ascii":
+                        options = AutoIdentifierOptions.AllowOnlyAscii | AutoIdentifierOptions.AutoLink;
+                        break;
+                }
+                autoIdentifier = new AutoIdentifierExtension(options);
+                builder.Extensions.ReplaceOrAdd<AutoIdentifierExtension>(autoIdentifier);
+            }
+
             builder.Extensions.AddIfNotAlready<XRefMarkdownExtension>();
             pipeline = builder.Build();
             _markdownPipeline.Value = pipeline;

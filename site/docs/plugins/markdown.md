@@ -44,6 +44,7 @@ This is **Markdown**.
 with markdown
   options.extensions = "advanced"
   options.css_img_attr = "img-fluid,rounded"
+  options.auto_id_kind = "github" # or "ascii"
 end
 ```
 
@@ -52,6 +53,28 @@ end
 |---|---|---|
 | `markdown.options.extensions` | `"advanced"` | Markdig pipeline preset. Currently only `"advanced"` is supported; any other value also defaults to advanced mode |
 | `markdown.options.css_img_attr` | *(empty)* | Comma-separated CSS classes added to all generated `<img>` elements |
+| `markdown.options.auto_id_kind` | `"github"` | Heading auto-ID mode. Supported values: `"github"` (GFM style, keeps Unicode letters) or `"ascii"` (ASCII/transliterated IDs) |
+
+### Heading auto-ID modes
+
+Lunet enables Markdig auto-identifiers for headings. You can choose how IDs are generated:
+
+- `github` (default): GitHub-compatible behavior. Keeps Unicode letters and lowercases text.
+- `ascii`: Converts to ASCII-friendly IDs by stripping accents and non-ASCII characters.
+
+Example heading:
+
+```markdown
+# Über Åß
+```
+
+Generated IDs:
+
+{.table}
+| `auto_id_kind` | Generated heading ID |
+|---|---|
+| `github` | `über-åß` |
+| `ascii` | `uber-ass` |
 
 ## Supported Markdown features
 
