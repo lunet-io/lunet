@@ -94,6 +94,51 @@ public class TestMarkdownModule
     }
 
     [Test]
+    public void TestMarkdownKeepsFragmentOnlyLinksOnCurrentPage()
+    {
+        using var context = new SiteTestContext();
+        var layoutPlugin = new LayoutPlugin(context.Site);
+        var plugin = new MarkdownPlugin(context.Site, layoutPlugin);
+        var page = context.CreateFileContentObject("/folder/myfile.md", "ignored");
+        page.Content = "[Anchor](#myanchor)";
+
+        plugin.Convert(page);
+
+        StringAssert.Contains("href=\"#myanchor\"", page.Content!);
+    }
+
+    [Test]
+    public void TestMarkdownResolvesFileAndReadmeLinksWithAnchors()
+    {
+        using var context = new SiteTestContext();
+        context.Site.BaseUrl = "https://example.com";
+        var layoutPlugin = new LayoutPlugin(context.Site);
+        var plugin = new MarkdownPlugin(context.Site, layoutPlugin);
+
+        var siblingPage = context.CreateDynamicContentObject("/folder/afile/", path: "/folder/afile.md");
+        siblingPage.ContentType = ContentType.Html;
+        siblingPage.Url = "/folder/afile/";
+        siblingPage.UrlWithoutBasePath = "/folder/afile/";
+
+        var readmePage = context.CreateDynamicContentObject("/myfolder/", path: "/myfolder/readme.md");
+        readmePage.ContentType = ContentType.Html;
+        readmePage.Url = "/myfolder/";
+        readmePage.UrlWithoutBasePath = "/myfolder/";
+
+        context.Site.Pages.Add(siblingPage);
+        context.Site.Pages.Add(readmePage);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+
+        var page = context.CreateFileContentObject("/folder/myfile.md", "ignored");
+        page.Content = "[Sibling](afile.md#section)\n[Readme](../myfolder/readme.md#intro)";
+
+        plugin.Convert(page);
+
+        StringAssert.Contains("href=\"/folder/afile#section\"", page.Content!);
+        StringAssert.Contains("href=\"/myfolder#intro\"", page.Content!);
+    }
+
+    [Test]
     public void TestMarkdownUsesCustomAlertRenderer()
     {
         using var context = new SiteTestContext();

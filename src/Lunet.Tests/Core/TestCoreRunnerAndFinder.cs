@@ -152,6 +152,53 @@ public class TestCoreRunnerAndFinder
     }
 
     [Test]
+    public void TestPageFinderKeepsFragmentOnlyLinksRelativeToCurrentPage()
+    {
+        using var context = new SiteTestContext();
+        context.Site.BaseUrl = "https://example.com";
+
+        var sourcePage = context.CreateDynamicContentObject("/folder/myfile/", path: "/folder/myfile.md");
+        sourcePage.ContentType = ContentType.Html;
+        sourcePage.Url = "/folder/myfile/";
+        sourcePage.UrlWithoutBasePath = "/folder/myfile/";
+        context.Site.Pages.Add(sourcePage);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+
+        Assert.AreEqual("#myanchor", context.Site.Content.Finder.UrlRelRef(sourcePage, "#myanchor"));
+        Assert.AreEqual("?q=1#myanchor", context.Site.Content.Finder.UrlRelRef(sourcePage, "?q=1#myanchor"));
+    }
+
+    [Test]
+    public void TestPageFinderResolvesFileAndReadmeLinksWithFragments()
+    {
+        using var context = new SiteTestContext();
+        context.Site.BaseUrl = "https://example.com";
+
+        var sourcePage = context.CreateDynamicContentObject("/folder/myfile/", path: "/folder/myfile.md");
+        sourcePage.ContentType = ContentType.Html;
+        sourcePage.Url = "/folder/myfile/";
+        sourcePage.UrlWithoutBasePath = "/folder/myfile/";
+
+        var siblingPage = context.CreateDynamicContentObject("/folder/afile/", path: "/folder/afile.md");
+        siblingPage.ContentType = ContentType.Html;
+        siblingPage.Url = "/folder/afile/";
+        siblingPage.UrlWithoutBasePath = "/folder/afile/";
+
+        var readmePage = context.CreateDynamicContentObject("/docs/", path: "/docs/readme.md");
+        readmePage.ContentType = ContentType.Html;
+        readmePage.Url = "/docs/";
+        readmePage.UrlWithoutBasePath = "/docs/";
+
+        context.Site.Pages.Add(sourcePage);
+        context.Site.Pages.Add(siblingPage);
+        context.Site.Pages.Add(readmePage);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+
+        Assert.AreEqual("/folder/afile#section", context.Site.Content.Finder.UrlRelRef(sourcePage, "afile.md#section"));
+        Assert.AreEqual("/docs#overview", context.Site.Content.Finder.UrlRelRef(sourcePage, "../docs/readme.md#overview"));
+    }
+
+    [Test]
     public void TestPageFinderNormalizesEncodedExternalGenericUid()
     {
         using var context = new SiteTestContext();

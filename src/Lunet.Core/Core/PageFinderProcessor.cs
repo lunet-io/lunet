@@ -263,17 +263,70 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
             return url ?? string.Empty;
         }
 
+        SplitPathAndSuffix(url, out var pathPart, out var suffixPart);
+
+        // Fragment-only or query-only link on the current page.
+        // Keep it as-is for relative links so markdown `[x](#anchor)` does not become `/folder/#anchor`.
+        if (pathPart.Length == 0)
+        {
+            if (rel)
+            {
+                return suffixPart;
+            }
+
+            var pagePath = page?.UrlWithoutBasePath;
+            if (!string.IsNullOrEmpty(pagePath))
+            {
+                if (!UPath.TryParse(pagePath, out var currentPath))
+                {
+                    throw new ArgumentException($"Malformed current page url `{pagePath}`", nameof(url));
+                }
+
+                if (!string.IsNullOrEmpty(basePath))
+                {
+                    // Normalize base path
+                    if (!basePath.StartsWith('/'))
+                    {
+                        basePath = "/" + basePath;
+                    }
+
+                    if (basePath.EndsWith('/'))
+                    {
+                        basePath = basePath.TrimEnd('/');
+                    }
+
+                    currentPath = UPath.Combine(basePath, "." + currentPath);
+                }
+
+                var currentFinalUrl = $"{baseUrl}{currentPath}";
+                if (!Uri.TryCreate(currentFinalUrl, UriKind.Absolute, out var currentUri))
+                {
+                    throw new ArgumentException($"Invalid url `{currentFinalUrl}`.", nameof(url));
+                }
+
+                return $"{currentUri.Scheme}://{currentUri.Host}{(currentUri.IsDefaultPort ? string.Empty : $":{currentUri.Port.ToString(CultureInfo.InvariantCulture)}")}{currentPath}{suffixPart}";
+            }
+
+            var selfUrl = $"{baseUrl}{suffixPart}";
+            if (!Uri.TryCreate(selfUrl, UriKind.Absolute, out _))
+            {
+                throw new ArgumentException($"Invalid url `{selfUrl}`.", nameof(url));
+            }
+
+            return selfUrl;
+        }
+
         // Validate the url
-        if (!UPath.TryParse(url, out var urlPath))
+        if (!UPath.TryParse(pathPart, out var urlPath))
         {
             throw new ArgumentException($"Malformed url `{url}`", nameof(url));
         }
 
-        UPath absPath = url;
+        UPath absPath = pathPart;
         // If the URL is not absolute, we make it absolute from the current page
         if (absPath.IsRelative)
         {
-            if (page?.Url != null)
+            if (page != null && !page.Path.IsNull)
             {
                 var directory = page.Path.GetDirectory();
                 absPath = (string)(directory / urlPath);
@@ -320,8 +373,22 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
         }
         
         return rel
-            ? $"{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}"
-            : $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? string.Empty : $":{uri.Port.ToString(CultureInfo.InvariantCulture)}")}{absPath}{(!string.IsNullOrEmpty(uri.Query) ? $"?{uri.Query}" : string.Empty)}";
+            ? $"{absPath}{suffixPart}"
+            : $"{uri.Scheme}://{uri.Host}{(uri.IsDefaultPort ? string.Empty : $":{uri.Port.ToString(CultureInfo.InvariantCulture)}")}{absPath}{suffixPart}";
+    }
+
+    private static void SplitPathAndSuffix(string inputUrl, out string pathPart, out string suffixPart)
+    {
+        var suffixIndex = inputUrl.IndexOfAny(new[] { '?', '#' });
+        if (suffixIndex < 0)
+        {
+            pathPart = inputUrl;
+            suffixPart = string.Empty;
+            return;
+        }
+
+        pathPart = inputUrl.Substring(0, suffixIndex);
+        suffixPart = inputUrl.Substring(suffixIndex);
     }
 
     private static string NormalizeUidLookup(string uid)
