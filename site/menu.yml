@@ -4,5 +4,5 @@ home:
   - {path: api/readme.md, title: "<i class='bi bi-braces' aria-hidden='true'></i> API", folder: true, env: dev}
 
 home2:
-  - {url: "https://www.nuget.org/packages/lunet/", title: '<i class="bi bi-box-seam"></i> NuGet', link_class: btn btn-outline-secondary}
+  - {url: "https://github.com/sponsors/xoofx", title: '<i class="bi bi-heart" style="color: pink"></i> Sponsor', link_class: btn btn-outline-secondary }
   - {url: "https://github.com/lunet-io/lunet/", title: '<i class="bi bi-github"></i> GitHub', link_class: btn btn-info}
