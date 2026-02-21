@@ -7,6 +7,7 @@
         --lunet-accent-end: #22d3ee;
         --lunet-bg-start: #222e46;
         --lunet-bg-end: #2b3f62;
+        --lunet-bg-opacity: 0.80;
         --lunet-card-bg-start: #1f2740;
         --lunet-card-bg-end: #151d32;
         --lunet-cutout: #1a2542;
@@ -16,17 +17,21 @@
         --lunet-font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       }
 
-      .bg-start { stop-color: var(--lunet-bg-start); }
-      .bg-end   { stop-color: var(--lunet-bg-end); }
+      .bg-start { stop-color: var(--lunet-bg-start); stop-opacity: var(--lunet-bg-opacity); }
+      .bg-end   { stop-color: var(--lunet-bg-end); stop-opacity: var(--lunet-bg-opacity); }
       .accent-start  { stop-color: var(--lunet-accent-start); }
       .accent-middle { stop-color: var(--lunet-accent-middle); }
       .accent-end    { stop-color: var(--lunet-accent-end); }
       .card-bg-start { stop-color: var(--lunet-card-bg-start); }
       .card-bg-end   { stop-color: var(--lunet-card-bg-end); }
+      /* Ambient spheres: keep mostly cool, but with a subtle warm tint at the start. */
+      .ambient-start { stop-color: var(--lunet-accent-start); stop-opacity: 0.55; }
+      .ambient-mid   { stop-color: var(--lunet-accent-middle); }
+      .ambient-end   { stop-color: var(--lunet-accent-end); }
 
       .banner-bg { fill: url(#hero-bg-gradient); }
-      .ambient-primary   { fill: url(#hero-accent-gradient); opacity: 0.18; }
-      .ambient-secondary { fill: url(#hero-accent-gradient); opacity: 0.10; }
+      .ambient-primary   { fill: url(#hero-ambient-gradient); opacity: 0.14; }
+      .ambient-secondary { fill: url(#hero-ambient-gradient); opacity: 0.08; }
 
       .logo-card {
         fill: url(#hero-card-gradient);
@@ -73,6 +78,11 @@
       <stop class="accent-start" offset="0"/>
       <stop class="accent-middle" offset="0.5"/>
       <stop class="accent-end" offset="1"/>
+    </linearGradient>
+    <linearGradient id="hero-ambient-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop class="ambient-start" offset="0"/>
+      <stop class="ambient-mid" offset="0.55"/>
+      <stop class="ambient-end" offset="1"/>
     </linearGradient>
   </defs>
 
