@@ -75,18 +75,12 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         {
             var builder = new MarkdownPipelineBuilder();
 
-            switch (_markdigOptions.Extensions)
-            {
-                // TODO: Add support for other extensions.
-                case "advanced":
-                default:
-                    builder.UseAdvancedExtensions();
+            // Configure the pipeline with the extensions defined in the options
+            builder.Configure(_markdigOptions.Extensions);
 
-                    // We replace the AlertExtension with our own LunetAlertExtension
-                    builder.Extensions.TryRemove<AlertExtension>();
-                    builder.Extensions.ReplaceOrAdd<LunetAlertExtension>(new LunetAlertExtension());
-                    break;
-            }
+            // We replace the AlertExtension with our own LunetAlertExtension
+            builder.Extensions.TryRemove<AlertExtension>();
+            builder.Extensions.ReplaceOrAdd<LunetAlertExtension>(new LunetAlertExtension());
 
             var autoIdentifier = builder.Extensions.Find<AutoIdentifierExtension>();
             if (autoIdentifier is not null)
