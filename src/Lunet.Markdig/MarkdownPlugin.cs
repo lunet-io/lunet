@@ -79,8 +79,7 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
             builder.Configure(_markdigOptions.Extensions);
 
             // We replace the AlertExtension with our own LunetAlertExtension
-            builder.Extensions.TryRemove<AlertExtension>();
-            builder.Extensions.ReplaceOrAdd<LunetAlertExtension>(new LunetAlertExtension());
+            builder.Extensions.ReplaceOrAdd<AlertExtension>(new LunetAlertExtension());
 
             var autoIdentifier = builder.Extensions.Find<AutoIdentifierExtension>();
             if (autoIdentifier is not null)
@@ -214,7 +213,7 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         public void Setup(MarkdownPipelineBuilder pipeline)
         {
             var inlineParser = pipeline.InlineParsers.Find<AlertInlineParser>();
-            if (inlineParser == null)
+            if (inlineParser is null)
             {
                 pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AlertInlineParser());
             }
@@ -224,7 +223,7 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
         public void Setup(MarkdownPipeline pipeline, IMarkdownRenderer renderer)
         {
             var blockRenderer = renderer.ObjectRenderers.FindExact<AlertBlockRenderer>();
-            if (blockRenderer == null)
+            if (blockRenderer is null)
             {
                 renderer.ObjectRenderers.InsertBefore<QuoteBlockRenderer>(new LunetAlertBlockRenderer());
             }
