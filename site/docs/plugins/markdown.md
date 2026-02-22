@@ -51,13 +51,68 @@ end
 {.table}
 | Option | Default | Description |
 |---|---|---|
-| `markdown.options.extensions` | `"advanced"` | Markdig pipeline preset. Currently only `"advanced"` is supported; any other value also defaults to advanced mode |
+| `markdown.options.extensions` | `"advanced"` | Markdig extension set string (case-insensitive) passed to Markdig's `MarkdownPipelineBuilder.Configure(...)`. Use `+` to combine extensions, e.g. `"advanced+bootstrap"`. Unknown extensions fail the build |
 | `markdown.options.css_img_attr` | *(empty)* | Comma-separated CSS classes added to all generated `<img>` elements |
 | `markdown.options.auto_id_kind` | `"github"` | Heading auto-ID mode. Supported values: `"github"` (GFM style, keeps Unicode letters) or `"ascii"` (ASCII/transliterated IDs) |
 
+### Markdig extensions string
+
+The `extensions` option is a `+`-separated list of Markdig extensions. Examples:
+
+- `"advanced"` (default)
+- `"advanced+bootstrap"` (advanced preset plus Bootstrap-friendly rendering)
+- `"pipetables+gridtables+autoidentifiers"` (pick and choose)
+- `"advanced+nohtml"` (advanced but HTML is disabled)
+
+`advanced` is a preset that enables:
+
+- `alerts`, `abbreviations`, `autoidentifiers`, `citations`, `customcontainers`, `definitionlists`
+- `emphasisextras`, `figures`, `footers`, `footnotes`
+- `gridtables`, `mathematics`, `medialinks`, `pipetables`, `listextras`, `tasklists`, `diagrams`, `autolinks`, `attributes`
+
+Notably, `advanced` does **not** include `bootstrap`, `emojis`, `smartypants`, or `hardlinebreak`. Add them explicitly if you want them.
+
+Supported extension tokens:
+
+{.table}
+| Token | Enables |
+|---|---|
+| `common` | Default CommonMark behavior (no extra extensions) |
+| `advanced` | Markdig advanced preset (see list above) |
+| `alerts` | Alert/callout blocks |
+| `pipetables` | Pipe table syntax (`| a | b |`) |
+| `gfm-pipetables` | Pipe tables with GitHub-style header column count |
+| `gridtables` | Grid table syntax |
+| `emphasisextras` | Extra emphasis features (strike, insert, mark, etc.) |
+| `listextras` | Extra list features |
+| `tasklists` | GitHub task lists (`- [x]`) |
+| `hardlinebreak` | Treat soft line breaks as hard line breaks |
+| `footnotes` | Footnotes |
+| `footers` | Footer blocks |
+| `citations` | Citation syntax |
+| `attributes` | Generic attributes (`{#id .class}`) |
+| `abbreviations` | Abbreviation definitions |
+| `definitionlists` | Definition lists |
+| `customcontainers` | Custom container blocks (`:::`) |
+| `figures` | Figure/figcaption syntax |
+| `mathematics` | Math blocks and inlines |
+| `bootstrap` | Bootstrap-friendly rendering |
+| `medialinks` | Media-aware links (YouTube, etc.) |
+| `smartypants` | Typographic substitutions (quotes, dashes, etc.) |
+| `autoidentifiers` | Automatic heading IDs |
+| `diagrams` | Diagram blocks (Mermaid, etc.) |
+| `nofollowlinks` | Adds `rel=\"nofollow\"` to links |
+| `noopenerlinks` | Adds `rel=\"noopener\"` to links |
+| `noreferrerlinks` | Adds `rel=\"noreferrer\"` to links |
+| `nohtml` | Disables raw HTML in Markdown |
+| `yaml` | YAML front matter parsing (usually not needed in Lunet) |
+| `nonascii-noescape` | Do not escape non-ASCII characters |
+| `autolinks` | Auto-link bare URLs |
+| `globalization` | Globalization support (culture-aware parsing) |
+
 ### Heading auto-ID modes
 
-Lunet enables Markdig auto-identifiers for headings. You can choose how IDs are generated:
+Lunet enables Markdig auto-identifiers for headings when the `autoidentifiers` extension is enabled (it is included in the default `advanced` preset). You can choose how IDs are generated:
 
 - `github` (default): GitHub-compatible behavior. Keeps Unicode letters and lowercases text.
 - `ascii`: Converts to ASCII-friendly IDs by stripping accents and non-ASCII characters.
