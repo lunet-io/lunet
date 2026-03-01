@@ -991,7 +991,8 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         foreach (Match match in matches)
         {
             var path = match.Groups[1].Value;
-            if (path.IndexOf(@"\bin\", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (path.IndexOf(@"\bin\", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                path.IndexOf("/bin/", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return true;
             }
