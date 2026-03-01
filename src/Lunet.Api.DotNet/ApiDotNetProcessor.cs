@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Scriban.Functions;
 using Zio;
 using Zio.FileSystems;
@@ -845,44 +846,11 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             var clock = Stopwatch.StartNew();
 
             var rerunArguments = new List<string>();
+            var didPrebuildProjectReferences = false;
 
             rebuild_doc:
 
-            var buildProject = new DotNetProgram("build")
-            {
-                Arguments =
-                {
-                    $"-c", Config.SolutionConfiguration ?? "Release",
-                    project.Path
-                },
-                WorkingDirectory = Path.GetDirectoryName(project.Path) ?? Environment.CurrentDirectory
-            };
-            buildProject.Arguments.AddRange(rerunArguments);
-
-            // Copy global properties
-            foreach (var prop in sharedProperties)
-            {
-                if (prop.Value == null) continue;
-                buildProject.Properties[prop.Key] = prop.Value;
-            }
-
-            // Overrides with the properties from the project
-            if (project.Properties != null)
-            {
-                foreach (var prop in project.Properties)
-                {
-                    if (prop.Value == null) continue;
-                    buildProject.Properties[prop.Key] = prop.Value;
-                }
-            }
-
-            // Make sure we have the last word
-            buildProject.Properties["CustomBeforeMicrosoftCommonProps"] = _customMsBuildFileProps;
-            buildProject.Properties["Configuration"] = Config.SolutionConfiguration ?? "Release";
-            if (project.IncludedReferenceAssemblies.Count > 0)
-            {
-                buildProject.Properties[IncludeReferenceAssembliesProperty] = string.Join(";", project.IncludedReferenceAssemblies);
-            }
+            var buildProject = CreateDotNetBuildProgram(project, sharedProperties, rerunArguments, includeExtractorProps: true);
 
             try
             {
@@ -939,11 +907,97 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                     project.CacheState = ApitDotNetCacheState.New;
                 }
             }
+            catch (DotNetProgramException ex) when (!didPrebuildProjectReferences && ShouldPrebuildProjectReferencesForMissingAnalyzer(ex.Message))
+            {
+                // When BuildProjectReferences=false (commonly used for API extraction speed), analyzer-only project references
+                // (source generators, analyzers) might not have been built yet on a fresh checkout.
+                Site.Warning($"API dotnet build for `{project.Name}` failed due to missing referenced analyzer outputs. Building project references once and retrying.");
+
+                var prebuild = CreateDotNetBuildProgram(project, sharedProperties, rerunArguments, includeExtractorProps: false);
+                prebuild.Properties["BuildProjectReferences"] = true;
+                prebuild.Run();
+
+                didPrebuildProjectReferences = true;
+                goto rebuild_doc;
+            }
             catch (Exception ex)
             {
                 Site.Error(ex, $"Error while building api dotnet for `{project.Name}`. Reason: {ex.Message}");
             }
         }
+    }
+
+    private DotNetProgram CreateDotNetBuildProgram(ApiDotNetProject project, ScriptObject sharedProperties, List<string> rerunArguments, bool includeExtractorProps)
+    {
+        var buildProject = new DotNetProgram("build")
+        {
+            Arguments =
+            {
+                "-c", Config.SolutionConfiguration ?? "Release",
+                project.Path
+            },
+            WorkingDirectory = Path.GetDirectoryName(project.Path) ?? Environment.CurrentDirectory
+        };
+        buildProject.Arguments.AddRange(rerunArguments);
+
+        // Copy global properties
+        foreach (var prop in sharedProperties)
+        {
+            if (prop.Value == null) continue;
+            buildProject.Properties[prop.Key] = prop.Value;
+        }
+
+        // Overrides with the properties from the project
+        if (project.Properties != null)
+        {
+            foreach (var prop in project.Properties)
+            {
+                if (prop.Value == null) continue;
+                buildProject.Properties[prop.Key] = prop.Value;
+            }
+        }
+
+        // Make sure we have the last word for configuration.
+        buildProject.Properties["Configuration"] = Config.SolutionConfiguration ?? "Release";
+
+        if (includeExtractorProps)
+        {
+            buildProject.Properties["CustomBeforeMicrosoftCommonProps"] = _customMsBuildFileProps;
+            if (project.IncludedReferenceAssemblies.Count > 0)
+            {
+                buildProject.Properties[IncludeReferenceAssembliesProperty] = string.Join(";", project.IncludedReferenceAssemblies);
+            }
+        }
+
+        return buildProject;
+    }
+
+    private static readonly Regex MissingMetadataFileRegex = new Regex(@"CS0006:\s*Metadata file '([^']+\.dll)' could not be found", RegexOptions.Compiled);
+
+    private static bool ShouldPrebuildProjectReferencesForMissingAnalyzer(string errorText)
+    {
+        if (string.IsNullOrEmpty(errorText))
+        {
+            return false;
+        }
+
+        var matches = MissingMetadataFileRegex.Matches(errorText);
+        if (matches.Count == 0)
+        {
+            return false;
+        }
+
+        // Heuristic: if any missing dll looks like a local project output under bin/*/*, prebuild can fix it.
+        foreach (Match match in matches)
+        {
+            var path = match.Groups[1].Value;
+            if (path.IndexOf(@"\bin\", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private List<string> ParseReferenceAssemblies(object? referencesObject, string contextName)
