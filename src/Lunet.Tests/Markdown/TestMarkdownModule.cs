@@ -168,6 +168,46 @@ public class TestMarkdownModule
     }
 
     [Test]
+    public void TestMarkdownXRefLinkWithLabelDoesNotDuplicateText()
+    {
+        using var context = new SiteTestContext();
+        var layoutPlugin = new LayoutPlugin(context.Site);
+        var plugin = new MarkdownPlugin(context.Site, layoutPlugin);
+
+        var targetPage = context.CreateDynamicContentObject("/SharpYaml/api/SharpYaml.Serialization.YamlPropertyNameAttribute/");
+        targetPage.Uid = "SharpYaml.Serialization.YamlPropertyNameAttribute";
+        targetPage.Title = "YamlPropertyNameAttribute";
+        targetPage.UrlWithoutBasePath = targetPage.Url;
+        context.Site.Pages.Add(targetPage);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+
+        var page = context.CreateFileContentObject("/docs/test.md", "ignored");
+        page.Content = "[`YamlPropertyNameAttribute`](xref:SharpYaml.Serialization.YamlPropertyNameAttribute)";
+
+        plugin.Convert(page);
+
+        StringAssert.Contains("href=\"/SharpYaml/api/SharpYaml.Serialization.YamlPropertyNameAttribute\"", page.Content!);
+        StringAssert.Contains("<code>YamlPropertyNameAttribute</code>", page.Content!);
+        StringAssert.DoesNotContain("</code>YamlPropertyNameAttribute", page.Content!);
+    }
+
+    [Test]
+    public void TestMarkdownXRefExternalLinkWithLabelDoesNotAppendFullName()
+    {
+        using var context = new SiteTestContext();
+        var layoutPlugin = new LayoutPlugin(context.Site);
+        var plugin = new MarkdownPlugin(context.Site, layoutPlugin);
+        var page = context.CreateFileContentObject("/docs/test.md", "ignored");
+        page.Content = "[`JsonPropertyNameAttribute`](xref:System.Text.Json.Serialization.JsonPropertyNameAttribute)";
+
+        plugin.Convert(page);
+
+        StringAssert.Contains("href=\"https://docs.microsoft.com/en-us/dotnet/api/System.Text.Json.Serialization.JsonPropertyNameAttribute\"", page.Content!);
+        StringAssert.Contains("<code>JsonPropertyNameAttribute</code>", page.Content!);
+        StringAssert.DoesNotContain("</code>System.Text.Json.Serialization.JsonPropertyNameAttribute", page.Content!);
+    }
+
+    [Test]
     public void TestMarkdownUsesCustomAlertRenderer()
     {
         using var context = new SiteTestContext();

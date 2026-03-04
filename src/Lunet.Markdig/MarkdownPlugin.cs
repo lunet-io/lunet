@@ -173,15 +173,22 @@ public class MarkdownPlugin : SitePlugin, ILayoutConverter
             }
 
             var link = inline as LinkInline;
+            var createdLink = false;
             if (link == null)
             {
                 link = new LinkInline(resolvedUrl, label ?? string.Empty);
                 inline.ReplaceBy(link);
+                createdLink = true;
             }
 
             if (label != null)
             {
-                link.AppendChild(new LiteralInline(label));
+                // Only inject a label if the link doesn't already have visible label content.
+                // Markdown `[label](xref:Uid)` already provides children; adding another literal duplicates text.
+                if (createdLink || link.FirstChild == null)
+                {
+                    link.AppendChild(new LiteralInline(label));
+                }
             }
             link.Url = resolvedUrl;
 
