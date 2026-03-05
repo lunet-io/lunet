@@ -12,6 +12,56 @@ An extension is typically a GitHub repository containing:
 - an optional `dist/config.scriban` that runs when the extension is loaded
 - an optional `dist/.lunet/` folder for layouts, includes, and data shipped by the theme
 
+## Recommended starting point: `lunet-io/templates`
+
+If you already have a folder full of Markdown files and you want to turn it into a complete documentation website quickly, start with Lunet's official templates extension: `lunet-io/templates`.
+
+It provides a ready-to-use documentation layout and common “docs site” features, including:
+
+- dark/light/system theme toggle
+- search bar (SQLite search index generated at build time)
+- syntax highlighting (Prism)
+- responsive top navigation + left sidebar + table of contents
+
+The full template documentation (including configuration variables) lives in the template repository:
+[templates `dist/readme.md`](https://github.com/lunet-io/templates/blob/main/dist/readme.md)
+
+### Minimal site using the templates
+
+Create a `site/` folder with at least:
+
+```text
+site/
+  config.scriban
+  readme.md
+  docs/
+    getting-started.md
+```
+
+Then create a `site/config.scriban`:
+
+```scriban
+# Prefer pinning to a tag for reproducible builds:
+extend "lunet-io/templates@<version>"
+
+# Template-provided configuration (names come from the template).
+template_theme_default_mode = "system"
+
+# Project metadata (used for header/footer, social cards, etc.)
+site_project_baseurl = "https://example.com"
+site_project_name = "MyProject"
+site_project_description = "MyProject documentation"
+site_project_github_user = "myorg"
+site_project_github_repo = "myproject"
+
+# Initializes template defaults and registers its bundles/layouts.
+site_project_init
+```
+
+> [!TIP]
+>
+> This Lunet repository uses `lunet-io/templates` for its own site; `site/config.scriban` is a good reference setup.
+
 ## Using extensions
 
 ### GitHub repository (latest `main`)
