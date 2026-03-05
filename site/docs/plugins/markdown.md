@@ -210,7 +210,7 @@ The `markdown.to_html(text)` function is available in all Scriban templates:
 result = markdown.to_html "# Hello"
 ```
 
-This helper runs Markdig on the provided text but does **not** perform page-aware processing — specifically:
+This helper runs Markdig on the provided text but does **not** perform page-aware processing - specifically:
 
 - No relative URL rewriting
 - No `xref:` link resolution
@@ -220,6 +220,6 @@ For full link resolution, use Markdown content pages instead.
 
 ## See also
 
-- [Layouts and includes](/docs/layouts-and-includes/) — how layouts wrap converted Markdown
-- [Content and front matter](/docs/content-and-frontmatter/) — front matter in Markdown pages
-- [SCSS module](scss.md) — for styling alert blocks and Markdown output
+- [Layouts and includes](/docs/layouts-and-includes/) - how layouts wrap converted Markdown
+- [Content and front matter](/docs/content-and-frontmatter/) - front matter in Markdown pages
+- [SCSS module](scss.md) - for styling alert blocks and Markdown output

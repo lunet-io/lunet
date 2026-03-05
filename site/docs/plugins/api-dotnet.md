@@ -232,7 +232,7 @@ Public cross-site examples generated with Lunet:
 
 ## See also
 
-- [API module](api.md) — the `site.api` registry
-- [Markdown module](markdown.md) — `xref:` link resolution in content pages
-- [Menus module](menus.md) — rendering the auto-generated API menu
-- [Search module](search.md) — API pages are included in site search index
+- [API module](api.md) - the `site.api` registry
+- [Markdown module](markdown.md) - `xref:` link resolution in content pages
+- [Menus module](menus.md) - rendering the auto-generated API menu
+- [Search module](search.md) - API pages are included in site search index

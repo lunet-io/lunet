@@ -37,9 +37,9 @@ In **templates**, you generate output:
 
 Layout files are stored under `/.lunet/layouts/` in the site's meta filesystem. This folder can come from:
 
-1. **Your site** — `<site>/.lunet/layouts/`
-2. **A theme/extension** — the extension's `.lunet/layouts/`
-3. **Lunet built-in shared** — shipped with the Lunet binary
+1. **Your site** - `<site>/.lunet/layouts/`
+2. **A theme/extension** - the extension's `.lunet/layouts/`
+3. **Lunet built-in shared** - shipped with the Lunet binary
 
 Your local files always take priority (see [Site structure](site-structure.md) for the layered filesystem).
 
@@ -47,9 +47,9 @@ Your local files always take priority (see [Site structure](site-structure.md) f
 
 When Lunet renders a page, it looks for a matching layout using three pieces of information:
 
-1. **`page.layout`** — the layout name (defaults to `page.section`, i.e. the first directory segment of the file path)
-2. **`page.layout_type`** — the type of rendering (`single` by default)
-3. **`page.content_type`** — the output format (`html`, `xml`, `rss`, etc.)
+1. **`page.layout`** - the layout name (defaults to `page.section`, i.e. the first directory segment of the file path)
+2. **`page.layout_type`** - the type of rendering (`single` by default)
+3. **`page.content_type`** - the output format (`html`, `xml`, `rss`, etc.)
 
 #### Layout name normalization
 
@@ -92,12 +92,12 @@ The search order differs between `single` and all other layout types:
 |---|---|---|
 | 1 | `{layout}/{type}` | e.g. `docs/single` |
 | 2 | `{layout}.{type}` | e.g. `docs.single` |
-| 3 | `{layout}` | e.g. `docs` — **single only** (bare name without type) |
+| 3 | `{layout}` | e.g. `docs` - **single only** (bare name without type) |
 | 4 | `{site.layout}/{type}` | only if `site.layout` is set and differs from `layout` |
 | 5 | `{site.layout}.{type}` | same condition |
-| 6 | `{site.layout}` | **single only** — bare name |
+| 6 | `{site.layout}` | **single only** - bare name |
 | 7 | `_default/{type}` | only if `layout ≠ _default` |
-| 8 | `_default` | **single only** — bare `_default` |
+| 8 | `_default` | **single only** - bare `_default` |
 
 #### List and other types search (6 candidates)
 
@@ -166,7 +166,7 @@ Page body
 "_default" layout (adds <!DOCTYPE>, <html>, <head>, <body>)
 ```
 
-**`/.lunet/layouts/_default.sbn-html`** — the outermost shell:
+**`/.lunet/layouts/_default.sbn-html`** - the outermost shell:
 
 ```scriban
 <!DOCTYPE html>
@@ -181,7 +181,7 @@ Page body
 </html>
 ```
 
-**`/.lunet/layouts/base.sbn-html`** — adds navbar, footer, sets `layout: _default`:
+**`/.lunet/layouts/base.sbn-html`** - adds navbar, footer, sets `layout: _default`:
 
 ```text
 ---
@@ -194,7 +194,7 @@ layout: _default
 </div>
 ```
 
-**`/.lunet/layouts/default.sbn-html`** — adds sidebar menu and TOC, sets `layout: base`:
+**`/.lunet/layouts/default.sbn-html`** - adds sidebar menu and TOC, sets `layout: base`:
 
 ```text
 ---
@@ -245,9 +245,9 @@ This means your layout files should be `.sbn-html` (not `.sbn-md`) even when wra
 
 ### Single vs list rendering
 
-- **`single`** is the default rendering mode for every page (weight 0 — processed first).
-- **`list`** is used for index/collection pages (weight 10 — processed after single). In list mode, Lunet injects `pages = site.pages` into the template scope.
-- Other list-like types (`rss`, `sitemap`, `term`, `terms`) also have weight 10 and are processed after single pages, but they do **not** inject a `pages` variable — each module injects its own data.
+- **`single`** is the default rendering mode for every page (weight 0 - processed first).
+- **`list`** is used for index/collection pages (weight 10 - processed after single). In list mode, Lunet injects `pages = site.pages` into the template scope.
+- Other list-like types (`rss`, `sitemap`, `term`, `terms`) also have weight 10 and are processed after single pages, but they do **not** inject a `pages` variable - each module injects its own data.
 
 Modules can register custom layout types. Currently registered types:
 
@@ -292,7 +292,7 @@ Includes resolve paths relative to `/.lunet/includes/`. You cannot use:
 - absolute paths starting with `/` or `\`
 - parent traversal (`..`)
 
-Include files are cached during a build — each file is read once and reused across all pages.
+Include files are cached during a build - each file is read once and reused across all pages.
 
 > [!TIP]
 >
@@ -379,8 +379,8 @@ See [Content & front matter](content-and-frontmatter.md) for the full page varia
 
 ## See also
 
-- [Configuration (`config.scriban`)](configuration.md) — `site.html` configuration, `site.layout` fallback
-- [Content & front matter](content-and-frontmatter.md) — `page.layout`, `page.layout_type`, `page.content_type`
-- [Site structure](site-structure.md) — the layered virtual filesystem for layouts and includes
-- [Themes & extensions](themes-and-extends.md) — how extensions provide layouts and includes
-- [Modules reference](plugins/readme.md) — per-module layout type documentation
+- [Configuration (`config.scriban`)](configuration.md) - `site.html` configuration, `site.layout` fallback
+- [Content & front matter](content-and-frontmatter.md) - `page.layout`, `page.layout_type`, `page.content_type`
+- [Site structure](site-structure.md) - the layered virtual filesystem for layouts and includes
+- [Themes & extensions](themes-and-extends.md) - how extensions provide layouts and includes
+- [Modules reference](plugins/readme.md) - per-module layout type documentation

@@ -45,6 +45,6 @@ JSON values are converted to Scriban-compatible types:
 
 ## See also
 
-- [Datas module](datas.md) — the `site.data` container
-- [YAML module](yaml.md) — alternative data format with front matter support
-- [TOML module](toml.md) — alternative data format
+- [Datas module](datas.md) - the `site.data` container
+- [YAML module](yaml.md) - alternative data format with front matter support
+- [TOML module](toml.md) - alternative data format

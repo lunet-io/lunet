@@ -4,7 +4,7 @@ title: "Taxonomies module"
 
 # Taxonomies module
 
-Taxonomies provide many-to-many grouping for pages — tags, categories, or any custom classification you define. The module scans page front matter, collects terms, and generates listing pages automatically.
+Taxonomies provide many-to-many grouping for pages - tags, categories, or any custom classification you define. The module scans page front matter, collects terms, and generates listing pages automatically.
 
 ## Default taxonomies
 
@@ -176,7 +176,7 @@ tag = site.taxonomies.tags.terms["lunet"]
 
 ## See also
 
-- [Layouts and includes](/docs/layouts-and-includes/) — layout files required for taxonomy pages
-- [Content and front matter](/docs/content-and-frontmatter/) — how to set taxonomy values in pages
-- [Menus module](menus.md) — for navigation including taxonomy links
+- [Layouts and includes](/docs/layouts-and-includes/) - layout files required for taxonomy pages
+- [Content and front matter](/docs/content-and-frontmatter/) - how to set taxonomy values in pages
+- [Menus module](menus.md) - for navigation including taxonomy links
 

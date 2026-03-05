@@ -38,7 +38,7 @@ Because `config.scriban` runs "inside" the site, you can refer to any site prope
 |---|---|---|---|---|
 | `config.scriban` | SiteObject (the site) | `site.title` | `title` or `site.title` | No |
 | Page front matter | ContentObject (the page) | `page.title` | `site.title` | No |
-| Page/layout body | — (both `site` and `page` in scope) | — (use `{{ '{{' }}` `…` `{{ '}}' }}`) | `site.title` | Yes (from `/.lunet/includes/`) |
+| Page/layout body | - (both `site` and `page` in scope) | - (use `{{ '{{' }}` `…` `{{ '}}' }}`) | `site.title` | Yes (from `/.lunet/includes/`) |
 
 ### What runs when
 
@@ -46,11 +46,11 @@ Because `config.scriban` runs "inside" the site, you can refer to any site prope
 
 The full initialization sequence is:
 
-1. **CLI `--define` values** are evaluated first (as Scriban statements against the site object). This is why `??` in config works — the define has already set the variable.
-2. **Plugins are instantiated** — each plugin registers its own objects and functions on the site (e.g. `bundle`, `search`, `cards`).
-3. **`config.scriban` is evaluated** — your config code runs with the site as the scripting context.
-4. **Content loading** — pages, data files, and static files are loaded.
-5. **Content processing** — the pipeline runs converters, layouts, and post-processors.
+1. **CLI `--define` values** are evaluated first (as Scriban statements against the site object). This is why `??` in config works - the define has already set the variable.
+2. **Plugins are instantiated** - each plugin registers its own objects and functions on the site (e.g. `bundle`, `search`, `cards`).
+3. **`config.scriban` is evaluated** - your config code runs with the site as the scripting context.
+4. **Content loading** - pages, data files, and static files are loaded.
+5. **Content processing** - the pipeline runs converters, layouts, and post-processors.
 
 This means:
 
@@ -68,7 +68,7 @@ During config execution, variable lookup follows this scope chain (top to bottom
 3. Scriban built-in functions  ← string, math, date, array, etc.
 ```
 
-This is why `log.info "text"` works without a `builtins.` prefix — `log` is found on the builtins layer. You can also write `builtins.log.info "text"` explicitly.
+This is why `log.info "text"` works without a `builtins.` prefix - `log` is found on the builtins layer. You can also write `builtins.log.info "text"` explicitly.
 
 ## Minimal config
 
@@ -93,7 +93,7 @@ baseurlforce = true
 {.table}
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `title` | string | (none) | Site title; used by layouts, [RSS](plugins/rss.md), [Cards](plugins/cards.md). Not a built-in property — any value assigned is stored dynamically. |
+| `title` | string | (none) | Site title; used by layouts, [RSS](plugins/rss.md), [Cards](plugins/cards.md). Not a built-in property - any value assigned is stored dynamically. |
 | `description` | string | (none) | Site description; used by [Cards](plugins/cards.md) and [RSS](plugins/rss.md). Also dynamic. |
 | `baseurl` | string | `null` | Canonical host URL (e.g. `https://example.com`). Overridden by `lunet serve` unless `baseurlforce` is `true`. |
 | `basepath` | string | `null` | URL prefix when hosted under a sub-path (e.g. `/docs`). |
@@ -130,10 +130,10 @@ See the [Modules reference](plugins/readme.md) for per-module documentation.
 
 Lunet decides whether a file is handled using three glob collections evaluated in this order:
 
-1. **`force_excludes`** — if a file matches, it is **excluded** and cannot be overridden.
-2. **`includes`** — if a file matches, it is **included** (overrides `excludes`).
-3. **`excludes`** — if a file matches, it is **excluded**.
-4. Otherwise — the file is **included**.
+1. **`force_excludes`** - if a file matches, it is **excluded** and cannot be overridden.
+2. **`includes`** - if a file matches, it is **included** (overrides `excludes`).
+3. **`excludes`** - if a file matches, it is **excluded**.
+4. Otherwise - the file is **included**.
 
 ### Default patterns
 
@@ -346,9 +346,9 @@ The following metas are added by default:
 
 Plugins automatically register their includes in `html.head.includes`:
 
-- `_builtins/bundle.sbn-html` — CSS/JS bundle injection ([Bundles module](plugins/bundles.md))
-- `_builtins/cards.sbn-html` — OpenGraph/Twitter meta tags ([Cards module](plugins/cards.md))
-- `_builtins/google-analytics.sbn-html` — analytics script ([Tracking module](plugins/tracking.md))
+- `_builtins/bundle.sbn-html` - CSS/JS bundle injection ([Bundles module](plugins/bundles.md))
+- `_builtins/cards.sbn-html` - OpenGraph/Twitter meta tags ([Cards module](plugins/cards.md))
+- `_builtins/google-analytics.sbn-html` - analytics script ([Tracking module](plugins/tracking.md))
 
 ### Custom `<title>`
 
@@ -423,9 +423,9 @@ Lunet adds `date.to_rfc822` for RFC 822 date formatting (used internally by the 
 
 ## See also
 
-- [CLI reference](cli.md) — `--define`, `--dev`, and other command-line options
-- [Content & front matter](content-and-frontmatter.md) — page-level context vs config context
-- [Layouts & includes](layouts-and-includes.md) — how config settings affect layout resolution
-- [Themes & extensions](themes-and-extends.md) — `extend` and config execution order
-- [Site structure](site-structure.md) — the `.lunet/` folder and layered filesystem
-- [Modules reference](plugins/readme.md) — per-module configuration documentation
+- [CLI reference](cli.md) - `--define`, `--dev`, and other command-line options
+- [Content & front matter](content-and-frontmatter.md) - page-level context vs config context
+- [Layouts & includes](layouts-and-includes.md) - how config settings affect layout resolution
+- [Themes & extensions](themes-and-extends.md) - `extend` and config execution order
+- [Site structure](site-structure.md) - the `.lunet/` folder and layered filesystem
+- [Modules reference](plugins/readme.md) - per-module configuration documentation

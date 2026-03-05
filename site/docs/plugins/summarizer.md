@@ -4,7 +4,7 @@ title: "Summarizer module"
 
 # Summarizer module
 
-The summarizer module automatically computes `page.summary` — a plain-text excerpt of each page's content. Summaries are used by the RSS module for feed descriptions and by the Cards module for social media meta tags (`og:description`, `twitter:description`).
+The summarizer module automatically computes `page.summary` - a plain-text excerpt of each page's content. Summaries are used by the RSS module for feed descriptions and by the Cards module for social media meta tags (`og:description`, `twitter:description`).
 
 ## How it works
 
@@ -79,7 +79,7 @@ Both markers can be combined: text before `<!-- lunet:summarize -->` is skipped,
 
 ## See also
 
-- [RSS module](rss.md) — uses `page.summary` for feed item descriptions
-- [Cards module](cards.md) — uses `page.summary` for social media meta tags
-- [Content and front matter](/docs/content-and-frontmatter/) — front matter properties
+- [RSS module](rss.md) - uses `page.summary` for feed item descriptions
+- [Cards module](cards.md) - uses `page.summary` for social media meta tags
+- [Content and front matter](/docs/content-and-frontmatter/) - front matter properties
 

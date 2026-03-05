@@ -37,13 +37,13 @@ cd mysite
 
 The skeleton uses the [default Lunet template](https://github.com/lunet-io/templates) and creates:
 
-- **`config.scriban`** — site configuration that extends `lunet-io/templates` with project metadata
-- **`readme.md`** — a sample home page
-- **`menu.yml`** — top-level navigation (Home + Docs)
-- **`docs/readme.md`** — a starter documentation page
-- **`docs/menu.yml`** — sidebar navigation for the docs section
+- **`config.scriban`** - site configuration that extends `lunet-io/templates` with project metadata
+- **`readme.md`** - a sample home page
+- **`menu.yml`** - top-level navigation (Home + Docs)
+- **`docs/readme.md`** - a starter documentation page
+- **`docs/menu.yml`** - sidebar navigation for the docs section
 
-The template provides layouts, includes, CSS/JS assets, a theme switcher, and search — your site is fully functional out of the box. See the [template readme](https://github.com/lunet-io/templates) for all configuration options.
+The template provides layouts, includes, CSS/JS assets, a theme switcher, and search - your site is fully functional out of the box. See the [template readme](https://github.com/lunet-io/templates) for all configuration options.
 
 ## Build your site
 
@@ -71,9 +71,9 @@ lunet serve
 
 This starts a local web server at `http://localhost:4000` with:
 
-- **Live reload** — changes to files are detected and the browser refreshes automatically via WebSocket.
-- **Development mode** — `site.environment` is set to `"dev"`, so production-only features (like [analytics](plugins/tracking.md)) are disabled.
-- **Local base URL** — `baseurl` and `basepath` are overridden to point to `localhost`.
+- **Live reload** - changes to files are detected and the browser refreshes automatically via WebSocket.
+- **Development mode** - `site.environment` is set to `"dev"`, so production-only features (like [analytics](plugins/tracking.md)) are disabled.
+- **Local base URL** - `baseurl` and `basepath` are overridden to point to `localhost`.
 
 ## Adding content
 
@@ -95,13 +95,13 @@ See [Content & front matter](content-and-frontmatter.md) for details on front ma
 
 ## Key concepts to learn next
 
-1. **[Configuration (`config.scriban`)](configuration.md)** — understand how the config file works as executable Scriban code and how it differs from page templates.
-2. **[Content & front matter](content-and-frontmatter.md)** — learn about pages vs static files and how front matter sets page-level variables.
-3. **[Site structure](site-structure.md)** — understand the folder layout and the layered virtual filesystem.
-4. **[Layouts & includes](layouts-and-includes.md)** — learn how Lunet wraps your content in reusable templates.
-5. **[Themes & extensions](themes-and-extends.md)** — use pre-built themes or create your own.
-6. **[CLI reference](cli.md)** — full command and option reference.
+1. **[Configuration (`config.scriban`)](configuration.md)** - understand how the config file works as executable Scriban code and how it differs from page templates.
+2. **[Content & front matter](content-and-frontmatter.md)** - learn about pages vs static files and how front matter sets page-level variables.
+3. **[Site structure](site-structure.md)** - understand the folder layout and the layered virtual filesystem.
+4. **[Layouts & includes](layouts-and-includes.md)** - learn how Lunet wraps your content in reusable templates.
+5. **[Themes & extensions](themes-and-extends.md)** - use pre-built themes or create your own.
+6. **[CLI reference](cli.md)** - full command and option reference.
 
 ## See also
 
-- [Modules reference](plugins/readme.md) — all built-in modules ([Bundles](plugins/bundles.md), [SCSS](plugins/scss.md), [Markdown](plugins/markdown.md), [Menus](plugins/menus.md), and more)
+- [Modules reference](plugins/readme.md) - all built-in modules ([Bundles](plugins/bundles.md), [SCSS](plugins/scss.md), [Markdown](plugins/markdown.md), [Menus](plugins/menus.md), and more)

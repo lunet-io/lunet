@@ -4,7 +4,7 @@ title: "Attributes module (URL patterns)"
 
 # Attributes module (URL patterns)
 
-The attributes module lets you apply metadata to files by glob pattern **before** they are loaded. Matched setters act as defaults — front matter values in the file always take precedence.
+The attributes module lets you apply metadata to files by glob pattern **before** they are loaded. Matched setters act as defaults - front matter values in the file always take precedence.
 
 The most common use is URL rewriting for blog-style dated posts, but any front-matter key can be set (e.g. `layout`, `draft`, custom metadata).
 
@@ -43,7 +43,7 @@ end
 ## Rule evaluation
 
 - Rules are evaluated **in order** (first-added, first-evaluated).
-- **All** matching rules apply — they do not short-circuit.
+- **All** matching rules apply - they do not short-circuit.
 - When multiple rules match the same file, later rules overwrite earlier ones for the same key.
 - Setters are applied as defaults before front matter is parsed, so front matter values always win.
 
@@ -100,5 +100,5 @@ end
 
 ## See also
 
-- [Content and front matter](/docs/content-and-frontmatter/) — front matter overrides attribute setters
-- [Site structure](/docs/site-structure/) — how file paths relate to URLs
+- [Content and front matter](/docs/content-and-frontmatter/) - front matter overrides attribute setters
+- [Site structure](/docs/site-structure/) - how file paths relate to URLs

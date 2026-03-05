@@ -1,8 +1,8 @@
 ---
-title: "Lunet — User Guide"
+title: "Lunet - User Guide"
 ---
 
-# Lunet — User Guide
+# Lunet - User Guide
 
 This guide documents Lunet from a **user perspective**: how to create a site, configure it, and use each built-in module.
 

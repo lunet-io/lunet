@@ -6,8 +6,8 @@ title: "Content & front matter"
 
 Lunet treats files in your site folder as either:
 
-- **Pages** — files with front matter, processed through the template and layout pipeline.
-- **Static files** — files without front matter, copied to the output as-is (unless a converter like SCSS claims them).
+- **Pages** - files with front matter, processed through the template and layout pipeline.
+- **Static files** - files without front matter, copied to the output as-is (unless a converter like SCSS claims them).
 
 ## How front matter works
 
@@ -70,14 +70,14 @@ When loading a page:
 3. URL computation runs (section, slug, folder URLs, basepath).
 4. The page body is evaluated as a Scriban template.
 
-This means attribute defaults act as fallbacks — front matter always wins.
+This means attribute defaults act as fallbacks - front matter always wins.
 
 ## Using variables in page templates
 
 After front matter is processed, the page body is evaluated as a Scriban template. In this context, two key objects are available:
 
-- **`page`** — the current page (metadata from front matter + computed fields).
-- **`site`** — the global site object (configuration, pages collection, modules).
+- **`page`** - the current page (metadata from front matter + computed fields).
+- **`site`** - the global site object (configuration, pages collection, modules).
 
 ### Example: accessing page and site variables
 
@@ -119,11 +119,11 @@ And this template body:
 | `page.url` | string | Computed from path | Output URL with `site.basepath` applied. Writable from front matter. |
 | `page.url_without_basepath` | string | Computed from path | URL without `site.basepath` prefix. |
 | `page.slug` | string | Handleized title or filename part | URL slug. Derived from title via `string.handleize` if not set explicitly. |
-| `page.date` | datetime | `DateTime.Now` (or parsed from filename) | Page date. For date-based filenames (e.g. `2024-01-15-my-post.md`), extracted automatically. Accepts string values — Lunet parses them with `DateTime.TryParse`. |
+| `page.date` | datetime | `DateTime.Now` (or parsed from filename) | Page date. For date-based filenames (e.g. `2024-01-15-my-post.md`), extracted automatically. Accepts string values - Lunet parses them with `DateTime.TryParse`. |
 | `page.weight` | int | Auto-assigned (10, 20, 30…) | Sorting hint used by menus and templates. Auto-assigned by alphabetical file order within each directory if not set in front matter. |
 | `page.uid` | string | `null` | Stable identifier for `xref`/`ref`/`relref` lookups. |
 | `page.content` | string | (loaded on demand) | Page body content after template evaluation. |
-| `page.content_type` | string | Derived from extension | Output content type (`html`, `md`, `xml`, `css`, etc.). Read-only — set by the content type manager based on file extension. Updated when converters run (e.g. Markdown → HTML). |
+| `page.content_type` | string | Derived from extension | Output content type (`html`, `md`, `xml`, `css`, etc.). Read-only - set by the content type manager based on file extension. Updated when converters run (e.g. Markdown → HTML). |
 | `page.summary` | string | Auto-computed by [Summarizer](plugins/summarizer.md) | Summary text. Can be overridden in front matter. |
 | `page.discard` | bool | `false` | When `true`, page is processed but not written to output. |
 
@@ -246,7 +246,7 @@ See the [Attributes module](plugins/attributes.md) for full placeholder document
 Certain file extensions are treated as Scriban templates (even without `---` or `+++` front matter delimiters):
 
 - `*.sbn-html`, `*.sbn-md`, `*.sbn-xml`, `*.sbn-js`, `*.sbn-css`, etc.
-- `*.scriban-html`, `*.scriban-md`, `*.scriban-xml` — long-form equivalents
+- `*.scriban-html`, `*.scriban-md`, `*.scriban-xml` - long-form equivalents
 
 These are evaluated as Scriban templates and produce the corresponding output content type. This is useful for files that need Scriban logic but aren't Markdown pages (e.g., a dynamic XML sitemap or RSS feed).
 
@@ -270,15 +270,15 @@ The first directory segment of a content file's path is its **section**:
 
 Sections matter because:
 
-1. `page.layout` defaults to the section name — pages in `docs/` look for a `docs` layout first.
+1. `page.layout` defaults to the section name - pages in `docs/` look for a `docs` layout first.
 2. You can organize layouts by section (`/.lunet/layouts/docs.sbn-html`, `/.lunet/layouts/blog.sbn-html`).
 3. [RSS feeds](plugins/rss.md) and [taxonomies](plugins/taxonomies.md) can filter by section.
 
 ## See also
 
-- [Configuration (`config.scriban`)](configuration.md) — site-level context vs page-level context
-- [Layouts & includes](layouts-and-includes.md) — how `page.layout` and `page.layout_type` drive template selection
-- [Attributes module](plugins/attributes.md) — URL patterns, glob-based metadata, date-based defaults
-- [Summarizer module](plugins/summarizer.md) — auto-generated summaries and `<!-- more -->` markers
-- [Taxonomies module](plugins/taxonomies.md) — tags and categories in front matter
-- [Markdown module](plugins/markdown.md) — Markdown to HTML conversion
+- [Configuration (`config.scriban`)](configuration.md) - site-level context vs page-level context
+- [Layouts & includes](layouts-and-includes.md) - how `page.layout` and `page.layout_type` drive template selection
+- [Attributes module](plugins/attributes.md) - URL patterns, glob-based metadata, date-based defaults
+- [Summarizer module](plugins/summarizer.md) - auto-generated summaries and `<!-- more -->` markers
+- [Taxonomies module](plugins/taxonomies.md) - tags and categories in front matter
+- [Markdown module](plugins/markdown.md) - Markdown to HTML conversion

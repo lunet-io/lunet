@@ -82,7 +82,7 @@ extend {
 
 When you call `extend`, the extension's file system is added to the site's aggregate file system. Your site's own files **always take priority** over extension files. This means you can override any theme file by placing a file at the same path in your site.
 
-Multiple extensions layer in the order they are loaded — later `extend` calls have higher priority than earlier ones.
+Multiple extensions layer in the order they are loaded - later `extend` calls have higher priority than earlier ones.
 
 ## Extension `config.scriban`
 
@@ -101,8 +101,8 @@ Lunet expects theme content to live under `dist/` in the repository:
 repo/
   readme.md
   dist/
-    config.scriban          (optional — runs during site config)
-    readme.md               (optional — default home page)
+    config.scriban          (optional - runs during site config)
+    readme.md               (optional - default home page)
     .lunet/
       layouts/              (layout templates)
       includes/             (include templates)
@@ -124,10 +124,10 @@ Everything under `dist/` becomes available as if it were part of your site, but 
 - If a local extension name is not found under `.lunet/extends/`, the build logs an error suggesting the GitHub `"owner/repo"` syntax.
 - If a GitHub download fails (network error, missing repository), the build logs an error with the URL and reason.
 - If the specified `directory` does not exist in the downloaded archive, the build logs an error.
-- Loading the same extension twice is safe — it returns the cached instance without re-downloading.
+- Loading the same extension twice is safe - it returns the cached instance without re-downloading.
 
 ## See also
 
-- [Themes & extensions guide](../themes-and-extends.md) — in-depth guide on theming
-- [Bundles module](bundles.md) — extensions often define default bundles
-- [Resources module](resources.md) — downloading npm packages (separate from extends)
+- [Themes & extensions guide](../themes-and-extends.md) - in-depth guide on theming
+- [Bundles module](bundles.md) - extensions often define default bundles
+- [Resources module](resources.md) - downloading npm packages (separate from extends)

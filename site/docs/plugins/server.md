@@ -64,7 +64,7 @@ The server automatically compresses responses for better performance during deve
 
 ## See also
 
-- [Watcher module](watcher.md) — file watching and rebuild behavior used by `serve`
-- [Configuration](/docs/configuration/) — `site.baseurl` and environment settings
-- [Tracking module](tracking.md) — disabled during `dev` environment
+- [Watcher module](watcher.md) - file watching and rebuild behavior used by `serve`
+- [Configuration](/docs/configuration/) - `site.baseurl` and environment settings
+- [Tracking module](tracking.md) - disabled during `dev` environment
 

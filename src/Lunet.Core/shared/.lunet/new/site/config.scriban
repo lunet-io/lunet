@@ -1,7 +1,7 @@
 # Use the default Lunet template (https://github.com/lunet-io/templates).
 extend "lunet-io/templates"
 
-# Project metadata — set these before calling site_project_init.
+# Project metadata - set these before calling site_project_init.
 site_project_name = "My Website"
 site_project_description = "A website built with Lunet."
 site_project_baseurl = "https://example.com"

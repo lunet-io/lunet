@@ -6,23 +6,23 @@ Lunet is a fast, modular static website generator for .NET, powered by [Scriban]
 
 ## ✨ Features
 
-- **Scriban templating** — full scripting language in your pages, layouts, and config (`config.scriban`)
-- **Layouts & includes** — automatic layout resolution with section-aware search paths
-- **Themes & extensions** — install themes/plugins directly from GitHub repos (`extend "owner/repo@tag"`)
-- **npm resources** — fetch and cache npm packages (Bootstrap, Font Awesome…) without a separate `node_modules` workflow
-- **Markdown** — [Markdig](https://github.com/xoofx/markdig)-based with cross-reference link support
-- **SCSS / Dart Sass** — compile SCSS to CSS with the embedded Dart Sass compiler
-- **Bundles** — declarative CSS/JS bundling with automatic minification
-- **Taxonomies** — tags, categories, or any custom taxonomy with auto-generated term pages
-- **RSS, sitemaps, search** — RSS feeds, `sitemap.xml`, and client-side search index generation
-- **SEO & social cards** — OpenGraph / Twitter meta tags from page metadata
-- **Data loading** — pull structured data from YAML, JSON, or TOML files into templates
-- **Menus** — define navigation trees via simple `menu.yml` files
-- **Live reload** — built-in dev server with file watcher and automatic browser refresh
-- **Analytics** — Google Analytics injection (production builds only)
-- **.NET API docs** — generate API reference pages from .NET projects/assemblies — unique to Lunet
-- **URL patterns** — glob-based rules to apply metadata (URLs, layouts, etc.) across pages
-- **Summarizer** — automatic page summaries for feeds and cards
+- **Scriban templating** - full scripting language in your pages, layouts, and config (`config.scriban`)
+- **Layouts & includes** - automatic layout resolution with section-aware search paths
+- **Themes & extensions** - install themes/plugins directly from GitHub repos (`extend "owner/repo@tag"`)
+- **npm resources** - fetch and cache npm packages (Bootstrap, Font Awesome…) without a separate `node_modules` workflow
+- **Markdown** - [Markdig](https://github.com/xoofx/markdig)-based with cross-reference link support
+- **SCSS / Dart Sass** - compile SCSS to CSS with the embedded Dart Sass compiler
+- **Bundles** - declarative CSS/JS bundling with automatic minification
+- **Taxonomies** - tags, categories, or any custom taxonomy with auto-generated term pages
+- **RSS, sitemaps, search** - RSS feeds, `sitemap.xml`, and client-side search index generation
+- **SEO & social cards** - OpenGraph / Twitter meta tags from page metadata
+- **Data loading** - pull structured data from YAML, JSON, or TOML files into templates
+- **Menus** - define navigation trees via simple `menu.yml` files
+- **Live reload** - built-in dev server with file watcher and automatic browser refresh
+- **Analytics** - Google Analytics injection (production builds only)
+- **.NET API docs** - generate API reference pages from .NET projects/assemblies - unique to Lunet
+- **URL patterns** - glob-based rules to apply metadata (URLs, layouts, etc.) across pages
+- **Summarizer** - automatic page summaries for feeds and cards
 
 ## 🚀 Quick start
 
@@ -59,7 +59,7 @@ Install a theme from any GitHub repository:
 extend "owner/repo@v1.0"
 ```
 
-Themes layer on top of your site — layouts, includes, and static files merge seamlessly.
+Themes layer on top of your site - layouts, includes, and static files merge seamlessly.
 
 ## 📖 Documentation
 

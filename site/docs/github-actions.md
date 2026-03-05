@@ -4,7 +4,7 @@ title: "Publishing with GitHub Actions"
 
 # Publishing with GitHub Actions
 
-Lunet provides an official GitHub Action — [`lunet-io/actions/lunet-build`](https://github.com/lunet-io/actions) — that builds your site and deploys it to **GitHub Pages** in a single step. No manual build scripts, no separate CI configuration — just add a workflow file and push.
+Lunet provides an official GitHub Action - [`lunet-io/actions/lunet-build`](https://github.com/lunet-io/actions) - that builds your site and deploys it to **GitHub Pages** in a single step. No manual build scripts, no separate CI configuration - just add a workflow file and push.
 
 ## Enable GitHub Pages
 
@@ -13,7 +13,7 @@ Before the workflow can deploy, you must activate GitHub Pages in your repositor
 1. Go to **Settings → Pages** in your GitHub repository.
 2. Under **Build and deployment → Source**, select **GitHub Actions**.
 
-![GitHub Pages settings — select "GitHub Actions" as the source](../img/github-pages-settings.png)
+![GitHub Pages settings - select "GitHub Actions" as the source](../img/github-pages-settings.png)
 
 That's it. GitHub will now accept deployments from workflow runs instead of requiring a dedicated branch.
 
@@ -85,7 +85,7 @@ You can build a site from a different repository (useful for organization-level 
 
 ### Build only (no deploy)
 
-To upload the Pages artifact without deploying — for example, to add an approval step:
+To upload the Pages artifact without deploying - for example, to add an approval step:
 
 ```yaml
 - uses: lunet-io/actions/lunet-build@v1
@@ -112,7 +112,7 @@ To serve your site under a custom domain (e.g. `example.com`):
    site_project_baseurl = "https://example.com"
    ```
 
-The action handles the rest — no `CNAME` file is needed in the build output.
+The action handles the rest - no `CNAME` file is needed in the build output.
 
 ## All inputs
 
@@ -136,6 +136,6 @@ The action handles the rest — no `CNAME` file is needed in the build output.
 
 ## See also
 
-- [Getting started](getting-started.md) — install Lunet and create your first site
-- [CLI reference](cli.md) — `build`, `serve`, and other commands
-- [`lunet-io/actions` on GitHub](https://github.com/lunet-io/actions) — action source and changelog
+- [Getting started](getting-started.md) - install Lunet and create your first site
+- [CLI reference](cli.md) - `build`, `serve`, and other commands
+- [`lunet-io/actions` on GitHub](https://github.com/lunet-io/actions) - action source and changelog

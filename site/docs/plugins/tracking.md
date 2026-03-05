@@ -4,7 +4,7 @@ title: "Tracking module (Google Analytics)"
 
 # Tracking module (Google Analytics)
 
-The tracking module injects Google Analytics (GA4 / gtag.js) into your site's `<head>`. It is automatically included — no manual template setup is needed.
+The tracking module injects Google Analytics (GA4 / gtag.js) into your site's `<head>`. It is automatically included - no manual template setup is needed.
 
 ## Configure
 
@@ -27,10 +27,10 @@ When active, the module emits two `<script>` tags in the page `<head>`:
 
 The tracking snippet is emitted **only** when both conditions are met:
 
-- `site.environment == "prod"` (case-sensitive — `"Prod"` or `"PROD"` will not match)
+- `site.environment == "prod"` (case-sensitive - `"Prod"` or `"PROD"` will not match)
 - `site.tracking.google.id` is set to a truthy value
 
-This makes `lunet serve` safe by default — it runs in `dev` mode, so no analytics code is injected during development.
+This makes `lunet serve` safe by default - it runs in `dev` mode, so no analytics code is injected during development.
 
 When building for production, use `lunet build` (which defaults to `prod` environment) or set the environment explicitly.
 
@@ -40,5 +40,5 @@ The tracking snippet is rendered from the include file `_builtins/google-analyti
 
 ## See also
 
-- [Cards module](cards.md) — other `<head>` meta tag injection
-- [Configuration](/docs/configuration/) — setting `site.environment` and other site properties
+- [Cards module](cards.md) - other `<head>` meta tag injection
+- [Configuration](/docs/configuration/) - setting `site.environment` and other site properties

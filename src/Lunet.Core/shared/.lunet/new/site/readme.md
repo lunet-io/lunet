@@ -24,7 +24,7 @@ site_project_github_user = "org"
 site_project_github_repo = "myproject"
 site_project_owner_name = "Your Name"
 
-# Optional — set a logo, social banner, favicon, etc.:
+# Optional - set a logo, social banner, favicon, etc.:
 # site_project_logo_path = "/img/myproject-logo.png"
 # site_project_social_banner_path = "/img/myproject-banner.png"
 # site_project_banner_background_path = "/img/myproject-banner-background.png"
@@ -50,7 +50,7 @@ Use the navbar theme button to switch mode at runtime.
 
 ## Theme configuration and customization
 
-The template provides layouts, CSS/JS assets, a theme switcher, search, and more. Treat theme internals as read-only — customize through your own files and `config.scriban` only.
+The template provides layouts, CSS/JS assets, a theme switcher, search, and more. Treat theme internals as read-only - customize through your own files and `config.scriban` only.
 
 ### Naming conventions
 

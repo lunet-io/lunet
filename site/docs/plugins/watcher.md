@@ -35,7 +35,7 @@ The [Server module](server.md) enables `--watch` and `--dev` by default.
 
 The watcher creates file system watchers for each directory in your site. When files change:
 
-1. Events are collected and **debounced** — the watcher waits 200ms after the last change before triggering a rebuild.
+1. Events are collected and **debounced** - the watcher waits 200ms after the last change before triggering a rebuild.
 2. Duplicate events for the same file are squashed (only the latest event is kept).
 3. Events in excluded paths are filtered out.
 4. A full site rebuild is triggered with the remaining changes.
@@ -44,13 +44,13 @@ The watcher creates file system watchers for each directory in your site. When f
 
 The following paths are always excluded from watching:
 
-- `.lunet/build/**` — the output directory
+- `.lunet/build/**` - the output directory
 - Directories starting with `"new"` under `.lunet/`
 
 The site configuration file is **always** watched, regardless of other exclusion rules.
 
 ## See also
 
-- [Server module](server.md) — `lunet serve` with live reload
-- [CLI reference](/docs/cli/) — all command-line options
+- [Server module](server.md) - `lunet serve` with live reload
+- [CLI reference](/docs/cli/) - all command-line options
 

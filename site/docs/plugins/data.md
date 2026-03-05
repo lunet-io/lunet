@@ -43,5 +43,5 @@ Subdirectories create nested objects:
 
 ## See also
 
-- [Datas module](datas.md) — the `site.data` container and loading mechanism
-- [YAML module](yaml.md) — also provides front matter parsing for content pages
+- [Datas module](datas.md) - the `site.data` container and loading mechanism
+- [YAML module](yaml.md) - also provides front matter parsing for content pages

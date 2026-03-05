@@ -75,7 +75,7 @@ When `concat = true`, scripts with different modes are concatenated into **separ
 
 ## Copying files with `content`
 
-The `content` function copies files from a resource or your site to the output. Content files are **never concatenated or minified** — they are raw file copies.
+The `content` function copies files from a resource or your site to the output. Content files are **never concatenated or minified** - they are raw file copies.
 
 ```scriban
 with bundle
@@ -183,16 +183,16 @@ end
 
 When a bundle is processed, the following steps happen in order:
 
-1. **Wildcard expansion** — links with `*` in their path are expanded to individual files.
-2. **Content processing** — each file is processed by content processors (e.g. SCSS compilation).
-3. **Minification** — if `minify = true`, each file is minified individually. Files ending with `.min.js` or `.min.css` are skipped (see [Minifier module](minifier.md)).
-4. **Source map removal** — `sourceMappingURL` comments are stripped from all files.
-5. **Concatenation** — if `concat = true`, files are merged per type and mode into output files named `{bundle}.{type}` (e.g. `site.css`, `site-defer.js`).
+1. **Wildcard expansion** - links with `*` in their path are expanded to individual files.
+2. **Content processing** - each file is processed by content processors (e.g. SCSS compilation).
+3. **Minification** - if `minify = true`, each file is minified individually. Files ending with `.min.js` or `.min.css` are skipped (see [Minifier module](minifier.md)).
+4. **Source map removal** - `sourceMappingURL` comments are stripped from all files.
+5. **Concatenation** - if `concat = true`, files are merged per type and mode into output files named `{bundle}.{type}` (e.g. `site.css`, `site-defer.js`).
 
-> **Note:** During CSS concatenation, `@charset` rules are deduplicated — only the first one is kept at the top of the output.
+> **Note:** During CSS concatenation, `@charset` rules are deduplicated - only the first one is kept at the top of the output.
 
 ## See also
 
-- [Minifier module](minifier.md) — CSS/JS minification
-- [SCSS module](scss.md) — Sass/SCSS compilation
-- [Resources module](resources.md) — downloading npm packages for use in bundles
+- [Minifier module](minifier.md) - CSS/JS minification
+- [SCSS module](scss.md) - Sass/SCSS compilation
+- [Resources module](resources.md) - downloading npm packages for use in bundles

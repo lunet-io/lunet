@@ -48,20 +48,20 @@ All `path` values are resolved relative to the directory containing the `menu.ym
 {.table}
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `path` | string | — | Path to a content file (resolved relative to the `menu.yml` directory) |
-| `url` | string | — | External URL (use instead of `path` for external links) |
-| `title` | string | — | Display title (HTML is allowed, e.g. `<i class='bi bi-house'></i> Home`) |
-| `pre` | string | — | HTML prepended before the title text |
-| `post` | string | — | HTML appended after the title text |
+| `path` | string | - | Path to a content file (resolved relative to the `menu.yml` directory) |
+| `url` | string | - | External URL (use instead of `path` for external links) |
+| `title` | string | - | Display title (HTML is allowed, e.g. `<i class='bi bi-house'></i> Home`) |
+| `pre` | string | - | HTML prepended before the title text |
+| `post` | string | - | HTML appended after the title text |
 | `folder` | bool | `false` | Adopt generated child menus from the same directory |
 | `self` | bool | `false` | Mark this entry as the breadcrumb root (useful for a "Home" link) |
 | `separator` | bool | `false` | Render as a visual separator instead of a link |
-| `target` | string | — | HTML `target` attribute on the link (e.g. `"_blank"`) |
-| `env` | string/array | — | Only include this item for specific environments (for example `env: dev` or `env: [dev, preview]`) |
+| `target` | string | - | HTML `target` attribute on the link (e.g. `"_blank"`) |
+| `env` | string/array | - | Only include this item for specific environments (for example `env: dev` or `env: [dev, preview]`) |
 | `width` | int | `3` | Sidebar width hint (clamped to `2`–`4`), used by themes |
-| `link_class` | string | — | CSS classes added to the `<a>` element |
-| `link_class_active` | string | — | CSS classes added when the item is active |
-| `list_item_class` | string | — | CSS classes added to the `<li>` element |
+| `link_class` | string | - | CSS classes added to the `<a>` element |
+| `link_class_active` | string | - | CSS classes added when the item is active |
+| `list_item_class` | string | - | CSS classes added to the `<li>` element |
 
 `env` matching is case-insensitive. You can also exclude an environment with `!` (for example `env: "!prod"`).
 
@@ -112,12 +112,12 @@ The `render` function accepts an options object:
 | `depth` | int | max | Maximum nesting depth to render |
 | `collapsible` | bool | `false` | When `true`, submenus can be collapsed/expanded (Bootstrap collapse) |
 | `async` | bool | `true` | Allow async partial loading for large menus (only for `kind: "menu"`) |
-| `list_class` | string | — | CSS class added to the `<ol>` element |
-| `list_item_class` | string | — | CSS class added to the `<li>` element |
-| `link_class` | string | — | CSS class added to the `<a>` element |
-| `link_class_active` | string | — | CSS class added to the active `<a>` element |
-| `link_args` | string | — | Extra HTML attributes on `<a>` elements |
-| `link_args_active` | string | — | Extra HTML attributes on active `<a>` elements |
+| `list_class` | string | - | CSS class added to the `<ol>` element |
+| `list_item_class` | string | - | CSS class added to the `<li>` element |
+| `link_class` | string | - | CSS class added to the `<a>` element |
+| `link_class_active` | string | - | CSS class added to the active `<a>` element |
+| `link_args` | string | - | Extra HTML attributes on `<a>` elements |
+| `link_args_active` | string | - | Extra HTML attributes on active `<a>` elements |
 
 ### `menu.breadcrumb`
 
@@ -178,5 +178,5 @@ With `folder: true`, Lunet automatically adopts the generated API namespace/type
 
 ## See also
 
-- [API (.NET) module](api-dotnet.md) — generates menus for API documentation
-- [Layouts & includes](../layouts-and-includes.md) — using menus in layout templates
+- [API (.NET) module](api-dotnet.md) - generates menus for API documentation
+- [Layouts & includes](../layouts-and-includes.md) - using menus in layout templates

@@ -4,7 +4,7 @@ title: "Search module"
 
 # Search module
 
-The search module generates a full-text search database from your site content and injects the necessary runtime assets into your bundle for client-side search. Queries run entirely in the browser — no server required.
+The search module generates a full-text search database from your site content and injects the necessary runtime assets into your bundle for client-side search. Queries run entirely in the browser - no server required.
 
 ## Enable search
 
@@ -22,7 +22,7 @@ end
 
 During the build, Lunet:
 
-1. Scans all HTML and Markdown pages — both static and dynamically generated (e.g. API pages).
+1. Scans all HTML and Markdown pages - both static and dynamically generated (e.g. API pages).
 2. Converts Markdown to HTML (via Markdig), then strips HTML to plain text (via NUglify).
 3. Builds an **SQLite FTS5** full-text search database using the **porter** stemming tokenizer, so searches match word stems (e.g. "running" matches "run").
 4. Optimizes and vacuums the database for minimal file size.
@@ -118,6 +118,6 @@ Results are ranked by BM25 with default weights: URL (3.0), title (2.0), content
 
 ## See also
 
-- [Bundles module](bundles.md) — search assets are injected into the default bundle
-- [Minifier module](minifier.md) — search JS can be minified as part of the bundle
-- [SCSS module](scss.md) — for styling search UI components
+- [Bundles module](bundles.md) - search assets are injected into the default bundle
+- [Minifier module](minifier.md) - search JS can be minified as part of the bundle
+- [SCSS module](scss.md) - for styling search UI components

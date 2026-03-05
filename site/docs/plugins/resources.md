@@ -101,5 +101,5 @@ $pkg = resource { provider: "npm", name: "bootstrap", version: "5.3.8", public: 
 
 ## See also
 
-- [Bundles module](bundles.md) — using resources in CSS/JS bundles
-- [SCSS module](scss.md) — using resource paths as SCSS include directories
+- [Bundles module](bundles.md) - using resources in CSS/JS bundles
+- [SCSS module](scss.md) - using resource paths as SCSS include directories

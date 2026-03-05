@@ -104,13 +104,13 @@ extend {
 |---|---|---|---|
 | `repo` | `url` | (required) | GitHub `owner/repo` or full URL |
 | `tag` | `version` | `null` (latest `main`) | Tag or branch name |
-| `directory` | — | `"dist"` | Subfolder within the repository to extract |
-| `public` | — | `false` | When `true`, install to `.lunet/extends/` (version-controllable). When `false` (default), install to build cache. |
-| `name` | — | (derived from repo) | Display name for the extension |
+| `directory` | - | `"dist"` | Subfolder within the repository to extract |
+| `public` | - | `false` | When `true`, install to `.lunet/extends/` (version-controllable). When `false` (default), install to build cache. |
+| `name` | - | (derived from repo) | Display name for the extension |
 
 ### The `public` parameter
 
-By default (`public: false`), extensions are installed to the **build cache** at `.lunet/build/cache/.lunet/extends/`. This keeps your site repository clean — cached extensions are not tracked by version control.
+By default (`public: false`), extensions are installed to the **build cache** at `.lunet/build/cache/.lunet/extends/`. This keeps your site repository clean - cached extensions are not tracked by version control.
 
 When `public: true`, extensions are installed to `.lunet/extends/` within your site directory, so they **are** tracked by version control. This is useful when you want your site to be fully self-contained without network access.
 
@@ -170,7 +170,7 @@ dist/
 When your `config.scriban` calls `extend "owner/repo"`:
 
 1. Lunet downloads/caches the extension.
-2. The extension's `config.scriban` (at the root of the extracted `dist/` folder) is **imported immediately** — it runs in the current site context with full site function access.
+2. The extension's `config.scriban` (at the root of the extracted `dist/` folder) is **imported immediately** - it runs in the current site context with full site function access.
 3. The extension's files are added as a filesystem layer.
 4. Execution returns to your `config.scriban` and continues with the next line.
 
@@ -212,7 +212,7 @@ The extension provides `dist/css/theme.css`. Override it:
 
 > [!TIP]
 >
-> You never need to modify extension files. Just create the same path in your site. This makes theme updates safe — your overrides are preserved when you update the extension tag.
+> You never need to modify extension files. Just create the same path in your site. This makes theme updates safe - your overrides are preserved when you update the extension tag.
 
 ## Local theme development
 
@@ -277,7 +277,7 @@ Run `lunet clean` to clear all cached extensions and force a re-download.
 
 ## See also
 
-- [Extends module](plugins/extends.md) — detailed module reference with all query forms
-- [Site structure](site-structure.md) — the layered virtual filesystem
-- [Configuration (`config.scriban`)](configuration.md) — how extension config integrates with site config
-- [Layouts & includes](layouts-and-includes.md) — how extension layouts/includes are resolved
+- [Extends module](plugins/extends.md) - detailed module reference with all query forms
+- [Site structure](site-structure.md) - the layered virtual filesystem
+- [Configuration (`config.scriban`)](configuration.md) - how extension config integrates with site config
+- [Layouts & includes](layouts-and-includes.md) - how extension layouts/includes are resolved

@@ -75,13 +75,13 @@ This becomes a ScriptArray with two ScriptObject elements.
 
 ## Edge cases
 
-- Front matter must begin with explicit `---` — files without this delimiter are treated as having no front matter.
+- Front matter must begin with explicit `---` - files without this delimiter are treated as having no front matter.
 - Duplicate keys in a YAML mapping cause an error.
 - Front matter values can be overwritten by later script execution (they are not read-only).
 
 ## See also
 
-- [Datas module](datas.md) — the `site.data` container
-- [Content and front matter](/docs/content-and-frontmatter/) — how front matter works
-- [JSON module](json.md) — alternative data format
-- [TOML module](toml.md) — alternative data format
+- [Datas module](datas.md) - the `site.data` container
+- [Content and front matter](/docs/content-and-frontmatter/) - how front matter works
+- [JSON module](json.md) - alternative data format
+- [TOML module](toml.md) - alternative data format

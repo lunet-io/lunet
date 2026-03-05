@@ -4,7 +4,7 @@ title: "Sitemaps module"
 
 # Sitemaps module
 
-The sitemaps module automatically generates a `/sitemap.xml` and a `/robots.txt` for your site. It is **enabled by default** — no configuration is needed.
+The sitemaps module automatically generates a `/sitemap.xml` and a `/robots.txt` for your site. It is **enabled by default** - no configuration is needed.
 
 ## What gets generated
 
@@ -58,5 +58,5 @@ The sitemap is rendered using the layout file `_default.sitemap.xml`. You can ov
 
 ## See also
 
-- [RSS module](rss.md) — RSS feed generation
-- [Attributes module](attributes.md) — URL patterns that affect sitemap URLs
+- [RSS module](rss.md) - RSS feed generation
+- [Attributes module](attributes.md) - URL patterns that affect sitemap URLs

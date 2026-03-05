@@ -6,7 +6,7 @@ title: "Cards module (OpenGraph/Twitter)"
 
 The cards module injects social media and SEO meta tags into your page `<head>`. It supports **Twitter Cards** and **OpenGraph** (OG) meta tags, which control how links to your site appear when shared on social media platforms.
 
-The cards template is automatically included in the `<head>` of every page — no manual include is needed. Output is gated by the `enable` flags below.
+The cards template is automatically included in the `<head>` of every page - no manual include is needed. Output is gated by the `enable` flags below.
 
 ## Enable
 
@@ -44,7 +44,7 @@ end
 | `cards.twitter.image` | string | *(none)* | URL to the default card image |
 | `cards.twitter.image_alt` | string | *(title)* | Alt text for the card image |
 
-> **Note:** Do not include `@` in the `user` value — it is prepended automatically. Setting `user = "@handle"` would produce `@@handle`.
+> **Note:** Do not include `@` in the `user` value - it is prepended automatically. Setting `user = "@handle"` would produce `@@handle`.
 
 ## OpenGraph configuration
 
@@ -113,6 +113,6 @@ Image meta tags (`twitter:image`, `og:image`) are only rendered when an image UR
 
 ## See also
 
-- [Summarizer module](summarizer.md) — provides `page.summary` used for card descriptions
-- [Tracking module](tracking.md) — other `<head>` meta tag injection
+- [Summarizer module](summarizer.md) - provides `page.summary` used for card descriptions
+- [Tracking module](tracking.md) - other `<head>` meta tag injection
 

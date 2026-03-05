@@ -109,12 +109,12 @@ Options:
 Notes:
 
 - Base URL is overridden to `http://localhost:4000` unless `baseurlforce = true` is set in `config.scriban`. There is no CLI option to change the port; set `baseurl` in config if you need a different port.
-- Live reload is enabled by default — a small script is injected into `<head>` that connects via WebSocket and triggers a browser refresh on rebuild. See [Server module](plugins/server.md).
+- Live reload is enabled by default - a small script is injected into `<head>` that connects via WebSocket and triggers a browser refresh on rebuild. See [Server module](plugins/server.md).
 - Error responses redirect to `/404.html` if the file exists.
 
 ## See also
 
-- [Configuration (`config.scriban`)](configuration.md) — site variables, `--define` override patterns
-- [Server module](plugins/server.md) — live reload, base URL override, error handling
-- [Watcher module](plugins/watcher.md) — file watching, debounce, rebuild behavior
-- [Getting started](getting-started.md) — first steps with `lunet init`, `build`, and `serve`
+- [Configuration (`config.scriban`)](configuration.md) - site variables, `--define` override patterns
+- [Server module](plugins/server.md) - live reload, base URL override, error handling
+- [Watcher module](plugins/watcher.md) - file watching, debounce, rebuild behavior
+- [Getting started](getting-started.md) - first steps with `lunet init`, `build`, and `serve`

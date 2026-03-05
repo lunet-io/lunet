@@ -91,6 +91,6 @@ In your `css/main.scss`:
 
 ## See also
 
-- [Bundles module](bundles.md) — bundling, concatenation, and asset management
-- [Minifier module](minifier.md) — CSS/JS minification (CSS uses Dart Sass)
-- [Resources module](resources.md) — downloading npm packages for SCSS include paths
+- [Bundles module](bundles.md) - bundling, concatenation, and asset management
+- [Minifier module](minifier.md) - CSS/JS minification (CSS uses Dart Sass)
+- [Resources module](resources.md) - downloading npm packages for SCSS include paths

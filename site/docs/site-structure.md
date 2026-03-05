@@ -44,7 +44,7 @@ The `.lunet/` folder contains everything that supports your site but isn't conte
 | `.lunet/layouts/` | Page layout templates | Resolved automatically by layout name/type (see [Layouts & includes](layouts-and-includes.md)) |
 | `.lunet/data/` | Data files loaded before content processing | `site.data.<filename>` in templates (see [Data modules](plugins/data.md)) |
 | `.lunet/extends/` | Local themes/extensions | `extend "mytheme"` in config (see [Themes & extensions](themes-and-extends.md)) |
-| `.lunet/modules/` | Module runtime assets | Search database, menu JS, API doc assets — managed by plugins |
+| `.lunet/modules/` | Module runtime assets | Search database, menu JS, API doc assets - managed by plugins |
 | `.lunet/build/` | Generated output and caches | Not accessed directly |
 
 ### Inside `.lunet/build/`
@@ -78,7 +78,7 @@ When two layers have a file at the same path, the **higher-priority layer wins**
 The layered filesystem is what makes themes and overrides work seamlessly:
 
 - A theme provides `/.lunet/layouts/_default.sbn-html`.
-- You want to customize it? Create `<your-site>/.lunet/layouts/_default.sbn-html` — your file takes priority.
+- You want to customize it? Create `<your-site>/.lunet/layouts/_default.sbn-html` - your file takes priority.
 - A theme ships `css/theme.css`? You can override it by placing `css/theme.css` in your site.
 
 You never need to edit theme files. Just create the same path in your site.
@@ -87,8 +87,8 @@ You never need to edit theme files. Just create the same path in your site.
 
 The `.lunet/` folder has its own layered resolution, composed from two sources:
 
-1. **Aggregated `.lunet/`** — the `.lunet/` subtree from the main layered filesystem (your site > themes > shared) — **highest priority**
-2. **Cache `.lunet/`** (`.lunet/build/cache/.lunet/`) — cached meta files — **lowest priority**
+1. **Aggregated `.lunet/`** - the `.lunet/` subtree from the main layered filesystem (your site > themes > shared) - **highest priority**
+2. **Cache `.lunet/`** (`.lunet/build/cache/.lunet/`) - cached meta files - **lowest priority**
 
 Your site's `.lunet/` files always take precedence over cached copies. When a layout or include is requested, Lunet searches through all these layers in priority order.
 
@@ -114,9 +114,9 @@ Lunet ships a set of default layouts, includes, and module assets under a `share
 
 Not all files in your site folder are processed. Lunet uses three glob collections to decide:
 
-1. **`force_excludes`** — always excluded, cannot be overridden: `**/.lunet/build/**`, `/config.scriban`
-2. **`includes`** — overrides `excludes`: `**/.lunet/**`
-3. **`excludes`** — skipped unless matched by `includes`: `**/~*/**`, `**/.*/**`, `**/_*/**`
+1. **`force_excludes`** - always excluded, cannot be overridden: `**/.lunet/build/**`, `/config.scriban`
+2. **`includes`** - overrides `excludes`: `**/.lunet/**`
+3. **`excludes`** - skipped unless matched by `includes`: `**/~*/**`, `**/.*/**`, `**/_*/**`
 
 Files not matching any rule are included. See [Configuration](configuration.md) for customizing these patterns.
 
@@ -142,7 +142,7 @@ When `-o` is specified, the path is resolved relative to the current working dir
 - **Static files** (no front matter) → copied as-is.
 - **Converted files** (e.g. `.scss`) → converted and written (e.g. as `.css`).
 
-After a build, stale output files (from pages that no longer exist in the source) are automatically deleted. Lunet also detects and reports duplicate output paths — if two source files would produce the same output file, an error is logged.
+After a build, stale output files (from pages that no longer exist in the source) are automatically deleted. Lunet also detects and reports duplicate output paths - if two source files would produce the same output file, an error is logged.
 
 ### Output path rules
 
@@ -176,18 +176,18 @@ The section is available as `page.section` in templates, and `page.path_in_secti
 
 When you run `lunet init mysite`, Lunet copies a minimal skeleton from its built-in shared files:
 
-- `config.scriban` — site configuration that extends the [default Lunet template](https://github.com/lunet-io/templates) with project metadata
-- `readme.md` — a quickstart home page with configuration reference and customization guide
-- `menu.yml` — top-level navigation (Home + Docs)
-- `docs/readme.md` — a starter documentation page
-- `docs/menu.yml` — sidebar navigation for the docs section
+- `config.scriban` - site configuration that extends the [default Lunet template](https://github.com/lunet-io/templates) with project metadata
+- `readme.md` - a quickstart home page with configuration reference and customization guide
+- `menu.yml` - top-level navigation (Home + Docs)
+- `docs/readme.md` - a starter documentation page
+- `docs/menu.yml` - sidebar navigation for the docs section
 
-The template provides layouts, includes, CSS/JS assets, a theme switcher, and search — your site is fully functional out of the box. See [Getting started](getting-started.md) for a walkthrough.
+The template provides layouts, includes, CSS/JS assets, a theme switcher, and search - your site is fully functional out of the box. See [Getting started](getting-started.md) for a walkthrough.
 
 ## See also
 
-- [Configuration (`config.scriban`)](configuration.md) — site variables, includes/excludes patterns
-- [Content & front matter](content-and-frontmatter.md) — pages vs static files, URL rules
-- [Layouts & includes](layouts-and-includes.md) — layout resolution in `/.lunet/layouts/`
-- [Themes & extensions](themes-and-extends.md) — how extensions layer into the virtual filesystem
-- [CLI reference](cli.md) — `lunet init`, `lunet clean`, output directory options
+- [Configuration (`config.scriban`)](configuration.md) - site variables, includes/excludes patterns
+- [Content & front matter](content-and-frontmatter.md) - pages vs static files, URL rules
+- [Layouts & includes](layouts-and-includes.md) - layout resolution in `/.lunet/layouts/`
+- [Themes & extensions](themes-and-extends.md) - how extensions layer into the virtual filesystem
+- [CLI reference](cli.md) - `lunet init`, `lunet clean`, output directory options

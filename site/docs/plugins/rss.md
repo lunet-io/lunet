@@ -97,6 +97,6 @@ The RSS feed is rendered using `_default.rss.xml`. You can override it by placin
 
 ## See also
 
-- [Summarizer module](summarizer.md) — provides `page.summary` for feed item descriptions
-- [Sitemaps module](sitemaps.md) — XML sitemap generation (set `sitemap: false` on feed pages)
-- [Taxonomies module](taxonomies.md) — taxonomy terms appear as RSS `<category>` elements
+- [Summarizer module](summarizer.md) - provides `page.summary` for feed item descriptions
+- [Sitemaps module](sitemaps.md) - XML sitemap generation (set `sitemap: false` on feed pages)
+- [Taxonomies module](taxonomies.md) - taxonomy terms appear as RSS `<category>` elements
