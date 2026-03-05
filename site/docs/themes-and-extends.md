@@ -60,7 +60,7 @@ site_project_init
 
 > [!TIP]
 >
-> This Lunet repository uses `lunet-io/templates` for its own site; `site/config.scriban` is a good reference setup.
+> This Lunet repository uses `lunet-io/templates` for its own site; [`site/config.scriban`](https://github.com/lunet-io/lunet/blob/main/site/config.scriban) is a good reference setup.
 
 ## Using extensions
 
