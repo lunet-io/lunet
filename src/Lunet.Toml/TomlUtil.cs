@@ -29,7 +29,7 @@ public static class TomlUtil
         try
         {
             if (string.IsNullOrWhiteSpace(text)) return null;
-            var model = Tomlyn.Toml.ToModel(text, tomlFile);
+            var model = TomlSerializer.Deserialize<TomlTable>(text, new TomlSerializerOptions() { SourceName = tomlFile });
             return ConvertFromToml(model);
         }
         catch (Exception ex)
