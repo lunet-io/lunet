@@ -186,7 +186,7 @@ internal class DartSassDownloader
             };
         }
 
-        if (OperatingSystem.IsWindows())
+        if (OperatingSystem.IsMacOS())
         {
             var arch = RuntimeInformation.ProcessArchitecture;
             return arch switch
