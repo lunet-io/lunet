@@ -129,7 +129,7 @@ public class MenuObject : DynamicObject
         set => SetValue("parent", value, true);
     }
 
-    public override string ToString(string format, IFormatProvider formatProvider)
+    public override string ToString(string? format, IFormatProvider? formatProvider)
     {
         // As it is a recursive structure, we protect against recursive ToString() calls
         return $"Menu: {DebuggerDisplay}";
@@ -155,8 +155,9 @@ public class MenuObject : DynamicObject
     {
         var builder = new StringBuilder();
         var effectiveOptions = options ?? new ScriptObject();
+        var currentGlobal = context.CurrentGlobal;
 
-        if (!context.CurrentGlobal.TryGetValue(context, span, "page", out var pageObject) || pageObject is not ContentObject page)
+        if (currentGlobal is null || !currentGlobal.TryGetValue(context, span, "page", out var pageObject) || pageObject is not ContentObject page)
         {
             throw new ScriptRuntimeException(span, "Invalid usage of menu. There is no active page.");
         }
@@ -187,12 +188,13 @@ public class MenuObject : DynamicObject
     public string RenderBreadcrumb(TemplateContext context, SourceSpan span, ScriptObject? options = null)
     {
         var builder = new StringBuilder();
-        if (!context.CurrentGlobal.TryGetValue(context, span, "page", out var pageObject) || !(pageObject is ContentObject))
+        var currentGlobal = context.CurrentGlobal;
+        if (currentGlobal is null || !currentGlobal.TryGetValue(context, span, "page", out var pageObject) || pageObject is not ContentObject contentPage)
         {
             throw new ScriptRuntimeException(span, "Invalid usage of menu. There is no active page.");
         }
 
-        RenderBreadcrumb((ContentObject) pageObject, builder, options ?? new ScriptObject());
+        RenderBreadcrumb(contentPage, builder, options ?? new ScriptObject());
         return builder.ToString();
     }
 
@@ -462,6 +464,8 @@ public class MenuObject : DynamicObject
 
     private bool RenderItem(ContentObject page, StringBuilder builder, int level, string kind, ScriptObject options, bool isCappingDepth, bool hasChildren, string? subMenuId, bool isInCurrentPath, bool showCollapse, MenuRenderMode mode)
     {
+        var effectiveOptions = options ?? new ScriptObject();
+
         builder.Append(' ', level * IndentSize);
 
         bool isActive = false;
@@ -500,13 +504,13 @@ public class MenuObject : DynamicObject
             ? subMenuId.Replace($"{kind}-id-", $"{kind}-item-", StringComparison.Ordinal)
             : null;
 
-        builder.AppendLine($"<li{(itemId != null ? $" id='{itemId}'" : string.Empty)} class='{kind}-item {options["list_item_class"]}{(isActive ? " active" : string.Empty)}{thisLinkItemClass}'>");
+        builder.AppendLine($"<li{(itemId != null ? $" id='{itemId}'" : string.Empty)} class='{kind}-item {effectiveOptions["list_item_class"]}{(isActive ? " active" : string.Empty)}{thisLinkItemClass}'>");
 
         builder.Append(' ', (level + 1) * IndentSize);
 
         if (page == Page)
         {
-            builder.Append(options["pre_active"]);
+            builder.Append(effectiveOptions["pre_active"]);
         }
 
         if (!isBreadcrumb)
@@ -514,9 +518,9 @@ public class MenuObject : DynamicObject
             builder.Append($"<span class='{kind}-item-row'>");
         }
 
-        var linkClassFromOptions = (isActive ? options?["link_class_active"] : null) ?? options?["link_class"];
+        var linkClassFromOptions = (isActive ? effectiveOptions["link_class_active"] : null) ?? effectiveOptions["link_class"];
         var linkClassFromMenu = (isActive ? this["link_class_active"] : null) ?? this["link_class"];
-        var linkArgsFromOptions = ((isActive ? options?["link_args_active"] : null) ?? options?["link_args"]) ?? string.Empty;
+        var linkArgsFromOptions = ((isActive ? effectiveOptions["link_args_active"] : null) ?? effectiveOptions["link_args"]) ?? string.Empty;
         var linkArgsFromMenu = ((isActive ? this["link_args_active"] : null) ?? this["link_args"]) ?? string.Empty;
         var title = Title ?? Page?.Title;
         var isSeparator = Separator;
@@ -571,7 +575,8 @@ public class MenuObject : DynamicObject
 
         if (page == Page)
         {
-            if (options.TryGetValue("post_active", out var postActive) && postActive is not null)
+            var postActive = effectiveOptions["post_active"];
+            if (postActive is not null)
             {
                 builder.Append(postActive);
             }

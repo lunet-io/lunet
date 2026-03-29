@@ -107,13 +107,18 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         foreach (var refKeyPair in ApiDotNetObject.References)
         {
             var uid = refKeyPair.Key;
-            var obj = (ScriptObject)refKeyPair.Value;
+            if (refKeyPair.Value is not ScriptObject obj)
+            {
+                continue;
+            }
+
+            var name = obj.GetSafeValue<string>("name") ?? string.Empty;
             Site.Content.Finder.RegisterExtraContent(new ExtraContent()
                 {
                     Uid = uid,
                     DefinitionUid = obj.GetSafeValue<string>("definition"),
-                    Name = obj.GetSafeValue<string>("name"),
-                    FullName = obj.GetSafeValue<string>("fullName"),
+                    Name = name,
+                    FullName = obj.GetSafeValue<string>("fullName") ?? name,
                     IsExternal = obj.GetSafeValue<bool>("isExternal")
                 }
             );
@@ -122,7 +127,10 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         var objects = ApiDotNetObject.Objects;
         foreach (var objPair in objects)
         {
-            var obj = (ScriptObject)objPair.Value;
+            if (objPair.Value is not ScriptObject obj)
+            {
+                continue;
+            }
             var uid = obj.GetSafeValue<string>("uid");
             if (string.IsNullOrWhiteSpace(uid))
             {
@@ -132,15 +140,15 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             var url = $"{apiBasePath}/{slugResolver.GetSlug(uid)}/readme.md";
 
             DynamicContentObject? content = null;
-            switch (GetTypeFromModel(obj))
-            {
-                case "Namespace":
+                switch (GetTypeFromModel(obj))
                 {
-                    content = CreateApiContentPage(url);
-                    content.ScriptObjectLocal = new ScriptObject(); // only used to let layout processor running
-                    content.LayoutType = "api-dotnet-namespace";
-                    content.ScriptObjectLocal["namespace"] = obj;
-                    break;
+                    case "Namespace":
+                    {
+                        content = CreateApiContentPage(url);
+                        content.ScriptObjectLocal = new ScriptObject(); // only used to let layout processor running
+                        content.LayoutType = "api-dotnet-namespace";
+                        content.ScriptObjectLocal["namespace"] = obj;
+                        break;
                 }
                 case "Class":
                 case "Interface":
@@ -177,7 +185,8 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 content.Title = $"{xrefName} {obj["type"]}";
 
                 // Copy helpers as if it was part of the file
-                _helpers.CopyTo(content.ScriptObjectLocal);
+                var localScriptObject = content.ScriptObjectLocal ?? throw new InvalidOperationException("API page script locals were not initialized.");
+                _helpers.CopyTo(localScriptObject);
                 content.Initialize();
                 Site.DynamicPages.Add(content);
                 pagesByUid[uid] = content;
@@ -200,7 +209,8 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
             content["notoc"] = true;
 
             // Copy helpers as if it was part of the file
-            _helpers.CopyTo(content.ScriptObjectLocal);
+            var localScriptObject = content.ScriptObjectLocal ?? throw new InvalidOperationException("API root page script locals were not initialized.");
+            _helpers.CopyTo(localScriptObject);
             content.Initialize();
             Site.DynamicPages.Add(content);
             apiRootPage = content;
@@ -538,16 +548,21 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
 
             var objects = project.Api.GetSafeValue<ScriptArray>("items");
 
-            foreach (var entryItemsAndReferences in objects.OfType<ScriptObject>())
+            foreach (var entryItemsAndReferences in EnumerateScriptObjects(objects))
             {
-                foreach (var obj in ((ScriptArray) entryItemsAndReferences["items"]).OfType<ScriptObject>())
+                foreach (var obj in EnumerateScriptObjects(entryItemsAndReferences.GetSafeValue<ScriptArray>("items")))
                 {
                     ProcessItem(obj, namespaces);
                 }
 
-                foreach (var obj in ((ScriptArray)entryItemsAndReferences["references"]).OfType<ScriptObject>())
+                foreach (var obj in EnumerateScriptObjects(entryItemsAndReferences.GetSafeValue<ScriptArray>("references")))
                 {
-                    var uid = (string)obj["uid"];
+                    var uid = obj.GetSafeValue<string>("uid");
+                    if (string.IsNullOrWhiteSpace(uid))
+                    {
+                        continue;
+                    }
+
                     if (!ApiDotNetObject.References.ContainsKey(uid))
                     {
                         ApiDotNetObject.References[uid] = obj;
@@ -562,14 +577,18 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
 
     private void ProcessItem(ScriptObject obj, Dictionary<string, ScriptObject> namespaces)
     {
-        var uid = (string) obj["uid"];
+        var uid = obj.GetSafeValue<string>("uid");
+        if (string.IsNullOrWhiteSpace(uid))
+        {
+            Site.Warning("Skipping an API dotnet item without a uid.");
+            return;
+        }
+
         if (obj.GetSafeValue<string>("type") == "Namespace")
         {
-            ScriptObject nsScriptObject;
-            if (!namespaces.TryGetValue(uid, out var nsObject))
+            if (!namespaces.TryGetValue(uid, out var nsScriptObject))
             {
-                nsObject = new ScriptObject();
-                nsScriptObject = (ScriptObject) nsObject;
+                nsScriptObject = new ScriptObject();
                 namespaces.Add(uid, nsScriptObject);
                 nsScriptObject.Add("uid", uid);
                 nsScriptObject.Add("commentId", obj["commentId"]);
@@ -585,22 +604,18 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 nsScriptObject.Add("assemblies", new ScriptArray());
                 nsScriptObject.Add("langs", new ScriptArray());
                 // TODO: merge summary/remarks/example...
-                ApiDotNetObject.Objects[uid] = nsObject;
-            }
-            else
-            {
-                nsScriptObject = (ScriptObject) nsObject;
+                ApiDotNetObject.Objects[uid] = nsScriptObject;
             }
 
             // Merge child types
-            var nsChildren = nsScriptObject.GetSafeValue<ScriptArray>("children");
-            var nsChildrenConcat = nsScriptObject.GetSafeValue<ScriptArray>("children").OfType<string>().Concat(obj.GetSafeValue<ScriptArray>("children").OfType<string>()).ToHashSet().OrderBy(x => x);
+            var nsChildren = GetOrCreateScriptArray(nsScriptObject, "children");
+            var nsChildrenConcat = EnumerateStrings(nsChildren).Concat(EnumerateStrings(obj.GetSafeValue<ScriptArray>("children"))).ToHashSet().OrderBy(x => x);
             nsChildren.Clear();
             nsChildren.AddRange(nsChildrenConcat);
 
-            nsScriptObject.GetSafeValue<ScriptArray>("assemblies").AddRange(obj.GetSafeValue<ScriptArray>("assemblies"));
-            var langs = nsScriptObject.GetSafeValue<ScriptArray>("langs");
-            foreach (var lang in obj.GetSafeValue<ScriptArray>("langs"))
+            GetOrCreateScriptArray(nsScriptObject, "assemblies").AddRange(EnumerateStrings(obj.GetSafeValue<ScriptArray>("assemblies")));
+            var langs = GetOrCreateScriptArray(nsScriptObject, "langs");
+            foreach (var lang in EnumerateStrings(obj.GetSafeValue<ScriptArray>("langs")))
             {
                 if (!langs.Contains(lang))
                 {
@@ -625,7 +640,10 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         var objects = ApiDotNetObject.Objects;
         foreach (var objPair in objects)
         {
-            var obj = (ScriptObject)objPair.Value;
+            if (objPair.Value is not ScriptObject obj)
+            {
+                continue;
+            }
 
             var commonMembers = GetTypeFromModel(obj) == "Namespace" ? CommonNamespaceMembers : CommonMembers;
             foreach (var commonMember in commonMembers)
@@ -633,10 +651,7 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
                 RecycleCollection(obj, commonMember.name);
             }
 
-            var ids = obj.GetSafeValue<ScriptArray>("children")?.OfType<string>();
-            if (ids == null) continue;
-
-            foreach (var childId in ids)
+            foreach (var childId in EnumerateStrings(obj.GetSafeValue<ScriptArray>("children")))
             {
                 if (!objects.TryGetValue(childId, out var childObjObject) || childObjObject is not ScriptObject childObj)
                 {
@@ -660,9 +675,15 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         // Attach extension methods to the this type if possible.
         foreach (var extension in extensionMethods)
         {
-            var thisTypeUid = (string)((ScriptObject) extension.GetSafeValue<ScriptObject>("syntax").GetSafeValue<ScriptArray>("parameters")[0])["type"];
+            var parameters = extension.GetSafeValue<ScriptObject>("syntax")?.GetSafeValue<ScriptArray>("parameters");
+            if (parameters == null || parameters.Count == 0 || parameters[0] is not ScriptObject firstParameter)
+            {
+                continue;
+            }
+
+            var thisTypeUid = firstParameter.GetSafeValue<string>("type");
             // If the type is a generic, we don't support them for now.
-            if (thisTypeUid.StartsWith("{")) continue;
+            if (string.IsNullOrWhiteSpace(thisTypeUid) || thisTypeUid.StartsWith("{", StringComparison.Ordinal)) continue;
 
             // Try to resolve the this type of the extension method
             if (objects.TryGetValue(thisTypeUid, out var thisTypeObj) && thisTypeObj is ScriptObject thisType)
@@ -683,6 +704,28 @@ public class ApiDotNetProcessor : ProcessorBase<ApiDotNetPlugin>
         }
 
         return type;
+    }
+
+    private static IEnumerable<ScriptObject> EnumerateScriptObjects(ScriptArray? array)
+    {
+        return array?.OfType<ScriptObject>() ?? Enumerable.Empty<ScriptObject>();
+    }
+
+    private static IEnumerable<string> EnumerateStrings(ScriptArray? array)
+    {
+        return array?.OfType<string>() ?? Enumerable.Empty<string>();
+    }
+
+    private static ScriptArray GetOrCreateScriptArray(ScriptObject obj, string key)
+    {
+        if (obj.GetSafeValue<ScriptArray>(key) is ScriptArray array)
+        {
+            return array;
+        }
+
+        array = new ScriptArray();
+        obj[key] = array;
+        return array;
     }
 
     private readonly (string name, string type)[] CommonMembers = new (string name, string type)[]

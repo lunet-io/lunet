@@ -57,6 +57,17 @@ public class TestApiDotNetBasePathOutput
         StringAssert.Contains("/terminal/api/BasePathApi/", html);
     }
 
+    [Test]
+    public void TestApiInternalXrefsRenderAsLinks()
+    {
+        var consumerPage = Path.Combine(_outputRoot, "api", UidHelper.Handleize("BasePathApi.ApiConsumer"), "index.html");
+        Assert.IsTrue(File.Exists(consumerPage), $"Expected API member page at `{consumerPage}`.");
+
+        var html = WebUtility.HtmlDecode(File.ReadAllText(consumerPage));
+
+        StringAssert.Contains("/terminal/api/BasePathApi.ApiSurface/", html);
+    }
+
     private static void WriteTestSiteAndProject(PhysicalLunetAppTestContext context)
     {
         context.WriteAllText(
@@ -126,6 +137,13 @@ public class TestApiDotNetBasePathOutput
             {
                 /// <summary>Returns a stable value.</summary>
                 public int GetValue() => 42;
+            }
+
+            /// <summary>Consumes <see cref="ApiSurface"/> and links back to it.</summary>
+            public class ApiConsumer
+            {
+                /// <summary>Returns the provided <see cref="ApiSurface"/>.</summary>
+                public ApiSurface Echo(ApiSurface value) => value;
             }
             """);
     }

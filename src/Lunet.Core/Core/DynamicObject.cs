@@ -27,7 +27,7 @@ public class DynamicObject : ScriptObject
     {
     }
 
-    public T? GetSafeValue<T>(string name)
+    public new T? GetSafeValue<T>(string name)
     {
         return this[name] is T tvalue ? tvalue : default;
     }
@@ -37,9 +37,9 @@ public class DynamicObject : ScriptObject
         base.SetValue(name, value, false);
     }
 
-    private bool _toStringing = false;
+    private bool _toStringing;
 
-    public override string ToString(string format, IFormatProvider formatProvider)
+    public override string ToString(string? format, IFormatProvider? formatProvider)
     {
         // protect against recursive content
         if (_toStringing)

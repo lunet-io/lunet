@@ -8,11 +8,11 @@ public class ExtraContent
 {
     public string Uid { get; set; } = string.Empty;
         
-    public string Name { get; set; } = string.Empty;
+    public string? Name { get; set; }
 
-    public string DefinitionUid { get; set; } = string.Empty;
+    public string? DefinitionUid { get; set; }
 
-    public string FullName { get; set; } = string.Empty;
+    public string? FullName { get; set; }
 
     public bool IsExternal { get; set; }
 }

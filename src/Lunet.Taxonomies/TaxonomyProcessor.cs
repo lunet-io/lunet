@@ -124,16 +124,15 @@ public class TaxonomyProcessor : ProcessorBase<TaxonomyPlugin>
                         continue;
                     }
 
-                    object termObj;
                     TaxonomyTerm term;
-                    if (!tax.Terms.TryGetValue(termName, out termObj))
+                    if (!tax.Terms.TryGetValue(termName, out var existingTermObject) || existingTermObject is not TaxonomyTerm existingTerm)
                     {
-                        termObj = term = new TaxonomyTerm(tax, termName);
-                        tax.Terms[termName] = termObj;
+                        term = new TaxonomyTerm(tax, termName);
+                        tax.Terms[termName] = term;
                     }
                     else
                     {
-                        term = (TaxonomyTerm)termObj;
+                        term = existingTerm;
                     }
 
                     term.Pages.Add(page);

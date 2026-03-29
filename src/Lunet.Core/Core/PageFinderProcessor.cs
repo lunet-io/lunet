@@ -74,7 +74,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
 
         if (_uidExtraContent.TryGetValue(uid, out var extraContent))
         {
-            uid = extraContent.DefinitionUid ?? extraContent.Uid;
+            uid = string.IsNullOrEmpty(extraContent.DefinitionUid) ? extraContent.Uid : extraContent.DefinitionUid;
         }
             
         return _mapUidToContent.TryGetValue(uid, out content);
@@ -106,7 +106,7 @@ public class PageFinderProcessor : ProcessorBase<ContentPlugin>
 
         if (_uidExtraContent.TryGetValue(uid, out var extraContent))
         {
-            uid = extraContent.DefinitionUid ?? extraContent.Uid;
+            uid = string.IsNullOrEmpty(extraContent.DefinitionUid) ? extraContent.Uid : extraContent.DefinitionUid;
             name = extraContent.Name;
             fullname = extraContent.FullName;
         }

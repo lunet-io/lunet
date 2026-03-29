@@ -396,13 +396,13 @@ public abstract class ContentObject : TemplateObject
             case "second":
                 return Date.ToString("ss", CultureInfo.InvariantCulture);
             case "title":
-                return StringFunctions.Handleize(Title);
+                return StringFunctions.Handleize(Title ?? string.Empty);
             case "slug":
                 return Slug;
             case "section":
                 return Section;
             case "slugified_section":
-                return StringFunctions.Handleize(Section);
+                return StringFunctions.Handleize(Section ?? string.Empty);
             case "output_ext":
                 return Extension;
             case "path":

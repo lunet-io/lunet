@@ -22,7 +22,7 @@ public class YamlFrontMatterParser : IFrontMatterParser
         return header[0] == '-' && header[1] == '-' && header[2] == '-';
     }
 
-    public IFrontMatter TryParse(string text, string sourceFilePath, out TextPosition position)
+    public IFrontMatter? TryParse(string text, string sourceFilePath, out TextPosition position)
     {
         var frontMatter = YamlUtil.FromYamlFrontMatter(text, out position, sourceFilePath);
         if (frontMatter is ScriptObject obj)
@@ -43,7 +43,7 @@ public class YamlFrontMatterParser : IFrontMatterParser
 
         public void Evaluate(TemplateContext context)
         {
-            var dest = context.CurrentGlobal;
+            var dest = context.CurrentGlobal ?? throw new InvalidOperationException("Missing script global context while applying YAML front matter.");
             foreach (var keyPair in Object)
             {
                 dest.SetValue(keyPair.Key, keyPair.Value, false);

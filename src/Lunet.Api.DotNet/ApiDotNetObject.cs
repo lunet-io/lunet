@@ -2,6 +2,7 @@
 // This file is licensed under the BSD-Clause 2 license.
 // See the license.txt file in the project root for more information.
 
+using System;
 using Lunet.Core;
 using Scriban.Runtime;
 
@@ -25,19 +26,19 @@ public class ApiDotNetObject : ScriptObject
 
     public ScriptArray<ScriptObject> Namespaces
     {
-        get => this.GetSafeValue<ScriptArray<ScriptObject>>("namespaces");
+        get => this.GetSafeValue<ScriptArray<ScriptObject>>("namespaces") ?? throw new InvalidOperationException("The API namespaces collection is not initialized.");
         private init => this.SetValue("namespaces", value, true);
     }
 
     public ScriptObject Objects
     {
-        get => this.GetSafeValue<ScriptObject>("objects");
+        get => this.GetSafeValue<ScriptObject>("objects") ?? throw new InvalidOperationException("The API objects collection is not initialized.");
         private init => this.SetValue("objects", value, true);
     }
 
     public ScriptObject References
     {
-        get => this.GetSafeValue<ScriptObject>("references");
+        get => this.GetSafeValue<ScriptObject>("references") ?? throw new InvalidOperationException("The API references collection is not initialized.");
         private init => this.SetValue("references", value, true);
     }
 }

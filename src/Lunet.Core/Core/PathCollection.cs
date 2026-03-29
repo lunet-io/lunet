@@ -16,11 +16,11 @@ public class ScriptCollection : ScriptArray
     public ScriptCollection()
     {
         ScriptObject.Import("clear", (Action)Clear);
-        ScriptObject.Import("add", (Action<object>) AddItem);
-        ScriptObject.Import("remove", (Action<object>) RemoveItem);
+        ScriptObject.Import("add", (Action<object?>) AddItem);
+        ScriptObject.Import("remove", (Action<object?>) RemoveItem);
     }
 
-    protected void RemoveItem(object item)
+    protected void RemoveItem(object? item)
     {
         if (item == null) return;
 
@@ -39,7 +39,7 @@ public class ScriptCollection : ScriptArray
     }
 
 
-    private void AddItem(object item)
+    private void AddItem(object? item)
     {
         if (item == null) return;
 

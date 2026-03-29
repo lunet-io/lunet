@@ -62,7 +62,7 @@ internal sealed class ApiDotNetTemplateHelpers
         var isNonUidType = uidText.Contains(' ') || uidText.Contains("delegate*", StringComparison.Ordinal);
         var looksLikeUid = uidText.Contains('.') || uidText.Contains(':');
 
-        if (isGenericTypeParameter || isNonUidType || !looksLikeUid)
+        if (isGenericTypeParameter || isNonUidType)
         {
             return HtmlEscape(uidText);
         }
@@ -75,6 +75,11 @@ internal sealed class ApiDotNetTemplateHelpers
         if (TryResolveConfiguredExternalXRef(uidText, useFullName, out var externalName, out var externalUrl))
         {
             return $"<a href=\"{HtmlEscape(externalUrl)}\">{HtmlEscape(externalName)}</a>";
+        }
+
+        if (!looksLikeUid)
+        {
+            return HtmlEscape(uidText);
         }
 
         var displayText = uidText;

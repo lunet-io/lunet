@@ -125,6 +125,31 @@ public class TestCoreRunnerAndFinder
     }
 
     [Test]
+    public void TestPageFinderIgnoresEmptyDefinitionUidOverride()
+    {
+        using var context = new SiteTestContext();
+
+        var page = context.CreateDynamicContentObject("/docs/internal/", path: "/docs/internal.md");
+        page.ContentType = ContentType.Html;
+        page.Url = "/docs/internal/";
+        page.UrlWithoutBasePath = "/docs/internal/";
+        page.Uid = "Docs.Internal";
+        page.Title = "Internal";
+        context.Site.Pages.Add(page);
+        context.Site.Content.Finder.Process(ProcessingStage.AfterLoadingContent);
+
+        context.Site.Content.Finder.RegisterExtraContent(new ExtraContent
+        {
+            Uid = "Docs.Internal",
+            DefinitionUid = string.Empty,
+            Name = "Internal"
+        });
+
+        Assert.IsTrue(context.Site.Content.Finder.TryFindByUid("Docs.Internal", out var found));
+        Assert.AreSame(page, found);
+    }
+
+    [Test]
     public void TestPageFinderResolvesUrlEncodedXrefUid()
     {
         using var context = new SiteTestContext();

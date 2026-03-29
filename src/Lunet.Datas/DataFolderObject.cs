@@ -16,7 +16,7 @@ public class DataFolderObject : DataObject
 
     public DirectoryEntry Folder { get; }
 
-    public override string ToString(string format, IFormatProvider formatProvider)
+    public override string ToString(string? format, IFormatProvider? formatProvider)
     {
         return $"DataFolder({Folder.FullName})";
     }

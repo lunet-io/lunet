@@ -67,7 +67,7 @@ public static class JsonUtil
                 var obj = new ScriptObject();
                 foreach (var prop in element.EnumerateObject())
                 {
-                    obj[cache.Get(prop.Name)] = ConvertFromJson(prop.Value, cache);
+                    obj[cache.GetOrAdd(prop.Name)] = ConvertFromJson(prop.Value, cache);
                 }
 
                 return obj;
@@ -79,7 +79,7 @@ public static class JsonUtil
                 }
                 return array;
             case JsonValueKind.String:
-                return cache.Get(element.GetString());
+                return cache.GetOrAddNullable(element.GetString());
             case JsonValueKind.Number:
                 if (element.TryGetInt32(out var intValue))
                 {
@@ -123,9 +123,8 @@ public static class JsonUtil
     /// </summary>
     private class StringCache : Dictionary<string, string>
     {
-        public string? Get(string? name)
+        public string GetOrAdd(string name)
         {
-            if (name == null) return null;
             // Arbitrary limit, we don't need to cache everything but
             // optimize keys
             if (name.Length >= 512) return name;
@@ -135,6 +134,12 @@ public static class JsonUtil
             }
             Add(name, name);
             return name;
+        }
+
+        public string? GetOrAddNullable(string? name)
+        {
+            if (name == null) return null;
+            return GetOrAdd(name);
         }
     }
 }

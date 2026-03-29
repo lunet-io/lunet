@@ -31,7 +31,10 @@ public class BuiltinsObject : DynamicObject<SiteObject>
         Head = parent.Scripts.CompileAnonymous("include '_builtins/head.sbn-html'");
 
         // Add our own to_rfc822
-        var dateTimeFunctions = (DateTimeFunctions) Site.Scripts.ScribanBuiltins["date"];
+        if (Site.Scripts.ScribanBuiltins["date"] is not DateTimeFunctions dateTimeFunctions)
+        {
+            throw new InvalidOperationException("Scriban builtins are missing the `date` functions.");
+        }
         dateTimeFunctions.Import("to_rfc822", (Func<DateTime, string>)ToRFC822);
 
         // Add log object
@@ -126,13 +129,13 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
 
         public Type ReturnType => typeof(string);
 
-        public object Invoke(TemplateContext context, ScriptNode callerContext, ScriptArray arguments, ScriptBlockStatement blockStatement)
+        public object? Invoke(TemplateContext context, ScriptNode? callerContext, ScriptArray arguments, ScriptBlockStatement? blockStatement)
         {
             var guid = $"lunet-defer:{Guid.NewGuid()}";
             var pageObj = context.GetValue(PageVariable);
             if (pageObj is ContentObject page)
             {
-                var callback = arguments[0] as ScriptExpression;
+                var callback = arguments.Count > 0 ? arguments[0] as ScriptExpression : null;
                 if (callback != null)
                 {
                     page.AddDefer(guid, callback);
@@ -140,10 +143,10 @@ func CALLOUT; ALERT 'lunet-alert-callout' class:$.class @$0; end
                 }
             }
 
-            return null!;
+            return null;
         }
 
-        public ValueTask<object> InvokeAsync(TemplateContext context, ScriptNode callerContext, ScriptArray arguments, ScriptBlockStatement blockStatement)
+        public ValueTask<object?> InvokeAsync(TemplateContext context, ScriptNode? callerContext, ScriptArray arguments, ScriptBlockStatement? blockStatement)
             => new(Invoke(context, callerContext, arguments, blockStatement));
     }
 }

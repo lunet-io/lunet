@@ -44,10 +44,11 @@ public class ScriptingPlugin : SitePlugin
     public ScriptFunction CompileAnonymous(string expression)
     {
         if (expression == null) throw new ArgumentNullException(nameof(expression));
-        var statements = Template.Parse($"do;{expression};end", lexerOptions: new LexerOptions() { Mode = ScriptMode.ScriptOnly }).Page.Body.Statements;
-        if (statements.Count == 1 && statements[0] is ScriptExpressionStatement exprStatement && exprStatement.Expression is ScriptAnonymousFunction anonymous)
+        var template = Template.Parse($"do;{expression};end", lexerOptions: new LexerOptions() { Mode = ScriptMode.ScriptOnly });
+        var statements = template.Page?.Body?.Statements;
+        if (statements != null && statements.Count == 1 && statements[0] is ScriptExpressionStatement exprStatement && exprStatement.Expression is ScriptAnonymousFunction anonymous && anonymous.Function is ScriptFunction function)
         {
-            return anonymous.Function;
+            return function;
         }
         throw new ArgumentException("Unable to extract anonymous function from results", nameof(expression));
     }
@@ -96,7 +97,8 @@ public class ScriptingPlugin : SitePlugin
             LogScriptMessages(template.Messages);
         }
 
-        return new ScriptInstance(template.HasErrors, (string)scriptPath, frontmatter, template.Page);
+        var page = template.Page ?? throw new LunetException($"Unable to parse script [{scriptPath}] because Scriban did not produce an AST.");
+        return new ScriptInstance(template.HasErrors, (string)scriptPath, frontmatter, page);
     }
 
     public bool TryImportScript(string scriptText, UPath scriptPath, ScriptObject scriptObject, ScriptFlags flags, out object? result, ScriptMode scriptMode = ScriptMode.ScriptOnly)
@@ -265,6 +267,11 @@ public class ScriptingPlugin : SitePlugin
             // Substitute function alias expression
             if (expression is ScriptUnaryExpression unaryExpression && unaryExpression.Operator == ScriptUnaryOperator.FunctionAlias)
             {
+                if (unaryExpression.Right is null)
+                {
+                    Site.Error("Unable to evaluate an empty function alias expression.");
+                    return false;
+                }
                 expression = unaryExpression.Right;
             }
             
@@ -399,9 +406,9 @@ public class ScriptingPlugin : SitePlugin
             throw new NotImplementedException();
         }
 
-        public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
+        public ValueTask<string?> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
         {
-            return new ValueTask<string>(Load(context, callerSpan, templatePath));
+            return new ValueTask<string?>(Load(context, callerSpan, templatePath));
         }
     }
 
@@ -446,9 +453,9 @@ public class ScriptingPlugin : SitePlugin
             return result;
         }
 
-        public ValueTask<string> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
+        public ValueTask<string?> LoadAsync(TemplateContext context, SourceSpan callerSpan, string templatePath)
         {
-            return new ValueTask<string>(Load(context, callerSpan, templatePath));
+            return new ValueTask<string?>(Load(context, callerSpan, templatePath));
         }
     }
         
@@ -490,13 +497,14 @@ public class ScriptingPlugin : SitePlugin
         {
             position = default;
             var frontMatter = Template.Parse(text, sourceFilePath, lexerOptions: new LexerOptions() {FrontMatterMarker = "+++", Mode = ScriptMode.FrontMatterOnly});
-            if (frontMatter.HasErrors || frontMatter.Page.FrontMatter == null)
+            var parsedFrontMatter = frontMatter.Page?.FrontMatter;
+            if (frontMatter.HasErrors || parsedFrontMatter == null)
             {
                 _scripting.LogScriptMessages(frontMatter.Messages);
                 return null;
             }
-            position = frontMatter.Page.FrontMatter.TextPositionAfterEndMarker;
-            return new ScribanFrontMatter(frontMatter.Page.FrontMatter);
+            position = parsedFrontMatter.TextPositionAfterEndMarker;
+            return new ScribanFrontMatter(parsedFrontMatter);
         }
     }
 }
