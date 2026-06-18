@@ -6,10 +6,10 @@ env:
 on:
   push:
     paths-ignore:
-    - 'doc/**'
+    - 'site/**'
     - 'img/**'
-    - 'changelog.md'
-    - 'readme.md'
+    - '*.txt'
+    - '*.md'
   pull_request:
 
 jobs:
