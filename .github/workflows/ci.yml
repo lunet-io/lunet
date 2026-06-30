@@ -14,6 +14,9 @@ on:
 
 jobs:
   build:
+    permissions:
+      id-token: write
+      contents: write
     runs-on: 'windows-latest'
     steps:
       - name: "Build, Test, Pack and Publish"
