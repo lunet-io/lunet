@@ -14,21 +14,10 @@ on:
 
 jobs:
   build:
-    permissions:
-      id-token: write
-      actions: write
-      contents: write
     runs-on: 'windows-latest'
     steps:
-      - name: NuGet Login
-        uses: NuGet/login@v1
-        id: nuget-login
-        with:
-          user: xoofx
       - name: "Build, Test, Pack and Publish"
         uses: xoofx/.github/.github/actions/dotnet-releaser-action@main
-        with:
-          NUGET_TOKEN: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
 
       - name: "Build website with local lunet"
         shell: pwsh

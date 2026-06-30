@@ -8,3 +8,6 @@ user = "lunet-io"
 repo = "lunet"
 [changelog]
 owners = "xoofx" # To avoid having @xoofx tagged in release notes
+[nuget]
+user = "xoofx"
+trusted_publishing = true
