@@ -29,6 +29,7 @@ public sealed class ResourcePlugin : SitePlugin
 
     public ResourcePlugin(SiteObject site) : base(site)
     {
+        SetValue(NpmResourceProvider.RequestTimeoutKey, 100.0);
         var folder = UPath.Root / ResourceFolderName;
         Providers = new OrderedList<ResourceProvider>()
         {

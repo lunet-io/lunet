@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Lunet.Core;
 using Lunet.Helpers;
 using Lunet.Scripts;
@@ -20,12 +22,52 @@ namespace Lunet.Resources;
 
 public class NpmResourceProvider : ResourceProvider
 {
+    internal const string RequestTimeoutKey = "npm_request_timeout";
+
     public NpmResourceProvider(ResourcePlugin plugin) : base(plugin, "npm")
     {
         RegistryUrl = "https://registry.npmjs.org/";
     }
 
     public string RegistryUrl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the timeout for each registry request or complete tarball download.
+    /// Defaults to 100 seconds. Archive extraction is not included.
+    /// Shares its value with <c>resources.npm_request_timeout</c>, expressed in seconds in scripts.
+    /// </summary>
+    /// <exception cref="LunetException">The configured script value is not a valid timeout.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The value is not positive or exceeds <see cref="int.MaxValue"/> milliseconds.
+    /// </exception>
+    public TimeSpan RequestTimeout
+    {
+        get
+        {
+            var seconds = Plugin[RequestTimeoutKey] switch
+            {
+                int value => value,
+                long value => value,
+                float value => value,
+                double value => value,
+                decimal value => (double)value,
+                _ => double.NaN,
+            };
+            if (seconds > 0 && seconds <= int.MaxValue / 1000.0)
+            {
+                var timeout = TimeSpan.FromSeconds(seconds);
+                if (timeout > TimeSpan.Zero) return timeout;
+            }
+
+            throw new LunetException("Invalid resources.npm_request_timeout: expected a positive, finite number of seconds, no greater than 2147483.647.");
+        }
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, TimeSpan.Zero);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, TimeSpan.FromMilliseconds(int.MaxValue));
+            Plugin.SetValue(RequestTimeoutKey, value.TotalSeconds);
+        }
+    }
 
     protected override ResourceObject? LoadFromDisk(string resourceName, string resourceVersion, DirectoryEntry directory)
     {
@@ -64,9 +106,9 @@ public class NpmResourceProvider : ResourceProvider
         var npmPackageUrl = RegistryUrl + resourceName;
         try
         {
-            using (var client = new HttpClient())
+            using (var client = new HttpClient { Timeout = RequestTimeout })
             {
-                var resourceRegistryStr = client.GetStringAsync(npmPackageUrl).Result;
+                var resourceRegistryStr = client.GetStringAsync(npmPackageUrl).GetAwaiter().GetResult();
                 resourceJson = JObject.Parse(resourceRegistryStr);
             }
         }
@@ -150,11 +192,20 @@ public class NpmResourceProvider : ResourceProvider
             var downloadUrl = downloads[selectedVersion];
             try
             {
-                using (var client = new HttpClient())
+                using (var client = new HttpClient { Timeout = RequestTimeout })
                 {
-                    // TODO: check if the file is ending by tgz/tat.gz?
-                    using (var stream = client.GetStreamAsync(downloadUrl).Result)
-                    using (var gzStream = new GZipStream(stream, CompressionMode.Decompress))
+                    Plugin.Site.Info($"NPM downloading {resourceName}/{selectedVersion} from [{downloadUrl}]");
+
+                    // Stage the complete download before extracting: synchronous tar reads cannot
+                    // cancel a stalled network stream, and partial transfers must not populate the cache.
+                    using var archive = new FileStream(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()),
+                        FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 81920,
+                        FileOptions.Asynchronous | FileOptions.DeleteOnClose);
+                    DownloadArchiveAsync(client, downloadUrl, archive).GetAwaiter().GetResult();
+                    archive.Position = 0;
+
+                    Plugin.Site.Info($"NPM extracting {resourceName}/{selectedVersion}");
+                    using (var gzStream = new GZipStream(archive, CompressionMode.Decompress))
                     {
                         gzStream.UntarTo(directory, "package");
                     }
@@ -171,5 +222,22 @@ public class NpmResourceProvider : ResourceProvider
 
         Plugin.Site.Error($"Unable to find the [{Name}] package [{resourceName}] with the specific version [{resourceVersion}] from the available version [{string.Join(",", downloads.Keys)}]");
         return null;
+    }
+
+    private static async Task DownloadArchiveAsync(HttpClient client, string downloadUrl, Stream destination)
+    {
+        // GetStreamAsync/ResponseHeadersRead only apply HttpClient.Timeout through the headers.
+        // Keep a separate deadline alive through the entire response body as well.
+        using var timeout = new CancellationTokenSource(client.Timeout);
+        try
+        {
+            using var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            await response.Content.CopyToAsync(destination, timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex) when (timeout.IsCancellationRequested)
+        {
+            throw new TimeoutException($"NPM download timed out after {client.Timeout.TotalSeconds} seconds.", ex);
+        }
     }
 }
