@@ -149,6 +149,62 @@ public class TestBundlesModule
     }
 
     [Test]
+    public void TestBundleProcessorConcatIncludesSiteStaticFiles()
+    {
+        using var context = new SiteTestContext();
+        var plugin = new BundlePlugin(context.Site);
+        var bundle = plugin.GetOrCreateBundle(null);
+        bundle.Concat = true;
+        bundle.AddJs("/js/app.js");
+        bundle.AddCss("/css/app.css");
+
+        // Regular site files are already registered as static files (with no content loaded)
+        var jsFile = context.CreateFileContentObject("/js/app.js", "const app = 1;");
+        var cssFile = context.CreateFileContentObject("/css/app.css", "body { color: red; }");
+        context.Site.StaticFiles.Add(jsFile);
+        context.Site.StaticFiles.Add(cssFile);
+        context.Site.Pages.Add(context.CreateDynamicContentObject("/index.html"));
+
+        plugin.BundleProcessor.Process(ProcessingStage.BeforeProcessingContent);
+
+        Assert.AreEqual(2, bundle.Links.Count);
+        var jsLink = bundle.Links.Find(link => link.Type == BundleObjectProperties.JsType);
+        var cssLink = bundle.Links.Find(link => link.Type == BundleObjectProperties.CssType);
+        Assert.NotNull(jsLink);
+        Assert.NotNull(cssLink);
+        StringAssert.Contains("const app = 1;", jsLink!.Content!);
+        StringAssert.Contains("body { color: red; }", cssLink!.Content!);
+        Assert.AreEqual(2, context.Site.DynamicPages.Count);
+        Assert.IsTrue(jsFile.Discard);
+        Assert.IsTrue(cssFile.Discard);
+    }
+
+    [Test]
+    public void TestBundleProcessorMinifyIncludesSiteStaticFiles()
+    {
+        using var context = new SiteTestContext();
+        var plugin = new BundlePlugin(context.Site);
+        var minifier = new RecordingMinifier("test");
+        plugin.BundleProcessor.Minifiers.Add(minifier);
+
+        var bundle = plugin.GetOrCreateBundle(null);
+        bundle.Minify = true;
+        bundle.Minifier = "test";
+        bundle.AddJs("/js/app.js");
+
+        var jsFile = context.CreateFileContentObject("/js/app.js", "const app = 1;");
+        context.Site.StaticFiles.Add(jsFile);
+        context.Site.Pages.Add(context.CreateDynamicContentObject("/index.html"));
+
+        plugin.BundleProcessor.Process(ProcessingStage.BeforeProcessingContent);
+
+        Assert.AreEqual(1, minifier.MinifyCalls.Count);
+        Assert.AreEqual("const app = 1;", minifier.MinifyCalls[0].Content);
+        Assert.AreEqual("minified(js):const app = 1;", bundle.Links[0].Content);
+        Assert.AreEqual("minified(js):const app = 1;", jsFile.Content);
+    }
+
+    [Test]
     public void TestBundleProcessorMinifyUsesRegisteredMinifier()
     {
         using var context = new SiteTestContext();

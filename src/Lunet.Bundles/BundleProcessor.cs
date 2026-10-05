@@ -252,7 +252,9 @@ public class BundleProcessor : ProcessorBase<BundlePlugin>
                     {
                         try
                         {
-                            link.Content = currentContent.Content ?? (entry.IsEmpty ? string.Empty : entry.ReadAllText());
+                            // The content of an existing static file is not loaded, so we read it from its own source file
+                            var sourceFile = currentContent.SourceFile;
+                            link.Content = currentContent.Content ?? (sourceFile.IsEmpty ? string.Empty : sourceFile.ReadAllText());
 
                             // Minify content separately
                             if (bundle.Minify && minifier != null)
