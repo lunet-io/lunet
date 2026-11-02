@@ -34,7 +34,13 @@ public class MenuObject : DynamicObject
         Static,
     }
 
-    private sealed record MenuNodeIds(string ListId, string ItemId);
+    /// <summary>
+    /// Ids of a menu node in the static partial: <paramref name="ListId"/> is the id of its rendered children list (if any),
+    /// <paramref name="ItemId"/> is the id of the item that shows it (if any). <paramref name="ItemContainsChildren"/> is false
+    /// when that item is a sibling standing for the node (a root shown by its first child pointing to the same page), in which
+    /// case the item is only active for the node's own page.
+    /// </summary>
+    private sealed record MenuNodeIds(string? ListId, string? ItemId, bool ItemContainsChildren = true);
 
     private sealed record MenuAsyncState(string PartialPath, Dictionary<MenuObject, MenuNodeIds> NodeIds, string RootListId);
 
@@ -285,28 +291,6 @@ public class MenuObject : DynamicObject
             AsString(options, "link_args"));
     }
 
-    private static Dictionary<MenuObject, MenuNodeIds> BuildNodeIds(MenuObject root, string kind)
-    {
-        var rootName = root.Name ?? "menu";
-        int index = 0;
-        var map = new Dictionary<MenuObject, MenuNodeIds>(ReferenceEqualityComparer.Instance);
-        BuildNodeIds(root, kind, rootName, ref index, map);
-        return map;
-    }
-
-    private static void BuildNodeIds(MenuObject node, string kind, string rootName, ref int index, Dictionary<MenuObject, MenuNodeIds> map)
-    {
-        var listId = $"{kind}-id-{rootName}-{index}";
-        var itemId = listId.Replace($"{kind}-id-", $"{kind}-item-", StringComparison.Ordinal);
-        map[node] = new MenuNodeIds(listId, itemId);
-
-        foreach (var child in node.Children)
-        {
-            index++;
-            BuildNodeIds(child, kind, rootName, ref index, map);
-        }
-    }
-
     private string RenderAsync(ContentObject page, ScriptObject options, MenuPlugin plugin, string kind, int maxDepth, bool showCollapse)
     {
         var stateKey = AsyncStateKeyPrefix + GetAsyncStateKey(kind, maxDepth, showCollapse, options);
@@ -337,8 +321,11 @@ public class MenuObject : DynamicObject
             {
                 if (state.NodeIds.TryGetValue(node, out var ids))
                 {
-                    activeItemIds.Add(ids.ItemId);
-                    if (node.Children.Count > 0)
+                    if (ids.ItemId is not null && (ids.ItemContainsChildren || ReferenceEquals(node, currentItem)))
+                    {
+                        activeItemIds.Add(ids.ItemId);
+                    }
+                    if (ids.ListId is not null)
                     {
                         openIds.Add(ids.ListId);
                     }
@@ -367,12 +354,12 @@ public class MenuObject : DynamicObject
 
     private MenuAsyncState CreateAsyncState(ContentObject page, ScriptObject options, MenuPlugin plugin, string kind, int maxDepth, bool showCollapse)
     {
-        var nodeIds = BuildNodeIds(this, kind);
-        var rootListId = nodeIds.TryGetValue(this, out var rootIds) ? rootIds.ListId : $"{kind}-id-{Name ?? "menu"}-0";
-
+        // The ids are recorded while rendering the partial, so that they always match the rendered items.
+        var nodeIds = new Dictionary<MenuObject, MenuNodeIds>(ReferenceEqualityComparer.Instance);
         var partialBuilder = new StringBuilder();
         int index = 0;
-        RenderInternal(page, partialBuilder, 0, options, null, this, ref index, MenuRenderMode.Static);
+        RenderInternal(page, partialBuilder, 0, options, null, this, ref index, MenuRenderMode.Static, nodeIds);
+        var rootListId = nodeIds.TryGetValue(this, out var rootIds) && rootIds.ListId is not null ? rootIds.ListId : $"{kind}-id-{Name ?? "menu"}-0";
         var html = partialBuilder.ToString();
         var hash = HashUtil.HashStringHex(html);
 
@@ -396,7 +383,7 @@ public class MenuObject : DynamicObject
     private const int IndentSize = 2;
         
        
-    private void RenderInternal(ContentObject page, StringBuilder builder, int level, ScriptObject options, MenuObject? parent, MenuObject root, ref int index, MenuRenderMode mode)
+    private void RenderInternal(ContentObject page, StringBuilder builder, int level, ScriptObject options, MenuObject? parent, MenuObject root, ref int index, MenuRenderMode mode, Dictionary<MenuObject, MenuNodeIds>? nodeIds = null)
     {
         // Don't process further if we are only looking at a certain level
         int maxDepth = int.MaxValue;
@@ -410,6 +397,9 @@ public class MenuObject : DynamicObject
             
         bool hasChildren = Children.Count > 0 && this != parent; // Don't render recursively
         string menuId = $"{kind}-id-{root.Name ?? "menu"}-{index}";
+        var rendersChildren = hasChildren && level < maxDepth;
+        // Keep in sync with the item id computed by RenderItem
+        nodeIds?.TryAdd(this, new MenuNodeIds(rendersChildren ? menuId : null, level > 0 ? menuId.Replace($"{kind}-id-", $"{kind}-item-", StringComparison.Ordinal) : null));
 
         bool isCurrentPageInMenuPath = false;
         if (mode == MenuRenderMode.PageSpecific)
@@ -431,7 +421,7 @@ public class MenuObject : DynamicObject
             RenderItem(page, builder, level, kind, options, level >= maxDepth, hasChildren, menuId, isCurrentPageInMenuPath, showCollapse, mode);
         }
 
-        if (hasChildren && level < maxDepth) 
+        if (rendersChildren)
         {
             builder.Append(' ', level * IndentSize);
             var listKind = (kind == "nav" ? "navbar-nav" : kind);
@@ -443,12 +433,25 @@ public class MenuObject : DynamicObject
             {
                 if (level > 0 && item.Path == this.Path)
                 {
-                    // Avoid showing the same menu item as a child of itself, e.g. when put as a first child
+                    // Avoid showing the same menu item as a child of itself, e.g. when put as a first child.
+                    // The skipped item is shown by this item.
+                    if (nodeIds is not null && nodeIds.TryGetValue(this, out var thisIds))
+                    {
+                        nodeIds.TryAdd(item, thisIds);
+                    }
                     continue;
                 }
 
                 index++;
-                item.RenderInternal(page, builder, level + 1, options, this, root, ref index, mode);
+                item.RenderInternal(page, builder, level + 1, options, this, root, ref index, mode, nodeIds);
+
+                // A root has no item of its own: it is shown by its child pointing to the same page (e.g. an overview page).
+                if (level == 0 && nodeIds is not null && item.Path == this.Path
+                    && nodeIds.TryGetValue(this, out var rootIds) && rootIds.ItemId is null
+                    && nodeIds.TryGetValue(item, out var itemIds) && itemIds.ItemId is not null)
+                {
+                    nodeIds[this] = rootIds with { ItemId = itemIds.ItemId, ItemContainsChildren = false };
+                }
             }
 
             builder.Append(' ', level * IndentSize);
