@@ -418,7 +418,10 @@ public class MenuObject : DynamicObject
 
         if (level > 0)
         {
-            RenderItem(page, builder, level, kind, options, level >= maxDepth, hasChildren, menuId, isCurrentPageInMenuPath, showCollapse, mode);
+            // A root has no item of its own: its child pointing to the same page (e.g. an overview page) stands for it.
+            var isRootAlias = mode == MenuRenderMode.PageSpecific && level == 1 && parent is not null && Path is not null && Path == parent.Path
+                              && ReferenceEquals(page.GetSafeValue<MenuObject>("menu_item"), parent);
+            RenderItem(page, builder, level, kind, options, level >= maxDepth, hasChildren, menuId, isCurrentPageInMenuPath, showCollapse, mode, isRootAlias);
         }
 
         if (rendersChildren)
@@ -465,13 +468,13 @@ public class MenuObject : DynamicObject
         }
     }
 
-    private bool RenderItem(ContentObject page, StringBuilder builder, int level, string kind, ScriptObject options, bool isCappingDepth, bool hasChildren, string? subMenuId, bool isInCurrentPath, bool showCollapse, MenuRenderMode mode)
+    private bool RenderItem(ContentObject page, StringBuilder builder, int level, string kind, ScriptObject options, bool isCappingDepth, bool hasChildren, string? subMenuId, bool isInCurrentPath, bool showCollapse, MenuRenderMode mode, bool isActiveAlias = false)
     {
         var effectiveOptions = options ?? new ScriptObject();
 
         builder.Append(' ', level * IndentSize);
 
-        bool isActive = false;
+        bool isActive = isActiveAlias;
         if (mode == MenuRenderMode.PageSpecific)
         {
             var currentMenu = page.GetSafeValue<MenuObject>("menu_item");

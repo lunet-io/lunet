@@ -3,7 +3,9 @@
 // See the license.txt file in the project root for more information.
 
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Lunet.Bundles;
 using Lunet.Core;
 using Lunet.Menus;
@@ -457,5 +459,78 @@ public class TestMenusModule
 
         var breadcrumb = root.RenderBreadcrumb(templateContext, default(SourceSpan), null);
         Assert.AreEqual(1, Regex.Matches(breadcrumb, "bi-house-door").Count);
+    }
+
+    [Test]
+    public async Task TestFolderMenuHighlightsOverviewItemOnFolderPage()
+    {
+        var context = new LunetAppTestContext();
+        context.WriteAllText("/site/config.scriban",
+            """
+            baseurl = "https://example.com"
+            """);
+
+        context.WriteAllText("/site/docs/menu.yml",
+            """
+            doc:
+              - {path: readme.md, title: "Docs home"}
+              - {path: guide/readme.md, title: "Guide", folder: true}
+              - {path: p01.md, title: "Page 01"}
+            """);
+
+        // The first item of the folder menu is the folder page itself (an overview page)
+        context.WriteAllText("/site/docs/guide/menu.yml",
+            """
+            guide:
+              - {path: readme.md, title: "Guide overview"}
+              - {path: g1.md, title: "Guide 1"}
+              - {path: g2.md, title: "Guide 2"}
+            """);
+
+        context.WriteAllText("/site/.lunet/layouts/default.sbn-html",
+            """
+            ---
+            layout: _default
+            ---
+            <nav class='page-menu'>{{ page.menu.render { kind: "menu", collapsible: true, depth: 6, async: false } }}</nav>
+            <nav class='page-menu'>{{ page.menu.render { kind: "menu", collapsible: true, depth: 1, async: false } }}</nav>
+            <nav class='page-menu'>{{ site.menu.doc.render { kind: "menu", collapsible: true, depth: 6, async: false } }}</nav>
+            """);
+
+        foreach (var name in new[] { "readme", "p01", "guide/readme", "guide/g1", "guide/g2" })
+        {
+            context.WriteAllText($"/site/docs/{name}.md",
+                $"""
+                ---
+                layout: default
+                ---
+                # {name}
+                """);
+        }
+
+        var exitCode = await context.RunAsync("--input-dir=site", "build", "--dev");
+        Assert.AreEqual(0, exitCode);
+
+        // The folder menu of the folder page highlights its overview item
+        AssertActiveMenuItems(context, "/docs/guide/", 0, ["/docs/guide/"]);
+        AssertActiveMenuItems(context, "/docs/guide/", 1, ["/docs/guide/"]);
+        // and the doc menu its folder item
+        AssertActiveMenuItems(context, "/docs/guide/", 2, ["/docs/guide/"]);
+
+        // The other pages of the folder highlight only their own item
+        AssertActiveMenuItems(context, "/docs/guide/g1/", 0, ["/docs/guide/g1/"]);
+        AssertActiveMenuItems(context, "/docs/guide/g2/", 1, ["/docs/guide/g2/"]);
+        AssertActiveMenuItems(context, "/docs/p01/", 0, ["/docs/p01/"]);
+    }
+
+    private static void AssertActiveMenuItems(LunetAppTestContext context, string pageUrl, int menuIndex, string[] expectedActiveUrls)
+    {
+        var pageHtml = context.ReadAllText($"/site/.lunet/build/www{pageUrl}index.html");
+        var menus = Regex.Matches(pageHtml, "<nav class='page-menu'>(.*?)</nav>", RegexOptions.Singleline);
+        Assert.Greater(menus.Count, menuIndex, $"Missing menu #{menuIndex} in page {pageUrl}");
+
+        var activeUrls = Regex.Matches(menus[menuIndex].Groups[1].Value, "<li [^>]*class='[^']*\\bactive\\b[^']*'[^>]*>\\s*<span[^>]*><a href='([^']*)'")
+            .Select(x => x.Groups[1].Value);
+        Assert.AreEqual(string.Join(", ", expectedActiveUrls), string.Join(", ", activeUrls), $"Active items of menu #{menuIndex} in page {pageUrl}");
     }
 }
